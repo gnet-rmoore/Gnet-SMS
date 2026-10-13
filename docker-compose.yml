@@ -324,8 +324,8 @@ services:
       # ONLINE_EXAM_PROCTOR_EMAIL: "1"
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_URL: http://localhost:9000
-      S3_ACCESS_KEY_ID: minioadmin
-      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-smsminio}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-smsminio-secret}
       S3_BUCKET: sms-exam-papers
       S3_FORCE_PATH_STYLE: "true"
       S3_REGION: us-east-1

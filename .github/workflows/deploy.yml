@@ -73,11 +73,22 @@ jobs:
           ssh -i ~/.ssh/lightsail.pem \
               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
               -o BatchMode=yes \
-              "${USER}@${HOST}" \
-              "cd '$DIR' && \
-               git pull --ff-only && \
-               docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge pull && \
-               docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge up -d"
+              "${USER}@${HOST}" "
+                set -e
+                cd '${DIR}'
+                dc() { docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge \"\$@\"; }
+                git pull --ff-only
+                dc pull
+                if ! dc up -d; then
+                  echo '=== compose ps ==='
+                  dc ps -a || true
+                  echo '=== compose logs (tail 300) ==='
+                  dc logs --no-color --tail=300 || true
+                  echo '=== academic inspect ==='
+                  docker inspect --format '{{json .State}}' gnet-sms-academic-1 || true
+                  exit 1
+                fi
+              "
 
       - name: Health check
         run: |
