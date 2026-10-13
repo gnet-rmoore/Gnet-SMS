@@ -45,4 +45,4 @@ EXPOSE 3010
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3010/health/live || exit 1
 
-CMD ["sh", "-c", "entrypoint.sh"]
+CMD ["sh", "/usr/local/bin/entrypoint.sh"]
