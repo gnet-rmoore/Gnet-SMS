@@ -1,0 +1,132 @@
+// Staff schema (Phase 3-5 extraction)
+// Target Postgres schema: `staff` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: LeaveRequest, LeavePolicy, LeaveBalance, StaffTask, StaffAttendance, Payroll.
+// schoolId / userId / approvedBy / assignedTo / createdBy are plain UUID
+// strings — no Prisma relation to Identity.School / Identity.User.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["staff"]
+}
+
+model LeaveRequest {
+  id         String    @id @default(uuid())
+  schoolId   String // Identity.School.id (no FK)
+  userId     String // Identity.User.id (no FK)
+  type       String
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     String    @default("PENDING")
+  approvedBy String? // Identity.User.id (no FK)
+  approvedAt DateTime?
+  comment    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([schoolId])
+  @@index([userId])
+  @@schema("staff")
+}
+
+/// School defaults for annual leave entitlements by type.
+model LeavePolicy {
+  id            String   @id @default(uuid())
+  schoolId      String
+  type          String
+  annualDays    Float
+  carryOverDays Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([schoolId, type])
+  @@index([schoolId])
+  @@schema("staff")
+}
+
+/// Per-user leave ledger for a calendar year.
+model LeaveBalance {
+  id        String   @id @default(uuid())
+  schoolId  String
+  userId    String
+  type      String
+  year      Int
+  entitled  Float
+  used      Float    @default(0)
+  pending   Float    @default(0)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, type, year])
+  @@index([schoolId])
+  @@index([userId])
+  @@schema("staff")
+}
+
+model StaffTask {
+  id          String    @id @default(uuid())
+  schoolId    String // Identity.School.id (no FK)
+  title       String
+  description String?
+  priority    String    @default("MEDIUM")
+  status      String    @default("TODO")
+  dueDate     DateTime?
+  assignedTo  String // Identity.User.id (no FK)
+  createdBy   String // Identity.User.id (no FK)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([schoolId])
+  @@index([assignedTo])
+  @@schema("staff")
+}
+
+model StaffAttendance {
+  id        String    @id @default(uuid())
+  schoolId  String // Identity.School.id (no FK)
+  userId    String // Identity.User.id (no FK)
+  date      DateTime  @default(now())
+  checkIn   DateTime?
+  checkOut  DateTime?
+  status    String    @default("PRESENT")
+  notes     String?
+  photoIn   String?
+  photoOut  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, date])
+  @@index([schoolId])
+  @@schema("staff")
+}
+
+model Payroll {
+  id            String    @id @default(uuid())
+  schoolId      String // Identity.School.id (no FK)
+  userId        String // Identity.User.id (no FK)
+  month         Int
+  year          Int
+  basicSalary   Float
+  allowances    Float     @default(0)
+  deductions    Float     @default(0)
+  netSalary     Float
+  status        String    @default("PENDING")
+  paidAt        DateTime?
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, month, year])
+  @@index([schoolId])
+  @@schema("staff")
+}

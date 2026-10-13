@@ -1,0 +1,75 @@
+name: Deploy GNET SMS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build, push, deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push service images
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          HUB="${{ secrets.DOCKERHUB_USERNAME }}"
+          for svc in identity lifecycle ops staff classroom academic finance comms campus api-gateway; do
+            image="$HUB/gnet-sms-${svc}:${TAG}"
+            docker build -t "$image" -f "services/${svc}/Dockerfile" "services/${svc}"
+            docker push "$image"
+            docker tag "$image" "$HUB/gnet-sms-${svc}:latest"
+            docker push "$HUB/gnet-sms-${svc}:latest"
+          done
+
+      - name: Build and push frontend image
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          HUB="${{ secrets.DOCKERHUB_USERNAME }}"
+          image="$HUB/gnet-sms-frontend-spa:${TAG}"
+          docker build -t "$image" -f Dockerfile.frontend .
+          docker push "$image"
+          docker tag "$image" "$HUB/gnet-sms-frontend-spa:latest"
+          docker push "$HUB/gnet-sms-frontend-spa:latest"
+
+      - name: Deploy on Lightsail
+        env:
+          DIR: ${{ secrets.LIGHTSAIL_DEPLOY_DIR }}
+          HOST: ${{ secrets.LIGHTSAIL_HOSTNAME }}
+          USER: ${{ secrets.LIGHTSAIL_SSH_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail.pem
+          chmod 600 ~/.ssh/lightsail.pem
+          ssh -i ~/.ssh/lightsail.pem \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              "$USER@$HOST" \
+              "cd '$DIR' && \
+               git pull --ff-only && \
+               docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge pull && \
+               docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge up -d"
+
+      - name: Health check
+        run: |
+          if curl -fsS -o /dev/null https://gnetsms.com; then
+            echo "OK  https://gnetsms.com"
+          elif curl -fsS -o /dev/null "http://${{ secrets.LIGHTSAIL_HOSTNAME }}/"; then
+            echo "OK  http://${{ secrets.LIGHTSAIL_HOSTNAME }}/"
+          else
+            echo "Site is not responding"
+            exit 1
+          fi

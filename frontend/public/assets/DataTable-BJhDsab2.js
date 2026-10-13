@@ -1,0 +1,1 @@
+import{j as s,f as n,a3 as r}from"./index-CKvPyGwx.js";function x({children:e,hint:a,className:t,...l}){return s.jsxs("div",{className:n(r.wrap,t),...l,children:[a?s.jsx("p",{className:"mb-2 text-xs font-medium text-slate-500 lg:hidden",children:a}):null,e]})}export{x as D};

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Academic Report — Modern Performance Sheet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  TEMPLATE 2 — "MASTERY BARS"
+  =============================
+  Contemporary dashboard-style report card. Built for print (A4) and screen preview.
+
+  INTEGRATION NOTES FOR YOUR SMS APP
+  -----------------------------------
+  Dynamic values carry data-field="student.name" style attributes for easy
+  server-side substitution or DOM targeting. The subject list is a single
+  repeatable block: clone .subject-row inside #subject-list for each
+  subject record and set the --score / --avg CSS custom properties
+  (0–100) to drive the mastery bar width and average-marker position —
+  no JS required, pure CSS custom properties read inline per row.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12141C;
+    --ink-soft:#6B7280;
+    --line:#E4E7EC;
+    --paper:#FFFFFF;
+    --canvas:#F4F5F7;
+    --indigo:#4338CA;
+    --indigo-soft:#EEF0FD;
+    --mint:#0F766E;
+    --mint-soft:#E7F6F4;
+    --amber:#B45309;
+    --amber-soft:#FDF3E7;
+    --rose:#B42318;
+    --rose-soft:#FCEEEE;
+    --font-display:'Space Grotesk','Segoe UI',sans-serif;
+    --font-body:'Inter','Segoe UI',sans-serif;
+    --font-data:'JetBrains Mono','Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas);
+    font-family:var(--font-body);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage{display:flex;justify-content:center;padding:36px 16px 60px;}
+  .sheet{
+    width:210mm;min-height:297mm;
+    background:var(--paper);
+    padding:14mm 13mm;
+    box-shadow:0 4px 8px rgba(18,20,28,.08), 0 24px 48px rgba(18,20,28,.12);
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding-bottom:16px;border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo-mark{
+    width:42px;height:42px;border-radius:10px;
+    background:linear-gradient(135deg, var(--indigo), #6C63FF);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;
+    flex-shrink:0;
+  }
+  .school-name{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.2px;}
+  .school-meta{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+  .doc-meta{text-align:right;}
+  .doc-meta .pill{
+    display:inline-block;font-size:10px;font-weight:600;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--indigo);background:var(--indigo-soft);
+    padding:4px 10px;border-radius:20px;
+  }
+  .doc-meta .term{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+
+  /* ---------- Identity row ---------- */
+  .identity{
+    display:flex;gap:14px;align-items:center;
+    margin-top:16px;padding:14px 16px;
+    background:var(--canvas);border-radius:14px;
+  }
+  .avatar{
+    width:56px;height:56px;border-radius:12px;flex-shrink:0;
+    background:repeating-linear-gradient(135deg,#e2e5ea,#e2e5ea 6px,#d8dce2 6px,#d8dce2 7px);
+    display:flex;align-items:center;justify-content:center;
+    font-size:8.5px;color:var(--ink-soft);text-align:center;
+  }
+  .identity-grid{
+    flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  }
+  .id-label{font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;font-weight:600;}
+  .id-value{font-family:var(--font-display);font-weight:600;font-size:14px;margin-top:2px;}
+
+  /* ---------- KPI cards ---------- */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+  .kpi{
+    border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    background:var(--paper);
+  }
+  .kpi .k-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;}
+  .kpi .k-value{font-family:var(--font-display);font-size:24px;font-weight:700;margin-top:4px;}
+  .kpi .k-value small{font-size:12px;font-weight:500;color:var(--ink-soft);}
+  .kpi .k-sub{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .kpi.accent{background:var(--indigo-soft);border-color:transparent;}
+  .kpi.accent .k-value{color:var(--indigo);}
+
+  /* ---------- Section heading ---------- */
+  .section-heading{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:22px 0 10px;
+  }
+  .section-heading h2{
+    font-family:var(--font-display);font-size:14.5px;font-weight:700;margin:0;
+    letter-spacing:-.1px;
+  }
+  .section-heading .legend{
+    display:flex;gap:14px;font-size:9.5px;color:var(--ink-soft);
+  }
+  .legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+  .legend .dot.student{background:var(--indigo);}
+  .legend .dot.avg{background:#C6CAD3;}
+
+  /* ---------- Subject mastery list (signature element) ---------- */
+  .subject-list{border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .subject-row{
+    display:grid;
+    grid-template-columns:140px 56px 1fr 74px 100px;
+    align-items:center;gap:12px;
+    padding:10px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .subject-row:last-child{border-bottom:none;}
+  .subject-row:nth-child(even){background:#FBFBFC;}
+  .subj-name{font-weight:600;font-size:12.5px;}
+  .subj-score{font-family:var(--font-data);font-weight:700;font-size:13px;text-align:right;}
+  .bar-track{
+    position:relative;height:10px;border-radius:6px;background:#EEF0F3;overflow:visible;
+  }
+  .bar-fill{
+    position:absolute;left:0;top:0;height:100%;border-radius:6px;
+    background:linear-gradient(90deg, var(--indigo), #6C63FF);
+    width:calc(var(--score) * 1%);
+  }
+  .bar-avg-marker{
+    position:absolute;top:-3px;width:2px;height:16px;background:#98A2B3;
+    left:calc(var(--avg) * 1%);
+  }
+  .subj-grade{
+    text-align:center;font-family:var(--font-data);font-weight:700;font-size:12px;
+    padding:3px 0;border-radius:8px;
+  }
+  .subj-grade.tier-a{color:var(--mint);background:var(--mint-soft);}
+  .subj-grade.tier-b{color:var(--indigo);background:var(--indigo-soft);}
+  .subj-grade.tier-c{color:var(--amber);background:var(--amber-soft);}
+  .subj-grade.tier-d{color:var(--rose);background:var(--rose-soft);}
+  .subj-remark{font-size:10.5px;color:var(--ink-soft);}
+
+  /* ---------- Two column: scale + attendance ---------- */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+  .panel{border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .panel-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
+  .scale-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .scale-chip{
+    text-align:center;padding:6px 2px;border-radius:8px;background:var(--canvas);
+  }
+  .scale-chip .g{font-family:var(--font-data);font-weight:700;font-size:12.5px;}
+  .scale-chip .r{font-size:8.5px;color:var(--ink-soft);margin-top:1px;}
+
+  .att-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .att-row:last-child{margin-bottom:0;}
+  .att-label{font-size:11.5px;color:var(--ink-soft);}
+  .att-value{font-family:var(--font-data);font-weight:700;font-size:13px;}
+  .att-bar{flex:1;height:7px;background:var(--canvas);border-radius:6px;margin:0 10px;overflow:hidden;}
+  .att-bar-fill{height:100%;background:var(--mint);border-radius:6px;}
+
+  /* ---------- Remarks ---------- */
+  .remark-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+  .remark-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .remark-card .who{
+    display:flex;align-items:center;gap:6px;
+    font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--indigo);margin-bottom:6px;
+  }
+  .remark-card p{margin:0;font-size:12px;line-height:1.55;color:var(--ink);}
+
+  /* ---------- Signatures ---------- */
+  .signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px;}
+  .sig-line{border-top:1px solid var(--ink);padding-top:6px;text-align:center;}
+  .sig-line .role{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;}
+
+  .footer-note{margin-top:18px;text-align:center;font-size:9px;color:var(--ink-soft);}
+
+  /* ---------- Print ---------- */
+  @page{ size:A4; margin:0; }
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{width:210mm;min-height:297mm;box-shadow:none;padding:12mm 13mm;}
+    .kpi, .panel, .remark-card, .subject-list{break-inside:avoid;}
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+  @media screen and (max-width:900px){
+    .sheet{width:100%;padding:6mm;}
+    .identity-grid, .kpi-row, .two-col, .remark-cards, .signatures{grid-template-columns:1fr 1fr;}
+    .subject-row{grid-template-columns:100px 40px 1fr 60px;}
+    .subj-remark{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+
+    <!-- HEADER -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-mark" data-field="school.crest_initials">GA</div>
+        <div>
+          <div class="school-name" data-field="school.name">Greendale Academy</div>
+          <div class="school-meta" data-field="school.address">14 Independence Avenue, Monrovia, Liberia</div>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <span class="pill">Performance Report</span>
+        <div class="term" data-field="term.label">Term 2 · 2025/2026 · <span data-field="term.exam_name">End-of-Term Exam</span></div>
+      </div>
+    </div>
+
+    <!-- IDENTITY -->
+    <div class="identity">
+      <div class="avatar">Student<br>Photo</div>
+      <div class="identity-grid">
+        <div>
+          <div class="id-label">Student</div>
+          <div class="id-value" data-field="student.name">Amara K. Johnson</div>
+        </div>
+        <div>
+          <div class="id-label">Admission No.</div>
+          <div class="id-value" data-field="student.admission_no">GA-2024-0187</div>
+        </div>
+        <div>
+          <div class="id-label">Class</div>
+          <div class="id-value" data-field="student.class">Grade 9 — B</div>
+        </div>
+        <div>
+          <div class="id-label">Guardian</div>
+          <div class="id-value" data-field="student.guardian">Mr. E. Johnson</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi accent">
+        <div class="k-label">Overall Average</div>
+        <div class="k-value" data-field="summary.percentage">79.3<small>%</small></div>
+        <div class="k-sub">Grade <span data-field="summary.overall_grade">A−</span> · GPA <span data-field="summary.gpa">3.5</span></div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Class Rank</div>
+        <div class="k-value" data-field="summary.rank_number">3<small>/41</small></div>
+        <div class="k-sub">Up 2 places from last term</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Attendance</div>
+        <div class="k-value" data-field="attendance.percentage">94<small>%</small></div>
+        <div class="k-sub"><span data-field="attendance.present">83</span> of <span data-field="attendance.total">88</span> days</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Conduct</div>
+        <div class="k-value" style="font-size:16px;" data-field="summary.conduct">Excellent</div>
+        <div class="k-sub" data-field="summary.promotion_status">Promoted to Grade 10</div>
+      </div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div class="section-heading">
+      <h2>Subject Performance</h2>
+      <div class="legend"><span><span class="dot student"></span>Student score</span><span><span class="dot avg"></span>Class average</span></div>
+    </div>
+    <div class="subject-list" id="subject-list">
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[0].name">English Language</div>
+        <div class="subj-score" data-field="subjects[0].obtained">88</div>
+        <div class="bar-track" style="--score:88;--avg:74;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-a" data-field="subjects[0].grade">A</div>
+        <div class="subj-remark" data-field="subjects[0].remark">Confident, articulate writing</div>
+      </div>
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[1].name">Mathematics</div>
+        <div class="subj-score" data-field="subjects[1].obtained">76</div>
+        <div class="bar-track" style="--score:76;--avg:68;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-b" data-field="subjects[1].grade">B+</div>
+        <div class="subj-remark" data-field="subjects[1].remark">Revise geometry proofs</div>
+      </div>
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[2].name">Integrated Science</div>
+        <div class="subj-score" data-field="subjects[2].obtained">91</div>
+        <div class="bar-track" style="--score:91;--avg:70;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-a" data-field="subjects[2].grade">A</div>
+        <div class="subj-remark" data-field="subjects[2].remark">Excellent lab discipline</div>
+      </div>
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[3].name">Social Studies</div>
+        <div class="subj-score" data-field="subjects[3].obtained">69</div>
+        <div class="bar-track" style="--score:69;--avg:65;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-b" data-field="subjects[3].grade">B</div>
+        <div class="subj-remark" data-field="subjects[3].remark">Strong debate participation</div>
+      </div>
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[4].name">French</div>
+        <div class="subj-score" data-field="subjects[4].obtained">58</div>
+        <div class="bar-track" style="--score:58;--avg:61;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-d" data-field="subjects[4].grade">D</div>
+        <div class="subj-remark" data-field="subjects[4].remark">Needs vocabulary practice</div>
+      </div>
+
+      <div class="subject-row" data-repeat="subject-row">
+        <div class="subj-name" data-field="subjects[5].name">ICT</div>
+        <div class="subj-score" data-field="subjects[5].obtained">94</div>
+        <div class="bar-track" style="--score:94;--avg:72;">
+          <div class="bar-fill"></div><div class="bar-avg-marker"></div>
+        </div>
+        <div class="subj-grade tier-a" data-field="subjects[5].grade">A</div>
+        <div class="subj-remark" data-field="subjects[5].remark">Outstanding project work</div>
+      </div>
+
+    </div>
+
+    <!-- SCALE + ATTENDANCE -->
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-title">International Grading Scale</div>
+        <div class="scale-grid">
+          <div class="scale-chip"><div class="g" style="color:var(--mint);">A</div><div class="r">90–100</div></div>
+          <div class="scale-chip"><div class="g" style="color:var(--indigo);">B</div><div class="r">75–89</div></div>
+          <div class="scale-chip"><div class="g" style="color:var(--indigo);">C</div><div class="r">60–74</div></div>
+          <div class="scale-chip"><div class="g" style="color:var(--amber);">D</div><div class="r">50–59</div></div>
+          <div class="scale-chip"><div class="g" style="color:var(--rose);">U</div><div class="r">&lt;50</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Attendance Breakdown</div>
+        <div class="att-row">
+          <div class="att-label" style="width:60px;">Present</div>
+          <div class="att-bar"><div class="att-bar-fill" style="width:94%;"></div></div>
+          <div class="att-value" data-field="attendance.present">83</div>
+        </div>
+        <div class="att-row">
+          <div class="att-label" style="width:60px;">Absent</div>
+          <div class="att-bar"><div class="att-bar-fill" style="width:6%;background:var(--rose);"></div></div>
+          <div class="att-value" data-field="attendance.absent">5</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMARKS -->
+    <div class="remark-cards">
+      <div class="remark-card">
+        <div class="who">Class Teacher</div>
+        <p data-field="remarks.teacher">Amara has shown consistent improvement this term, particularly in the sciences. Continued attention to French vocabulary will round out an already strong report.</p>
+      </div>
+      <div class="remark-card">
+        <div class="who">Principal</div>
+        <p data-field="remarks.principal">A commendable result. Keep up the diligence and discipline shown this term.</p>
+      </div>
+    </div>
+
+    <!-- SIGNATURES -->
+    <div class="signatures">
+      <div class="sig-line"><div class="role">Class Teacher</div></div>
+      <div class="sig-line"><div class="role">Principal</div></div>
+      <div class="sig-line"><div class="role">Parent / Guardian</div></div>
+    </div>
+
+    <div class="footer-note">Next term begins <span data-field="term.next_term_start">05 Jan 2026</span> · Issued <span data-field="term.issue_date">12 Dec 2025</span> · Greendale Academy</div>
+  </div>
+</div>
+</body>
+</html>

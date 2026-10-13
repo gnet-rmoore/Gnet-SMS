@@ -1,0 +1,245 @@
+// Communications schema (Phase 3-5 extraction)
+// Target Postgres schema: `comms` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: Announcement, SchoolDocument, InAppNotification prefs/feed, PTA.
+// schoolId / authorId / uploadedBy / userId are plain UUID strings — no Prisma
+// relation to Identity.School / Identity.User.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["comms"]
+}
+
+model Announcement {
+  id          String    @id @default(uuid())
+  schoolId    String // Identity.School.id (no FK)
+  title       String
+  content     String
+  targetRoles String
+  authorId    String // Identity.User.id (no FK)
+  isPinned    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  acknowledgements AnnouncementAcknowledgement[]
+
+  @@index([schoolId])
+  @@schema("comms")
+}
+
+model AnnouncementAcknowledgement {
+  id             String       @id @default(uuid())
+  announcementId String
+  userId         String // Identity.User.id (no FK)
+  acknowledgedAt DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@schema("comms")
+}
+
+model SchoolDocument {
+  id          String   @id @default(uuid())
+  schoolId    String // Identity.School.id (no FK)
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  category    String
+  accessRoles String
+  uploadedBy  String // Identity.User.id (no FK)
+  fileSizeBytes Int   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("comms")
+}
+
+/// School-level defaults for which event classes may email / show in-app.
+/// Built-in keys come from code; schools may add custom categories (label/description set).
+model SchoolNotificationPreference {
+  id           String   @id @default(uuid())
+  schoolId     String
+  eventKey     String
+  label        String?
+  description  String?
+  emailEnabled Boolean  @default(true)
+  inAppEnabled Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([schoolId, eventKey])
+  @@index([schoolId])
+  @@schema("comms")
+}
+
+/// Per-user in-app notification feed (bell / badge).
+model InAppNotification {
+  id        String    @id @default(uuid())
+  schoolId  String
+  userId    String // Identity.User.id
+  eventKey  String
+  title     String
+  body      String
+  href      String?
+  meta      String? // JSON string
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([schoolId, userId])
+  @@index([createdAt])
+  @@schema("comms")
+}
+
+enum PtaMembershipRole {
+  MEMBER
+  OFFICER
+
+  @@schema("comms")
+}
+
+enum PtaRsvpStatus {
+  GOING
+  MAYBE
+  DECLINED
+
+  @@schema("comms")
+}
+
+/// One PTA organization per school (enable/disable + branding copy).
+model PtaOrganization {
+  id          String   @id @default(uuid())
+  schoolId    String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships PtaMembership[]
+  meetings    PtaMeeting[]
+  volunteers  PtaVolunteerOpportunity[]
+  campaigns   PtaCampaign[]
+
+  @@schema("comms")
+}
+
+model PtaMembership {
+  id             String            @id @default(uuid())
+  schoolId       String
+  organizationId String
+  userId         String // Identity.User.id
+  role           PtaMembershipRole @default(MEMBER)
+  createdAt      DateTime          @default(now())
+
+  organization PtaOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([schoolId])
+  @@index([userId])
+  @@schema("comms")
+}
+
+model PtaMeeting {
+  id             String    @id @default(uuid())
+  schoolId       String
+  organizationId String
+  title          String
+  description    String?
+  location       String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  capacity       Int?
+  published      Boolean   @default(false)
+  createdById    String // Identity.User.id
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization PtaOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rsvps        PtaMeetingRsvp[]
+
+  @@index([schoolId])
+  @@index([organizationId, startsAt])
+  @@schema("comms")
+}
+
+model PtaMeetingRsvp {
+  id        String        @id @default(uuid())
+  meetingId String
+  userId    String // Identity.User.id
+  status    PtaRsvpStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  meeting PtaMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+  @@schema("comms")
+}
+
+model PtaVolunteerOpportunity {
+  id             String    @id @default(uuid())
+  schoolId       String
+  organizationId String
+  title          String
+  description    String?
+  slots          Int?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  published      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  organization PtaOrganization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  signups      PtaVolunteerSignup[]
+
+  @@index([schoolId])
+  @@index([organizationId])
+  @@schema("comms")
+}
+
+model PtaVolunteerSignup {
+  id           String   @id @default(uuid())
+  opportunityId String
+  userId       String // Identity.User.id
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  opportunity PtaVolunteerOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, userId])
+  @@index([userId])
+  @@schema("comms")
+}
+
+model PtaCampaign {
+  id             String    @id @default(uuid())
+  schoolId       String
+  organizationId String
+  title          String
+  description    String?
+  goalAmount     Float?
+  raisedAmount   Float     @default(0)
+  currency       String?
+  published      Boolean   @default(false)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization PtaOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([organizationId])
+  @@schema("comms")
+}

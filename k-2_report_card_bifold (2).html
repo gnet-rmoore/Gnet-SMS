@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>K-2 Kindergarten Progress Report Card</title>
+<style>
+  @page { size: Letter portrait; margin: 0.3in; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    color: #111;
+    margin: 0;
+    background: #e9e9e9;
+  }
+  .page {
+    width: 8.3in;
+    min-height: 10.8in;
+    background: #fff;
+    margin: 0 auto 24px auto;
+    padding: 0.3in;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35in;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+  .row { display: flex; gap: 0.3in; flex: 1; }
+
+  /* ---------- COVER PAGE STYLES ---------- */
+  .promo-box, .kg-box {
+    border: 3px solid #000;
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .promo-title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 2px; }
+  .promo-sub { text-align: center; font-size: 11px; margin-bottom: 8px; }
+  .field-line { font-size: 11px; margin: 5px 0; }
+  .underline { border-bottom: 1px solid #000; padding: 0 4px; font-weight: bold; }
+  .promo-item { font-size: 10.5px; margin: 4px 0; line-height: 1.3; }
+  .promo-item b { font-weight: bold; }
+  .blank-line { display: inline-block; border-bottom: 1px solid #000; min-width: 80px; }
+  .sign-row { display: flex; justify-content: space-between; margin-top: 22px; }
+  .sign-cell { text-align: center; font-size: 10px; width: 45%; border-top: 1px solid #000; padding-top: 3px; }
+  .sign-cell.principal { margin: 0 auto; width: 40%; margin-top: 16px; }
+  .date-row { display: flex; justify-content: space-between; font-size: 10px; margin-top: 18px; }
+  .date-row span:first-child { border-top: 1px solid #000; padding-top: 3px; flex: 1; }
+  .date-row span:last-child { border-top: 1px solid #000; padding-top: 3px; width: 70px; text-align:center; }
+  .stamp-label { display:flex; justify-content:space-between; font-size:9px; margin-top: 2px;}
+
+  .kg-header { text-align: center; }
+  .kg-schoolname { font-weight: bold; font-size: 13px; line-height: 1.2; }
+  .kg-address { font-size: 9px; margin: 3px 0 8px 0; line-height: 1.25; }
+  .kg-badge { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #b5651d; margin: 0 auto 4px auto; display:flex; align-items:center; justify-content:center; font-size:6px; text-align:center; color:#b5651d; font-weight:bold;}
+  .kg-title { font-weight: bold; font-size: 12px; margin: 6px 0; }
+  .kg-field { font-size: 11px; margin: 6px 0; text-align: left; }
+  .kg-parent { text-align:center; font-weight:bold; text-decoration: underline; font-size: 11.5px; margin-top: 4px;}
+  .kg-note-top { font-size: 9px; margin: 5px 0 6px 0; }
+  table.period { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-top: 3px; }
+  table.period th, table.period td { border: 1px solid #000; padding: 2px 4px; text-align: left; }
+  table.period th { text-align: center; font-weight: bold; }
+  .kg-note-bottom { font-size: 8.5px; margin-top: 8px; line-height: 1.25; }
+
+  /* ---------- INSIDE PAGE STYLES ---------- */
+  .sem-box { border: 3px solid #000; flex: 1; display: flex; flex-direction: column; padding: 8px; }
+  table.grades { width: 100%; border-collapse: collapse; font-size: 9px; }
+  table.grades th, table.grades td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
+  table.grades th { font-weight: bold; }
+  table.grades td.subj { text-align: left; font-weight: bold; }
+  table.grades .grouphdr { font-weight: bold; font-size: 10px; text-align:center; }
+  .red { color: #c00000; font-weight: bold; }
+  .blue { color: #1f3fa0; font-weight: bold; }
+  .grading-system { border: 1px solid #000; padding: 5px 10px; font-size: 8.5px; margin-top: 8px; }
+  .grading-system .gs-title { text-align:center; font-weight:bold; margin-bottom:3px; }
+  .gs-line { display:flex; justify-content: space-between; margin: 1px 0; }
+  .pass-note { border: 1px solid #000; padding: 5px 10px; font-size: 8.5px; margin-top: 8px; flex: 1; display:flex; align-items:center; }
+  .subject-title-cell { text-align:center; font-weight:bold; font-size:12px; }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== PAGE 1 : COVER (Front) ===================== -->
+<div class="page">
+
+  <!-- Student 1: Kleme, Moses T. -->
+  <div class="row">
+    <div class="promo-box">
+      <div class="promo-title">Promotion Statements</div>
+      <div class="promo-sub">This is to certify that</div>
+      <div class="field-line">Student: <span class="underline">Kleme , Moses T.</span></div>
+      <div class="field-line">Has/Has not Satisfactorily completed the required</div>
+      <div class="field-line">Academic work of Grade/Level <span class="underline">k-2</span> and</div>
+      <div class="promo-item"><b>A.</b> Is promoted to grade : <span class="blank-line"></span>.</div>
+      <div class="promo-item"><b>B.</b> Is promoted to grade : <span class="blank-line"></span> on probationary</div>
+      <div class="promo-item">period of <span class="blank-line"></span> weeks.</div>
+      <div class="promo-item"><b>C.</b> Conditioned in : <span class="blank-line" style="min-width:55px;"></span> and to be given a conditional examination in these subjects at the opening of the next term.</div>
+      <div class="promo-item"><b>D.</b> Has not Satisfactorily completed the work of Grade <span class="blank-line" style="min-width:55px;"></span> and is required to repeat this class.</div>
+      <div class="promo-item"><b>E.</b> Is asked not to return because of poor academic performance or unsatisfactory conduct <span class="blank-line"></span>.</div>
+      <div class="sign-row">
+        <div class="sign-cell">Class Sponsor</div>
+        <div class="sign-cell">Registrar</div>
+      </div>
+      <div class="sign-cell principal">Principal</div>
+      <div class="date-row">
+        <span>Date:</span><span>20</span>
+      </div>
+      <div class="stamp-label"><span>STAMP</span><span>Year</span></div>
+    </div>
+
+    <div class="kg-box">
+      <div class="kg-header">
+        <div class="kg-schoolname">CHRISTIAN MARTYRS ELEM.<br>JUNIOR &amp; SENIOR HIGH SCHOOL</div>
+        <div class="kg-badge">CM SEAL</div>
+        <div class="kg-address">Schiefflin Township, Robertfied Highway County,<br>Republic of Liberia<br>P.O. Box 269</div>
+        <div class="kg-title">KINDERGARTEN PROGRESS<br>REPORT CARD</div>
+      </div>
+      <div class="kg-field">Student: <span class="underline">Kleme , Moses T.</span></div>
+      <div class="kg-field">Grade: <span class="underline">k-2</span> &nbsp;&nbsp; Academic Year: <b>2025 - 2026</b></div>
+      <div class="kg-parent">Parent or Guardian</div>
+      <div class="kg-note-top">Must sign against each period as evidence that he /she has seen the student's periodic report and is monitoring it for irregularities</div>
+      <table class="period">
+        <tr><th>Period</th><th>Class Teacher</th><th>Parent/Guardian</th></tr>
+        <tr><td>I</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>II</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>III</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>IV</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>V</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>VI</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      </table>
+      <div class="kg-note-bottom"><b>Note:</b> When a student's work is 70% or below in any subject, the parent or Guardian should give special attention to see that the student does well in all work required by the school, otherwise the student will probably fail.</div>
+    </div>
+  </div>
+
+  <!-- Student 2: Jallah, Wilfred P. -->
+  <div class="row">
+    <div class="promo-box">
+      <div class="promo-title">Promotion Statements</div>
+      <div class="promo-sub">This is to certify that</div>
+      <div class="field-line">Student: <span class="underline">Jallah , Wilfred P.</span></div>
+      <div class="field-line">Has/Has not Satisfactorily completed the required</div>
+      <div class="field-line">Academic work of Grade/Level <span class="underline">k-2</span> and</div>
+      <div class="promo-item"><b>A.</b> Is promoted to grade : <span class="blank-line"></span>.</div>
+      <div class="promo-item"><b>B.</b> Is promoted to grade : <span class="blank-line"></span> on probationary</div>
+      <div class="promo-item">period of <span class="blank-line"></span> weeks.</div>
+      <div class="promo-item"><b>C.</b> Conditioned in : <span class="blank-line" style="min-width:55px;"></span> and to be given a conditional examination in these subjects at the opening of the next term.</div>
+      <div class="promo-item"><b>D.</b> Has not Satisfactorily completed the work of Grade <span class="blank-line" style="min-width:55px;"></span> and is required to repeat this class.</div>
+      <div class="promo-item"><b>E.</b> Is asked not to return because of poor academic performance or unsatisfactory conduct <span class="blank-line"></span>.</div>
+      <div class="sign-row">
+        <div class="sign-cell">Class Sponsor</div>
+        <div class="sign-cell">Registrar</div>
+      </div>
+      <div class="sign-cell principal">Principal</div>
+      <div class="date-row">
+        <span>Date:</span><span>20</span>
+      </div>
+      <div class="stamp-label"><span>STAMP</span><span>Year</span></div>
+    </div>
+
+    <div class="kg-box">
+      <div class="kg-header">
+        <div class="kg-schoolname">CHRISTIAN MARTYRS ELEM.<br>JUNIOR &amp; SENIOR HIGH SCHOOL</div>
+        <div class="kg-badge">CM SEAL</div>
+        <div class="kg-address">Schiefflin Township, Robertfied Highway County,<br>Republic of Liberia<br>P.O. Box 269</div>
+        <div class="kg-title">KINDERGARTEN PROGRESS<br>REPORT CARD</div>
+      </div>
+      <div class="kg-field">Student: <span class="underline">Jallah , Wilfred P.</span></div>
+      <div class="kg-field">Grade: <span class="underline">k-2</span> &nbsp;&nbsp; Academic Year: <b>2025 - 2026</b></div>
+      <div class="kg-parent">Parent or Guardian</div>
+      <div class="kg-note-top">Must sign against each period as evidence that he /she has seen the student's periodic report and is monitoring it for irregularities</div>
+      <table class="period">
+        <tr><th>Period</th><th>Class Teacher</th><th>Parent/Guardian</th></tr>
+        <tr><td>I</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>II</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>III</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>IV</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>V</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>VI</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      </table>
+      <div class="kg-note-bottom"><b>Note:</b> When a student's work is 70% or below in any subject, the parent or Guardian should give special attention to see that the student does well in all work required by the school, otherwise the student will probably fail.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== PAGE 2 : INSIDE (Grades) ===================== -->
+<div class="page">
+
+  <!-- Kleme grades -->
+  <div class="row">
+    <div class="sem-box">
+      <table class="grades">
+        <tr>
+          <td rowspan="2" style="width:22%;" class="subject-title-cell">SUBJECTS</td>
+          <td colspan="5" class="grouphdr">FIRST SEMESTER</td>
+        </tr>
+        <tr><th>1st PD</th><th>2nd PD</th><th>3rd PD</th><th>Sem Exam</th><th>Sem Avg</th></tr>
+        <tr><td class="subj">Bible</td><td>80</td><td>85</td><td>79</td><td>70</td><td>76</td></tr>
+        <tr><td class="subj">English</td><td>75</td><td>86</td><td>70</td><td class="red">60</td><td class="red">68</td></tr>
+        <tr><td class="subj">Mathematics</td><td>99</td><td>92</td><td>70</td><td>80</td><td>84</td></tr>
+        <tr><td class="subj">Drawing</td><td>90</td><td>80</td><td>70</td><td>70</td><td>75</td></tr>
+        <tr><td class="subj">G. Science</td><td>70</td><td>96</td><td>75</td><td>80</td><td>80</td></tr>
+        <tr><td class="subj">H. Science</td><td>75</td><td>84</td><td>77</td><td>85</td><td>82</td></tr>
+        <tr><td class="subj">Phonics</td><td>90</td><td>95</td><td>82</td><td>80</td><td>84</td></tr>
+        <tr><td class="subj">Physical Edu.</td><td>80</td><td>70</td><td>70</td><td>70</td><td>72</td></tr>
+        <tr><td class="subj">Reading</td><td>75</td><td>77</td><td>75</td><td>70</td><td>73</td></tr>
+        <tr><td class="subj">Social Studi.</td><td>70</td><td>95</td><td>71</td><td>70</td><td>74</td></tr>
+        <tr><td class="subj">Spelling</td><td>85</td><td>70</td><td>70</td><td>75</td><td>75</td></tr>
+        <tr><td class="subj">Writing</td><td>80</td><td>70</td><td>79</td><td>80</td><td>78</td></tr>
+        <tr><td class="subj">Average</td><td class="blue">81</td><td class="blue">83</td><td class="blue">74</td><td class="blue">74</td><td class="blue">77</td></tr>
+      </table>
+      <div class="grading-system">
+        <div class="gs-title">Grading System</div>
+        <div class="gs-line"><span>A = 90 - 100 --------- Excellent</span><span>E = 60 - 69 ----------- Failed</span></div>
+        <div class="gs-line"><span>B = 80 - 89 ----------- Good</span><span>C = 75 - 79 ----- Satisfactory</span></div>
+      </div>
+    </div>
+
+    <div class="sem-box">
+      <table class="grades">
+        <tr>
+          <td rowspan="2" style="width:16%;" class="subject-title-cell">&nbsp;</td>
+          <td colspan="6" class="grouphdr">SECOND SEMESTER</td>
+        </tr>
+        <tr><th>4th PD</th><th>5th PD</th><th>6th PD</th><th>Sem Exam</th><th>Sem Avg</th><th>Yly Avg</th></tr>
+        <tr><td class="subj">Bible</td><td>80</td><td class="red">60</td><td>70</td><td>70</td><td>70</td><td>73</td></tr>
+        <tr><td class="subj">English</td><td>77</td><td>78</td><td>70</td><td>70</td><td>72</td><td>70</td></tr>
+        <tr><td class="subj">Mathematics</td><td>80</td><td>70</td><td>75</td><td>75</td><td>75</td><td>80</td></tr>
+        <tr><td class="subj">Drawing</td><td>70</td><td>70</td><td>70</td><td>70</td><td>70</td><td>72</td></tr>
+        <tr><td class="subj">G. Science</td><td>81</td><td>80</td><td>86</td><td>86</td><td>84</td><td>82</td></tr>
+        <tr><td class="subj">H. Science</td><td>80</td><td>70</td><td>72</td><td>72</td><td>73</td><td>78</td></tr>
+        <tr><td class="subj">Phonics</td><td>85</td><td>80</td><td>86</td><td>86</td><td>85</td><td>84</td></tr>
+        <tr><td class="subj">Physical Edu.</td><td>70</td><td>79</td><td>70</td><td>70</td><td>72</td><td>72</td></tr>
+        <tr><td class="subj">Reading</td><td>75</td><td>77</td><td>70</td><td>70</td><td>72</td><td>72</td></tr>
+        <tr><td class="subj">Social Studi.</td><td>75</td><td>70</td><td>70</td><td>70</td><td>71</td><td>72</td></tr>
+        <tr><td class="subj">Spelling</td><td>73</td><td>79</td><td>71</td><td>71</td><td>73</td><td>74</td></tr>
+        <tr><td class="subj">Writing</td><td>80</td><td>80</td><td>82</td><td>82</td><td>81</td><td>80</td></tr>
+        <tr><td class="subj">Average</td><td class="blue">77</td><td class="blue">74</td><td class="blue">74</td><td class="blue">74</td><td class="blue">75</td><td class="blue">76</td></tr>
+      </table>
+      <div class="pass-note">Note: To Make a pass, the student is expected to score 70% or above in all subjects</div>
+    </div>
+  </div>
+
+  <!-- Jallah grades -->
+  <div class="grades-box">
+    <table class="grades">
+      <tr>
+        <td rowspan="2" style="width:12%;" class="subject-title-cell">SUBJECTS</td>
+        <td colspan="5" class="grouphdr">FIRST SEMESTER</td>
+        <td colspan="6" class="grouphdr">SECOND SEMESTER</td>
+      </tr>
+      <tr>
+        <th>1st PD</th><th>2nd PD</th><th>3rd PD</th><th>Sem Exam</th><th>Sem Avg</th>
+        <th>4th PD</th><th>5th PD</th><th>6th PD</th><th>Sem Exam</th><th>Sem Avg</th><th>Yly Avg</th>
+      </tr>
+      <tr><td class="subj">Bible</td><td>80</td><td>88</td><td>77</td><td>70</td><td>76</td><td>85</td><td>70</td><td>86</td><td>86</td><td>83</td><td>80</td></tr>
+      <tr><td class="subj">English</td><td>70</td><td>92</td><td>80</td><td>81</td><td>81</td><td>80</td><td>85</td><td>82</td><td>82</td><td>82</td><td>82</td></tr>
+      <tr><td class="subj">Mathematics</td><td>99</td><td>93</td><td>70</td><td>80</td><td>84</td><td>85</td><td>70</td><td>80</td><td>86</td><td>82</td><td>83</td></tr>
+      <tr><td class="subj">Drawing</td><td>75</td><td>75</td><td>75</td><td>74</td><td>74</td><td>80</td><td>96</td><td>80</td><td>80</td><td>83</td><td>78</td></tr>
+      <tr><td class="subj">G. Science</td><td>98</td><td>99</td><td>70</td><td>80</td><td>84</td><td>83</td><td>80</td><td>85</td><td>88</td><td>85</td><td>85</td></tr>
+      <tr><td class="subj">H. Science</td><td>89</td><td>99</td><td>80</td><td>70</td><td>80</td><td>81</td><td>80</td><td>80</td><td>80</td><td>80</td><td>80</td></tr>
+      <tr><td class="subj">Phonics</td><td>90</td><td>94</td><td>81</td><td>80</td><td>84</td><td>80</td><td>81</td><td>80</td><td>80</td><td>80</td><td>82</td></tr>
+      <tr><td class="subj">Physical Edu.</td><td>76</td><td>70</td><td>70</td><td>70</td><td>71</td><td>70</td><td>70</td><td>70</td><td>70</td><td>70</td><td>70</td></tr>
+      <tr><td class="subj">Reading</td><td>86</td><td>80</td><td>79</td><td>78</td><td>80</td><td>70</td><td>85</td><td>86</td><td>86</td><td>83</td><td>82</td></tr>
+      <tr><td class="subj">Social Studi.</td><td>99</td><td>95</td><td>80</td><td>88</td><td>90</td><td>80</td><td>90</td><td>86</td><td>86</td><td>86</td><td>88</td></tr>
+      <tr><td class="subj">Spelling</td><td>84</td><td>70</td><td>70</td><td class="red">60</td><td class="red">67</td><td>77</td><td>78</td><td>88</td><td>88</td><td>84</td><td>76</td></tr>
+      <tr><td class="subj">Writing</td><td>80</td><td>70</td><td>73</td><td>70</td><td>72</td><td>80</td><td>86</td><td>81</td><td>81</td><td>82</td><td>77</td></tr>
+      <tr><td class="subj">Average</td><td class="blue">86</td><td class="blue">85</td><td class="blue">75</td><td class="blue">75</td><td class="blue">79</td><td class="blue">79</td><td class="blue">81</td><td class="blue">82</td><td class="blue">83</td><td class="blue">82</td><td class="blue">80</td></tr>
+    </table>
+    <div class="grading-note-row">
+      <div class="grading-system">
+        <div class="gs-title">Grading System</div>
+        <div class="gs-line"><span>A = 90 - 100 --------- Excellent</span><span>E = 60 - 69 ----------- Failed</span></div>
+        <div class="gs-line"><span>B = 80 - 89 ----------- Good</span><span>C = 75 - 79 ----- Satisfactory</span></div>
+      </div>
+      <div class="pass-note">Note: To Make a pass, the student is expected to score 70% or above in all subjects</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,819 @@
+// Academic schema (Phase 3-5 extraction)
+// Target Postgres schema: `academic` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: AcademicCalendarPattern, AcademicPeriod, Subject, GradeLevel,
+// SyllabusPlan, LessonPlan, ExamComponent, Exam, ExamQuestion, ExamChoice,
+// ExamAttempt, ExamAnswer, ExamViolation, GradeEntry, GradeHistory,
+// PeriodGradeSummary, AnnualGradeSummary, GradeLegend, GradeScale,
+// SchoolCalendarEvent.
+// classId (Classroom.Classroom.id), studentId/teacher/enteredBy/changedBy
+// (Identity.User.id) are plain UUID strings — no cross-schema relations.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["academic"]
+}
+
+model AcademicCalendarPattern {
+  id           String           @id @default(uuid())
+  schoolId     String // Identity.School.id (no FK)
+  schoolYearId String?
+  patternType  String
+  name         String
+  isActive     Boolean          @default(true)
+  isLocked     Boolean          @default(false)
+  createdBy    String // Identity.User.id (no FK)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  periods      AcademicPeriod[]
+
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model AcademicPeriod {
+  id                String                  @id @default(uuid())
+  calendarPatternId String
+  schoolId          String // Identity.School.id (no FK)
+  periodNumber      Int
+  label             String
+  shortCode         String
+  startDate         DateTime
+  endDate           DateTime
+  annualWeightPct   Float
+  orderIndex        Int
+  createdAt         DateTime                @default(now())
+  calendarPattern   AcademicCalendarPattern @relation(fields: [calendarPatternId], references: [id])
+  examComponents    ExamComponent[]
+  periodSummaries   PeriodGradeSummary[]
+
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model ExamComponent {
+  id                      String         @id @default(uuid())
+  periodId                String
+  schoolId                String // Identity.School.id (no FK)
+  componentType           String
+  label                   String
+  shortCode               String
+  maxScore                Float
+  weightPct               Float
+  examStartDate           DateTime?
+  examEndDate             DateTime?
+  gradeSubmissionDeadline DateTime?
+  isGraded                Boolean        @default(true)
+  /// JSON array: activity columns (HW, QZ, …) with weights for this assessment
+  gradebookStructure      String?
+  /// When false, live school gradebookConfig template drives columns; when true, gradebookStructure is authoritative
+  gradebookStructureCustom Boolean        @default(false)
+  orderIndex              Int
+  createdAt               DateTime       @default(now())
+  period                  AcademicPeriod @relation(fields: [periodId], references: [id])
+  gradeEntries            GradeEntry[]
+
+  @@index([schoolId])
+  @@index([periodId])
+  @@schema("academic")
+}
+
+model Exam {
+  id                      String       @id @default(uuid())
+  schoolId                String // Identity.School.id (no FK)
+  title                   String
+  startDate               DateTime
+  endDate                 DateTime
+  gradeSubmissionDeadline DateTime
+  duration                Int
+  status                  String       @default("SCHEDULED")
+  isGradesReleased        Boolean      @default(false)
+  /// Optional link to AcademicCalendar ExamComponent
+  examComponentId         String?
+  /// When true, students sit this exam online under kiosk lockdown
+  isOnline                Boolean      @default(false)
+  /// Max integrity violations before auto-submit (0 = unlimited)
+  maxViolations           Int          @default(3)
+  /// Show score/pass/miss to student immediately after submit
+  showResultsImmediately  Boolean      @default(true)
+  instructions            String?
+  /// Optional Classroom.Classroom.id — when set, only members may start
+  classId                 String?
+  subjectId               String?
+  /// ONLINE | OFFLINE | HYBRID — how students sit this exam after paper approval
+  deliveryMode            String       @default("ONLINE")
+  /// Denormalized latest package status: NONE | DRAFT | SUBMITTED | APPROVED | RETURNED
+  paperStatus             String       @default("NONE")
+  /// Paper-authoring deadline; the paper pack must be submitted on or before this instant
+  paperDueAt              DateTime?
+  /// Retake policy for continuous assessment quizzes
+  /// JSON: { maxRetakes: Int, waitingPeriodHours: Int, scoreRetention: "best"|"last"|"average" }
+  retakePolicy            String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  gradeEntries            GradeEntry[]
+  questions               ExamQuestion[]
+  attempts                ExamAttempt[]
+  paperPackages           ExamPaperPackage[]
+  rosterFlags             ExamPaperRosterFlag[]
+
+  @@index([schoolId])
+  @@index([examComponentId])
+  @@index([schoolId, isOnline])
+  @@index([schoolId, paperStatus])
+  @@schema("academic")
+}
+
+/// Teacher-authored paper package awaiting staff approval.
+/// Status: DRAFT | SUBMITTED | APPROVED | RETURNED
+model ExamPaperPackage {
+  id            String    @id @default(uuid())
+  examId        String
+  schoolId      String
+  authorId      String // Identity.User.id
+  status        String    @default("DRAFT")
+  revision      Int       @default(1)
+  deliveryMode  String    @default("ONLINE")
+  pdfObjectKey  String?
+  pdfFileName   String?
+  pdfFileUrl    String?
+  pdfUploadedAt DateTime?
+  feedback      String?
+  submittedAt   DateTime?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  exam          Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId, revision])
+  @@index([schoolId, status])
+  @@index([authorId])
+  @@schema("academic")
+}
+
+/// Hybrid delivery: which leg a student sits (ONLINE | OFFLINE).
+model ExamPaperRosterFlag {
+  id        String   @id @default(uuid())
+  examId    String
+  schoolId  String
+  studentId String
+  /// ONLINE | OFFLINE
+  leg       String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([schoolId])
+  @@index([examId, leg])
+  @@schema("academic")
+}
+
+/// Question types: MULTIPLE_CHOICE | TRUE_FALSE | FILL_BLANK | ESSAY
+model ExamQuestion {
+  id             String        @id @default(uuid())
+  examId         String
+  schoolId       String
+  type           String
+  prompt         String
+  points         Float         @default(1)
+  orderIndex     Int           @default(0)
+  /// FILL_BLANK expected answer (server-side only until results)
+  correctAnswer  String?
+  caseSensitive  Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  exam           Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  choices        ExamChoice[]
+  answers        ExamAnswer[]
+
+  @@index([examId])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model ExamChoice {
+  id         String       @id @default(uuid())
+  questionId String
+  schoolId   String
+  label      String
+  text       String
+  isCorrect  Boolean      @default(false)
+  orderIndex Int          @default(0)
+  question   ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    ExamAnswer[]
+
+  @@index([questionId])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+/// Attempt status: IN_PROGRESS | SUBMITTED | AUTO_SUBMITTED | EXPIRED
+model ExamAttempt {
+  id                    String          @id @default(uuid())
+  examId                String
+  studentId             String // Identity.User.id
+  schoolId              String
+  attemptNumber         Int             @default(1)
+  status                String          @default("IN_PROGRESS")
+  startedAt             DateTime        @default(now())
+  /// Server-authoritative deadline = min(startedAt + duration, exam.endDate)
+  endsAt                DateTime
+  submittedAt           DateTime?
+  violationCount        Int             @default(0)
+  score                 Float?
+  maxScore              Float?
+  passedCount           Int?
+  missedCount           Int?
+  pendingCount          Int?
+  submitReason          String?
+  /// Set when the student explicitly accepted the exam instructions before starting
+  instructionsAcceptedAt DateTime?
+  /// Link to GradeEntry created when results are pushed to gradebook
+  gradeEntryId          String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  exam                  Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers               ExamAnswer[]
+  violations            ExamViolation[]
+
+  @@unique([examId, studentId, attemptNumber])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([examId, status])
+  @@index([examId, studentId])
+  @@schema("academic")
+}
+
+model ExamAnswer {
+  id              String        @id @default(uuid())
+  attemptId       String
+  questionId      String
+  schoolId        String
+  selectedChoiceId String?
+  textAnswer      String?
+  isCorrect       Boolean?
+  pointsAwarded   Float?
+  updatedAt       DateTime      @updatedAt
+  attempt         ExamAttempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question        ExamQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedChoice  ExamChoice?   @relation(fields: [selectedChoiceId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+/// Violation types: EXIT_FULLSCREEN | TAB_BLUR | VISIBILITY_HIDDEN | CONTEXT_MENU | COPY_ATTEMPT
+model ExamViolation {
+  id        String      @id @default(uuid())
+  attemptId String
+  schoolId  String
+  type      String
+  detail    String?
+  createdAt DateTime    @default(now())
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model GradeEntry {
+  id                 String                @id @default(uuid())
+  studentId          String // Identity.User.id (no FK)
+  subjectId          String
+  classId            String // Classroom.Classroom.id (no FK)
+  examComponentId    String?
+  /// Activity column within the parent assessment (gradebookStructure id)
+  structureColumnId  String?
+  examId             String?
+  schoolId           String // Identity.School.id (no FK)
+  schoolYearId       String
+  score              Float?
+  enteredBy          String // Identity.User.id (no FK)
+  enteredAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  status             String                @default("DRAFT")
+  feedback           String?
+  isLocked           Boolean               @default(false)
+  /// Explicit Incomplete marker (distinct from empty DRAFT score)
+  isIncomplete       Boolean               @default(false)
+  incompleteNote     String?
+  notes              String?
+  /// Formal submission group created when teacher submits for review
+  submissionBatchId  String?
+  reviewedBy         String? // Identity.User.id
+  reviewedAt         DateTime?
+  exam               Exam?                 @relation(fields: [examId], references: [id])
+  examComponent      ExamComponent?        @relation(fields: [examComponentId], references: [id])
+  subject            Subject               @relation(fields: [subjectId], references: [id])
+  submissionBatch    GradeSubmissionBatch? @relation(fields: [submissionBatchId], references: [id])
+  history            GradeHistory[]
+
+  @@unique([examId, studentId, subjectId, classId, examComponentId, structureColumnId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([examId])
+  @@index([classId])
+  @@index([submissionBatchId])
+  @@index([examComponentId, classId, studentId])
+  @@index([examComponentId, structureColumnId, classId, studentId])
+  @@index([schoolId, isIncomplete])
+  @@schema("academic")
+}
+
+/// Time-boxed teacher permission to edit CA / Incomplete grades after normal windows close.
+model GradeEditGrant {
+  id               String    @id @default(uuid())
+  schoolId         String
+  teacherId        String
+  /// CA | INCOMPLETE | CA_AND_INCOMPLETE
+  scope            String
+  classId          String?
+  subjectId        String?
+  academicPeriodId String?
+  examComponentId  String?
+  reason           String
+  startsAt         DateTime  @default(now())
+  expiresAt        DateTime
+  grantedById      String
+  revokedAt        DateTime?
+  revokedById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([schoolId, teacherId, expiresAt])
+  @@index([schoolId, revokedAt])
+  @@schema("academic")
+}
+
+/// One teacher submit action for a class/assessment (batch review unit).
+model GradeSubmissionBatch {
+  id              String       @id @default(uuid())
+  schoolId        String
+  classId         String
+  examId          String?
+  examComponentId String?
+  subjectId       String?
+  teacherId       String
+  /// SUBMITTED | ACCEPTED | REJECTED | MIXED
+  status          String       @default("SUBMITTED")
+  submittedAt     DateTime     @default(now())
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  feedback        String?
+  gradeCount      Int          @default(0)
+  entries         GradeEntry[]
+
+  @@index([schoolId, status])
+  @@index([teacherId, status])
+  @@index([classId])
+  @@schema("academic")
+}
+
+model GradeHistory {
+  id           String     @id @default(uuid())
+  gradeEntryId String
+  score        Float?
+  status       String
+  feedback     String?
+  changedBy    String // Identity.User.id (no FK)
+  changedAt    DateTime   @default(now())
+  gradeEntry   GradeEntry @relation(fields: [gradeEntryId], references: [id])
+
+  @@schema("academic")
+}
+
+model PeriodGradeSummary {
+  id              String         @id @default(uuid())
+  studentId       String // Identity.User.id (no FK)
+  subjectId       String
+  periodId        String
+  schoolId        String // Identity.School.id (no FK)
+  schoolYearId    String
+  periodTotalPct  Float
+  subjectPosition Int?
+  isFinalized     Boolean        @default(false)
+  period          AcademicPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@schema("academic")
+}
+
+model AnnualGradeSummary {
+  id                     String   @id @default(uuid())
+  studentId              String // Identity.User.id (no FK)
+  subjectId              String
+  schoolYearId           String
+  schoolId               String // Identity.School.id (no FK)
+  annualAverage          Float
+  gradeLetter            String?
+  gradeRemark            String?
+  gpaPoints              Float?
+  overallPosition        Int?
+  isEligibleForPromotion Boolean?
+
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model GradeLegend {
+  id        String       @id @default(uuid())
+  schoolId  String // Identity.School.id (no FK)
+  name      String
+  category  String       @default("CLASS")
+  createdAt DateTime     @default(now())
+  scales    GradeScale[]
+
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model GradeScale {
+  id            String      @id @default(uuid())
+  gradeLegendId String
+  minScore      Float
+  maxScore      Float
+  gradeLetter   String
+  gpaPoints     Float?
+  remark        String?
+  gradeLegend   GradeLegend @relation(fields: [gradeLegendId], references: [id])
+
+  @@schema("academic")
+}
+
+model Subject {
+  id           String       @id @default(uuid())
+  name         String
+  code         String
+  description  String?
+  schoolId     String // Identity.School.id (no FK)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  gradeEntries GradeEntry[]
+  offerings    SubjectOffering[]
+
+  @@unique([schoolId, code])
+  @@schema("academic")
+}
+
+model GradeLevel {
+  id               String   @id @default(uuid())
+  name             String
+  schoolId         String // Identity.School.id (no FK)
+  /// Academic.Division.id — Elementary / Middle / High / Prep, etc.
+  divisionId       String?
+  /// Display / promotion ladder order (lower = earlier grades).
+  sortOrder        Int      @default(0)
+  /// Soft self-ref to next grade in ladder (same school).
+  nextGradeLevelId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  offerings        SubjectOffering[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, divisionId])
+  @@index([schoolId, sortOrder])
+  @@schema("academic")
+}
+
+/// Frozen opening enrollment for a school year (Promotion Statement “started”).
+model YearCensusSnapshot {
+  id               String          @id @default(uuid())
+  schoolId         String
+  schoolYearKey    String
+  capturedAt       DateTime        @default(now())
+  capturedByUserId String
+  lockedAt         DateTime?
+  rows             YearCensusRow[]
+  runs             PromotionRun[]
+
+  @@unique([schoolId, schoolYearKey])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+model YearCensusRow {
+  id             String             @id @default(uuid())
+  snapshotId     String
+  studentUserId  String
+  gradeLevelId   String?
+  divisionId     String?
+  classroomId    String?
+  gender         String?
+  snapshot       YearCensusSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, studentUserId])
+  @@index([snapshotId])
+  @@schema("academic")
+}
+
+model PromotionRun {
+  id                String              @id @default(uuid())
+  schoolId          String
+  schoolYearKey     String
+  status            String              @default("DRAFT") // DRAFT | COMMITTED | CANCELLED
+  censusSnapshotId  String
+  createdByUserId   String
+  committedByUserId String?
+  committedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  censusSnapshot    YearCensusSnapshot  @relation(fields: [censusSnapshotId], references: [id], onDelete: Restrict)
+  decisions         PromotionDecision[]
+
+  @@index([schoolId, schoolYearKey])
+  @@index([schoolId, status])
+  @@schema("academic")
+}
+
+model PromotionDecision {
+  id               String       @id @default(uuid())
+  runId            String
+  studentUserId    String
+  outcome          String // PROMOTED | REPEAT | GRADUATED | DO_NOT_RETURN
+  fromGradeLevelId String?
+  toGradeLevelId   String?
+  fromClassroomId  String?
+  toClassroomId    String?
+  updatedAt        DateTime     @default(now()) @updatedAt
+  run              PromotionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, studentUserId])
+  @@index([runId])
+  @@schema("academic")
+}
+
+/// Curriculum link: which subjects a grade level offers. Teacher lives on Classroom, not here.
+model SubjectOffering {
+  id           String     @id @default(uuid())
+  schoolId     String // Identity.School.id (no FK)
+  subjectId    String
+  gradeLevelId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  subject      Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, subjectId, gradeLevelId])
+  @@index([schoolId])
+  @@index([gradeLevelId])
+  @@index([subjectId])
+  @@schema("academic")
+}
+
+/// Broad school stage used for fee templates and reporting.
+model Division {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  code      String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+/// A school's academic year lifecycle record (the anchor for "current year").
+/// Schedule/grade/finance history is preserved by keying queries on yearKey;
+/// exactly one ACTIVE row is enforced at the application layer (advisory lock).
+model AcademicYear {
+  id                String    @id @default(uuid())
+  schoolId          String // Identity.School.id (no FK)
+  yearKey           String
+  /// Optional human label, e.g. "2025-2026 Academic Year"
+  label             String?
+  startsAt          DateTime?
+  endsAt            DateTime?
+  /// DRAFT | ACTIVE | CLOSED
+  status            String    @default("DRAFT")
+  /// Active AcademicCalendarPattern.id for this year (no FK)
+  calendarPatternId String?
+  activatedByUserId String?
+  activatedAt       DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([schoolId, yearKey])
+  @@index([schoolId, status])
+  @@schema("academic")
+}
+
+model SyllabusPlan {
+  id                 String   @id @default(uuid())
+  schoolId           String // Identity.School.id (no FK)
+  subjectId          String
+  gradeLevelId       String
+  teacherId          String // Identity.User.id (no FK)
+  teacherName        String
+  subjectName        String
+  gradeLevelName     String
+  title              String
+  academicYear       String
+  /// Active AcademicCalendarPattern.id when authored (alignment with tenant calendar)
+  calendarPatternId  String?
+  standardsFramework String   @default("Cambridge International")
+  objectives         String
+  units              String
+  textbooks          String?
+  differentiation    String?
+  accommodations     String?
+  gradingCriteria    String?
+  status             String   @default("PENDING")
+  feedback           String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("academic")
+}
+
+/// Single teaching session plan (distinct from year-level SyllabusPlan).
+model LessonPlan {
+  id               String    @id @default(uuid())
+  schoolId         String
+  teacherId        String
+  teacherName      String
+  subjectId        String
+  subjectName      String
+  gradeLevelId     String?
+  gradeLevelName   String?
+  classroomId      String?
+  classroomName    String?
+  syllabusPlanId   String?
+  /// Classroom MATERIAL post created via Share to Classroom
+  classroomPostId  String?
+  title            String
+  /// School-local calendar day YYYY-MM-DD
+  lessonDate       String
+  durationMinutes  Int       @default(45)
+  periodLabel      String?
+  /// Optional link to a bell SchedulePeriod (label still denormalized in periodLabel)
+  schedulePeriodId String?
+  /// JSON string[]
+  objectives       String
+  standards        String?
+  warmUp           String?
+  /// JSON { title, minutes?, description }[]
+  activities       String
+  /// JSON string[] or plain text
+  materials        String?
+  assessment       String?
+  differentiation  String?
+  homework         String?
+  reflection       String?
+  status           String    @default("DRAFT")
+  feedback         String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  submittedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([schoolId, status])
+  @@index([schoolId, teacherId])
+  @@index([schoolId, lessonDate])
+  @@schema("academic")
+}
+
+/// Reusable lesson plan template (school library).
+model LessonPlanTemplate {
+  id                  String   @id @default(uuid())
+  schoolId            String
+  createdById         String
+  createdByName       String
+  title               String
+  subjectId           String
+  subjectName         String
+  gradeLevelId        String?
+  gradeLevelName      String?
+  durationMinutes     Int      @default(45)
+  periodLabel         String?
+  objectives          String
+  standards           String?
+  warmUp              String?
+  activities          String
+  materials           String?
+  assessment          String?
+  differentiation     String?
+  homework            String?
+  sourceLessonPlanId  String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([schoolId, subjectId])
+  @@schema("academic")
+}
+
+/// Staff-created school calendar events (not exam-derived).
+model SchoolCalendarEvent {
+  id          String   @id @default(uuid())
+  schoolId    String // Identity.School.id (no FK)
+  title       String
+  description String   @default("")
+  /// Calendar day as YYYY-MM-DD (school-local date string).
+  date        String
+  time        String   @default("All Day")
+  category    String   @default("Other")
+  location    String   @default("")
+  priority    String   @default("medium")
+  createdById String // Identity.User.id (no FK)
+  /// Idempotent upsert key (e.g. attendance:{attendanceId})
+  sourceKey   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([schoolId, sourceKey])
+  @@index([schoolId])
+  @@index([schoolId, date])
+  @@schema("academic")
+}
+
+/// Named set of bell periods for a school (distinct from AcademicPeriod terms).
+model BellSchedule {
+  id           String           @id @default(uuid())
+  schoolId     String // Identity.School.id (no FK)
+  schoolYearId String?
+  name         String
+  isActive     Boolean          @default(true)
+  createdById  String // Identity.User.id (no FK)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  periods      SchedulePeriod[]
+  entries      TimetableEntry[]
+
+  @@index([schoolId])
+  @@index([schoolId, isActive])
+  @@schema("academic")
+}
+
+/// Time-of-day bell slot (e.g. Period 1 = 08:00–08:45). Not an AcademicPeriod.
+model SchedulePeriod {
+  id             String          @id @default(uuid())
+  bellScheduleId String
+  schoolId       String
+  periodNumber   Int
+  label          String
+  shortCode      String
+  /// School-local start time HH:mm
+  startTime      String
+  /// School-local end time HH:mm
+  endTime        String
+  orderIndex     Int
+  createdAt      DateTime        @default(now())
+  bellSchedule   BellSchedule    @relation(fields: [bellScheduleId], references: [id], onDelete: Cascade)
+  entries        TimetableEntry[]
+
+  @@index([schoolId])
+  @@index([bellScheduleId])
+  @@schema("academic")
+}
+
+/// Recurring weekly class assignment (classroom + teacher + day + bell period).
+model TimetableEntry {
+  id               String         @id @default(uuid())
+  schoolId         String
+  bellScheduleId   String
+  classroomId      String // Classroom.Classroom.id (no FK)
+  classroomName    String         @default("")
+  teacherId        String // Identity.User.id (no FK)
+  teacherName      String         @default("")
+  subjectId        String?
+  subjectName      String?
+  /// ISO weekday: 1=Monday … 7=Sunday
+  dayOfWeek        Int
+  schedulePeriodId String
+  /// Inclusive YYYY-MM-DD; empty string means open start
+  effectiveFrom    String         @default("")
+  /// Inclusive YYYY-MM-DD; empty string means open end
+  effectiveTo      String         @default("")
+  locationOverride String?
+  createdById      String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  bellSchedule     BellSchedule   @relation(fields: [bellScheduleId], references: [id], onDelete: Cascade)
+  schedulePeriod   SchedulePeriod @relation(fields: [schedulePeriodId], references: [id], onDelete: Cascade)
+
+  @@unique([bellScheduleId, classroomId, dayOfWeek, schedulePeriodId, effectiveFrom])
+  @@index([schoolId])
+  @@index([schoolId, teacherId])
+  @@index([schoolId, classroomId])
+  @@index([bellScheduleId])
+  @@schema("academic")
+}

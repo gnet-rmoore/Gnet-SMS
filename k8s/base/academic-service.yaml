@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academic-service
+  namespace: school-portal
+  labels:
+    app: academic-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: academic-service
+  template:
+    metadata:
+      labels:
+        app: academic-service
+    spec:
+      containers:
+      - name: academic-service
+        image: academic-service:latest
+        ports:
+        - containerPort: 3015
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        envFrom:
+        - configMapRef:
+            name: school-global-config
+        - secretRef:
+            name: school-app-secrets
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: DATABASE_PROVIDER
+          value: postgresql
+        - name: PORT
+          value: "3015"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: academic-db-secret
+              key: DATABASE_URL
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3015
+          initialDelaySeconds: 20
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3015
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: academic-service
+  namespace: school-portal
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3015
+    protocol: TCP
+  selector:
+    app: academic-service

@@ -1,0 +1,168 @@
+// Classroom schema (Phase 3-5 extraction)
+// Target Postgres schema: `classroom` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: Classroom, ClassroomMember, ClassroomPost, PostAttachment, PostComment,
+// Submission, SubmissionAttachment, ClassroomTopic, ClassroomMeeting.
+// schoolId/ownerTeacherId/userId/authorId/studentId are plain UUID strings
+// (Identity.School/User) and subjectId/gradeLevelId are plain UUID strings
+// (Academic.Subject/GradeLevel) — no cross-schema Prisma relations.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["classroom"]
+}
+
+model Classroom {
+  id             String             @id @default(uuid())
+  name           String
+  classCode      String             @unique
+  bannerColor    String?
+  /// Optional cover image URL (MinIO / public). When set, overrides solid banner.
+  bannerImageUrl String?
+  status         String             @default("ACTIVE")
+  schoolId       String // Identity.School.id (no FK)
+  subjectId      String? // Academic.Subject.id (no FK)
+  /// Section-specific code for subject classrooms, e.g. ENG-2A (distinct per class group).
+  sectionSubjectCode String?
+  gradeLevelId   String? // Academic.GradeLevel.id (no FK)
+  /// Homeroom Classroom.id when this is a subject classroom (no Prisma self-FK — soft UUID).
+  parentClassroomId String?
+  schoolYearId   String?
+  ownerTeacherId String // Identity.User.id (no FK)
+  /// SELF_CONTAINED | DEPARTMENTALIZED | MIXED — set on class groups (subjectId null).
+  organizationType String?
+  /// When true, co-teachers/assistants on the class group are copied to new subject rooms.
+  propagateSupportStaff Boolean @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  meetings       ClassroomMeeting[]
+  members        ClassroomMember[]
+  posts          ClassroomPost[]
+  topics         ClassroomTopic[]
+
+  @@index([schoolId])
+  @@index([ownerTeacherId])
+  @@index([parentClassroomId])
+  @@index([schoolId, gradeLevelId, subjectId])
+  @@schema("classroom")
+}
+
+model ClassroomMember {
+  id          String    @id @default(uuid())
+  classroomId String
+  userId      String // Identity.User.id (no FK)
+  role        String
+  joinedAt    DateTime  @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+
+  @@unique([classroomId, userId])
+  @@schema("classroom")
+}
+
+model ClassroomPost {
+  id          String           @id @default(uuid())
+  classroomId String
+  authorId    String // Identity.User.id (no FK)
+  type        String
+  title       String?
+  body        String
+  topicId     String?
+  maxPoints   Float?
+  dueAt       DateTime?
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  topic       ClassroomTopic?  @relation(fields: [topicId], references: [id])
+  classroom   Classroom        @relation(fields: [classroomId], references: [id])
+  attachments PostAttachment[]
+  comments    PostComment[]
+  submissions Submission[]
+
+  @@index([classroomId])
+  @@schema("classroom")
+}
+
+model PostAttachment {
+  id        String        @id @default(uuid())
+  postId    String
+  fileUrl   String
+  fileType  String
+  createdAt DateTime      @default(now())
+  post      ClassroomPost @relation(fields: [postId], references: [id])
+
+  @@schema("classroom")
+}
+
+model PostComment {
+  id              String        @id @default(uuid())
+  postId          String
+  authorId        String // Identity.User.id (no FK)
+  body            String
+  parentCommentId String?
+  createdAt       DateTime      @default(now())
+  post            ClassroomPost @relation(fields: [postId], references: [id])
+
+  @@schema("classroom")
+}
+
+model Submission {
+  id           String                 @id @default(uuid())
+  postId       String
+  studentId    String // Identity.User.id (no FK)
+  textResponse String?
+  status       String                 @default("SUBMITTED")
+  submittedAt  DateTime?
+  grade        Float?
+  feedback     String?
+  returnedAt   DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  post         ClassroomPost          @relation(fields: [postId], references: [id])
+  attachments  SubmissionAttachment[]
+
+  @@index([postId])
+  @@index([studentId])
+  @@schema("classroom")
+}
+
+model SubmissionAttachment {
+  id           String     @id @default(uuid())
+  submissionId String
+  fileUrl      String
+  createdAt    DateTime   @default(now())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+
+  @@schema("classroom")
+}
+
+model ClassroomTopic {
+  id          String          @id @default(uuid())
+  classroomId String
+  title       String
+  order       Int
+  createdAt   DateTime        @default(now())
+  posts       ClassroomPost[]
+  classroom   Classroom       @relation(fields: [classroomId], references: [id])
+
+  @@schema("classroom")
+}
+
+model ClassroomMeeting {
+  id          String    @id @default(uuid())
+  classroomId String
+  meetingUrl  String
+  scheduledAt DateTime
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+
+  @@schema("classroom")
+}

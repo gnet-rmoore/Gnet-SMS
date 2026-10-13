@@ -1,0 +1,29 @@
+[
+  [
+    "Only School Admin or IT Admin can reset another user’s password.",
+    "Seul un administrateur d’école ou un administrateur IT peut réinitialiser le mot de passe d’un autre utilisateur.",
+    "Solo un administrador escolar o un administrador de TI puede restablecer la contraseña de otro usuario.",
+    "Nur Schuladministrator oder IT-Administrator kann das Passwort eines anderen Benutzers zurücksetzen.",
+    "يمكن لمسؤول المدرسة أو مسؤول تقنية المعلومات فقط إعادة تعيين كلمة مرور مستخدم آخر.",
+    "仅学校管理员或 IT 管理员可以重置其他用户的密码。",
+    "केवल स्कूल एडमिन या IT एडमिन ही किसी अन्य उपयोगकर्ता का पासवर्ड रीसेट कर सकते हैं।"
+  ],
+  [
+    "You can only reset passwords for users in your school.",
+    "Vous ne pouvez réinitialiser les mots de passe que pour les utilisateurs de votre école.",
+    "Solo puede restablecer contraseñas de usuarios de su escuela.",
+    "Sie können nur Passwörter für Benutzer Ihrer Schule zurücksetzen.",
+    "يمكنك إعادة تعيين كلمات المرور فقط لمستخدمي مدرستك.",
+    "您只能重置本校用户的密码。",
+    "आप केवल अपने स्कूल के उपयोगकर्ताओं के पासवर्ड रीसेट कर सकते हैं।"
+  ],
+  [
+    "School Admin passwords can only be changed by that School Admin or a Super Admin.",
+    "Les mots de passe d’administrateur d’école ne peuvent être modifiés que par cet administrateur ou un super-administrateur.",
+    "Las contraseñas de administrador escolar solo las puede cambiar ese administrador o un superadministrador.",
+    "Schuladministrator-Passwörter können nur von diesem Schuladministrator oder einem Super-Admin geändert werden.",
+    "يمكن تغيير كلمات مرور مسؤول المدرسة فقط بواسطة ذلك المسؤول أو مسؤول أعلى.",
+    "学校管理员密码仅可由该学校管理员或超级管理员更改。",
+    "स्कूल एडमिन पासवर्ड केवल उसी स्कूल एडमिन या सुपर एडमिन बदल सकते हैं।"
+  ]
+]

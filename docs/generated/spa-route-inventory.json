@@ -1,0 +1,2006 @@
+{
+  "generatedAt": "2026-10-12T15:36:04.354Z",
+  "roles": 21,
+  "protectedRouteCount": 75,
+  "navEntryCount": 227,
+  "protectedRoles": [
+    "SUPER_ADMIN",
+    "SCHOOL_ADMIN",
+    "PRINCIPAL",
+    "VPI",
+    "VPA",
+    "REGISTRAR",
+    "TEACHER",
+    "STUDENT",
+    "PARENT",
+    "ACCOUNTANT",
+    "TRANSPORTATION",
+    "MAINTENANCE",
+    "LIBRARIAN",
+    "NURSE",
+    "COUNSELOR",
+    "SECURITY",
+    "IT_ADMIN",
+    "PROCUREMENT",
+    "ATHLETICS_DIRECTOR",
+    "HOSTEL_WARDEN",
+    "CAFETERIA_MANAGER"
+  ],
+  "protectedRoutes": [
+    {
+      "segment": "super-admin",
+      "pathPattern": "/super-admin",
+      "allowedRoles": [
+        "SUPER_ADMIN"
+      ]
+    },
+    {
+      "segment": "*",
+      "pathPattern": "/:slug/*",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "ACCOUNTANT",
+        "REGISTRAR",
+        "VPI",
+        "VPA",
+        "TRANSPORTATION",
+        "MAINTENANCE",
+        "LIBRARIAN",
+        "NURSE",
+        "COUNSELOR",
+        "SECURITY",
+        "IT_ADMIN",
+        "PROCUREMENT",
+        "ATHLETICS_DIRECTOR",
+        "HOSTEL_WARDEN",
+        "CAFETERIA_MANAGER"
+      ]
+    },
+    {
+      "segment": "onboarding",
+      "pathPattern": "onboarding",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "IT_ADMIN",
+        "PRINCIPAL"
+      ]
+    },
+    {
+      "segment": "classroom",
+      "pathPattern": "classroom",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "classroom",
+      "pathPattern": "classroom/:id",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "classrooms",
+      "pathPattern": "classrooms",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI"
+      ]
+    },
+    {
+      "segment": "students",
+      "pathPattern": "students",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "TEACHER",
+        "COUNSELOR"
+      ]
+    },
+    {
+      "segment": "grades",
+      "pathPattern": "grades",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "grades",
+      "pathPattern": "grades/:studentId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "gradesheet",
+      "pathPattern": "gradesheet/:examId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "gradesheet",
+      "pathPattern": "gradesheet/:examId/:studentId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "report-card",
+      "pathPattern": "report-card/:examId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "report-card",
+      "pathPattern": "report-card/:examId/:studentId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "exams",
+      "pathPattern": "exams",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "exams",
+      "pathPattern": "exams/:examId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "exams",
+      "pathPattern": "exams/:examId/online",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "exams",
+      "pathPattern": "exams/:examId/paper",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "exam-paper-review",
+      "pathPattern": "exam-paper-review",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/take",
+      "allowedRoles": [
+        "STUDENT"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/take/:attemptId",
+      "allowedRoles": [
+        "STUDENT"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/results/:attemptId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/sample/preview",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/preview",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/proctor",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/proctor/:attemptId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "gradebook",
+      "pathPattern": "gradebook",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "grade-review",
+      "pathPattern": "grade-review",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "grade-access",
+      "pathPattern": "grade-access",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI"
+      ]
+    },
+    {
+      "segment": "lesson-plans",
+      "pathPattern": "lesson-plans",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "schedules",
+      "pathPattern": "schedules",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "my-schedule",
+      "pathPattern": "my-schedule",
+      "allowedRoles": [
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "VPA",
+        "COUNSELOR",
+        "IT_ADMIN",
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "attendance",
+      "pathPattern": "attendance",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "TEACHER",
+        "PARENT",
+        "STUDENT",
+        "HOSTEL_WARDEN"
+      ]
+    },
+    {
+      "segment": "curriculum",
+      "pathPattern": "curriculum",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "fees",
+      "pathPattern": "fees",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "ACCOUNTANT",
+        "STUDENT",
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "expenses",
+      "pathPattern": "expenses",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "ACCOUNTANT"
+      ]
+    },
+    {
+      "segment": "payroll",
+      "pathPattern": "payroll",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "ACCOUNTANT"
+      ]
+    },
+    {
+      "segment": "staff",
+      "pathPattern": "staff",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "VPI",
+        "SECURITY",
+        "IT_ADMIN",
+        "ATHLETICS_DIRECTOR"
+      ]
+    },
+    {
+      "segment": "roles",
+      "pathPattern": "roles",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "IT_ADMIN"
+      ]
+    },
+    {
+      "segment": "staff-portal",
+      "pathPattern": "staff-portal",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "TEACHER",
+        "ACCOUNTANT",
+        "REGISTRAR",
+        "VPI",
+        "VPA",
+        "TRANSPORTATION",
+        "MAINTENANCE",
+        "LIBRARIAN",
+        "NURSE",
+        "COUNSELOR",
+        "SECURITY",
+        "IT_ADMIN",
+        "PROCUREMENT",
+        "ATHLETICS_DIRECTOR",
+        "HOSTEL_WARDEN",
+        "CAFETERIA_MANAGER"
+      ]
+    },
+    {
+      "segment": "staff-tasks",
+      "pathPattern": "staff-tasks",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "VPI"
+      ]
+    },
+    {
+      "segment": "leave-approval",
+      "pathPattern": "leave-approval",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA"
+      ]
+    },
+    {
+      "segment": "announcements",
+      "pathPattern": "announcements",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "TEACHER",
+        "VPI",
+        "VPA",
+        "PARENT",
+        "STUDENT"
+      ]
+    },
+    {
+      "segment": "notifications",
+      "pathPattern": "notifications",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "TEACHER",
+        "REGISTRAR",
+        "ACCOUNTANT",
+        "MAINTENANCE",
+        "STUDENT",
+        "PARENT",
+        "IT_ADMIN",
+        "LIBRARIAN",
+        "NURSE",
+        "COUNSELOR",
+        "TRANSPORTATION",
+        "SECURITY",
+        "PROCUREMENT",
+        "ATHLETICS_DIRECTOR",
+        "HOSTEL_WARDEN",
+        "CAFETERIA_MANAGER"
+      ]
+    },
+    {
+      "segment": "documents",
+      "pathPattern": "documents",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "REGISTRAR",
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "ACCOUNTANT",
+        "IT_ADMIN",
+        "LIBRARIAN",
+        "NURSE",
+        "COUNSELOR"
+      ]
+    },
+    {
+      "segment": "reports",
+      "pathPattern": "reports",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "IT_ADMIN"
+      ]
+    },
+    {
+      "segment": "children",
+      "pathPattern": "children",
+      "allowedRoles": [
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "my-applications",
+      "pathPattern": "my-applications",
+      "allowedRoles": [
+        "PARENT"
+      ]
+    },
+    {
+      "segment": "my-campus",
+      "pathPattern": "my-campus",
+      "allowedRoles": [
+        "PARENT",
+        "STUDENT"
+      ]
+    },
+    {
+      "segment": "pta",
+      "pathPattern": "pta",
+      "allowedRoles": [
+        "PARENT",
+        "SCHOOL_ADMIN",
+        "PRINCIPAL"
+      ]
+    },
+    {
+      "segment": "admissions",
+      "pathPattern": "admissions",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL"
+      ]
+    },
+    {
+      "segment": "student-records",
+      "pathPattern": "student-records",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL"
+      ]
+    },
+    {
+      "segment": "transcripts",
+      "pathPattern": "transcripts",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL"
+      ]
+    },
+    {
+      "segment": "certificates",
+      "pathPattern": "certificates",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL",
+        "VPI"
+      ]
+    },
+    {
+      "segment": "enrollment",
+      "pathPattern": "enrollment",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "year-transition",
+      "pathPattern": "year-transition",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "promotion-statement",
+      "pathPattern": "promotion-statement",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "procurement",
+      "pathPattern": "procurement",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "PROCUREMENT"
+      ]
+    },
+    {
+      "segment": "security",
+      "pathPattern": "security",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "SECURITY"
+      ]
+    },
+    {
+      "segment": "bus-routes",
+      "pathPattern": "bus-routes",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "TRANSPORTATION"
+      ]
+    },
+    {
+      "segment": "drivers",
+      "pathPattern": "drivers",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "TRANSPORTATION"
+      ]
+    },
+    {
+      "segment": "vehicle-maintenance",
+      "pathPattern": "vehicle-maintenance",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "TRANSPORTATION"
+      ]
+    },
+    {
+      "segment": "work-orders",
+      "pathPattern": "work-orders",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "MAINTENANCE"
+      ]
+    },
+    {
+      "segment": "inventory",
+      "pathPattern": "inventory",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "PROCUREMENT",
+        "LIBRARIAN",
+        "CAFETERIA_MANAGER",
+        "ATHLETICS_DIRECTOR",
+        "NURSE",
+        "HOSTEL_WARDEN",
+        "MAINTENANCE"
+      ]
+    },
+    {
+      "segment": "maintenance",
+      "pathPattern": "maintenance",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "MAINTENANCE"
+      ]
+    },
+    {
+      "segment": "library",
+      "pathPattern": "library",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "LIBRARIAN"
+      ]
+    },
+    {
+      "segment": "clinic",
+      "pathPattern": "clinic",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "NURSE"
+      ]
+    },
+    {
+      "segment": "counseling",
+      "pathPattern": "counseling",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "COUNSELOR"
+      ]
+    },
+    {
+      "segment": "athletics",
+      "pathPattern": "athletics",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "ATHLETICS_DIRECTOR"
+      ]
+    },
+    {
+      "segment": "hostel",
+      "pathPattern": "hostel",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "HOSTEL_WARDEN"
+      ]
+    },
+    {
+      "segment": "cafeteria",
+      "pathPattern": "cafeteria",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPA",
+        "CAFETERIA_MANAGER"
+      ]
+    },
+    {
+      "segment": "calendar",
+      "pathPattern": "calendar",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "VPA",
+        "REGISTRAR",
+        "TEACHER",
+        "STUDENT",
+        "PARENT",
+        "ACCOUNTANT",
+        "IT_ADMIN",
+        "TRANSPORTATION",
+        "MAINTENANCE",
+        "LIBRARIAN",
+        "NURSE",
+        "COUNSELOR",
+        "SECURITY",
+        "PROCUREMENT",
+        "ATHLETICS_DIRECTOR",
+        "HOSTEL_WARDEN",
+        "CAFETERIA_MANAGER"
+      ]
+    },
+    {
+      "segment": "settings",
+      "pathPattern": "settings/academic-calendar",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "api-docs",
+      "pathPattern": "api-docs",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "IT_ADMIN"
+      ]
+    },
+    {
+      "segment": "settings",
+      "pathPattern": "settings",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "IT_ADMIN",
+        "PRINCIPAL",
+        "REGISTRAR",
+        "ACCOUNTANT"
+      ]
+    }
+  ],
+  "nav": [
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "dashboard",
+      "to": "/super-admin"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "schools",
+      "to": "/super-admin/schools"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "registrations",
+      "to": "/super-admin/registrations"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "users",
+      "to": "/super-admin/users"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "plans",
+      "to": "/super-admin/plans"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "operators",
+      "to": "/super-admin/operators"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "reports",
+      "to": "/super-admin/reports"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "logs",
+      "to": "/super-admin/logs"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "settings",
+      "to": "/super-admin/settings"
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "segment": "help",
+      "to": "/super-admin/help"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "onboarding",
+      "to": "/demo-school/onboarding"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "reports",
+      "to": "/demo-school/reports"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "classrooms",
+      "to": "/demo-school/classrooms"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "schedules",
+      "to": "/demo-school/schedules"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "curriculum",
+      "to": "/demo-school/curriculum"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "lesson-plans",
+      "to": "/demo-school/lesson-plans"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "exams",
+      "to": "/demo-school/exams"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "gradebook",
+      "to": "/demo-school/gradebook"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "grade-review",
+      "to": "/demo-school/grade-review"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "grade-access",
+      "to": "/demo-school/grade-access"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "exam-paper-review",
+      "to": "/demo-school/exam-paper-review"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "certificates",
+      "to": "/demo-school/certificates"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "academic-calendar",
+      "to": "/demo-school/settings/academic-calendar"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "students",
+      "to": "/demo-school/students"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "roles",
+      "to": "/demo-school/roles"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "admissions",
+      "to": "/demo-school/admissions"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "enrollment",
+      "to": "/demo-school/enrollment"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "leave-approval",
+      "to": "/demo-school/leave-approval"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "staff-tasks",
+      "to": "/demo-school/staff-tasks"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "year-transition",
+      "to": "/demo-school/year-transition"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "promotion-statement",
+      "to": "/demo-school/promotion-statement"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "fees",
+      "to": "/demo-school/fees"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "expenses",
+      "to": "/demo-school/expenses"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "payroll",
+      "to": "/demo-school/payroll"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "work-orders",
+      "to": "/demo-school/work-orders"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "maintenance",
+      "to": "/demo-school/maintenance"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "announcements",
+      "to": "/demo-school/announcements"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "documents",
+      "to": "/demo-school/documents"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "pta",
+      "to": "/demo-school/pta"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "settings",
+      "to": "/demo-school/settings"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "reports",
+      "to": "/demo-school/reports"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "classrooms",
+      "to": "/demo-school/classrooms"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "schedules",
+      "to": "/demo-school/schedules"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "curriculum",
+      "to": "/demo-school/curriculum"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "lesson-plans",
+      "to": "/demo-school/lesson-plans"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "exams",
+      "to": "/demo-school/exams"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "gradebook",
+      "to": "/demo-school/gradebook"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "grade-review",
+      "to": "/demo-school/grade-review"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "grade-access",
+      "to": "/demo-school/grade-access"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "exam-paper-review",
+      "to": "/demo-school/exam-paper-review"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "certificates",
+      "to": "/demo-school/certificates"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "academic-calendar",
+      "to": "/demo-school/settings/academic-calendar"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "students",
+      "to": "/demo-school/students"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "admissions",
+      "to": "/demo-school/admissions"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "leave-approval",
+      "to": "/demo-school/leave-approval"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "staff-tasks",
+      "to": "/demo-school/staff-tasks"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "year-transition",
+      "to": "/demo-school/year-transition"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "promotion-statement",
+      "to": "/demo-school/promotion-statement"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "work-orders",
+      "to": "/demo-school/work-orders"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "maintenance",
+      "to": "/demo-school/maintenance"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "announcements",
+      "to": "/demo-school/announcements"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "documents",
+      "to": "/demo-school/documents"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "pta",
+      "to": "/demo-school/pta"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "settings",
+      "to": "/demo-school/settings"
+    },
+    {
+      "role": "VPI",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "VPI",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "VPI",
+      "segment": "reports",
+      "to": "/demo-school/reports"
+    },
+    {
+      "role": "VPI",
+      "segment": "classrooms",
+      "to": "/demo-school/classrooms"
+    },
+    {
+      "role": "VPI",
+      "segment": "schedules",
+      "to": "/demo-school/schedules"
+    },
+    {
+      "role": "VPI",
+      "segment": "curriculum",
+      "to": "/demo-school/curriculum"
+    },
+    {
+      "role": "VPI",
+      "segment": "lesson-plans",
+      "to": "/demo-school/lesson-plans"
+    },
+    {
+      "role": "VPI",
+      "segment": "exams",
+      "to": "/demo-school/exams"
+    },
+    {
+      "role": "VPI",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "VPI",
+      "segment": "gradebook",
+      "to": "/demo-school/gradebook"
+    },
+    {
+      "role": "VPI",
+      "segment": "grade-review",
+      "to": "/demo-school/grade-review"
+    },
+    {
+      "role": "VPI",
+      "segment": "grade-access",
+      "to": "/demo-school/grade-access"
+    },
+    {
+      "role": "VPI",
+      "segment": "exam-paper-review",
+      "to": "/demo-school/exam-paper-review"
+    },
+    {
+      "role": "VPI",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "VPI",
+      "segment": "certificates",
+      "to": "/demo-school/certificates"
+    },
+    {
+      "role": "VPI",
+      "segment": "year-transition",
+      "to": "/demo-school/year-transition"
+    },
+    {
+      "role": "VPI",
+      "segment": "promotion-statement",
+      "to": "/demo-school/promotion-statement"
+    },
+    {
+      "role": "VPI",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "VPI",
+      "segment": "staff-tasks",
+      "to": "/demo-school/staff-tasks"
+    },
+    {
+      "role": "VPA",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "VPA",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "VPA",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "VPA",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "VPA",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "VPA",
+      "segment": "leave-approval",
+      "to": "/demo-school/leave-approval"
+    },
+    {
+      "role": "VPA",
+      "segment": "staff-tasks",
+      "to": "/demo-school/staff-tasks"
+    },
+    {
+      "role": "VPA",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "VPA",
+      "segment": "year-transition",
+      "to": "/demo-school/year-transition"
+    },
+    {
+      "role": "VPA",
+      "segment": "promotion-statement",
+      "to": "/demo-school/promotion-statement"
+    },
+    {
+      "role": "VPA",
+      "segment": "procurement",
+      "to": "/demo-school/procurement"
+    },
+    {
+      "role": "VPA",
+      "segment": "work-orders",
+      "to": "/demo-school/work-orders"
+    },
+    {
+      "role": "VPA",
+      "segment": "maintenance",
+      "to": "/demo-school/maintenance"
+    },
+    {
+      "role": "VPA",
+      "segment": "security",
+      "to": "/demo-school/security"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "schedules",
+      "to": "/demo-school/schedules"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "admissions",
+      "to": "/demo-school/admissions"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "students",
+      "to": "/demo-school/students"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "transcripts",
+      "to": "/demo-school/transcripts"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "certificates",
+      "to": "/demo-school/certificates"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "enrollment",
+      "to": "/demo-school/enrollment"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "year-transition",
+      "to": "/demo-school/year-transition"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "promotion-statement",
+      "to": "/demo-school/promotion-statement"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "settings",
+      "to": "/demo-school/settings"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "classroom",
+      "to": "/demo-school/classroom"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "curriculum",
+      "to": "/demo-school/curriculum"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "lesson-plans",
+      "to": "/demo-school/lesson-plans"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "exams",
+      "to": "/demo-school/exams"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "gradebook",
+      "to": "/demo-school/gradebook"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "grade-review",
+      "to": "/demo-school/grade-review"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "students",
+      "to": "/demo-school/students"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "classroom",
+      "to": "/demo-school/classroom"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "grades",
+      "to": "/demo-school/grades"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "exams",
+      "to": "/demo-school/exams"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "fees",
+      "to": "/demo-school/fees"
+    },
+    {
+      "role": "STUDENT",
+      "segment": "my-campus",
+      "to": "/demo-school/my-campus"
+    },
+    {
+      "role": "PARENT",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "PARENT",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "PARENT",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "PARENT",
+      "segment": "children",
+      "to": "/demo-school/children"
+    },
+    {
+      "role": "PARENT",
+      "segment": "my-applications",
+      "to": "/demo-school/my-applications"
+    },
+    {
+      "role": "PARENT",
+      "segment": "classroom",
+      "to": "/demo-school/classroom"
+    },
+    {
+      "role": "PARENT",
+      "segment": "grades",
+      "to": "/demo-school/grades"
+    },
+    {
+      "role": "PARENT",
+      "segment": "online-exams",
+      "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "PARENT",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "PARENT",
+      "segment": "my-campus",
+      "to": "/demo-school/my-campus"
+    },
+    {
+      "role": "PARENT",
+      "segment": "fees",
+      "to": "/demo-school/fees"
+    },
+    {
+      "role": "PARENT",
+      "segment": "announcements",
+      "to": "/demo-school/announcements"
+    },
+    {
+      "role": "PARENT",
+      "segment": "documents",
+      "to": "/demo-school/documents"
+    },
+    {
+      "role": "PARENT",
+      "segment": "pta",
+      "to": "/demo-school/pta"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "fees",
+      "to": "/demo-school/fees"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "expenses",
+      "to": "/demo-school/expenses"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "payroll",
+      "to": "/demo-school/payroll"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "settings",
+      "to": "/demo-school/settings"
+    },
+    {
+      "role": "ACCOUNTANT",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "bus-routes",
+      "to": "/demo-school/bus-routes"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "drivers",
+      "to": "/demo-school/drivers"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "vehicle-maintenance",
+      "to": "/demo-school/vehicle-maintenance"
+    },
+    {
+      "role": "TRANSPORTATION",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "MAINTENANCE",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "MAINTENANCE",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "MAINTENANCE",
+      "segment": "work-orders",
+      "to": "/demo-school/work-orders"
+    },
+    {
+      "role": "MAINTENANCE",
+      "segment": "maintenance",
+      "to": "/demo-school/maintenance"
+    },
+    {
+      "role": "MAINTENANCE",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "LIBRARIAN",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "LIBRARIAN",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "LIBRARIAN",
+      "segment": "library",
+      "to": "/demo-school/library"
+    },
+    {
+      "role": "LIBRARIAN",
+      "segment": "inventory",
+      "to": "/demo-school/inventory"
+    },
+    {
+      "role": "LIBRARIAN",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "NURSE",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "NURSE",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "NURSE",
+      "segment": "clinic",
+      "to": "/demo-school/clinic"
+    },
+    {
+      "role": "NURSE",
+      "segment": "inventory",
+      "to": "/demo-school/inventory"
+    },
+    {
+      "role": "NURSE",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "counseling",
+      "to": "/demo-school/counseling"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "students",
+      "to": "/demo-school/students"
+    },
+    {
+      "role": "COUNSELOR",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "SECURITY",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "SECURITY",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "SECURITY",
+      "segment": "security",
+      "to": "/demo-school/security"
+    },
+    {
+      "role": "SECURITY",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "SECURITY",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "my-schedule",
+      "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "reports",
+      "to": "/demo-school/reports"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "roles",
+      "to": "/demo-school/roles"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "settings?tab=SECURITY",
+      "to": "/demo-school/settings?tab=SECURITY"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "settings?tab=API_KEYS",
+      "to": "/demo-school/settings?tab=API_KEYS"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "settings",
+      "to": "/demo-school/settings"
+    },
+    {
+      "role": "PROCUREMENT",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "PROCUREMENT",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "PROCUREMENT",
+      "segment": "procurement",
+      "to": "/demo-school/procurement"
+    },
+    {
+      "role": "PROCUREMENT",
+      "segment": "inventory",
+      "to": "/demo-school/inventory"
+    },
+    {
+      "role": "PROCUREMENT",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "ATHLETICS_DIRECTOR",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "ATHLETICS_DIRECTOR",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "ATHLETICS_DIRECTOR",
+      "segment": "athletics",
+      "to": "/demo-school/athletics"
+    },
+    {
+      "role": "ATHLETICS_DIRECTOR",
+      "segment": "staff",
+      "to": "/demo-school/staff"
+    },
+    {
+      "role": "ATHLETICS_DIRECTOR",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "HOSTEL_WARDEN",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "HOSTEL_WARDEN",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "HOSTEL_WARDEN",
+      "segment": "hostel",
+      "to": "/demo-school/hostel"
+    },
+    {
+      "role": "HOSTEL_WARDEN",
+      "segment": "attendance",
+      "to": "/demo-school/attendance"
+    },
+    {
+      "role": "HOSTEL_WARDEN",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    },
+    {
+      "role": "CAFETERIA_MANAGER",
+      "segment": "dashboard",
+      "to": "/demo-school/dashboard"
+    },
+    {
+      "role": "CAFETERIA_MANAGER",
+      "segment": "calendar",
+      "to": "/demo-school/calendar"
+    },
+    {
+      "role": "CAFETERIA_MANAGER",
+      "segment": "cafeteria",
+      "to": "/demo-school/cafeteria"
+    },
+    {
+      "role": "CAFETERIA_MANAGER",
+      "segment": "inventory",
+      "to": "/demo-school/inventory"
+    },
+    {
+      "role": "CAFETERIA_MANAGER",
+      "segment": "staff-portal",
+      "to": "/demo-school/staff-portal"
+    }
+  ]
+}

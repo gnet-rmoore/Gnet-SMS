@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Money Receipt — Emerald Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Jost:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --emerald:#0e4d3a;
+    --emerald-deep:#093528;
+    --parchment:#f6f2e8;
+    --parchment-line:#d8cfb8;
+    --gold:#b8923f;
+    --ink:#20261f;
+    --muted:#7c7663;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:48px 16px;
+    background:#e7e1d1;
+    font-family:'Jost',sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+  }
+  .sheet{
+    width:100%;
+    max-width:880px;
+  }
+  .receipt{
+    position:relative;
+    background:var(--parchment);
+    border:1px solid var(--parchment-line);
+    box-shadow:0 30px 60px -20px rgba(9,53,40,0.35);
+    overflow:hidden;
+  }
+  .watermark{
+    position:absolute;
+    inset:0;
+    opacity:0.06;
+    pointer-events:none;
+  }
+  .band-top{
+    background:linear-gradient(120deg,var(--emerald-deep),var(--emerald) 60%);
+    color:var(--parchment);
+    padding:30px 44px 26px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    position:relative;
+  }
+  .band-top::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:3px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;
+    border:1.5px solid var(--gold);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Playfair Display',serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--gold);
+    flex-shrink:0;
+  }
+  .brand-name{
+    font-family:'Playfair Display',serif;
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+  .brand-name span{
+    display:block;
+    font-family:'Jost',sans-serif;
+    font-size:10px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:500;
+    margin-top:2px;
+  }
+  .title-block{text-align:right;}
+  .title-block h1{
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:30px;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  .title-block .sub{
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-top:4px;
+  }
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    padding:18px 44px;
+    border-bottom:1px solid var(--parchment-line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  .meta-row .field label{
+    display:block;
+    font-family:'Jost',sans-serif;
+    font-size:9px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .meta-row .field input{
+    border:none;background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--emerald-deep);
+    width:150px;
+    border-bottom:1px dotted var(--parchment-line);
+    padding-bottom:2px;
+  }
+  .meta-row .field input:focus{outline:none;border-bottom-color:var(--gold);}
+  .body-grid{
+    padding:30px 44px 10px;
+    position:relative;
+  }
+  .row{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .row label{
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    white-space:nowrap;
+    flex-shrink:0;
+    width:160px;
+    font-weight:500;
+  }
+  .row input{
+    flex:1;
+    border:none;
+    background:transparent;
+    border-bottom:1px solid var(--parchment-line);
+    font-family:'Playfair Display',serif;
+    font-size:16px;
+    padding:2px 4px 6px;
+    color:var(--ink);
+  }
+  .row .val,.meta-row .val,.id-cell .val,.pay-row .val,.words-row .val,.memo .val,.amount-strip .val,.amount-box .val,.amount-line .val,.num-block .val,.row-date .val{font:inherit;color:inherit;flex:1;border-bottom:1px solid var(--line, #dde2e6);padding:2px 4px 6px;}
+  .signature-slot .line{border-bottom:1px solid var(--ink,#1a1a1a);min-height:42px;display:flex;align-items:flex-end;justify-content:center;}
+  .amount-words{font-style:italic;min-height:1.2em;}
+  .row input:focus{outline:none;border-bottom-color:var(--gold);}
+  .row.split{gap:30px;}
+  .row.split .row{flex:1;margin-bottom:0;}
+  .two-col{display:flex;gap:30px;}
+  .two-col > .row{flex:1;}
+  .amount-strip{
+    margin:26px 44px 0;
+    background:var(--emerald);
+    color:var(--parchment);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 26px;
+    border-radius:2px;
+  }
+  .amount-strip label{
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--gold);
+  }
+  .amount-strip .value{
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;
+    font-weight:500;
+  }
+  .amount-strip .value .cur{font-size:15px;color:var(--gold);}
+  .amount-strip input{
+    background:transparent;
+    border:none;
+    color:var(--parchment);
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;
+    font-weight:500;
+    width:150px;
+  }
+  .amount-strip input:focus{outline:none;}
+  .sign-row{
+    display:flex;
+    justify-content:space-between;
+    padding:40px 44px 32px;
+    gap:40px;
+  }
+  .sign-block{flex:1;text-align:center;}
+  .sign-block .line{
+    border-bottom:1px solid var(--ink);
+    height:42px;
+  }
+  .sign-block label{
+    display:block;
+    margin-top:8px;
+    font-size:10px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .footer-strip{
+    height:10px;
+    background:repeating-linear-gradient(90deg,var(--emerald) 0 18px, var(--gold) 18px 20px);
+  }
+  .toolbar{
+    max-width:880px;
+    margin:0 auto 18px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .toolbar button{
+    font-family:'Jost',sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    background:var(--emerald-deep);
+    color:var(--parchment);
+    border:none;
+    padding:10px 20px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .toolbar button:hover{background:var(--emerald);}
+  @media print{
+    body{background:#fff;padding:0;}
+    .toolbar{display:none;}
+    .receipt{box-shadow:none;border:none;}
+  }
+  @media (max-width:560px){
+    .band-top{flex-direction:column;align-items:flex-start;gap:14px;}
+    .title-block{text-align:left;}
+    .meta-row{flex-direction:column;gap:14px;}
+    .two-col{flex-direction:column;gap:0;}
+    .row label{width:120px;font-size:10px;}
+    .sign-row{flex-direction:column;gap:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+<div class="receipt">
+    <svg class="watermark" viewBox="0 0 880 500" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="g1" width="60" height="60" patternUnits="userSpaceOnUse">
+          <circle cx="30" cy="30" r="26" fill="none" stroke="#0e4d3a" stroke-width="0.6"/>
+          <circle cx="30" cy="30" r="18" fill="none" stroke="#0e4d3a" stroke-width="0.6"/>
+          <circle cx="30" cy="30" r="10" fill="none" stroke="#0e4d3a" stroke-width="0.6"/>
+        </pattern>
+      </defs>
+      <rect width="880" height="500" fill="url(#g1)"/>
+    </svg>
+    <div class="band-top">
+      <div class="brand">
+        <div class="brand-mark">{{SCHOOL_INITIAL}}</div>
+        <div class="brand-name">{{SCHOOL_NAME}}<span class="sub">{{DOC_KICKER}}</span></div>
+      </div>
+      <div class="title-block">
+        <h1>{{DOC_TITLE}}</h1>
+        <div class="sub">Official Acknowledgement</div>
+      </div>
+    </div>
+    <div class="meta-row">
+      <div class="field"><label>Receipt No.</label><span class="val"></span></div>
+      <div class="field"><label>Date</label><span class="val">{{ISSUED_DATE}}</span></div>
+    </div>
+    <div class="body-grid">
+      <div class="row"><label>Received with thanks from</label><span class="val">{{PAYER_NAME}}</span></div>
+      <div class="two-col">
+        <div class="row"><label>Payment method</label><span class="val">—</span></div>
+        <div class="row"><label>Bank / Reference</label><span class="val">{{SOURCE_REF}}</span></div>
+      </div>
+      <div class="row"><label>For the purpose of</label><span class="val">{{PURPOSE_TEXT}}</span></div>
+      <div class="row"><label>Amount in words</label><span class="val"></span></div>
+    </div>
+    <div class="amount-strip">
+      <label>Amount</label>
+      <div class="value"><span class="cur">$</span><span class="val">{{TOTAL_FORMATTED}}</span></div>
+    </div>
+    <div class="sign-row">
+      <div class="sign-block"><div class="line"></div><label>Received By</label></div>
+      <div class="sign-block signature-slot">{{SIGNATURE_HTML}}<label>{{SIGNER_TITLE}}</label></div>
+    </div>
+    <div class="footer-strip"></div>
+  </div>
+</div>
+  {{VERIFY_FOOTER_HTML}}
+  {{VOIDED_HTML}}
+</body>
+</html>

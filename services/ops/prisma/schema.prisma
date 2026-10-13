@@ -1,0 +1,157 @@
+// Operations schema (Phase 3-5 extraction)
+// Target Postgres schema: `ops` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: Vehicle, VehicleMaintenance, WorkOrder, InventoryItem, SecurityLog, Requisition.
+// schoolId / driverId / requestedBy / assignedTo / loggedBy are plain UUID
+// strings — no Prisma relation to Identity.School / Identity.User.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["ops"]
+}
+
+model Vehicle {
+  id              String               @id @default(uuid())
+  plateNumber     String               @unique
+  model           String
+  capacity        Int
+  status          String               @default("ACTIVE")
+  driverId        String? // Identity.User.id (no FK)
+  schoolId        String // Identity.School.id (no FK)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  maintenanceLogs VehicleMaintenance[]
+
+  @@index([schoolId])
+  @@schema("ops")
+}
+
+model VehicleMaintenance {
+  id          String    @id @default(uuid())
+  vehicleId   String
+  description String
+  cost        Float     @default(0)
+  date        DateTime  @default(now())
+  nextService DateTime?
+  createdAt   DateTime  @default(now())
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@schema("ops")
+}
+
+model TransportRoute {
+  id            String            @id @default(uuid())
+  schoolId      String
+  name          String
+  vehicleId     String?
+  driverStaffId String?
+  status        String            @default("ACTIVE")
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  stops         TransportStop[]
+  riders        TransportRider[]
+
+  @@index([schoolId])
+  @@schema("ops")
+}
+
+model TransportStop {
+  id         String         @id @default(uuid())
+  routeId    String
+  name       String
+  sortOrder  Int            @default(0)
+  pickupTime String?
+  createdAt  DateTime       @default(now())
+  route      TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  riders     TransportRider[]
+
+  @@index([routeId])
+  @@schema("ops")
+}
+
+model TransportRider {
+  id        String         @id @default(uuid())
+  routeId   String
+  studentId String
+  stopId    String?
+  status    String         @default("ACTIVE")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  route     TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stop      TransportStop? @relation(fields: [stopId], references: [id], onDelete: SetNull)
+
+  @@unique([routeId, studentId])
+  @@index([routeId])
+  @@index([studentId])
+  @@schema("ops")
+}
+
+model WorkOrder {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  location    String?
+  assignedTo  String? // Identity.User.id (no FK)
+  requestedBy String // Identity.User.id (no FK)
+  schoolId    String // Identity.School.id (no FK)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("ops")
+}
+
+model InventoryItem {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  quantity    Int      @default(0)
+  unit        String   @default("pcs")
+  minQuantity Int      @default(5)
+  schoolId    String // Identity.School.id (no FK)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("ops")
+}
+
+model SecurityLog {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  location    String?
+  severity    String   @default("LOW")
+  loggedBy    String // Identity.User.id (no FK)
+  schoolId    String // Identity.School.id (no FK)
+  createdAt   DateTime @default(now())
+
+  @@index([schoolId])
+  @@schema("ops")
+}
+
+model Requisition {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  amount      Float
+  status      String   @default("PENDING")
+  requestedBy String // Identity.User.id (no FK)
+  schoolId    String // Identity.School.id (no FK)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("ops")
+}

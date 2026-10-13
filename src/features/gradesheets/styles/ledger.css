@@ -1,0 +1,368 @@
+/* Auto-scoped under .gs-ledger */
+.gs-ledger { box-sizing: border-box; }
+.gs-ledger *, .gs-ledger *::before, .gs-ledger *::after { box-sizing: border-box; }
+
+  .gs-ledger{
+    --ink:#232323;
+    --ink-soft:#5b5648;
+    --navy:#1B2A4A;
+    --navy-deep:#101a30;
+    --gold:#B8973F;
+    --gold-soft:#e7d9b3;
+    --paper:#FAF7EF;
+    --paper-line:#e7e0cf;
+    --rule:#c9bd9c;
+    --pass:#2F6844;
+    --fail:#9B2C2C;
+    --font-display:'Fraunces', 'Georgia', serif;
+    --font-body:'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+    --font-data:'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  
+  
+  
+
+  /* Screen-only staging area so the sheet reads like a document on a desk */
+.gs-ledger .stage {
+    display:flex;
+    justify-content:center;
+    padding:36px 16px 60px;
+  }
+
+.gs-ledger .sheet {
+    width:210mm;
+    min-height:297mm;
+    height:auto;
+    background:var(--paper);
+    padding:14mm 13mm 12mm;
+    position:relative;
+    box-shadow:0 4px 8px rgba(16,26,48,.12), 0 24px 48px rgba(16,26,48,.18);
+  }
+
+  /* Double ruled frame — the certificate cue, used once, not repeated elsewhere */
+.gs-ledger .frame {
+    position:absolute;
+    inset:6mm;
+    border:1.5px solid var(--navy);
+    outline:1px solid var(--navy);
+    outline-offset:4px;
+    pointer-events:none;
+  }
+
+.gs-ledger .content {
+    position:relative;
+    z-index:1;
+  }
+
+  /* ---------- Header ---------- */
+.gs-ledger .masthead {
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding-bottom:14px;
+    border-bottom:2px solid var(--navy);
+  }
+.gs-ledger .crest {
+    width:64px;height:64px;border-radius:50%;
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);
+    font-size:22px;font-weight:700;color:var(--navy);
+    background:radial-gradient(circle at 30% 30%, #fff, var(--gold-soft));
+    flex-shrink:0;
+  }
+.gs-ledger .school-id {flex:1;}
+.gs-ledger .school-name {
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:.3px;
+    color:var(--navy);
+    line-height:1.15;
+  }
+.gs-ledger .school-meta {
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+    letter-spacing:.3px;
+  }
+.gs-ledger .doc-tag {
+    text-align:right;
+    font-family:var(--font-display);
+    font-size:12px;
+    letter-spacing:2.5px;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+  }
+.gs-ledger .doc-tag .term {
+    display:block;
+    font-family:var(--font-body);
+    font-size:12.5px;
+    letter-spacing:0;
+    color:var(--ink);
+    margin-top:5px;
+    font-weight:600;
+    text-transform:none;
+  }
+
+  /* ---------- Student identity strip ---------- */
+.gs-ledger .idstrip {
+    display:grid;
+    grid-template-columns:76px repeat(4, 1fr);
+    gap:0;
+    margin-top:16px;
+    border:1px solid var(--rule);
+    background:#fff;
+  }
+.gs-ledger .photo-box {
+    width:76px;height:92px;
+    border-right:1px solid var(--rule);
+    background:repeating-linear-gradient(135deg, #f1ede2, #f1ede2 6px, #e9e3d2 6px, #e9e3d2 7px);
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;color:var(--ink-soft);text-align:center;
+    grid-row:1 / 3;
+  }
+.gs-ledger .id-field {
+    padding:8px 12px;
+    border-right:1px solid var(--paper-line);
+    border-bottom:1px solid var(--paper-line);
+  }
+.gs-ledger .id-field:nth-child(5), .gs-ledger .id-field:nth-child(9) {border-right:none;}
+.gs-ledger .id-label {
+    font-size:9px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--ink-soft);font-weight:600;
+  }
+.gs-ledger .id-value {
+    font-family:var(--font-data);
+    font-size:13.5px;font-weight:600;
+    color:var(--navy-deep);
+    margin-top:2px;
+  }
+
+  /* ---------- Section labels ---------- */
+.gs-ledger .section-label {
+    display:flex;align-items:center;gap:10px;
+    margin:22px 0 8px;
+  }
+.gs-ledger .section-label .tick {
+    width:10px;height:10px;background:var(--gold);
+    transform:rotate(45deg);flex-shrink:0;
+  }
+.gs-ledger .section-label span {
+    font-family:var(--font-display);
+    font-weight:600;font-size:14px;
+    letter-spacing:.4px;color:var(--navy);
+  }
+.gs-ledger .section-label::after {
+    content:'';flex:1;height:1px;background:var(--rule);
+  }
+
+  /* ---------- Subjects ledger table ---------- */
+.gs-ledger table.ledger {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    background:#fff;
+  }
+.gs-ledger table.ledger thead th {
+    background:var(--navy);
+    color:var(--gold-soft);
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    padding:9px 10px;
+    text-align:left;
+  }
+.gs-ledger table.ledger thead th.num, .gs-ledger table.ledger td.num {text-align:center;}
+.gs-ledger table.ledger tbody td {
+    padding:8px 10px;
+    border-bottom:1px solid var(--paper-line);
+    color:var(--ink);
+  }
+.gs-ledger table.ledger tbody tr:nth-child(even) {background:#faf8f2;}
+.gs-ledger table.ledger td.subject-name {font-weight:600;color:var(--navy-deep);}
+.gs-ledger table.ledger td.score {font-family:var(--font-data);font-weight:600;text-align:center;}
+.gs-ledger table.ledger td.grade {
+    text-align:center;font-family:var(--font-data);font-weight:700;
+  }
+.gs-ledger table.ledger td.grade.pass {color:var(--pass);}
+.gs-ledger table.ledger td.grade.fail {color:var(--fail);}
+.gs-ledger table.ledger td.remark {font-size:11px;color:var(--ink-soft);font-style:italic;}
+.gs-ledger table.ledger tfoot td {
+    padding:10px;
+    font-weight:700;
+    border-top:2px solid var(--navy);
+    background:#f3efe3;
+  }
+
+  /* ---------- Summary + scale row ---------- */
+.gs-ledger .two-col {
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:16px;
+    margin-top:18px;
+    align-items:start;
+  }
+
+.gs-ledger .stat-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--rule);
+    background:#fff;
+  }
+.gs-ledger .stat {
+    padding:11px 10px;
+    text-align:center;
+    border-right:1px solid var(--paper-line);
+  }
+.gs-ledger .stat:last-child {border-right:none;}
+.gs-ledger .stat-label {
+    font-size:9px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;
+  }
+.gs-ledger .stat-value {
+    font-family:var(--font-display);
+    font-size:22px;font-weight:700;color:var(--navy);
+    margin-top:3px;
+  }
+.gs-ledger .stat-value small {font-size:12px;font-weight:500;color:var(--ink-soft);}
+
+.gs-ledger .scale-box {
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:10px 12px;
+  }
+.gs-ledger .scale-title {
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    font-weight:700;color:var(--navy);margin-bottom:6px;
+  }
+.gs-ledger table.scale {width:100%;border-collapse:collapse;font-size:10.5px;}
+.gs-ledger table.scale td {padding:2.5px 4px;color:var(--ink-soft);}
+.gs-ledger table.scale td.g {font-family:var(--font-data);font-weight:700;color:var(--navy-deep);width:28px;}
+
+  /* ---------- Attendance / conduct strip ---------- */
+.gs-ledger .strip {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:16px;
+  }
+.gs-ledger .strip .box {
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:10px 12px;
+  }
+.gs-ledger .strip .box-label {
+    font-size:9px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;margin-bottom:4px;
+  }
+.gs-ledger .strip .box-value {
+    font-family:var(--font-data);font-weight:700;font-size:15px;color:var(--navy-deep);
+  }
+
+  /* ---------- Remarks ---------- */
+.gs-ledger .remarks {
+    margin-top:16px;
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:12px 14px;
+  }
+.gs-ledger .remarks + .remarks {margin-top:10px;}
+.gs-ledger .remarks .who {
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--gold);font-weight:700;margin-bottom:5px;
+  }
+.gs-ledger .remarks p {margin:0;font-size:12.5px;line-height:1.5;color:var(--ink);}
+
+  /* ---------- Signatures ---------- */
+.gs-ledger .signatures {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+    margin-top:34px;
+  }
+.gs-ledger .sig-line {
+    border-top:1px solid var(--ink);
+    padding-top:6px;
+    text-align:center;
+  }
+.gs-ledger .sig-image-slot {
+    min-height:2rem;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    margin-bottom:2px;
+  }
+.gs-ledger .sig-image {
+    max-height:2rem;
+    max-width:90%;
+    object-fit:contain;
+  }
+.gs-ledger .sig-name {
+    font-size:10px;
+    font-weight:700;
+  }
+.gs-ledger .sig-line .role {
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;
+  }
+
+.gs-ledger .footer-note {
+    margin-top:20px;
+    text-align:center;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    letter-spacing:.3px;
+  }
+
+  /* ---------- Dense (10+ subjects) ---------- */
+.gs-ledger.gs-dense .sheet { padding:10mm 11mm 8mm; }
+.gs-ledger.gs-dense .masthead { padding-bottom:8px; gap:12px; }
+.gs-ledger.gs-dense .crest { width:48px; height:48px; font-size:16px; }
+.gs-ledger.gs-dense .school-name { font-size:18px; }
+.gs-ledger.gs-dense .photo-box { display:none; }
+.gs-ledger.gs-dense .idstrip { grid-template-columns:repeat(4,1fr); margin-top:10px; }
+.gs-ledger.gs-dense .id-field { padding:5px 8px; }
+.gs-ledger.gs-dense .id-value { font-size:11.5px; }
+.gs-ledger.gs-dense .section-label { margin:12px 0 6px; }
+.gs-ledger.gs-dense table.ledger { font-size:10.5px; }
+.gs-ledger.gs-dense table.ledger thead th { padding:5px 6px; font-size:9px; }
+.gs-ledger.gs-dense table.ledger tbody td { padding:3px 6px; }
+.gs-ledger.gs-dense table.ledger td.remark { font-size:9.5px; }
+.gs-ledger.gs-dense table.ledger tfoot td { padding:6px; }
+.gs-ledger.gs-dense .two-col { margin-top:10px; gap:10px; }
+.gs-ledger.gs-dense .stat { padding:7px 6px; }
+.gs-ledger.gs-dense .stat-value { font-size:16px; }
+.gs-ledger.gs-dense .strip { margin-top:10px; gap:8px; }
+.gs-ledger.gs-dense .strip .box { padding:7px 8px; }
+.gs-ledger.gs-dense .strip .box-value { font-size:12px; }
+.gs-ledger.gs-dense .remarks { margin-top:10px; padding:8px 10px; }
+.gs-ledger.gs-dense .remarks p { font-size:11px; line-height:1.35; }
+.gs-ledger.gs-dense .signatures { margin-top:18px; gap:12px; }
+.gs-ledger.gs-dense .footer-note { margin-top:12px; }
+
+  /* ---------- Print rules ---------- */
+  @media print{
+.gs-ledger .stage {padding:0;}
+.gs-ledger .sheet {
+      width:210mm;
+      min-height:0;
+      height:auto;
+      box-shadow:none;
+      padding:10mm 12mm 8mm;
+    }
+.gs-ledger .frame { display:none; }
+.gs-ledger table.ledger thead { display:table-header-group; }
+.gs-ledger table.ledger tbody tr { break-inside:avoid; page-break-inside:avoid; }
+.gs-ledger .closing-block { break-inside:avoid; page-break-inside:avoid; }
+  }
+  @media screen and (max-width:900px){
+.gs-ledger .sheet {width:100%;padding:6mm;}
+.gs-ledger .idstrip {grid-template-columns:60px repeat(2,1fr);}
+.gs-ledger.gs-dense .idstrip {grid-template-columns:repeat(2,1fr);}
+.gs-ledger .two-col, .gs-ledger .strip, .gs-ledger .signatures {grid-template-columns:1fr;}
+  }

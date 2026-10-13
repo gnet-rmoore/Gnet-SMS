@@ -1,0 +1,730 @@
+# 🚀 AWS Lightsail Deployment Plan
+
+## Overview
+This plan covers deploying the GNET School Management System on **AWS Lightsail** with full automation:
+- **GitHub push** → **Docker Hub auto-build** → **Lightsail auto-deploy**
+- Zero manual steps after initial setup
+- Production-ready configuration for database, security, scaling, and reliability
+
+---
+
+## 1. Prerequisites
+
+### AWS Account & Lightsail
+- [ ] AWS account with Lightsail access
+- [ ] Domain name (optional, for HTTPS)
+- [ ] SSH key pair for Lightsail instance
+
+### GitHub Account
+- [ ] GitHub repository with this code
+- [ ] Docker Hub account
+- [ ] GitHub Secrets configured (see below)
+
+### Docker Hub
+- [ ] Account at [dockerhub.com](https://hub.docker.com)
+- [ ] Repository created: `gnet-sms` (or your namespace)
+
+---
+
+## 2. GitHub Secrets Configuration
+
+Add these **repository secrets** in GitHub → Settings → Secrets and variables → Actions:
+
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `AWS_ACCESS_KEY_ID` | AWS Access Key ID | `AKIA...` |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Access Key | `...secret...` |
+| `AWS_REGION` | AWS region (e.g., `us-east-1`) | `us-east-1` |
+| `LIGHTSAIL_SERVICE_NAME` | Lightsail service name | `gnet-sms` |
+| `DOCKERHUB_USERNAME` | Docker Hub username | `your-dockerhub-id` |
+| `DOCKERHUB_PASSWORD` | Docker Hub password/token | `...` |
+| `PLATFORM_EDGE_HOSTNAME` | Custom domain hostname | `sms.yourdomain.com` |
+| `ACME_EMAIL` | Let's Encrypt email | `ops@yourdomain.com` |
+| `JWT_ACCESS_SECRET` | Production JWT secret (32+ chars) | `generate-with-openssl` |
+| `SUPER_ADMIN_JWT_SECRET` | Super admin JWT secret | `generate-with-openssl` |
+| `RECEIPT_HMAC_SECRET` | Receipt HMAC secret | `generate-with-openssl` |
+| `INTERNAL_SERVICE_TOKEN` | Internal API token | `generate-with-openssl` |
+| `MINIO_ROOT_USER` | MinIO admin user | `smsminio` |
+| `MINIO_ROOT_PASSWORD` | MinIO admin password | `smsminio-secret` |
+
+---
+
+## 3. GitHub Actions Workflow
+
+Create `.github/workflows/deploy.yml` (already exists at `.github/workflows/deploy.yml` but needs updates):
+
+```yaml
+name: Build, Test & Deploy to Lightsail
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: your-gar-project-id  # Optional: GAR if using GCP Artifact Registry
+  GAR_LOCATION: us-central1         # Optional fallback
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:online-exam && npm run test:exam-paper
+
+      - name: Verify TypeScript
+        run: npx tsc --noEmit
+
+  build-and-deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # --- Build & Push all services ---
+      - name: Build and push identity
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/identity
+          file: ./services/identity/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-identity:latest
+
+      - name: Build and push lifecycle
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/lifecycle
+          file: ./services/lifecycle/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-lifecycle:latest
+
+      - name: Build and push staff
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/staff
+          file: ./services/staff/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-staff:latest
+
+      - name: Build and push classroom
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/classroom
+          file: ./services/classroom/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-classroom:latest
+
+      - name: Build and push academic
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/academic
+          file: ./services/academic/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-academic:latest
+
+      - name: Build and push finance
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/finance
+          file: ./services/finance/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-finance:latest
+
+      - name: Build and push comms
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/comms
+          file: ./services/comms/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-comms:latest
+
+      - name: Build and push campus
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/campus
+          file: ./services/campus/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-campus:latest
+
+      - name: Build and push api-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/gateway
+          file: ./services/gateway/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-api-gateway:latest
+
+      - name: Build and push frontend-spa
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms-frontend-spa:latest
+
+      # --- Deploy to Lightsail ---
+      - name: Deploy to Lightsail
+        uses: aws-actions/amazon-lightsail-deploy-image@v1
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ${{ secrets.AWS_REGION }}
+          service_name: ${{ secrets.LIGHTSAIL_SERVICE_NAME }}
+          container_image: ${{ secrets.DOCKERHUB_USERNAME }}/gnet-sms:latest
+```
+
+**Note**: The workflow builds all 9 microservices + frontend, pushes to Docker Hub, then Lightsail pulls the `gnet-sms:latest` multi-image. You'll need a "wrapper" image or use the Lightsail deploy to reference the correct image.
+
+---
+
+## 4. Lightsail Initial Setup (One-time)
+
+### Step 1: Create Lightsail Instance
+1. Go to [AWS Lightsail](https://aws.amazon.com/lightsail/)
+2. Click **"Create instance"**
+3. Choose:
+   - **Blueprint**: Linux/Unix (OS only)
+   - **Instance plan**: $5/month (or $10 for more memory/CPU)
+   - **Instance name**: `gnet-sms`
+   - **Availability zone**: auto-select
+4. Click **"Create instance"**
+
+### Step 2: Connect via SSH
+```bash
+# From your local machine
+ssh -i ~/.ssh/your-key.pem lightsail-user@your-lightsail-instance-name.lightsaillightsaillink.com
+```
+
+### Step 3: Install Docker & Docker Compose
+```bash
+# Update and install Docker
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose v2-plugin
+
+# Start and enable Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add user to docker group (log out/in after)
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### Step 4: Create Docker Compose File
+Create `docker-compose.yml` on the Lightsail instance (or deploy via GitHub Actions):
+
+```yaml
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sms
+      POSTGRES_PASSWORD: sms
+      POSTGRES_DB: sms_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sms -d sms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: smsminio
+      MINIO_ROOT_PASSWORD: smsminio-secret
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports: ["9000:9000", "9001:9001"]
+    volumes: - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Multi-service app (Lightsail uses a simplified setup)
+  app:
+    image: your-dockerhub-id/gnet-sms:latest
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://sms:sms@postgres:5432/sms_db?schema=public
+      # ... other env vars from GitHub secrets
+    ports: ["80:80", "3000:3000", "8081:8081"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+```
+
+### Step 5: Start Services
+```bash
+# From the directory with docker-compose.yml
+docker compose up -d
+```
+
+---
+
+## 5. Production Configuration Updates
+
+### 5.1 Environment Variables (.env.production)
+Create `.env.production` in the project root (add to `.gitignore`):
+
+```env
+# Core
+NODE_ENV=production
+PORT=3000
+DATABASE_PROVIDER=postgresql
+
+# Database
+DATABASE_URL=postgresql://sms:sms@postgres:5432/sms_db?schema=public
+
+# Security
+JWT_ACCESS_SECRET=change-this-to-a-32-char-random-string
+SUPER_ADMIN_JWT_SECRET=change-this-to-a-32-char-random-string
+RECEIPT_HMAC_SECRET=change-this-to-a-32-char-random-string
+INTERNAL_SERVICE_TOKEN=change-this-to-a-32-char-random-string
+
+# API Gateway
+APP_URL=http://localhost:8080,http://localhost:3000
+DISABLE_MONOLITH=true
+
+# Identity service
+IDENTITY_URL=http://identity:3011
+LIFECYCLE_URL=http://lifecycle:3010
+OPS_URL=http://ops:3012
+STAFF_URL=http://staff:3013
+CLASSROOM_URL=http://classroom:3014
+ACADEMIC_URL=http://academic:3015
+FINANCE_URL=http://finance:3016
+COMMS_URL=http://comms:3017
+CAMPUS_URL=http://campus:3018
+
+# MinIO (S3-compatible for uploads)
+S3_ENDPOINT=http://minio:9000
+S3_PUBLIC_URL=http://localhost:9000
+S3_ACCESS_KEY_ID=smsminio
+S3_SECRET_ACCESS_KEY=smsminio-secret
+S3_BUCKET=sms-admissions  # or sms-classroom, sms-exam-papers, sms-receipts
+S3_FORCE_PATH_STYLE=true
+S3_REGION=us-east-1
+
+# Email
+EMAIL_PROVIDER=console  # or sendgrid/resend
+EMAIL_FROM=noreply@yourdomain.com
+
+# Optional: ClamAV
+CLAMAV_URL=http://clamav:8080
+VIRUS_SCAN_FAIL_OPEN=false  # PRODUCTION: fail-closed
+
+# CORS/Origins
+APP_DOMAINS=https://yourdomain.com,http://localhost:3000
+```
+
+### 5.2 Update Dockerfiles for Production
+
+**Dockerfile** (already good, but ensure `.dockerignore` excludes node_modules):
+
+```
+.dockerignore contents:
+node_modules
+dist
+.prisma
+.env*
+*.log
+```
+
+**Dockerfile.frontend** (already good - serves pre-built SPA)
+
+### 5.3 Prisma Migrations on Deploy
+The Dockerfile already runs `npm ci` and `prisma generate`. Add to the runtime CMD:
+
+```dockerfile
+# In each service Dockerfile, the CMD should include:
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node dist/server.cjs"]
+```
+
+This ensures schema migrations run on every startup.
+
+---
+
+## 6. Database Backup & Restore
+
+### 6.1 Automated Backups
+
+**⚠️ Important**: A GitHub-hosted Actions runner cannot directly back up a Docker volume that exists only on the Lightsail server. Use one of two options:
+
+#### Option A: GitHub Actions with SSH (runs backup on production server)
+
+Create `.github/workflows/backup.yml` - this is the updated workflow that connects to the production Lightsail server via SSH and runs `pg_dump` and `mc` inside the actual Docker network:
+
+See `.github/workflows/backup.yml` in the repository for the complete updated workflow that:
+- Connects to Lightsail via SSH using `LIGHTSAIL_SSH_KEY` secret
+- Runs `pg_dump -U sms -d sms_db` inside the production Docker network
+- Backs up MinIO buckets using `mc` inside the production network
+- Encrypts backups with GPG and uploads to AWS S3 (separate from production Lightsail)
+- Verifies backup integrity
+- Retains last 7 daily encrypted backups
+
+#### Option B: Cron on Lightsail instance
+
+Run a daily cron job on the Lightsail Linux VM itself:
+```bash
+# In crontab (run: crontab -e)
+0 2 * * * /usr/local/bin/backup-script.sh
+```
+
+### 6.2 Manual Backup from Lightsail SSH
+```bash
+# Create backup (runs inside Docker network)
+docker compose exec postgres pg_dump -U sms -d sms_db > backup_$(date +%F).sql
+
+# List backups
+ls -la backup_*.sql
+
+# Download from Lightsail (SCP from local machine)
+scp -i ~/.ssh/lightsail-key.pem sms-user@lightsail-instance:~/backup_2026-01-15.sql ./backups/
+```
+
+### 6.2 Manual Backup from Lightsail SSH
+```bash
+# Create backup
+pg_dump -U sms -d sms_db > backup_$(date +%F).sql
+
+# List backups
+ls -la backup_*.sql
+
+# Restore from backup
+docker compose exec postgres psql -U sms -d sms_restore < backup_2026-01-15.sql
+```
+
+### 6.3 Backup Retention
+- Keep 7 daily backups
+- Keep 4 weekly backups (rename with week number)
+- Keep 3 monthly backups
+- Use S3 lifecycle policies for automatic expiration
+
+---
+
+## 7. Security Best Practices
+
+### 7.1 Secrets Management
+- **Never** hardcode secrets in Dockerfiles or compose files
+- Use **GitHub Secrets** for CI/CD
+- Use **Lightsail environment variables** or **AWS Secrets Manager** for runtime secrets
+- Rotate JWT secrets every 90 days
+
+### 7.2 Network Security
+- Lightsail firewall: Only open ports 80 (HTTP), 443 (HTTPS), 22 (SSH)
+- Internal service ports (3011-3018) are only accessible within the docker network
+- Use **MinIO CORS** configuration for browser uploads
+- Enable **HTTPS** via Let's Encrypt (see Step 8)
+
+### 7.3 Container Security
+- Run services as non-root users (already in Dockerfiles)
+- Use `readonly` filesystem where possible
+- Alpine Linux base images (smaller attack surface)
+- Regularly update base images: `docker compose pull`
+
+### 7.4 PostgreSQL Security
+- Use strong passwords (already in compose)
+- Enable `pg_hba.conf` restrictions if needed
+- Set `max_connections` appropriately for Lightsail
+- Use prepared statements to prevent SQL injection (app-level)
+
+### 7.5 Race Condition Prevention
+- **Prisma transactions** already used for critical operations
+- **Database row-level locking** via `SELECT ... FOR UPDATE` where needed
+- **Idempotency keys** on create operations (already in admission service)
+- **Optimistic concurrency** via Prisma's `_version` field
+- **Health check endpoints** prevent request routing to dead containers
+
+---
+
+## 8. Auto-HTTPS with Let's Encrypt (Optional but Recommended)
+
+### 8.1 Add Edge/Caddy Service
+The `docker-compose.yml` already includes an `edge` service (profile: `edge`) using Caddy:
+
+```bash
+# Start with edge profile for HTTPS
+docker compose --profile edge up -d
+```
+
+### 8.2 Caddyfile Configuration
+Create `docker/edge/Caddyfile`:
+
+```
+your-domain.com {
+  reverse_proxy http://localhost:8080
+  tls you@your-email.com
+}
+```
+
+### 8.3 Update Lightsail Firewall
+Allow port 443 in Lightsail Networking tab.
+
+### 8.4 Renewal
+Caddy auto-renews Let's Encrypt certificates. No manual action needed.
+
+---
+
+## 9. Scaling Considerations
+
+### 9.1 Vertical Scaling (Lightsail)
+- Upgrade instance plan: $5 → $10 → $20 → $40/month
+- More RAM/CPU available instantly
+- No downtime when upgrading
+
+### 9.2 Horizontal Scaling (Advanced)
+- Deploy multiple Lightsail instances behind **AWS ALB (Application Load Balancer)**
+- Use **EFS** for shared storage (MinIO + PostgreSQL)
+- Sticky sessions required for session affinity
+- **Not recommended for initial deployment** - start vertical
+
+### 9.3 Resource Limits
+Set Docker resource limits in `docker-compose.yml`:
+
+```yaml
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+```
+
+---
+
+## 10. Auto-Restart & High Availability
+
+### 10.1 Docker Restart Policy
+All services should have `restart: unless-stopped` in compose:
+
+```yaml
+services:
+  postgres:
+    restart: unless-stopped
+  app:
+    restart: unless-stopped
+```
+
+### 10.2 Lightsail Instance Auto-Start
+- In Lightsail console, go to **Instance settings**
+- Enable **"Auto-start on schedule"** if needed
+- Or use AWS CLI: `aws lightsail enable-instance-auto-start`
+
+### 10.3 Health Checks
+All services have health checks defined:
+- PostgreSQL: `pg_isready`
+- Redis: `redis-cli ping`
+- MinIO: HTTP health endpoint
+- App: Custom `/health/live` endpoint (defined in Dockerfiles)
+
+### 10.4 Deployment Strategy
+**Blue-Green Deployment** (via GitHub Actions):
+1. New deployment pulls `gnet-sms:latest`
+2. Lightsail deploys to new container
+3. Health check verifies success
+4. Traffic switches to new version
+5. Old version can be kept as rollback
+
+**Rollback**: If new deployment fails health check, previous version remains running.
+
+---
+
+## 11. Race Condition Safeguards
+
+### 11.1 Database-Level Prevention
+```sql
+-- Example: Unique constraint on admission application number
+CREATE UNIQUE INDEX idx_admissions_app_number ON admission_applications(app_number);
+
+-- Example: Advisory locks for critical operations
+SELECT pg_advisory_xact_lock(12345) WHERE ...;
+```
+
+### 11.2 Application-Level Patterns
+- **Prisma transactions** with proper isolation levels
+- **Idempotency keys** on POST requests (check `x-idempotency-key` header)
+- **Version checking** on updates: `WHERE version = expected_version`
+- **Atomic operations** for counters and increments
+
+### 11.3 Concurrency Testing
+- Load test with `hey` or `k6`
+- Monitor `pg_stat_activity` for long-running queries
+- Set `statement_timeout` and `lock_timeout` in PostgreSQL
+
+---
+
+## 12. Monitoring & Logging
+
+### 12.1 Built-in Health Endpoints
+Each service exposes `/health/live`:
+```bash
+# Check from Lightsail
+curl http://localhost:3000/health/live
+curl http://localhost:3011/health/live
+```
+
+### 12.2 Docker Logs
+```bash
+docker compose logs -f app
+docker compose logs -f postgres
+```
+
+### 12.3 Log Aggregation (Optional)
+- Forward logs to **AWS CloudWatch**
+- Use **Loki** or **ELK** stack
+- Monitor container metrics with **Portainer**
+
+### 12.4 Uptime Monitoring
+- Set up UptimeRobot or Pingdom
+- Check `/health/live` endpoint every minute
+- Alert on failures via email/SMS
+
+---
+
+## 13. Rollback Procedure
+
+### 13.1 Quick Rollback (Docker)
+```bash
+# List images
+docker images | grep gnet-sms
+
+# Run previous version
+docker run -d --name app-old \
+  -p 80:80 \
+  -e NODE_ENV=production \
+  -e DATABASE_URL=postgresql://sms:sms@postgres:5432/sms_db?schema=public \
+  your-dockerhub-id/gnet-sms:2026-01-01
+
+# Switch traffic (if using port-based routing)
+# Or stop new, start old: docker stop app-new && docker start app-old
+```
+
+### 13.2 GitHub Actions Rollback
+```yaml
+# In workflow, set:
+DOCKER_TAG: ${{ github.event.before == '' && 'latest' || 'previous-sha' }}
+```
+
+### 13.3 Lightsail Rollback
+1. SSH to Lightsail instance
+2. `docker compose down`
+3. `docker compose up -d` (compose remembers previous version if using named images)
+4. Or manually: `docker run -d old-image`
+
+---
+
+## 14. Checklist Before First Deployment
+
+- [ ] GitHub Secrets configured
+- [ ] Docker Hub account + repositories created
+- [ ] AWS Lightsail instance created + SSH access verified
+- [ ] `.env.production` created (not committed to git)
+- [ ] `.gitignore` updated to exclude `.env*`, `dist/`, `node_modules/`
+- [ ] Prisma schema migrated locally: `npx prisma migrate deploy`
+- [ ] Database seeded: `npx prisma db seed`
+- [ ] MinIO buckets created and CORS configured
+- [ ] Custom domain DNS pointed to Lightsail IP (if using HTTPS)
+- [ ] Firewall rules: ports 80, 443, 22 only open
+- [ ] Backup schedule configured (daily + weekly)
+- [ ] Health checks passing locally
+- [ ] Test: `docker compose up -d` runs successfully
+- [ ] Test: `docker compose down && docker compose up -d` preserves data
+
+---
+
+## 15. Post-Deployment Verification
+
+After first `docker compose up -d`:
+
+1. **Access the app**: `http://<lightsail-ip>:8080` or `http://<domain>`
+2. **Login**: Use default admin credentials or create first user
+3. **Check health**: 
+   ```bash
+   curl http://<lightsail-ip>:3000/health/live
+   curl http://<lightsail-ip>:3011/health/live
+   ```
+4. **Verify services**: PostgreSQL, Redis, MinIO all running
+5. **Test critical flow**: Create admission application → upload document → virus scan
+6. **Check logs**: `docker compose logs -f` for any errors
+7. **Verify backup**: Run manual pg_dump and confirm it works
+
+---
+
+## 🎯 Summary: Your Automated Workflow
+
+```
+📝 Write code locally
+     ↓
+📤 git add . && git commit -m "feature/x"
+     ↓
+🚀 git push origin main
+     ↓
+🤖 GitHub Actions triggers:
+   │   ✅ Runs tests (online-exam, exam-paper)
+   │   ✅ TypeScript type check
+   │   ✅ Builds all services to Docker Hub
+   │   ✅ Pushes gnet-sms:latest to Docker Hub
+   │   ✅ Deploys to AWS Lightsail
+     ↓
+🌐 App automatically updates on Lightsail
+     ↓
+🔍 Health checks pass → Live!
+```
+
+**After this initial setup, you only need to `git push` to deploy new versions!**

@@ -1,0 +1,215 @@
+/* Auto-scoped under .gs-mastery */
+.gs-mastery { box-sizing: border-box; }
+.gs-mastery *, .gs-mastery *::before, .gs-mastery *::after { box-sizing: border-box; }
+
+  .gs-mastery{
+    --ink:#12141C;
+    --ink-soft:#6B7280;
+    --line:#E4E7EC;
+    --paper:#FFFFFF;
+    --canvas:#F4F5F7;
+    --indigo:#4338CA;
+    --indigo-soft:#EEF0FD;
+    --mint:#0F766E;
+    --mint-soft:#E7F6F4;
+    --amber:#B45309;
+    --amber-soft:#FDF3E7;
+    --rose:#B42318;
+    --rose-soft:#FCEEEE;
+    --font-display:'Space Grotesk','Segoe UI',sans-serif;
+    --font-body:'Inter','Segoe UI',sans-serif;
+    --font-data:'JetBrains Mono','Courier New',monospace;
+  }
+  
+  
+  
+.gs-mastery .stage {display:flex;justify-content:center;padding:36px 16px 60px;}
+.gs-mastery .sheet {
+    width:210mm;min-height:297mm;height:auto;
+    background:var(--paper);
+    padding:14mm 13mm;
+    box-shadow:0 4px 8px rgba(18,20,28,.08), 0 24px 48px rgba(18,20,28,.12);
+  }
+
+  /* ---------- Header ---------- */
+.gs-mastery .topbar {
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding-bottom:16px;border-bottom:1px solid var(--line);
+  }
+.gs-mastery .brand {display:flex;align-items:center;gap:12px;}
+.gs-mastery .logo-mark {
+    width:42px;height:42px;border-radius:10px;
+    background:linear-gradient(135deg, var(--indigo), #6C63FF);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;
+    flex-shrink:0;
+  }
+.gs-mastery .school-name {font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.2px;}
+.gs-mastery .school-meta {font-size:11px;color:var(--ink-soft);margin-top:1px;}
+.gs-mastery .doc-meta {text-align:right;}
+.gs-mastery .doc-meta .pill {
+    display:inline-block;font-size:10px;font-weight:600;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--indigo);background:var(--indigo-soft);
+    padding:4px 10px;border-radius:20px;
+  }
+.gs-mastery .doc-meta .term {font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+
+  /* ---------- Identity row ---------- */
+.gs-mastery .identity {
+    display:flex;gap:14px;align-items:center;
+    margin-top:16px;padding:14px 16px;
+    background:var(--canvas);border-radius:14px;
+  }
+.gs-mastery .avatar {
+    width:56px;height:56px;border-radius:12px;flex-shrink:0;
+    background:repeating-linear-gradient(135deg,#e2e5ea,#e2e5ea 6px,#d8dce2 6px,#d8dce2 7px);
+    display:flex;align-items:center;justify-content:center;
+    font-size:8.5px;color:var(--ink-soft);text-align:center;
+  }
+.gs-mastery .identity-grid {
+    flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  }
+.gs-mastery .id-label {font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;font-weight:600;}
+.gs-mastery .id-value {font-family:var(--font-display);font-weight:600;font-size:14px;margin-top:2px;}
+
+  /* ---------- KPI cards ---------- */
+.gs-mastery .kpi-row {display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+.gs-mastery .kpi {
+    border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    background:var(--paper);
+  }
+.gs-mastery .kpi .k-label {font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;}
+.gs-mastery .kpi .k-value {font-family:var(--font-display);font-size:24px;font-weight:700;margin-top:4px;}
+.gs-mastery .kpi .k-value small {font-size:12px;font-weight:500;color:var(--ink-soft);}
+.gs-mastery .kpi .k-sub {font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+.gs-mastery .kpi.accent {background:var(--indigo-soft);border-color:transparent;}
+.gs-mastery .kpi.accent .k-value {color:var(--indigo);}
+
+  /* ---------- Section heading ---------- */
+.gs-mastery .section-heading {
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:22px 0 10px;
+  }
+.gs-mastery .section-heading h2 {
+    font-family:var(--font-display);font-size:14.5px;font-weight:700;margin:0;
+    letter-spacing:-.1px;
+  }
+.gs-mastery .section-heading .legend {
+    display:flex;gap:14px;font-size:9.5px;color:var(--ink-soft);
+  }
+.gs-mastery .legend .dot {display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.gs-mastery .legend .dot.student {background:var(--indigo);}
+.gs-mastery .legend .dot.avg {background:#C6CAD3;}
+
+  /* ---------- Subject mastery list (signature element) ---------- */
+.gs-mastery .subject-list {border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.gs-mastery .subject-row {
+    display:grid;
+    grid-template-columns:140px 56px 1fr 74px 100px;
+    align-items:center;gap:12px;
+    padding:10px 16px;
+    border-bottom:1px solid var(--line);
+  }
+.gs-mastery .subject-row:last-child {border-bottom:none;}
+.gs-mastery .subject-row:nth-child(even) {background:#FBFBFC;}
+.gs-mastery .subj-name {font-weight:600;font-size:12.5px;}
+.gs-mastery .subj-score {font-family:var(--font-data);font-weight:700;font-size:13px;text-align:right;}
+.gs-mastery .bar-track {
+    position:relative;height:10px;border-radius:6px;background:#EEF0F3;overflow:visible;
+  }
+.gs-mastery .bar-fill {
+    position:absolute;left:0;top:0;height:100%;border-radius:6px;
+    background:linear-gradient(90deg, var(--indigo), #6C63FF);
+    width:calc(var(--score) * 1%);
+  }
+.gs-mastery .bar-avg-marker {
+    position:absolute;top:-3px;width:2px;height:16px;background:#98A2B3;
+    left:calc(var(--avg) * 1%);
+  }
+.gs-mastery .subj-grade {
+    text-align:center;font-family:var(--font-data);font-weight:700;font-size:12px;
+    padding:3px 0;border-radius:8px;
+  }
+.gs-mastery .subj-grade.tier-a {color:var(--mint);background:var(--mint-soft);}
+.gs-mastery .subj-grade.tier-b {color:var(--indigo);background:var(--indigo-soft);}
+.gs-mastery .subj-grade.tier-c {color:var(--amber);background:var(--amber-soft);}
+.gs-mastery .subj-grade.tier-d {color:var(--rose);background:var(--rose-soft);}
+.gs-mastery .subj-remark {font-size:10.5px;color:var(--ink-soft);}
+
+  /* ---------- Two column: scale + attendance ---------- */
+.gs-mastery .two-col {display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.gs-mastery .panel {border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+.gs-mastery .panel-title {font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
+.gs-mastery .scale-grid {display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.gs-mastery .scale-chip {
+    text-align:center;padding:6px 2px;border-radius:8px;background:var(--canvas);
+  }
+.gs-mastery .scale-chip .g {font-family:var(--font-data);font-weight:700;font-size:12.5px;}
+.gs-mastery .scale-chip .r {font-size:8.5px;color:var(--ink-soft);margin-top:1px;}
+
+.gs-mastery .att-row {display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.gs-mastery .att-row:last-child {margin-bottom:0;}
+.gs-mastery .att-label {font-size:11.5px;color:var(--ink-soft);}
+.gs-mastery .att-value {font-family:var(--font-data);font-weight:700;font-size:13px;}
+.gs-mastery .att-bar {flex:1;height:7px;background:var(--canvas);border-radius:6px;margin:0 10px;overflow:hidden;}
+.gs-mastery .att-bar-fill {height:100%;background:var(--mint);border-radius:6px;}
+
+  /* ---------- Remarks ---------- */
+.gs-mastery .remark-cards {display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.gs-mastery .remark-card {border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+.gs-mastery .remark-card .who {
+    display:flex;align-items:center;gap:6px;
+    font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--indigo);margin-bottom:6px;
+  }
+.gs-mastery .remark-card p {margin:0;font-size:12px;line-height:1.55;color:var(--ink);}
+
+  /* ---------- Signatures ---------- */
+.gs-mastery .signatures {display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px;}
+.gs-mastery .sig-line {border-top:1px solid var(--ink);padding-top:6px;text-align:center;}
+.gs-mastery .sig-image-slot {min-height:2rem;display:flex;align-items:flex-end;justify-content:center;margin-bottom:2px;}
+.gs-mastery .sig-image {max-height:2rem;max-width:90%;object-fit:contain;}
+.gs-mastery .sig-name {font-size:10px;font-weight:700;}
+.gs-mastery .sig-line .role {font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft);font-weight:600;}
+
+.gs-mastery .footer-note {margin-top:18px;text-align:center;font-size:9px;color:var(--ink-soft);}
+
+  /* ---------- Dense (10+ subjects) ---------- */
+.gs-mastery.gs-dense .sheet { padding:10mm 11mm; }
+.gs-mastery.gs-dense .topbar { padding-bottom:10px; }
+.gs-mastery.gs-dense .avatar { display:none; }
+.gs-mastery.gs-dense .identity { padding:10px 12px; margin-top:10px; gap:0; }
+.gs-mastery.gs-dense .kpi-row { margin-top:10px; gap:8px; }
+.gs-mastery.gs-dense .kpi { padding:8px 10px; border-radius:10px; }
+.gs-mastery.gs-dense .kpi .k-value { font-size:18px; }
+.gs-mastery.gs-dense .section-heading { margin:12px 0 6px; }
+.gs-mastery.gs-dense .subject-row {
+    grid-template-columns:118px 44px 1fr 52px;
+    gap:8px;
+    padding:4px 10px;
+  }
+.gs-mastery.gs-dense .subj-remark { display:none; }
+.gs-mastery.gs-dense .subj-name { font-size:11px; }
+.gs-mastery.gs-dense .subj-score { font-size:11.5px; }
+.gs-mastery.gs-dense .bar-track { height:7px; }
+.gs-mastery.gs-dense .bar-avg-marker { height:12px; top:-2px; }
+.gs-mastery.gs-dense .two-col { margin-top:10px; gap:8px; }
+.gs-mastery.gs-dense .panel { padding:8px 10px; }
+.gs-mastery.gs-dense .remark-cards { margin-top:10px; gap:8px; }
+.gs-mastery.gs-dense .remark-card { padding:8px 10px; }
+.gs-mastery.gs-dense .remark-card p { font-size:11px; line-height:1.35; }
+.gs-mastery.gs-dense .signatures { margin-top:16px; }
+
+  /* ---------- Print ---------- */
+  @media print{
+.gs-mastery .stage {padding:0;}
+.gs-mastery .sheet {width:210mm;min-height:0;height:auto;box-shadow:none;padding:10mm 12mm;}
+.gs-mastery .kpi, .gs-mastery .panel, .gs-mastery .remark-card {break-inside:avoid;page-break-inside:avoid;}
+.gs-mastery .subject-row {break-inside:avoid;page-break-inside:avoid;}
+.gs-mastery .closing-block {break-inside:avoid;page-break-inside:avoid;}
+  }
+  @media screen and (max-width:900px){
+.gs-mastery .sheet {width:100%;padding:6mm;}
+.gs-mastery .identity-grid, .gs-mastery .kpi-row, .gs-mastery .two-col, .gs-mastery .remark-cards, .gs-mastery .signatures {grid-template-columns:1fr 1fr;}
+.gs-mastery .subject-row {grid-template-columns:100px 40px 1fr 60px;}
+.gs-mastery .subj-remark {display:none;}
+  }

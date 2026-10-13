@@ -1,0 +1,74 @@
+[
+  [
+    "This is a Super Admin account. Switch to Super Admin sign-in and try again.",
+    "Il s'agit d'un compte Super Admin. Passez à la connexion Super Admin et réessayez.",
+    "Esta es una cuenta de Super Admin. Cambie al inicio de sesión de Super Admin e inténtelo de nuevo.",
+    "Dies ist ein Super-Admin-Konto. Wechseln Sie zur Super-Admin-Anmeldung und versuchen Sie es erneut.",
+    "هذا حساب المشرف الأعلى. انتقل إلى تسجيل دخول المشرف الأعلى وحاول مرة أخرى.",
+    "这是超级管理员账户。请切换到超级管理员登录后重试。",
+    "यह सुपर एडमिन खाता है। सुपर एडमिन साइन-इन पर जाएँ और पुनः प्रयास करें।"
+  ],
+  [
+    "Update your password",
+    "Mettre à jour votre mot de passe",
+    "Actualice su contraseña",
+    "Passwort aktualisieren",
+    "تحديث كلمة المرور",
+    "更新密码",
+    "अपना पासवर्ड अपडेट करें"
+  ],
+  [
+    "Enter your temporary password, then choose a new one to continue.",
+    "Saisissez votre mot de passe temporaire, puis choisissez-en un nouveau pour continuer.",
+    "Introduzca su contraseña temporal y elija una nueva para continuar.",
+    "Geben Sie Ihr temporäres Passwort ein und wählen Sie dann ein neues, um fortzufahren.",
+    "أدخل كلمة المرور المؤقتة، ثم اختر كلمة مرور جديدة للمتابعة.",
+    "输入临时密码，然后设置新密码以继续。",
+    "अपना अस्थायी पासवर्ड दर्ज करें, फिर जारी रखने के लिए नया पासवर्ड चुनें।"
+  ],
+  [
+    "Signed in as",
+    "Connecté en tant que",
+    "Sesión iniciada como",
+    "Angemeldet als",
+    "مسجّل الدخول باسم",
+    "登录身份",
+    "इस रूप में साइन इन"
+  ],
+  [
+    "Sign out and use a different account",
+    "Se déconnecter et utiliser un autre compte",
+    "Cerrar sesión y usar otra cuenta",
+    "Abmelden und ein anderes Konto verwenden",
+    "تسجيل الخروج واستخدام حساب آخر",
+    "退出并使用其他账户",
+    "साइन आउट करें और दूसरा खाता उपयोग करें"
+  ],
+  [
+    "Continue",
+    "Continuer",
+    "Continuar",
+    "Weiter",
+    "متابعة",
+    "继续",
+    "जारी रखें"
+  ],
+  [
+    "At least {{count}} characters. Must differ from your temporary password.",
+    "Au moins {{count}} caractères. Doit être différent de votre mot de passe temporaire.",
+    "Al menos {{count}} caracteres. Debe ser distinto de su contraseña temporal.",
+    "Mindestens {{count}} Zeichen. Muss sich vom temporären Passwort unterscheiden.",
+    "{{count}} أحرف على الأقل. يجب أن يختلف عن كلمة المرور المؤقتة.",
+    "至少 {{count}} 个字符。必须与临时密码不同。",
+    "कम से कम {{count}} वर्ण। आपके अस्थायी पासवर्ड से अलग होना चाहिए।"
+  ],
+  [
+    "At least {{count}} characters with a letter and number. Must differ from your temporary password.",
+    "Au moins {{count}} caractères avec une lettre et un chiffre. Doit être différent de votre mot de passe temporaire.",
+    "Al menos {{count}} caracteres con una letra y un número. Debe ser distinto de su contraseña temporal.",
+    "Mindestens {{count}} Zeichen mit Buchstabe und Zahl. Muss sich vom temporären Passwort unterscheiden.",
+    "{{count}} أحرف على الأقل مع حرف ورقم. يجب أن يختلف عن كلمة المرور المؤقتة.",
+    "至少 {{count}} 个字符，包含字母和数字。必须与临时密码不同。",
+    "कम से कम {{count}} वर्ण, एक अक्षर और एक अंक सहित। अस्थायी पासवर्ड से अलग होना चाहिए।"
+  ]
+]

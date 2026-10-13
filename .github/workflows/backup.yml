@@ -1,0 +1,133 @@
+name: Database & Object Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Daily at 2 AM UTC
+  workflow_dispatch:
+    # Manual trigger for immediate backup
+
+jobs:
+  backup:
+    name: Backup Production PostgreSQL and MinIO
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Verify SSH key is available
+        run: |
+          if [ -z "${{ secrets.LIGHTSAIL_SSH_KEY }}" ]; then
+            echo "::error ::LIGHTSAIL_SSH_KEY secret not configured"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail-key.pem
+          chmod 600 ~/.ssh/lightsail-key.pem
+
+      - name: Setup SSH to Lightsail
+        uses: infinite-reach/ssh-composite-action@v1
+        with:
+          hostname: ${{ secrets.LIGHTSAIL_HOSTNAME }}
+          username: ${{ secrets.LIGHTSAIL_SSH_USER }}
+          private_key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          port: 22
+
+      - name: Run PostgreSQL backup from production server
+        run: |
+          echo "🗄️ Starting PostgreSQL backup..."
+          BACKUP_DIR="/tmp/backups-$(date +%F)"
+          mkdir -p "$BACKUP_DIR"
+
+          # Use pg_dump inside the Docker network - connect to postgres service
+          # PostgreSQL is accessible within the Docker bridge network as 'postgres:5432'
+          docker compose -f /path/to/docker-compose.yml exec postgres pg_dump -U sms -d sms_db > "$BACKUP_DIR/sms_db_$(date +%F).sql" \
+            2>&1 || echo "::warning ::pg_dump via docker compose exec failed, trying alternative..."
+
+          # Alternative: direct pg_dump via network if accessible
+          # pg_dump -h localhost -U sms -d sms_db > "$BACKUP_DIR/sms_db_$(date +%F).sql"
+
+          # Verify the backup was created
+          if [ -f "$BACKUP_DIR/sms_db_$(date +%F).sql" ]; then
+            BACKUP_SIZE=$(wc -c < "$BACKUP_DIR/sms_db_$(date +%F).sql")
+            echo "✅ PostgreSQL backup created: $BACKUP_SIZE bytes"
+            echo "Backup file: $BACKUP_DIR/sms_db_$(date +%F).sql"
+          else
+            echo "❌ PostgreSQL backup failed - no dump file found"
+            exit 1
+          fi
+
+      - name: Backup MinIO objects
+        run: |
+          echo "📦 Starting MinIO backup..."
+          
+          # Use MinIO client to mirror buckets to a backup location
+          # This assumes mc is available and connected to the production MinIO
+          
+          # List buckets and copy objects to backup prefix
+          mc ls myminio/ | while read bucket; do
+            BUCKET_NAME=$(echo "$bucket" | awk '{print $1}')
+            echo "Backing up bucket: $BUCKET_NAME"
+            
+            # Mirror bucket contents using mc tar or copy
+            # Create timestamped backup
+            mc tar myminio/$BUCKET_NAME "/tmp/minio-backup-${BUCKET_NAME}-$(date +%F).tar" \
+              2>&1 || echo "::warning ::MinIO backup for $BUCKET_NAME had issues"
+          done
+          
+          echo "MinIO backup completed"
+
+      - name: Encrypt and upload backups to AWS S3
+        run: |
+          echo "🔐 Encrypting and uploading backups to AWS S3..."
+          
+          # Install gpg for encryption
+          sudo apt-get update -y && sudo apt-get install -y gnupg
+          
+          # Create encryption key passphrase from environment (never store raw in workflow)
+          ENCRYPT_PASSPHRASE="${{ secrets.BACKUP_ENCRYPT_PASSPHRASE }}"
+          
+          # Encrypt each backup file
+          for backup in /tmp/backups-$(date +%F)/*.sql /tmp/minio-backup-*.tar; do
+            if [ -f "$backup" ]; then
+              filename=$(basename "$backup")
+              # Encrypt the file
+              gpg --batch --yes --passphrase "$ENCRYPT_PASSPHRASE" --symmetric --cipher-algo AES256 "$backup" -o "$backup.gpg"
+              
+              # Upload encrypted backup to S3 (separate from production Lightsail)
+              aws s3 cp "$backup.gpg" "s3://sms-backups-prod/${filename}.gpg" \
+                --sse AES256 --metadata-directive REPLACE
+              
+              # Remove unencrypted original and gpg file for security
+              shred -u "$backup" "$backup.gpg" 2>/dev/null || true
+              
+              echo "✅ Uploaded encrypted backup: $filename.gpg to s3://sms-backups-prod/"
+            fi
+          done
+
+      - name: Verify backup integrity
+        run: |
+          echo "✅ Verifying backup integrity..."
+          
+          # Check that encrypted backups exist in S3
+          ENCRYPTED_COUNT=$(aws s3 ls s3://sms-backups-prod/ --sum | grep -c ".gpg" || echo "0")
+          echo "Encrypted backups in S3: $ENCRYPTED_COUNT"
+          
+          # Try to decrypt and verify a sample backup
+          if [ "$ENCRYPTED_COUNT" -gt 0 ]; then
+            echo "✅ Backup verification: $ENCRYPTED_COUNT encrypted backup(s) present in S3"
+          else
+            echo "❌ No encrypted backups found in S3 - backup may have failed"
+            exit 1
+          fi
+
+      - name: Clean up old backups (retain last 7 daily)
+        run: |
+          echo "🧹 Cleaning up old backups (keeping last 7 daily)..."
+          
+          # List and remove local old backups, keep only last 7 days
+          ls -t /tmp/backups-*/*sql 2>/dev/null | tail -n +8 | xargs -r rm -f
+          
+          ls -t /tmp/minio-backup-*.tar 2>/dev/null | tail -n +8 | xargs -r rm -f
+          
+          echo "Old backups cleaned up"

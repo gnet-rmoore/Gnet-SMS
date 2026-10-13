@@ -1,0 +1,82 @@
+/** Client-side admissions reporting helpers (mirrors lifecycle admissionReporting). */
+
+export const FUNNEL_STATUSES = [
+  "PENDING",
+  "UNDER_REVIEW",
+  "WAITLISTED",
+  "APPROVED",
+  "FEE_PENDING",
+  "DOCS_PENDING",
+  "ENROLLED",
+  "REJECTED",
+  "WITHDRAWN",
+] as const;
+
+export function countByStatus(applications: { status?: string }[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const s of FUNNEL_STATUSES) counts[s] = 0;
+  for (const app of applications) {
+    const status = String(app.status || "PENDING");
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
+function csvEscape(value: unknown): string {
+  const s = value == null ? "" : String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+export function applicationsToCsv(applications: Array<Record<string, any>>): string {
+  const columns = [
+    { key: "applicationNumber", header: "Application #" },
+    { key: "studentName", header: "Student" },
+    { key: "parentName", header: "Guardian" },
+    { key: "studentEmail", header: "Student Email" },
+    { key: "parentEmail", header: "Guardian Email" },
+    { key: "parentPhone", header: "Guardian Phone" },
+    { key: "gradeLevelName", header: "Grade" },
+    { key: "status", header: "Status" },
+    { key: "source", header: "Source" },
+    { key: "applicantType", header: "Applicant Type" },
+    { key: "appliedAt", header: "Applied At" },
+  ];
+  const header = columns.map((c) => csvEscape(c.header)).join(",");
+  const rows = applications.map((app) =>
+    columns
+      .map((c) => {
+        let v = app[c.key];
+        if (c.key === "appliedAt" && v) {
+          try {
+            v = new Date(v).toISOString();
+          } catch {
+            /* keep */
+          }
+        }
+        if (c.key === "gradeLevelName" && !v && app.gradeLevel?.name) v = app.gradeLevel.name;
+        if (c.key === "applicantType") {
+          v = "NEW";
+          try {
+            const n = app.notes ? JSON.parse(app.notes) : null;
+            if (n?.applicantType === "RETURNING") v = "RETURNING";
+          } catch {
+            /* keep NEW */
+          }
+        }
+        return csvEscape(v);
+      })
+      .join(",")
+  );
+  return [header, ...rows].join("\n");
+}
+
+export function downloadTextFile(filename: string, content: string, mime = "text/csv;charset=utf-8") {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -1,0 +1,163 @@
+# Production overrides for AWS Lightsail (VM + Docker Compose).
+# Always used LAST in the -f chain. Secrets/domain come from .env (auto-loaded).
+
+services:
+  # ---------- data stores: not published to the host at all ----------
+  postgres:
+    restart: unless-stopped
+    ports: !override []
+
+  db-roles:
+    restart: on-failure
+
+  redis:
+    restart: unless-stopped
+    ports: !override []
+
+  minio:
+    restart: unless-stopped
+    # API (9000) is reached inside the network: app services via http://minio:9000,
+    # browsers via https://files.<domain> -> Caddy -> minio:9000.
+    # Console (9001) is localhost-only; use an SSH tunnel to open it.
+    ports: !override ["127.0.0.1:9001:9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+      # Same origin as the app — not "*" (verified: browser presigned PUTs need this).
+      MINIO_API_CORS_ALLOW_ORIGIN: ${APP_URL:?set in .env}
+
+  minio-init:
+    restart: on-failure
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+
+  # ---------- app services: no host ports, real secrets ----------
+  identity:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+
+  lifecycle:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:?set in .env}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set in .env}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set in .env}
+
+  ops:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+
+  staff:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+
+  classroom:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+      APP_URL: ${APP_URL:?set in .env}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:?set in .env}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set in .env}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set in .env}
+
+  academic:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:?set in .env}
+      # H2 fix: base file ships dead minioadmin/minioadmin creds.
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set in .env}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set in .env}
+
+  finance:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+      RECEIPT_HMAC_SECRET: ${RECEIPT_HMAC_SECRET:?set in .env}
+      APP_URL: ${APP_URL:?set in .env}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:?set in .env}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set in .env}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set in .env}
+
+  comms:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+      SMS_PROVIDER: ${SMS_PROVIDER:-console}   # this build only implements "console" (M6)
+
+  campus:
+    restart: unless-stopped
+    ports: !override []
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:?set in .env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set in .env}
+
+  # ---------- entry points ----------
+  api-gateway:
+    restart: unless-stopped
+    ports: !override ["127.0.0.1:8081:8081"]   # SSH-tunnel debug access only
+    environment:
+      APP_URL: ${APP_URL:?set in .env}          # base file hardcodes localhost origins (L5)
+      # INTERNAL_SERVICE_TOKEN already interpolates from .env in the base file (H1).
+    depends_on:
+      identity:    { condition: service_healthy }
+      lifecycle:   { condition: service_healthy }
+      ops:         { condition: service_healthy }
+      staff:       { condition: service_healthy }
+      classroom:   { condition: service_healthy }
+      academic:    { condition: service_healthy }
+      finance:     { condition: service_healthy }
+      comms:       { condition: service_healthy }
+      campus:      { condition: service_healthy }
+
+  frontend-spa:
+    restart: unless-stopped
+    ports: !override ["127.0.0.1:8080:80"]      # only Caddy reaches it from outside
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    volumes:
+      # H5 + L7 fix: http-level nginx tuning (inherited — default.conf sets neither).
+      - ./docker/nginx/00-tuning.conf:/etc/nginx/conf.d/00-tuning.conf:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------- TLS edge (profile: edge) ----------
+  edge:
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-ops@localhost}
+      APP_DOMAIN: ${APP_DOMAIN:?set in .env}    # used by docker/edge/Caddyfile

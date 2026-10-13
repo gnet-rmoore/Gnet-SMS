@@ -1,0 +1,460 @@
+// Identity & Platform schema (Phase 3-5 extraction)
+// Target Postgres schema: `identity` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: User, ParentStudent, School, SchoolRegistration, InviteToken,
+// SystemLog, SystemCredential.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["identity"]
+}
+
+model School {
+  id                 String    @id @default(uuid())
+  name               String
+  slug               String    @unique
+  schoolCode         String    @unique
+  logoUrl            String?
+  address            String?
+  country            String
+  /// State / province / region (residence locality for calendar holidays)
+  region             String?
+  /// City (residence locality for calendar holidays)
+  city               String?
+  timezone           String
+  contactEmail       String
+  contactPhone       String?
+  /// DRAFT | PENDING_REVIEW | TRIAL | ACTIVE | SUSPENDED | REJECTED | CLOSED
+  status             String    @default("ACTIVE")
+  onboardingSource   String    @default("SUPER_ADMIN") // SUPER_ADMIN | PUBLIC_FORM
+  planCode           String?
+  approvedAt         DateTime?
+  approvedBy         String?
+  suspendedAt        DateTime?
+  suspendReason      String?
+  trialEndsAt        DateTime?
+  /// JSON: { publicApplyEnabled, requireEntranceFee, requiredDocTypes[], requireClassroomOnEnroll }
+  admissionPolicy    String?
+  onboardingComplete Boolean  @default(false)
+  /// Setup checklist: admins confirm they reviewed admission / public-apply settings.
+  /// Stored server-side so completion tracking is accurate across browsers and users.
+  admissionPolicyReviewed Boolean @default(false)
+  /// When true, users cannot permanently dismiss the role guide until COMPLETED
+  guideRequired      Boolean   @default(false)
+  gradeSheetTemplate String    @default("TEMPLATE_1")
+  reportCardTemplate String    @default("TEMPLATE_1")
+  /// Graduation / completion certificate print template id
+  certificateTemplate String   @default("CERT_CLASSIC_BROWN")
+  /// Official receipt PDF template id (PDFKIT_DEFAULT | CLASSIC_LEDGER | …) — legacy default for all types
+  receiptTemplate    String    @default("PDFKIT_DEFAULT")
+  /// JSON: { FEE_PAYMENT, PAYSLIP, EXPENSE, TRANSACTION } → template id (legacy flat map)
+  receiptTemplates   String?
+  /// JSON: { REGISTRAR: { FEE_PAYMENT: … }, ACCOUNTANT: { PAYSLIP: … }, … } — per-role private buckets
+  receiptTemplatesByRole String?
+  /// JSON: { sig1Name, sig1Title, sig2Name, sig2Title, sig1UserId?, sig2UserId? }
+  certificateDefaults String?
+  /// JSON: { principal?, registrar?, accountant?, vpa?, vpi?, secondary? } → { userId }
+  documentSignatories String?
+  brandColor         String    @default("#2563eb")
+  gradebookConfig    String?
+  /// JSON: payrollAttendanceRules — see docs/ATTENDANCE_INTEGRATION_PLAN.md
+  payrollAttendanceRules String?
+  /// JSON: securityPolicy — password / session rules for the school
+  securityPolicy     String?
+  /// Default UI language (BCP 47): en | fr | ar | es | de | zh-Hans | hi
+  defaultLocale      String    @default("en")
+  /// Whether the calendar shows official (national + international) holidays — display only, never blocks classes
+  holidayEnabled     Boolean   @default(true)
+  /// JSON array: ["national","regional","international"] — which holiday types to show
+  holidayTypes       String?
+  /// Default exam delivery: ONLINE | OFFLINE | HYBRID
+  examDeliveryDefault String @default("ONLINE")
+  /// Support CRM notes (Super Admin only)
+  internalNotes      String?
+  /// JSON array of feature keys overriding plan defaults
+  entitlementsOverride String?
+  /// JSON: { maxStudents?, maxStaff?, maxStorageMb? }
+  quotaOverrides     String?
+  /// Optional white-label hostname
+  customDomain       String?
+  /// TXT token for `_gnet-sms.<domain>` verification
+  domainVerifyToken  String?
+  domainVerifiedAt   DateTime?
+  /// Platform SaaS billing: TRIAL | ACTIVE_PAID | COMP | PAST_DUE | CANCELLED
+  billingStatus      String    @default("TRIAL")
+  /// ledger | stripe | console
+  billingProvider    String?
+  platformCheckoutSessionId String?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  users          User[]
+  systemLogs     SystemLog[]
+  registrations  SchoolRegistration[]
+  inviteTokens   InviteToken[]
+  destructiveRequests DestructiveActionRequest[]
+  mailDeliveryLogs MailDeliveryLog[]
+  apiKeys        SchoolApiKey[]
+  studentIdCounters StudentIdCounter[]
+
+  @@index([customDomain])
+  @@schema("identity")
+}
+
+model SchoolRegistration {
+  id                 String    @id @default(uuid())
+  organizationName   String
+  requestedSlug      String
+  country            String
+  timezone           String    @default("UTC")
+  address            String?
+  estimatedStudents  Int?
+  message            String?
+  applicantName      String
+  applicantEmail     String
+  applicantPhone     String?
+  locale             String?
+  /// SUBMITTED | NEEDS_INFO | APPROVED | REJECTED | WITHDRAWN
+  status             String    @default("SUBMITTED")
+  reviewNotes        String?
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  schoolId           String?
+  confirmationToken  String?   @unique
+  emailConfirmedAt   DateTime?
+  ipHash             String?
+  userAgent          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id])
+
+  @@index([status])
+  @@index([applicantEmail])
+  @@schema("identity")
+}
+
+model InviteToken {
+  id        String    @id @default(uuid())
+  schoolId  String
+  userId    String
+  tokenHash String    @unique
+  purpose   String    @default("SCHOOL_ADMIN_ONBOARD")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([userId])
+  @@schema("identity")
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  /// Permanent, school-scoped, digit-only identifier for students (e.g. 100456).
+  /// Set at enrollment / student creation and stable for the student's lifetime.
+  studentIdNumber    String?   @unique
+  passwordHash       String
+  name               String
+  role               String
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  schoolId           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  dob                DateTime?
+  gender             String?
+  phone              String?
+  address            String?
+  joiningDate        DateTime?
+  photoUrl           String?
+  /// Official signature as PNG/JPEG data URL (staff / admin document signing).
+  signatureUrl       String?
+  parentName         String?
+  parentPhone        String?
+  gradeLevelId       String?
+  /// NEW | RETURNING — fee template cohort filter (null matches ALL-scoped templates only when required)
+  feeCohort          String?
+  /// Preferred UI language (BCP 47); null = use school default
+  preferredLocale    String?
+  /// Role-guided wizard progress JSON: { trackId, version, status, steps, dismissedAt?, completedAt? }
+  guideProgress      Json?
+  /// Super Admin operator role: OWNER | SUPPORT | BILLING | ANALYST (null treated as OWNER)
+  platformRole       String?
+  /// Set when the user confirms ownership of their email address.
+  emailVerifiedAt    DateTime?
+  emailVerificationTokenHash String? @unique
+  emailVerificationSentAt    DateTime?
+  passwordResetTokenHash     String? @unique
+  passwordResetExpiresAt     DateTime?
+
+  school         School?             @relation(fields: [schoolId], references: [id])
+  parents        ParentStudent[]     @relation("StudentToParent")
+  children       ParentStudent[]     @relation("ParentToStudent")
+  systemLogs     SystemLog[]
+  mfaEnrollment  UserMfaEnrollment?
+
+  @@index([schoolId])
+  @@index([schoolId, gradeLevelId])
+  @@schema("identity")
+}
+
+/// Per-school monotonically increasing seed for permanent student ID numbers.
+/// Guarantees unique, sequential, never-reused digit IDs (no school prefix).
+model StudentIdCounter {
+  schoolId String @id
+  next     Int    @default(100000)
+  updatedAt DateTime @updatedAt
+
+  school   School @relation(fields: [schoolId], references: [id])
+  @@schema("identity")
+}
+
+/// Audit trail for School Admin role assignments (Roles & Access).
+model RoleChangeAudit {
+  id           String   @id @default(uuid())
+  schoolId     String
+  targetUserId String
+  actorUserId  String
+  fromRole     String
+  toRole       String
+  createdAt    DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([targetUserId])
+  @@schema("identity")
+}
+
+model UserMfaEnrollment {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  method        String   @default("TOTP")
+  totpSecretEnc String?
+  phoneE164     String?
+  backupCodes   String?
+  enrolledAt    DateTime @default(now())
+  lastUsedAt    DateTime?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("identity")
+}
+
+model MfaSmsChallenge {
+  id         String    @id @default(uuid())
+  userId     String
+  phoneE164  String
+  codeHash   String
+  purpose    String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, purpose])
+  @@schema("identity")
+}
+
+/// Per-school override of a role capability vs platform defaults (Roles & Access).
+/// `allowed: true` grants a capability the role does not have by default;
+/// `allowed: false` revokes a default capability. No row = use default.
+model SchoolRoleCapabilityOverride {
+  id            String   @id @default(uuid())
+  schoolId      String
+  role          String
+  capabilityKey String
+  allowed       Boolean
+  updatedById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([schoolId, role, capabilityKey])
+  @@index([schoolId, role])
+  @@schema("identity")
+}
+
+model ParentStudent {
+  id        String   @id @default(uuid())
+  parentId  String
+  studentId String
+  createdAt DateTime @default(now())
+
+  student User @relation("StudentToParent", fields: [studentId], references: [id])
+  parent  User @relation("ParentToStudent", fields: [parentId], references: [id])
+
+  @@unique([parentId, studentId])
+  @@schema("identity")
+}
+
+model SystemLog {
+  id           String   @id @default(uuid())
+  action       String
+  module       String
+  /// AUTH | SESSION | USER_MGMT | ROLE | SECURITY | SCHOOLS | BILLING | SUPER_ADMIN | SETTINGS | COMMUNICATION | FILE | EXPORT | SYSTEM
+  category     String   @default("SYSTEM")
+  details      String
+  userId       String?
+  userName     String?
+  userEmail    String?
+  userRole     String?
+  schoolId     String?
+  level        String   @default("INFO")
+  ipAddress    String?
+  userAgent    String?
+  browser      String?
+  os           String?
+  deviceType   String?
+  country      String?
+  city         String?
+  sessionId    String?
+  requestId    String?
+  entityType   String?
+  entityId     String?
+  beforeValue  String?
+  afterValue   String?
+  httpMethod   String?
+  endpoint     String?
+  statusCode   Int?
+  durationMs   Int?
+  source       String?  @default("WEB")
+  errorMessage String?
+  tags         String?
+  createdAt    DateTime @default(now())
+
+  school School? @relation(fields: [schoolId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([module, createdAt])
+  @@index([level, createdAt])
+  @@index([userId, createdAt])
+  @@index([schoolId, createdAt])
+  @@index([action])
+  @@schema("identity")
+}
+
+model SystemCredential {
+  id         String    @id @default(uuid())
+  name       String
+  key        String    @unique
+  secret     String?
+  provider   String?
+  metadata   Json?
+  status     String    @default("ACTIVE")
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@schema("identity")
+}
+
+/// Singleton platform operator settings (id = "default").
+model PlatformSettings {
+  id                     String   @id @default("default")
+  maintenanceMode        Boolean  @default(false)
+  maintenanceMessage     String?
+  /// JSON securityPolicy template applied to newly provisioned schools when unset
+  defaultSecurityPolicy  String?
+  /// When true, Super Admin login requires TOTP (platform operator MFA)
+  requireOperatorMfa     Boolean  @default(false)
+  /// Transactional email — Super Admin System Credentials (env fallback when unset)
+  emailProvider              String?
+  emailFrom                  String?
+  emailSecretsJson           String?
+  requireEmailVerification   Boolean  @default(false)
+  /// When false, school registrations can be approved without applicant email confirmation
+  requireRegistrationEmailConfirm Boolean @default(true)
+  updatedAt              DateTime @updatedAt
+  updatedById            String?
+
+  @@schema("identity")
+}
+
+/// Dual-control destructive actions (school delete / purge).
+model DestructiveActionRequest {
+  id            String    @id @default(uuid())
+  action        String    // DELETE_SCHOOL
+  schoolId      String
+  requestedById String
+  approvedById  String?
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED | EXPIRED | EXECUTED | CANCELLED
+  reason        String?
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime
+  executedAt    DateTime?
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, status])
+  @@index([status, expiresAt])
+  @@schema("identity")
+}
+
+/// Editable SaaS plan catalog (Super Admin Plans & entitlements).
+model PlatformPlan {
+  code            String   @id
+  label           String
+  description     String   @default("")
+  maxStudents     Int?
+  maxStaff        Int?
+  maxStorageMb    Int?
+  featuresJson    String   @default("[]")
+  monthlyPriceUsd Float    @default(0)
+  trialDays       Int?
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@schema("identity")
+}
+
+/// Machine-to-machine API keys for schools with `api_access` entitlement.
+model SchoolApiKey {
+  id         String    @id @default(uuid())
+  schoolId   String
+  name       String
+  /// Display prefix, e.g. gnet_live_abcd
+  keyPrefix  String
+  keyHash    String
+  createdBy  String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, revokedAt])
+  @@index([keyPrefix])
+  @@schema("identity")
+}
+
+/// Per-recipient outcome for platform broadcast / ops mail.
+model MailDeliveryLog {
+  id        String   @id @default(uuid())
+  to        String
+  subject   String
+  provider  String
+  ok        Boolean
+  error     String?
+  schoolId  String?
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  school School? @relation(fields: [schoolId], references: [id])
+
+  @@index([createdAt])
+  @@index([schoolId, createdAt])
+  @@index([ok, createdAt])
+  @@schema("identity")
+}

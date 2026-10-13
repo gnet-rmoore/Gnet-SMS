@@ -1,0 +1,841 @@
+generator client {
+  provider      = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "identity", "academic", "classroom", "lifecycle", "staff", "finance", "ops", "comms"]
+}
+
+model School {
+  id                 String                    @id @default(uuid())
+  name               String
+  slug               String                    @unique
+  schoolCode         String                    @unique
+  logoUrl            String?
+  address            String?
+  country            String
+  timezone           String
+  contactEmail       String
+  contactPhone       String?
+  status             String                    @default("ACTIVE")
+  gradeSheetTemplate String                    @default("TEMPLATE_1")
+  reportCardTemplate String                    @default("TEMPLATE_1")
+  certificateTemplate String                   @default("CERT_CLASSIC_BROWN")
+  receiptTemplate    String                    @default("PDFKIT_DEFAULT")
+  receiptTemplates   String?
+  receiptTemplatesByRole String?
+  certificateDefaults String?
+  documentSignatories String?
+  brandColor         String                    @default("#2563eb")
+  gradebookConfig    String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  calendarPatterns   AcademicCalendarPattern[]
+  applications       AdmissionApplication[]
+  announcements      Announcement[]
+  attendance         Attendance[]
+  classrooms         Classroom[]
+  exams              Exam[]
+  feePayments        FeePayment[]
+  expenses           Expense[]
+  gradeLegends       GradeLegend[]
+  gradeLevels        GradeLevel[]
+  inventoryItems     InventoryItem[]
+  leaveRequests      LeaveRequest[]
+  payrolls           Payroll[]
+  requisitions       Requisition[]
+  documents          SchoolDocument[]
+  securityLogs       SecurityLog[]
+  staffAttendance    StaffAttendance[]
+  staffTasks         StaffTask[]
+  subjects           Subject[]
+  systemLogs         SystemLog[]
+  users              User[]
+  vehicles           Vehicle[]
+  workOrders         WorkOrder[]
+  @@schema("public")
+}
+
+model AdmissionApplication {
+  id             String     @id @default(uuid())
+  schoolId       String
+  studentName    String
+  studentEmail   String?
+  studentPhone   String?
+  dob            DateTime?
+  gender         String?
+  address        String?
+  parentName     String
+  parentEmail    String?
+  parentPhone    String
+  gradeLevelId   String
+  status         String     @default("PENDING")
+  previousSchool String?
+  documents      String?
+  notes          String?
+  appliedAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  gradeLevel     GradeLevel @relation(fields: [gradeLevelId], references: [id])
+  school         School     @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model AcademicCalendarPattern {
+  id           String           @id @default(uuid())
+  schoolId     String
+  schoolYearId String?
+  patternType  String
+  name         String
+  isActive     Boolean          @default(true)
+  isLocked     Boolean          @default(false)
+  createdBy    String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  school       School           @relation(fields: [schoolId], references: [id])
+  periods      AcademicPeriod[]
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model AcademicPeriod {
+  id                String                  @id @default(uuid())
+  calendarPatternId String
+  schoolId          String
+  periodNumber      Int
+  label             String
+  shortCode         String
+  startDate         DateTime
+  endDate           DateTime
+  annualWeightPct   Float
+  orderIndex        Int
+  createdAt         DateTime                @default(now())
+  calendarPattern   AcademicCalendarPattern @relation(fields: [calendarPatternId], references: [id])
+  examComponents    ExamComponent[]
+  periodSummaries   PeriodGradeSummary[]
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model ExamComponent {
+  id                      String         @id @default(uuid())
+  periodId                String
+  schoolId                String
+  componentType           String
+  label                   String
+  shortCode               String
+  maxScore                Float
+  weightPct               Float
+  examStartDate           DateTime?
+  examEndDate             DateTime?
+  gradeSubmissionDeadline DateTime?
+  isGraded                Boolean        @default(true)
+  gradebookStructure      String?
+  gradebookStructureCustom Boolean        @default(false)
+  orderIndex              Int
+  createdAt               DateTime       @default(now())
+  period                  AcademicPeriod @relation(fields: [periodId], references: [id])
+  gradeEntries            GradeEntry[]
+
+  @@index([schoolId])
+  @@index([periodId])
+  @@schema("public")
+}
+
+model GradeEntry {
+  id              String         @id @default(uuid())
+  studentId       String
+  subjectId       String
+  classId         String
+  examComponentId String?
+  structureColumnId String?
+  examId          String?
+  schoolId        String
+  schoolYearId    String
+  score           Float?
+  enteredBy       String
+  enteredAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  status          String         @default("DRAFT")
+  feedback        String?
+  isLocked        Boolean        @default(false)
+  notes           String?
+  teacher         User           @relation("TeacherGrades", fields: [enteredBy], references: [id])
+  exam            Exam?          @relation(fields: [examId], references: [id])
+  examComponent   ExamComponent? @relation(fields: [examComponentId], references: [id])
+  classroom       Classroom      @relation(fields: [classId], references: [id])
+  subject         Subject        @relation(fields: [subjectId], references: [id])
+  student         User           @relation("StudentGrades", fields: [studentId], references: [id])
+  history         GradeHistory[]
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([examId])
+  @@schema("public")
+}
+
+model GradeHistory {
+  id           String     @id @default(uuid())
+  gradeEntryId String
+  score        Float?
+  status       String
+  feedback     String?
+  changedBy    String
+  changedAt    DateTime   @default(now())
+  user         User       @relation(fields: [changedBy], references: [id])
+  gradeEntry   GradeEntry @relation(fields: [gradeEntryId], references: [id])
+  @@schema("public")
+}
+
+model PeriodGradeSummary {
+  id              String         @id @default(uuid())
+  studentId       String
+  subjectId       String
+  periodId        String
+  schoolId        String
+  schoolYearId    String
+  periodTotalPct  Float
+  subjectPosition Int?
+  isFinalized     Boolean        @default(false)
+  period          AcademicPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@schema("public")
+}
+
+model AnnualGradeSummary {
+  id                     String   @id @default(uuid())
+  studentId              String
+  subjectId              String
+  schoolYearId           String
+  schoolId               String
+  annualAverage          Float
+  gradeLetter            String?
+  gradeRemark            String?
+  gpaPoints              Float?
+  overallPosition        Int?
+  isEligibleForPromotion Boolean?
+  @@schema("public")
+}
+
+model GradeLegend {
+  id        String       @id @default(uuid())
+  schoolId  String
+  name      String
+  category  String       @default("CLASS")
+  createdAt DateTime     @default(now())
+  school    School       @relation(fields: [schoolId], references: [id])
+  scales    GradeScale[]
+  @@schema("public")
+}
+
+model GradeScale {
+  id            String      @id @default(uuid())
+  gradeLegendId String
+  minScore      Float
+  maxScore      Float
+  gradeLetter   String
+  gpaPoints     Float?
+  remark        String?
+  gradeLegend   GradeLegend @relation(fields: [gradeLegendId], references: [id])
+  @@schema("public")
+}
+
+model User {
+  id                    String             @id @default(uuid())
+  email                 String             @unique
+  passwordHash          String
+  name                  String
+  role                  String
+  isActive              Boolean            @default(true)
+  schoolId              String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  dob                   DateTime?
+  gender                String?
+  phone                 String?
+  address               String?
+  joiningDate           DateTime?
+  photoUrl              String?
+  parentName            String?
+  parentPhone           String?
+  gradeLevelId          String?
+  authoredAnnouncements Announcement[]     @relation("AnnouncementAuthor")
+  attendance            Attendance[]
+  attendanceRecords     AttendanceRecord[] @relation("StudentAttendance")
+  classroomsOwned       Classroom[]        @relation("TeacherOwnedClassrooms")
+  classroomMembers      ClassroomMember[]
+  posts                 ClassroomPost[]
+  feePayments           FeePayment[]
+  teacherGrades         GradeEntry[]       @relation("TeacherGrades")
+  studentGrades         GradeEntry[]       @relation("StudentGrades")
+  gradeHistory          GradeHistory[]
+  approvedLeaves        LeaveRequest[]     @relation("ApprovedLeaves")
+  leaveRequests         LeaveRequest[]     @relation("UserLeaves")
+  parents               ParentStudent[]    @relation("StudentToParent")
+  children              ParentStudent[]    @relation("ParentToStudent")
+  payrolls              Payroll[]          @relation("UserPayroll")
+  requisitions          Requisition[]      @relation("RequestedBy")
+  uploadedDocuments     SchoolDocument[]   @relation("DocumentUploader")
+  securityLogs          SecurityLog[]
+  staffAttendance       StaffAttendance[]  @relation("UserStaffAttendance")
+  createdTasks          StaffTask[]        @relation("CreatedTasks")
+  assignedTasks         StaffTask[]        @relation("AssignedTasks")
+  submissions           Submission[]
+  systemLogs            SystemLog[]
+  gradeLevel            GradeLevel?        @relation("StudentGradeLevel", fields: [gradeLevelId], references: [id])
+  school                School?            @relation(fields: [schoolId], references: [id])
+  vehicles              Vehicle[]          @relation("VehicleDriver")
+  workOrdersRequested   WorkOrder[]        @relation("WorkOrderRequestedBy")
+  workOrdersAssigned    WorkOrder[]        @relation("AssignedTo")
+  @@schema("public")
+}
+
+model ParentStudent {
+  id        String   @id @default(uuid())
+  parentId  String
+  studentId String
+  createdAt DateTime @default(now())
+  student   User     @relation("StudentToParent", fields: [studentId], references: [id])
+  parent    User     @relation("ParentToStudent", fields: [parentId], references: [id])
+
+  @@unique([parentId, studentId])
+  @@schema("public")
+}
+
+model Attendance {
+  id           String             @id @default(uuid())
+  schoolId     String
+  classroomId  String?
+  teacherId    String
+  date         DateTime           @default(now())
+  presentCount Int
+  absentCount  Int
+  status       String             @default("COMPLETED")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  teacher      User               @relation(fields: [teacherId], references: [id])
+  classroom    Classroom?         @relation(fields: [classroomId], references: [id])
+  school       School             @relation(fields: [schoolId], references: [id])
+  records      AttendanceRecord[]
+
+  @@index([schoolId])
+  @@index([classroomId])
+  @@schema("public")
+}
+
+model AttendanceRecord {
+  id           String     @id @default(uuid())
+  attendanceId String
+  studentId    String
+  status       String
+  notes        String?
+  student      User       @relation("StudentAttendance", fields: [studentId], references: [id])
+  attendance   Attendance @relation(fields: [attendanceId], references: [id])
+  @@schema("public")
+}
+
+model FeePayment {
+  id        String    @id @default(uuid())
+  schoolId  String
+  studentId String
+  amount    Float
+  type      String
+  status    String    @default("PENDING")
+  dueDate   DateTime
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  student   User      @relation(fields: [studentId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@schema("public")
+}
+
+model Exam {
+  id                      String       @id @default(uuid())
+  schoolId                String
+  title                   String
+  startDate               DateTime
+  endDate                 DateTime
+  gradeSubmissionDeadline DateTime
+  duration                Int
+  status                  String       @default("SCHEDULED")
+  isGradesReleased        Boolean      @default(false)
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  school                  School       @relation(fields: [schoolId], references: [id])
+  gradeEntries            GradeEntry[]
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model Subject {
+  id           String       @id @default(uuid())
+  name         String
+  code         String
+  description  String?
+  schoolId     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  classrooms   Classroom[]
+  gradeEntries GradeEntry[]
+  school       School       @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, code])
+  @@schema("public")
+}
+
+model GradeLevel {
+  id           String                 @id @default(uuid())
+  name         String
+  schoolId     String
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  applications AdmissionApplication[]
+  classrooms   Classroom[]
+  school       School                 @relation(fields: [schoolId], references: [id])
+  students     User[]                 @relation("StudentGradeLevel")
+
+  @@unique([schoolId, name])
+  @@schema("public")
+}
+
+model Classroom {
+  id             String             @id @default(uuid())
+  name           String
+  classCode      String             @unique
+  bannerColor    String?
+  status         String             @default("ACTIVE")
+  schoolId       String
+  subjectId      String?
+  gradeLevelId   String?
+  schoolYearId   String?
+  ownerTeacherId String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  attendance     Attendance[]
+  ownerTeacher   User               @relation("TeacherOwnedClassrooms", fields: [ownerTeacherId], references: [id])
+  gradeLevel     GradeLevel?        @relation(fields: [gradeLevelId], references: [id])
+  subject        Subject?           @relation(fields: [subjectId], references: [id])
+  school         School             @relation(fields: [schoolId], references: [id])
+  meetings       ClassroomMeeting[]
+  members        ClassroomMember[]
+  posts          ClassroomPost[]
+  topics         ClassroomTopic[]
+  gradeEntries   GradeEntry[]
+
+  @@index([schoolId])
+  @@index([ownerTeacherId])
+  @@schema("public")
+}
+
+model ClassroomMember {
+  id          String    @id @default(uuid())
+  classroomId String
+  userId      String
+  role        String
+  joinedAt    DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+
+  @@unique([classroomId, userId])
+  @@schema("public")
+}
+
+model ClassroomPost {
+  id          String           @id @default(uuid())
+  classroomId String
+  authorId    String
+  type        String
+  title       String?
+  body        String
+  topicId     String?
+  maxPoints   Float?
+  dueAt       DateTime?
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  topic       ClassroomTopic?  @relation(fields: [topicId], references: [id])
+  author      User             @relation(fields: [authorId], references: [id])
+  classroom   Classroom        @relation(fields: [classroomId], references: [id])
+  attachments PostAttachment[]
+  comments    PostComment[]
+  submissions Submission[]
+  @@schema("public")
+}
+
+model PostAttachment {
+  id        String        @id @default(uuid())
+  postId    String
+  fileUrl   String
+  fileType  String
+  createdAt DateTime      @default(now())
+  post      ClassroomPost @relation(fields: [postId], references: [id])
+  @@schema("public")
+}
+
+model PostComment {
+  id              String        @id @default(uuid())
+  postId          String
+  authorId        String
+  body            String
+  parentCommentId String?
+  createdAt       DateTime      @default(now())
+  post            ClassroomPost @relation(fields: [postId], references: [id])
+  @@schema("public")
+}
+
+model Submission {
+  id           String                 @id @default(uuid())
+  postId       String
+  studentId    String
+  textResponse String?
+  status       String                 @default("SUBMITTED")
+  submittedAt  DateTime?
+  grade        Float?
+  feedback     String?
+  returnedAt   DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  student      User                   @relation(fields: [studentId], references: [id])
+  post         ClassroomPost          @relation(fields: [postId], references: [id])
+  attachments  SubmissionAttachment[]
+  @@schema("public")
+}
+
+model SubmissionAttachment {
+  id           String     @id @default(uuid())
+  submissionId String
+  fileUrl      String
+  createdAt    DateTime   @default(now())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  @@schema("public")
+}
+
+model ClassroomTopic {
+  id          String          @id @default(uuid())
+  classroomId String
+  title       String
+  order       Int
+  createdAt   DateTime        @default(now())
+  posts       ClassroomPost[]
+  classroom   Classroom       @relation(fields: [classroomId], references: [id])
+  @@schema("public")
+}
+
+model ClassroomMeeting {
+  id          String    @id @default(uuid())
+  classroomId String
+  meetingUrl  String
+  scheduledAt DateTime
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  @@schema("public")
+}
+
+model Requisition {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  amount      Float
+  status      String   @default("PENDING")
+  requestedBy String
+  schoolId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id])
+  requester   User     @relation("RequestedBy", fields: [requestedBy], references: [id])
+  @@schema("public")
+}
+
+model SecurityLog {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  location    String?
+  severity    String   @default("LOW")
+  loggedBy    String
+  schoolId    String
+  createdAt   DateTime @default(now())
+  school      School   @relation(fields: [schoolId], references: [id])
+  logger      User     @relation(fields: [loggedBy], references: [id])
+  @@schema("public")
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  action    String
+  module    String
+  details   String
+  userId    String?
+  userName  String?
+  schoolId  String?
+  level     String   @default("INFO")
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  school    School?  @relation(fields: [schoolId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+  @@schema("public")
+}
+
+model SystemCredential {
+  id         String    @id @default(uuid())
+  name       String
+  key        String    @unique
+  secret     String?
+  provider   String?
+  status     String    @default("ACTIVE")
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  @@schema("public")
+}
+
+model Vehicle {
+  id              String               @id @default(uuid())
+  plateNumber     String               @unique
+  model           String
+  capacity        Int
+  status          String               @default("ACTIVE")
+  driverId        String?
+  schoolId        String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  school          School               @relation(fields: [schoolId], references: [id])
+  driver          User?                @relation("VehicleDriver", fields: [driverId], references: [id])
+  maintenanceLogs VehicleMaintenance[]
+  @@schema("public")
+}
+
+model VehicleMaintenance {
+  id          String    @id @default(uuid())
+  vehicleId   String
+  description String
+  cost        Float
+  date        DateTime  @default(now())
+  nextService DateTime?
+  createdAt   DateTime  @default(now())
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id])
+  @@schema("public")
+}
+
+model WorkOrder {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  location    String?
+  assignedTo  String?
+  requestedBy String
+  schoolId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id])
+  requester   User     @relation("WorkOrderRequestedBy", fields: [requestedBy], references: [id])
+  assignee    User?    @relation("AssignedTo", fields: [assignedTo], references: [id])
+  @@schema("public")
+}
+
+model InventoryItem {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  quantity    Int      @default(0)
+  unit        String   @default("pcs")
+  minQuantity Int      @default(5)
+  schoolId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id])
+  @@schema("public")
+}
+
+model LeaveRequest {
+  id         String    @id @default(uuid())
+  schoolId   String
+  userId     String
+  type       String
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     String    @default("PENDING")
+  approvedBy String?
+  approvedAt DateTime?
+  comment    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  approver   User?     @relation("ApprovedLeaves", fields: [approvedBy], references: [id])
+  user       User      @relation("UserLeaves", fields: [userId], references: [id])
+  school     School    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model StaffTask {
+  id          String    @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  priority    String    @default("MEDIUM")
+  status      String    @default("TODO")
+  dueDate     DateTime?
+  assignedTo  String
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation("CreatedTasks", fields: [createdBy], references: [id])
+  assignee    User      @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  school      School    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([assignedTo])
+  @@schema("public")
+}
+
+model StaffAttendance {
+  id        String    @id @default(uuid())
+  schoolId  String
+  userId    String
+  date      DateTime  @default(now())
+  checkIn   DateTime?
+  checkOut  DateTime?
+  status    String    @default("PRESENT")
+  notes     String?
+  photoIn   String?
+  photoOut  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation("UserStaffAttendance", fields: [userId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
+
+  @@unique([userId, date])
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model Announcement {
+  id          String    @id @default(uuid())
+  schoolId    String
+  title       String
+  content     String
+  targetRoles String
+  authorId    String
+  isPinned    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  school      School    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model SchoolDocument {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  category    String
+  accessRoles String
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uploader    User     @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model Payroll {
+  id            String    @id @default(uuid())
+  schoolId      String
+  userId        String
+  month         Int
+  year          Int
+  basicSalary   Float
+  allowances    Float     @default(0)
+  deductions    Float     @default(0)
+  netSalary     Float
+  status        String    @default("PENDING")
+  paidAt        DateTime?
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation("UserPayroll", fields: [userId], references: [id])
+  school        School    @relation(fields: [schoolId], references: [id])
+
+  @@unique([userId, month, year])
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model SyllabusPlan {
+  id                 String   @id @default(uuid())
+  schoolId           String
+  subjectId          String
+  gradeLevelId       String
+  teacherId          String
+  teacherName        String
+  subjectName        String
+  gradeLevelName     String
+  title              String
+  academicYear       String
+  calendarPatternId  String?
+  standardsFramework String   @default("Cambridge International") // Cambridge, IB, US Common Core, etc.
+  objectives         String   // Text or stringified JSON list of objectives
+  units              String   // Text or stringified JSON of weekly/unit outlines (includes weeks, topic, central idea, activities, differentiation, assessment)
+  textbooks          String?
+  differentiation    String?  // Strategies for support and stretch groups
+  accommodations     String?  // IEP/504 adjustments
+  gradingCriteria    String?  // Text or stringified JSON of grading criteria
+  status             String   @default("PENDING") // DRAFT, PENDING, APPROVED, REJECTED
+  feedback           String?  // Review comments from authority
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  category    String   // ACADEMIC, UTILITIES, MAINTENANCE, TRANSPORT, OFFICE, PROCUREMENT, SALARY, OTHER
+  amount      Float
+  date        DateTime @default(now())
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes       String?
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@schema("public")
+}
+
+

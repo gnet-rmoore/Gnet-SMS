@@ -1,0 +1,12 @@
+---
+description: Always create or update an implementation plan before writing feature/fix code
+alwaysApply: true
+---
+
+# Plan before implement
+
+Before writing implementation code for a feature, fix, or multi-file change, **create or update a plan** and wait for confirmation (unless the user explicitly says to skip the plan).
+
+Follow skill: [`.cursor/skills/plan-before-implement/SKILL.md`](../skills/plan-before-implement/SKILL.md).
+
+**Skip only:** pure typos, one-line refactors, formatting-only. When unsure, plan first.

@@ -1,0 +1,27 @@
+# Dockerfile.frontend — packages the last known-good SPA build (frontend/public).
+# IMPORTANT: the React/Vite *source* of the SPA could not be recovered from the
+# published image (no sourcemaps were shipped), so this Dockerfile repackages the
+# vendored production build instead of compiling from source. See RECOVERY.md.
+#
+# Reconstructed from: docker history gnetllc/gnet-sms-frontend-spa:latest
+# Build context: repository root.
+
+FROM nginx:1.25.5-alpine
+
+COPY 30-tune-worker-processes.sh /docker-entrypoint.d/30-tune-worker-processes.sh
+RUN chmod +x /docker-entrypoint.d/30-tune-worker-processes.sh
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY frontend/public /usr/share/nginx/html
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && mkdir -p /var/cache/nginx /var/run \
+    && chown -R appuser:appgroup /var/cache/nginx \
+    && chown appuser:appgroup /var/run \
+    && touch /var/run/nginx.pid \
+    && chown appuser:appgroup /var/run/nginx.pid
+
+USER appuser
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

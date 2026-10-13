@@ -1,0 +1,13 @@
+[
+  ["Return paper", "Retourner le sujet", "Devolver el examen", "Klausur zurückgeben", "إعادة الورقة", "退回试卷", "पेपर वापस करें"],
+  ["Feedback (required)", "Commentaires (obligatoire)", "Comentarios (obligatorio)", "Feedback (erforderlich)", "الملاحظات (مطلوبة)", "反馈（必填）", "प्रतिक्रिया (आवश्यक)"],
+  ["What should the teacher fix?", "Que doit corriger l’enseignant ?", "¿Qué debe corregir el docente?", "Was soll die Lehrkraft korrigieren?", "ماذا يجب أن يصحّح المعلم؟", "教师需要修改什么？", "शिक्षक को क्या सुधारना चाहिए?"],
+  ["Feedback is required", "Les commentaires sont obligatoires", "Los comentarios son obligatorios", "Feedback ist erforderlich", "الملاحظات مطلوبة", "必须填写反馈", "प्रतिक्रिया आवश्यक है"],
+  ["No papers waiting for review.", "Aucun sujet en attente de révision.", "No hay exámenes en espera de revisión.", "Keine Klausuren warten auf Prüfung.", "لا توجد أوراق بانتظار المراجعة.", "暂无待审试卷。", "समीक्षा की प्रतीक्षा में कोई पेपर नहीं।"],
+  ["{{mode}} · rev {{revision}} · {{count}} questions", "{{mode}} · rév. {{revision}} · {{count}} questions", "{{mode}} · rev. {{revision}} · {{count}} preguntas", "{{mode}} · Rev. {{revision}} · {{count}} Fragen", "{{mode}} · مراجعة {{revision}} · {{count}} أسئلة", "{{mode}} · 修订 {{revision}} · {{count}} 题", "{{mode}} · संशोधन {{revision}} · {{count}} प्रश्न"],
+  ["Submitted {{when}}", "Soumis le {{when}}", "Enviado el {{when}}", "Eingereicht {{when}}", "تم الإرسال {{when}}", "已提交 {{when}}", "सबमिट किया गया {{when}}"],
+  ["Open paper", "Ouvrir le sujet", "Abrir examen", "Klausur öffnen", "فتح الورقة", "打开试卷", "पेपर खोलें"],
+  ["Could not load review queue", "Impossible de charger la file de révision", "No se pudo cargar la cola de revisión", "Prüfungswarteschlange konnte nicht geladen werden", "تعذّر تحميل قائمة المراجعة", "无法加载审阅队列", "समीक्षा कतार लोड नहीं हो सकी"],
+  ["Approve failed", "Échec de l’approbation", "Error al aprobar", "Freigabe fehlgeschlagen", "فشل الاعتماد", "批准失败", "अनुमोदन विफल"],
+  ["Return failed", "Échec du retour", "Error al devolver", "Zurückgeben fehlgeschlagen", "فشل الإعادة", "退回失败", "वापसी विफल"]
+]

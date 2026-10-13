@@ -1,0 +1,43 @@
+---
+description: SMS frontend architecture, Tailwind design system, and Executive Slate UI rules
+alwaysApply: true
+---
+
+# SMS Frontend Guidelines
+
+Authoritative detail: `FRONTEND_GUIDELINES.md`. UI workflow skill: `.cursor/skills/sms-ui-consistency/SKILL.md`.
+
+## Architecture
+
+- Stack: React 18+, TypeScript, Vite; API via Express/Prisma microservices + gateway.
+- Place code correctly: reusable UI → `src/components/`; views → `src/pages/School/` or `src/pages/SuperAdmin/`; feature extracts → `src/features/`; API clients → `src/services/`; auth → `src/store/authStore.ts`.
+- Routes in `src/App.tsx` with `<Layout>` + role guards. Nav: `src/constants/navByRole.ts`. Paths: `/${slug}/…` (school), `/super-admin/…` (global).
+
+## Styling (non-negotiable)
+
+- Tailwind only. No extra CSS files / css-in-js / inline `style` (Recharts exception; density tokens live in `src/index.css`).
+- Prefer `src/components/ui` (`PageShell`, `PageHeader`, `Surface`, `Button`, `Field`, `StatTile`) over one-off control recipes.
+- Page shell: `max-w-6xl mx-auto space-y-8 px-6 sm:px-8` (or `<PageShell>`).
+- Large cards: `rounded-[32px]`; children: `rounded-2xl`. Elevation: `border border-slate-200` + soft dual-layer shadow (`SMS_SHADOW_SURFACE`).
+- Padding: `p-8` primary; `p-4`/`p-6` widgets.
+- Headings: `tracking-tight font-extrabold text-slate-900`. Counts/IDs: `font-mono`.
+- Controls: comfortable default; `compact` only in tables/toolbars; focus-visible rings; no new `text-[10px]` on screens.
+- Motion: `motion/react` only; `duration: 0.2`; `initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}`.
+
+## Theme: Executive Slate
+
+- Canvas `bg-slate-100` (`smsCanvasClass`); nested wells `bg-slate-50`; text `text-slate-900` / `text-slate-500`; surface borders `border-slate-200`.
+- Actions indigo-600; success emerald; errors rose; banners `from-slate-950 to-slate-900`.
+- Icons: `lucide-react` only.
+
+## Honesty & safety
+
+- No fake telemetry, filler charts, or sci-fi labels. Empty states: grey + short copy.
+- No `window.alert()` / `confirm()` — use toasts for feedback and `confirmAction` from `src/lib/swal` for confirmations.
+- Forms: loading states; fields init to `""`. Never expose secrets to the client.
+- After auth/profile updates: `setAuth`. Prefer one responsive composition over redundant tabs.
+- Country + timezone: use `CountryTimezoneFields` so TZ options filter by country.
+
+## When editing legacy UI
+
+Migrate touched surfaces from `rounded-3xl`/`shadow-sm`/`font-bold` titles to the canonical tokens above so a page does not mix systems.

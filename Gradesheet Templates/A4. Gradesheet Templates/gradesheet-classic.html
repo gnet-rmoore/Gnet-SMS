@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Academic Report — Classic Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  TEMPLATE 1 — "THE LEDGER"
+  ==========================
+  Formal certificate-style report card. Built for print (A4) and screen preview.
+
+  INTEGRATION NOTES FOR YOUR SMS APP
+  -----------------------------------
+  Every dynamic value carries a data-field attribute, e.g. data-field="student.name".
+  Your backend/templating layer can target these with a simple selector
+  (document.querySelector('[data-field="student.name"]')) or a server-side
+  string replace on the token in the innerText. Repeating rows (subjects,
+  signatures) are marked with data-repeat="subject-row" — clone the row
+  found inside <tbody id="subject-rows"> for each subject record.
+  Nothing here requires a build step: it is one plain HTML file with
+  inline CSS, safe to store as a template string / blob in your backend.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#232323;
+    --ink-soft:#5b5648;
+    --navy:#1B2A4A;
+    --navy-deep:#101a30;
+    --gold:#B8973F;
+    --gold-soft:#e7d9b3;
+    --paper:#FAF7EF;
+    --paper-line:#e7e0cf;
+    --rule:#c9bd9c;
+    --pass:#2F6844;
+    --fail:#9B2C2C;
+    --font-display:'Fraunces', 'Georgia', serif;
+    --font-body:'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+    --font-data:'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#d9d2bd;
+    font-family:var(--font-body);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Screen-only staging area so the sheet reads like a document on a desk */
+  .stage{
+    display:flex;
+    justify-content:center;
+    padding:36px 16px 60px;
+  }
+
+  .sheet{
+    width:210mm;
+    min-height:297mm;
+    background:var(--paper);
+    padding:14mm 13mm 12mm;
+    position:relative;
+    box-shadow:0 4px 8px rgba(16,26,48,.12), 0 24px 48px rgba(16,26,48,.18);
+  }
+
+  /* Double ruled frame — the certificate cue, used once, not repeated elsewhere */
+  .frame{
+    position:absolute;
+    inset:6mm;
+    border:1.5px solid var(--navy);
+    outline:1px solid var(--navy);
+    outline-offset:4px;
+    pointer-events:none;
+  }
+
+  .content{
+    position:relative;
+    z-index:1;
+  }
+
+  /* ---------- Header ---------- */
+  .masthead{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding-bottom:14px;
+    border-bottom:2px solid var(--navy);
+  }
+  .crest{
+    width:64px;height:64px;border-radius:50%;
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);
+    font-size:22px;font-weight:700;color:var(--navy);
+    background:radial-gradient(circle at 30% 30%, #fff, var(--gold-soft));
+    flex-shrink:0;
+  }
+  .school-id{flex:1;}
+  .school-name{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:.3px;
+    color:var(--navy);
+    line-height:1.15;
+  }
+  .school-meta{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+    letter-spacing:.3px;
+  }
+  .doc-tag{
+    text-align:right;
+    font-family:var(--font-display);
+    font-size:12px;
+    letter-spacing:2.5px;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+  }
+  .doc-tag .term{
+    display:block;
+    font-family:var(--font-body);
+    font-size:12.5px;
+    letter-spacing:0;
+    color:var(--ink);
+    margin-top:5px;
+    font-weight:600;
+    text-transform:none;
+  }
+
+  /* ---------- Student identity strip ---------- */
+  .idstrip{
+    display:grid;
+    grid-template-columns:76px repeat(4, 1fr);
+    gap:0;
+    margin-top:16px;
+    border:1px solid var(--rule);
+    background:#fff;
+  }
+  .photo-box{
+    width:76px;height:92px;
+    border-right:1px solid var(--rule);
+    background:repeating-linear-gradient(135deg, #f1ede2, #f1ede2 6px, #e9e3d2 6px, #e9e3d2 7px);
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;color:var(--ink-soft);text-align:center;
+    grid-row:1 / 3;
+  }
+  .id-field{
+    padding:8px 12px;
+    border-right:1px solid var(--paper-line);
+    border-bottom:1px solid var(--paper-line);
+  }
+  .id-field:nth-child(5), .id-field:nth-child(9){border-right:none;}
+  .id-label{
+    font-size:9px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--ink-soft);font-weight:600;
+  }
+  .id-value{
+    font-family:var(--font-data);
+    font-size:13.5px;font-weight:600;
+    color:var(--navy-deep);
+    margin-top:2px;
+  }
+
+  /* ---------- Section labels ---------- */
+  .section-label{
+    display:flex;align-items:center;gap:10px;
+    margin:22px 0 8px;
+  }
+  .section-label .tick{
+    width:10px;height:10px;background:var(--gold);
+    transform:rotate(45deg);flex-shrink:0;
+  }
+  .section-label span{
+    font-family:var(--font-display);
+    font-weight:600;font-size:14px;
+    letter-spacing:.4px;color:var(--navy);
+  }
+  .section-label::after{
+    content:'';flex:1;height:1px;background:var(--rule);
+  }
+
+  /* ---------- Subjects ledger table ---------- */
+  table.ledger{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    background:#fff;
+  }
+  table.ledger thead th{
+    background:var(--navy);
+    color:var(--gold-soft);
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    padding:9px 10px;
+    text-align:left;
+  }
+  table.ledger thead th.num, table.ledger td.num{text-align:center;}
+  table.ledger tbody td{
+    padding:8px 10px;
+    border-bottom:1px solid var(--paper-line);
+    color:var(--ink);
+  }
+  table.ledger tbody tr:nth-child(even){background:#faf8f2;}
+  table.ledger td.subject-name{font-weight:600;color:var(--navy-deep);}
+  table.ledger td.score{font-family:var(--font-data);font-weight:600;text-align:center;}
+  table.ledger td.grade{
+    text-align:center;font-family:var(--font-data);font-weight:700;
+  }
+  table.ledger td.grade.pass{color:var(--pass);}
+  table.ledger td.grade.fail{color:var(--fail);}
+  table.ledger td.remark{font-size:11px;color:var(--ink-soft);font-style:italic;}
+  table.ledger tfoot td{
+    padding:10px;
+    font-weight:700;
+    border-top:2px solid var(--navy);
+    background:#f3efe3;
+  }
+
+  /* ---------- Summary + scale row ---------- */
+  .two-col{
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:16px;
+    margin-top:18px;
+    align-items:start;
+  }
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--rule);
+    background:#fff;
+  }
+  .stat{
+    padding:11px 10px;
+    text-align:center;
+    border-right:1px solid var(--paper-line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-label{
+    font-size:9px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;
+  }
+  .stat-value{
+    font-family:var(--font-display);
+    font-size:22px;font-weight:700;color:var(--navy);
+    margin-top:3px;
+  }
+  .stat-value small{font-size:12px;font-weight:500;color:var(--ink-soft);}
+
+  .scale-box{
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:10px 12px;
+  }
+  .scale-title{
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    font-weight:700;color:var(--navy);margin-bottom:6px;
+  }
+  table.scale{width:100%;border-collapse:collapse;font-size:10.5px;}
+  table.scale td{padding:2.5px 4px;color:var(--ink-soft);}
+  table.scale td.g{font-family:var(--font-data);font-weight:700;color:var(--navy-deep);width:28px;}
+
+  /* ---------- Attendance / conduct strip ---------- */
+  .strip{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:16px;
+  }
+  .strip .box{
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:10px 12px;
+  }
+  .strip .box-label{
+    font-size:9px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;margin-bottom:4px;
+  }
+  .strip .box-value{
+    font-family:var(--font-data);font-weight:700;font-size:15px;color:var(--navy-deep);
+  }
+
+  /* ---------- Remarks ---------- */
+  .remarks{
+    margin-top:16px;
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:12px 14px;
+  }
+  .remarks + .remarks{margin-top:10px;}
+  .remarks .who{
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--gold);font-weight:700;margin-bottom:5px;
+  }
+  .remarks p{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink);}
+
+  /* ---------- Signatures ---------- */
+  .signatures{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+    margin-top:34px;
+  }
+  .sig-line{
+    border-top:1px solid var(--ink);
+    padding-top:6px;
+    text-align:center;
+  }
+  .sig-line .role{
+    font-size:10px;text-transform:uppercase;letter-spacing:.8px;
+    color:var(--ink-soft);font-weight:600;
+  }
+
+  .footer-note{
+    margin-top:20px;
+    text-align:center;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    letter-spacing:.3px;
+  }
+
+  /* ---------- Print rules ---------- */
+  @page{ size:A4; margin:0; }
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{
+      width:210mm;min-height:297mm;
+      box-shadow:none;
+      padding:12mm 13mm 10mm;
+    }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+  @media screen and (max-width:900px){
+    .sheet{width:100%;padding:6mm;}
+    .idstrip{grid-template-columns:60px repeat(2,1fr);}
+    .two-col, .strip, .signatures{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <div class="frame"></div>
+    <div class="content">
+
+      <!-- HEADER -->
+      <div class="masthead">
+        <div class="crest" data-field="school.crest_initials">GA</div>
+        <div class="school-id">
+          <div class="school-name" data-field="school.name">Greendale Academy</div>
+          <div class="school-meta" data-field="school.address">14 Independence Avenue, Monrovia, Liberia · www.greendaleacademy.edu.lr</div>
+        </div>
+        <div class="doc-tag">
+          Report of Achievement
+          <span class="term" data-field="term.label">Term 2 · 2025/2026 Academic Year</span>
+        </div>
+      </div>
+
+      <!-- STUDENT IDENTITY -->
+      <div class="idstrip">
+        <div class="photo-box">Student<br>Photo</div>
+        <div class="id-field">
+          <div class="id-label">Student Name</div>
+          <div class="id-value" data-field="student.name">Amara K. Johnson</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Admission No.</div>
+          <div class="id-value" data-field="student.admission_no">GA-2024-0187</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Class / Grade</div>
+          <div class="id-value" data-field="student.class">Grade 9 — Section B</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Date of Birth</div>
+          <div class="id-value" data-field="student.dob">03 May 2011</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Guardian</div>
+          <div class="id-value" data-field="student.guardian">Mr. E. Johnson</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Position in Class</div>
+          <div class="id-value" data-field="summary.rank">3rd of 41</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Exam</div>
+          <div class="id-value" data-field="term.exam_name">End-of-Term Examination</div>
+        </div>
+        <div class="id-field">
+          <div class="id-label">Issue Date</div>
+          <div class="id-value" data-field="term.issue_date">12 Dec 2025</div>
+        </div>
+      </div>
+
+      <!-- SUBJECTS -->
+      <div class="section-label"><div class="tick"></div><span>Academic Performance</span></div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th style="width:34%">Subject</th>
+            <th class="num">Max&nbsp;Marks</th>
+            <th class="num">Obtained</th>
+            <th class="num">Class&nbsp;Avg.</th>
+            <th class="num" style="width:9%">Grade</th>
+            <th>Teacher's Remark</th>
+          </tr>
+        </thead>
+        <tbody id="subject-rows">
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[0].name">English Language</td>
+            <td class="num" data-field="subjects[0].max">100</td>
+            <td class="score" data-field="subjects[0].obtained">88</td>
+            <td class="num" data-field="subjects[0].class_avg">74</td>
+            <td class="grade pass" data-field="subjects[0].grade">A</td>
+            <td class="remark" data-field="subjects[0].remark">Confident, articulate writing</td>
+          </tr>
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[1].name">Mathematics</td>
+            <td class="num" data-field="subjects[1].max">100</td>
+            <td class="score" data-field="subjects[1].obtained">76</td>
+            <td class="num" data-field="subjects[1].class_avg">68</td>
+            <td class="grade pass" data-field="subjects[1].grade">B+</td>
+            <td class="remark" data-field="subjects[1].remark">Strong in algebra, revise geometry</td>
+          </tr>
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[2].name">Integrated Science</td>
+            <td class="num" data-field="subjects[2].max">100</td>
+            <td class="score" data-field="subjects[2].obtained">91</td>
+            <td class="num" data-field="subjects[2].class_avg">70</td>
+            <td class="grade pass" data-field="subjects[2].grade">A</td>
+            <td class="remark" data-field="subjects[2].remark">Excellent lab discipline</td>
+          </tr>
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[3].name">Social Studies</td>
+            <td class="num" data-field="subjects[3].max">100</td>
+            <td class="score" data-field="subjects[3].obtained">69</td>
+            <td class="num" data-field="subjects[3].class_avg">65</td>
+            <td class="grade pass" data-field="subjects[3].grade">B</td>
+            <td class="remark" data-field="subjects[3].remark">Participates well in debate</td>
+          </tr>
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[4].name">French</td>
+            <td class="num" data-field="subjects[4].max">100</td>
+            <td class="score" data-field="subjects[4].obtained">58</td>
+            <td class="num" data-field="subjects[4].class_avg">61</td>
+            <td class="grade fail" data-field="subjects[4].grade">D</td>
+            <td class="remark" data-field="subjects[4].remark">Needs vocabulary practice</td>
+          </tr>
+          <tr data-repeat="subject-row">
+            <td class="subject-name" data-field="subjects[5].name">ICT</td>
+            <td class="num" data-field="subjects[5].max">100</td>
+            <td class="score" data-field="subjects[5].obtained">94</td>
+            <td class="num" data-field="subjects[5].class_avg">72</td>
+            <td class="grade pass" data-field="subjects[5].grade">A</td>
+            <td class="remark" data-field="subjects[5].remark">Outstanding project work</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td class="num" data-field="summary.max_total">600</td>
+            <td class="num" data-field="summary.obtained_total" style="font-family:var(--font-data);text-align:center;">476</td>
+            <td class="num"></td>
+            <td class="num" data-field="summary.overall_grade" style="text-align:center;color:var(--pass);">A−</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- SUMMARY + SCALE -->
+      <div class="two-col">
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-label">Percentage</div>
+            <div class="stat-value" data-field="summary.percentage">79.3<small>%</small></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">GPA</div>
+            <div class="stat-value" data-field="summary.gpa">3.5<small>/4.0</small></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Overall Grade</div>
+            <div class="stat-value" data-field="summary.overall_grade_2">A−</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Conduct</div>
+            <div class="stat-value" data-field="summary.conduct" style="font-size:16px;">Excellent</div>
+          </div>
+        </div>
+
+        <div class="scale-box">
+          <div class="scale-title">International Grading Scale</div>
+          <table class="scale">
+            <tr><td class="g">A</td><td>90 – 100 · Excellent / Distinction</td></tr>
+            <tr><td class="g">B</td><td>75 – 89 · Very Good</td></tr>
+            <tr><td class="g">C</td><td>60 – 74 · Good / Satisfactory</td></tr>
+            <tr><td class="g">D</td><td>50 – 59 · Pass / Needs Improvement</td></tr>
+            <tr><td class="g">U</td><td>Below 50 · Ungraded / Fail</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div class="strip">
+        <div class="box">
+          <div class="box-label">Attendance</div>
+          <div class="box-value"><span data-field="attendance.present">83</span>/<span data-field="attendance.total">88</span> days</div>
+        </div>
+        <div class="box">
+          <div class="box-label">Promotion Status</div>
+          <div class="box-value" data-field="summary.promotion_status">Promoted to Grade 10</div>
+        </div>
+        <div class="box">
+          <div class="box-label">Next Term Begins</div>
+          <div class="box-value" data-field="term.next_term_start">05 Jan 2026</div>
+        </div>
+      </div>
+
+      <!-- REMARKS -->
+      <div class="remarks">
+        <div class="who">Class Teacher's Remark</div>
+        <p data-field="remarks.teacher">Amara has shown consistent improvement this term, particularly in the sciences. Continued attention to French vocabulary will help round out an already strong report.</p>
+      </div>
+      <div class="remarks">
+        <div class="who">Principal's Remark</div>
+        <p data-field="remarks.principal">A commendable result. Keep up the diligence and discipline shown this term.</p>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="signatures">
+        <div class="sig-line"><div class="role">Class Teacher</div></div>
+        <div class="sig-line"><div class="role">Principal</div></div>
+        <div class="sig-line"><div class="role">Parent / Guardian</div></div>
+      </div>
+
+      <div class="footer-note">This report is issued under the authority of Greendale Academy and conforms to the school's internal and national assessment standards.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# Phase 6: /api → gateway; /socket.io → classroom (HTTP + WebSocket).
+# Monolith (sms-api) is retired from the default path.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: school-portal-ingress
+  namespace: school-portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/websocket-services: "classroom-service"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - app.example.com
+    secretName: school-portal-tls
+  rules:
+  - host: app.example.com
+    http:
+      paths:
+      - path: /api/
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 80
+      - path: /socket.io/
+        pathType: Prefix
+        backend:
+          service:
+            name: classroom-service
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-spa
+            port:
+              number: 80

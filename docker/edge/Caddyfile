@@ -1,0 +1,29 @@
+# Optional TLS edge for custom domains (compose profile: edge)
+#
+#   ACME_EMAIL=ops@example.com PLATFORM_EDGE_HOSTNAME=sms.example.com \
+#     docker compose --profile edge up -d edge
+#
+# Caddy asks Identity whether a hostname may get a certificate:
+#   GET http://api-gateway:8081/api/public/domain-tls-ask?domain=school.example.com
+#
+# When using this profile, point public DNS (and school CNAMEs) at this host,
+# and stop publishing frontend-spa:8080 directly on 80/443.
+#
+
+{
+    email {$ACME_EMAIL:ops@localhost}
+    on_demand_tls {
+        ask http://api-gateway:8081/api/public/domain-tls-ask
+    }
+}
+
+:443 {
+    tls {
+        on_demand
+    }
+    reverse_proxy frontend-spa:80
+}
+
+:80 {
+    reverse_proxy frontend-spa:80
+}

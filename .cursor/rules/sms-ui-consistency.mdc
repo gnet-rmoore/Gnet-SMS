@@ -1,0 +1,63 @@
+---
+description: Executive Slate UI consistency for pages, dashboards, and feature views
+globs: src/pages/**/*.tsx,src/features/**/*.tsx,src/components/**/*.tsx
+alwaysApply: false
+---
+
+# SMS UI Consistency (pages & dashboards)
+
+Read `FRONTEND_GUIDELINES.md` §5 and run `.cursor/skills/sms-ui-consistency/SKILL.md` for new/updated UI.
+
+## Before shipping a page
+
+- [ ] Shell: `max-w-6xl mx-auto space-y-8 px-6 sm:px-8` (or justified `max-w-7xl` for wide tables)
+- [ ] Title: `font-extrabold tracking-tight text-slate-900`; subtitle `text-slate-500`
+- [ ] Cards: `rounded-[32px]` + project shadow; children `rounded-2xl`
+- [ ] Stats: live API data only; label uppercase `text-xs`; value `font-extrabold` / `font-mono` for counts
+- [ ] Primary button: `bg-indigo-600 hover:bg-indigo-700 … rounded-xl`
+- [ ] Icons from `lucide-react` only; motion from `motion/react` only
+- [ ] No `alert`/`confirm`; no fake metrics; empty state if no data
+- [ ] Nav + `App.tsx` route updated when adding a page
+
+## Canonical snippets
+
+```tsx
+<div className="max-w-6xl mx-auto space-y-8 px-6 sm:px-8">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Title</h1>
+      <p className="text-slate-500 font-medium">One plain supporting sentence.</p>
+    </div>
+    <button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl">
+      Action
+    </button>
+  </div>
+  <div className="rounded-[32px] border border-slate-100 bg-white p-8 shadow-[0_4px_20px_rgb(0,0,0,0.015)]">
+    {/* content */}
+  </div>
+</div>
+```
+
+```tsx
+<div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.015)] space-y-3">
+  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">{/* icon */}</div>
+  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Label</p>
+  <p className="text-2xl font-extrabold tracking-tight text-slate-900 font-mono">{value}</p>
+</div>
+```
+
+## Do not
+
+- Mix `rounded-3xl`/`shadow-sm` with `rounded-[32px]`/project shadow on the same page
+- Invent dashboard KPIs or “system health” without a backend field
+- Add a second icon library or custom SVG paths
+- Pair an unbound timezone list with a country field — use `CountryTimezoneFields`
+
+## Country + timezone forms
+
+When a form has **country** and **timezone**:
+
+1. Use `src/components/CountryTimezoneFields.tsx` (backed by `src/lib/countryTimezones.ts`).
+2. On country change, timezone options must filter to that country; invalid current TZ resets via `resolveTimezoneForCountry`.
+3. Do not render free-text country/timezone or the full IANA list beside a country select.
+4. Persist both `country` and `timezone` on save when the API supports them.

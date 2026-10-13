@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: school-global-config
+  namespace: school-portal
+data:
+  NODE_ENV: "production"
+  APP_URL: "https://app.example.com"
+  DATABASE_PROVIDER: "postgresql"

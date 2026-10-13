@@ -1,0 +1,11 @@
+{
+  "name": "School Management System v2.0",
+  "description": "Multi-tenant SaaS platform for educational institutions with online classrooms, administrative tools, and real-time collaboration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

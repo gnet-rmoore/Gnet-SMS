@@ -1,0 +1,37 @@
+---
+description: Always document business-domain changes (admission, registration, fees, etc.)
+alwaysApply: true
+---
+
+# Document business changes
+
+When you change **business behavior** (how schools, students, staff, money, or ops workflows work), you **must** update or create project documentation in the **same task** — not later, not “optional.”
+
+## What counts as business-related
+
+Document when any of these change: flows, rules, statuses, roles, fees, enrollment, registration, admissions, attendance, grades policy, payroll/leave rules, announcements/documents policy, public forms, invites, waitlists, billing/checkout, or cross-service orchestration that users/admins depend on.
+
+**Examples that require docs:** admission state machine, school registration/invite, public apply, enroll saga, fee checkout, waitlist, setup checklist, tenant status gating login.
+
+**Usually skip:** pure UI restyle, typo-only, dependency bumps, internal refactors with **no** user/admin-visible behavior change. If unsure, document.
+
+## What to do (same PR / same session)
+
+1. Prefer **update an existing plan/status doc** over inventing a new file.
+2. If no doc fits, **create** a focused `*_PLAN.md` or `docs/<domain>.md` at repo root (or under `docs/`) and link it from `IMPLEMENTATION_STATUS.md` Honest gaps / companions.
+3. Record: **what changed**, **who it affects**, **owning service(s)**, **status** (done / partial), and **how to verify**.
+4. Keep tone factual — no fake metrics. Match existing doc style (tables, status banners).
+
+## Doc map (prefer these)
+
+| Domain | Primary doc |
+| :--- | :--- |
+| School onboarding, public school register, invites, student admission/enroll | `ONBOARDING_AND_ADMISSION_PLAN.md` |
+| Microservices cutover, gateway, schemas/roles, deploy posture | `IMPLEMENTATION_STATUS.md` (+ `MICROSERVICES_ROADMAP.md` if architecture intent changes) |
+| UI system / page patterns | `FRONTEND_GUIDELINES.md` (not for business rules) |
+
+For a full checklist and changelog template, follow skill `document-business-changes`.
+
+## Done means
+
+Code + tests (per project rules) **and** docs updated. Do not claim the task finished if business behavior changed but docs did not.

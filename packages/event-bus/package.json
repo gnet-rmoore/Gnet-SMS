@@ -1,0 +1,22 @@
+{
+  "name": "@sms/event-bus",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/events.ts",
+  "types": "./src/events.ts",
+  "exports": {
+    ".": "./src/events.ts",
+    "./bus": "./src/bus.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.71.0",
+    "ioredis": "^5.10.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2"
+  }
+}

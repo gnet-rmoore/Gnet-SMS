@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-spa
+  namespace: school-portal
+  labels:
+    app: frontend-spa
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-spa
+  template:
+    metadata:
+      labels:
+        app: frontend-spa
+    spec:
+      containers:
+      - name: frontend-spa
+        image: frontend-spa:latest
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-spa
+  namespace: school-portal
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: frontend-spa

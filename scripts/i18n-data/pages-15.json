@@ -1,0 +1,56 @@
+[
+  [
+    "Reset password",
+    "Réinitialiser le mot de passe",
+    "Restablecer contraseña",
+    "Passwort zurücksetzen",
+    "إعادة تعيين كلمة المرور",
+    "重置密码",
+    "पासवर्ड रीसेट करें"
+  ],
+  [
+    "Set a new password without the user’s current one. They will be asked to change it on next login unless you uncheck the option below.",
+    "Définissez un nouveau mot de passe sans l’actuel. L’utilisateur devra le changer à la prochaine connexion sauf si vous décochez l’option ci-dessous.",
+    "Establezca una contraseña nueva sin la actual. Se pedirá cambiarla en el próximo inicio de sesión salvo que desmarque la opción siguiente.",
+    "Legen Sie ein neues Passwort ohne das aktuelle fest. Beim nächsten Login muss es geändert werden, sofern Sie die Option unten nicht deaktivieren.",
+    "عيّن كلمة مرور جديدة دون الحالية. سيُطلب تغييرها عند تسجيل الدخول التالي ما لم تُلغِ الخيار أدناه.",
+    "在不需当前密码的情况下设置新密码。除非取消下方选项，否则下次登录时将要求更改。",
+    "वर्तमान पासवर्ड के बिना नया पासवर्ड सेट करें। अगले लॉगिन पर बदलने को कहा जाएगा जब तक आप नीचे का विकल्प अनचेक न करें।"
+  ],
+  [
+    "New password",
+    "Nouveau mot de passe",
+    "Nueva contraseña",
+    "Neues Passwort",
+    "كلمة المرور الجديدة",
+    "新密码",
+    "नया पासवर्ड"
+  ],
+  [
+    "Confirm password",
+    "Confirmer le mot de passe",
+    "Confirmar contraseña",
+    "Passwort bestätigen",
+    "تأكيد كلمة المرور",
+    "确认密码",
+    "पासवर्ड की पुष्टि करें"
+  ],
+  [
+    "Passwords do not match",
+    "Les mots de passe ne correspondent pas",
+    "Las contraseñas no coinciden",
+    "Passwörter stimmen nicht überein",
+    "كلمتا المرور غير متطابقتين",
+    "两次密码不一致",
+    "पासवर्ड मेल नहीं खाते"
+  ],
+  [
+    "School Admin passwords can only be changed by that admin (Profile) or a Super Admin.",
+    "Les mots de passe d’administrateur d’école ne peuvent être modifiés que par cet administrateur (Profil) ou un super-administrateur.",
+    "Las contraseñas de administrador escolar solo las puede cambiar ese administrador (Perfil) o un superadministrador.",
+    "Schuladministrator-Passwörter können nur von diesem Admin (Profil) oder einem Super-Admin geändert werden.",
+    "يمكن تغيير كلمات مرور مسؤول المدرسة فقط بواسطة ذلك المسؤول (الملف الشخصي) أو مسؤول أعلى.",
+    "学校管理员密码仅可由该管理员（个人资料）或超级管理员更改。",
+    "स्कूल एडमिन पासवर्ड केवल उसी एडमिन (प्रोफ़ाइल) या सुपर एडमिन बदल सकते हैं।"
+  ]
+]

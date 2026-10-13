@@ -1,0 +1,11 @@
+[
+  ["you@school.edu", "vous@ecole.edu", "tu@escuela.edu", "du@schule.edu", "you@school.edu", "you@school.edu", "you@school.edu"],
+  ["Sign-in mode", "Mode de connexion", "Modo de inicio de sesión", "Anmeldemodus", "وضع تسجيل الدخول", "登录模式", "साइन-इन मोड"],
+  ["Opening a new school?", "Vous ouvrez une nouvelle école ?", "¿Abres una escuela nueva?", "Gründen Sie eine neue Schule?", "هل تفتح مدرسة جديدة؟", "要开设新学校？", "नया विद्यालय खोल रहे हैं?"],
+  ["Secured sign-in for authorized school staff", "Connexion sécurisée pour le personnel scolaire autorisé", "Inicio de sesión seguro para personal escolar autorizado", "Gesicherte Anmeldung für autorisiertes Schulpersonal", "تسجيل دخول آمن لموظفي المدرسة المخولين", "为授权学校教职工提供安全登录", "अधिकृत विद्यालय स्टाफ के लिए सुरक्षित साइन-इन"],
+  ["Forgot password?", "Mot de passe oublié ?", "¿Olvidaste tu contraseña?", "Passwort vergessen?", "هل نسيت كلمة المرور؟", "忘记密码？", "पासवर्ड भूल गए?"],
+  ["School", "École", "Escuela", "Schule", "مدرسة", "学校", "स्कूल"],
+  ["Back to home", "Retour à l’accueil", "Volver al inicio", "Zurück zur Startseite", "العودة إلى الصفحة الرئيسية", "返回首页", "होम पर वापस जाएँ"],
+  ["Show password", "Afficher le mot de passe", "Mostrar contraseña", "Passwort anzeigen", "إظهار كلمة المرور", "显示密码", "पासवर्ड दिखाएँ"],
+  ["Hide password", "Masquer le mot de passe", "Ocultar contraseña", "Passwort verbergen", "إخفاء كلمة المرور", "隐藏密码", "पासवर्ड छिपाएँ"]
+]

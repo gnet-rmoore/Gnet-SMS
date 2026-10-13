@@ -1,0 +1,415 @@
+/* Auto-scoped under .gs-official */
+.gs-official { box-sizing: border-box; }
+.gs-official *, .gs-official *::before, .gs-official *::after { box-sizing: border-box; }
+
+  .gs-official{
+    --ink:#1c1c1e;
+    --ink-soft:#52525b;
+    --hairline:#d4d4d8;
+    --navy:#122A4E;
+    --navy-deep:#0B1D38;
+    --gold:#B08D3E;
+    --gold-soft:#F4EEDD;
+    --paper:#ffffff;
+    --panel:#F7F7F5;
+    --good:#1E7A46;
+    --warn:#B8790A;
+    --bad:#B4232C;
+    --serif: 'Georgia', 'Times New Roman', serif;
+    --sans: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
+  }
+
+  
+  
+  
+
+.gs-official .toolbar {
+    max-width:8.5in;
+    margin:16px auto 0;
+    padding:0 4px;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+  }
+.gs-official .toolbar button {
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.02em;
+    padding:9px 18px;
+    border-radius:3px;
+    border:1px solid var(--navy);
+    background:var(--navy);
+    color:#fff;
+    cursor:pointer;
+  }
+.gs-official .toolbar button.secondary {
+    background:transparent;
+    color:var(--navy);
+  }
+
+.gs-official .sheet {
+    width:8.5in;
+    min-height:14in;
+    height:auto;
+    margin:16px auto 48px;
+    background:var(--paper);
+    padding:0 0 40px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15), 0 12px 30px rgba(0,0,0,.12);
+    position:relative;
+  }
+
+  /* ---------- crest band ---------- */
+.gs-official .crest-band {
+    background:var(--navy);
+    background-image:linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:#fff;
+    padding:26px 44px 22px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    border-bottom:4px solid var(--gold);
+  }
+.gs-official .crest {
+    width:56px;height:56px;flex:0 0 56px;
+    border:2px solid var(--gold);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);
+    font-size:22px;
+    color:var(--gold);
+    background:rgba(255,255,255,.04);
+  }
+.gs-official .school-meta {flex:1;min-width:0;}
+.gs-official .school-name {
+    font-family:var(--serif);
+    font-size:23px;
+    letter-spacing:.02em;
+    margin:0 0 3px;
+  }
+.gs-official .school-sub {
+    font-size:11.5px;
+    color:#cfd8e6;
+    letter-spacing:.03em;
+  }
+.gs-official .doc-tag {
+    text-align:right;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    border:1px solid var(--gold);
+    padding:5px 10px;
+    white-space:nowrap;
+    border-radius:2px;
+  }
+
+.gs-official .title-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:20px 44px 0;
+  }
+.gs-official .title-row h1 {
+    font-family:var(--serif);
+    font-size:19px;
+    font-weight:normal;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    margin:0;
+    color:var(--navy-deep);
+  }
+.gs-official .title-row .scale-note {
+    font-size:10.5px;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+.gs-official .gold-rule {
+    height:1px;
+    margin:10px 44px 0;
+    background:linear-gradient(to right, var(--gold), var(--hairline) 65%);
+  }
+
+  /* ---------- student info grid ---------- */
+.gs-official .info-grid {
+    margin:22px 44px 0;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:0 28px;
+  }
+.gs-official .info-item {
+    padding:8px 0;
+    border-bottom:1px solid var(--hairline);
+  }
+.gs-official .info-item .label {
+    font-size:9.5px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:3px;
+  }
+.gs-official .info-item .value {
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  /* ---------- section labels ---------- */
+.gs-official .section-label {
+    margin:28px 44px 10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+.gs-official .section-label .num {
+    font-family:var(--serif);
+    font-size:12px;
+    color:var(--gold);
+    border:1px solid var(--gold);
+    width:20px;height:20px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 20px;
+  }
+.gs-official .section-label .txt {
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--navy-deep);
+    font-weight:700;
+  }
+.gs-official .section-label .line {
+    flex:1;
+    height:1px;
+    background:var(--hairline);
+  }
+
+  /* ---------- subjects table ---------- */
+.gs-official table.subjects {
+    width:calc(100% - 88px);
+    margin:0 44px;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+.gs-official table.subjects thead th {
+    background:var(--navy);
+    color:#fff;
+    font-weight:600;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    text-align:left;
+    padding:9px 10px;
+  }
+.gs-official table.subjects thead th.num {text-align:center;}
+.gs-official table.subjects tbody td {
+    padding:8px 10px;
+    border-bottom:1px solid var(--hairline);
+    color:var(--ink);
+  }
+.gs-official table.subjects tbody td.num {text-align:center;font-variant-numeric:tabular-nums;}
+.gs-official table.subjects tbody tr:nth-child(even) {background:#FAFAF9;}
+.gs-official table.subjects tbody tr td.subj {font-weight:600;}
+.gs-official .grade-pill {
+    display:inline-block;
+    min-width:26px;
+    text-align:center;
+    padding:2px 7px;
+    border-radius:3px;
+    font-weight:700;
+    font-size:11px;
+  }
+.gs-official .grade-a {background:#E4F3EA;color:var(--good);}
+.gs-official .grade-b {background:#FDF3DE;color:var(--warn);}
+.gs-official .grade-c {background:#FBE7E8;color:var(--bad);}
+
+  /* ---------- legend ---------- */
+.gs-official .legend {
+    margin:14px 44px 0;
+    display:flex;
+    gap:18px;
+    font-size:10px;
+    color:var(--ink-soft);
+    flex-wrap:wrap;
+  }
+.gs-official .legend span {display:inline-flex;align-items:center;gap:5px;}
+.gs-official .legend i {
+    width:9px;height:9px;border-radius:2px;display:inline-block;
+  }
+
+  /* ---------- summary + panel ---------- */
+.gs-official .summary-row {
+    margin:24px 44px 0;
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:20px;
+  }
+.gs-official .summary-card {
+    background:var(--panel);
+    border-left:3px solid var(--navy);
+    padding:16px 20px;
+  }
+.gs-official .summary-card h3 {
+    margin:0 0 12px;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:var(--navy-deep);
+  }
+.gs-official .stat-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+.gs-official .stat {
+    text-align:center;
+  }
+.gs-official .stat .n {
+    font-family:var(--serif);
+    font-size:22px;
+    color:var(--navy-deep);
+    font-weight:700;
+    line-height:1.1;
+  }
+.gs-official .stat .l {
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+.gs-official .attendance-card {
+    background:var(--gold-soft);
+    border-left:3px solid var(--gold);
+    padding:16px 20px;
+  }
+.gs-official .attendance-card h3 {
+    margin:0 0 12px;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:#7A5F22;
+  }
+.gs-official .att-row {
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    padding:5px 0;
+    border-bottom:1px dashed #DDCB9B;
+  }
+.gs-official .att-row:last-child {border-bottom:none;}
+.gs-official .att-row .k {color:var(--ink-soft);}
+.gs-official .att-row .v {font-weight:700;color:var(--ink);}
+
+  /* ---------- comments ---------- */
+.gs-official .comment-block {
+    margin:22px 44px 0;
+  }
+.gs-official .comment-box {
+    border:1px solid var(--hairline);
+    border-radius:2px;
+    min-height:52px;
+    padding:12px 14px;
+    font-size:12px;
+    font-style:italic;
+    color:var(--ink-soft);
+    background:#fff;
+  }
+
+  /* ---------- signatures ---------- */
+.gs-official .sig-row {
+    margin:40px 44px 0;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:30px;
+  }
+.gs-official .sig-line {
+    border-top:1px solid var(--ink);
+    padding-top:6px;
+    font-size:10px;
+    text-align:center;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+.gs-official .sig-image-slot {
+    min-height:2rem;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    margin-bottom:2px;
+    text-transform:none;
+  }
+.gs-official .sig-image {
+    max-height:2rem;
+    max-width:90%;
+    object-fit:contain;
+  }
+.gs-official .sig-name {
+    font-size:10px;
+    font-weight:700;
+    color:var(--ink);
+    text-transform:none;
+    letter-spacing:0;
+  }
+.gs-official .sig-line .role {
+    font-size:10px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+
+.gs-official .footer-note {
+    margin:34px 44px 0;
+    padding-top:12px;
+    border-top:1px solid var(--hairline);
+    font-size:9px;
+    color:#9a9a9d;
+    text-align:center;
+    letter-spacing:.02em;
+  }
+
+  /* ---------- Dense (10+ subjects) ---------- */
+.gs-official.gs-dense .crest-band { padding:16px 28px 14px; gap:12px; }
+.gs-official.gs-dense .crest { width:44px; height:44px; flex-basis:44px; font-size:16px; }
+.gs-official.gs-dense .school-name { font-size:18px; }
+.gs-official.gs-dense .title-row { padding:12px 28px 0; }
+.gs-official.gs-dense .title-row h1 { font-size:15px; }
+.gs-official.gs-dense .gold-rule { margin:8px 28px 0; }
+.gs-official.gs-dense .info-grid { margin:12px 28px 0; gap:0 16px; }
+.gs-official.gs-dense .info-item { padding:5px 0; }
+.gs-official.gs-dense .info-item .value { font-size:12px; }
+.gs-official.gs-dense .section-label { margin:14px 28px 6px; }
+.gs-official.gs-dense table.subjects { width:calc(100% - 56px); margin:0 28px; font-size:10.5px; }
+.gs-official.gs-dense table.subjects thead th { padding:5px 6px; font-size:9px; }
+.gs-official.gs-dense table.subjects tbody td { padding:3px 6px; }
+.gs-official.gs-dense .legend { margin:8px 28px 0; font-size:9px; gap:12px; }
+.gs-official.gs-dense .summary-row { margin:14px 28px 0; gap:12px; }
+.gs-official.gs-dense .summary-card,
+.gs-official.gs-dense .attendance-card { padding:10px 12px; }
+.gs-official.gs-dense .stat .n { font-size:16px; }
+.gs-official.gs-dense .comment-block { margin:12px 28px 0; }
+.gs-official.gs-dense .comment-box { min-height:36px; padding:8px 10px; font-size:11px; }
+.gs-official.gs-dense .sig-row { margin:22px 28px 0; gap:16px; }
+.gs-official.gs-dense .footer-note { margin:18px 28px 0; }
+.gs-official.gs-dense .sheet { padding-bottom:24px; }
+
+  /* ---------- print ---------- */
+  @media print{
+.gs-official .toolbar {display:none;}
+.gs-official .sheet {
+      box-shadow:none;
+      margin:0;
+      width:8.5in;
+      min-height:0;
+      height:auto;
+    }
+.gs-official table.subjects thead { display:table-header-group; }
+.gs-official table.subjects tbody tr { break-inside:avoid; page-break-inside:avoid; }
+.gs-official .closing-block { break-inside:avoid; page-break-inside:avoid; }
+  }
+
+.gs-official .toolbar { display: none !important; }
+
+.gs-official .sheet { margin: 0; }

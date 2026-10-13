@@ -1,0 +1,62 @@
+{
+  "fr": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  },
+  "es": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  },
+  "de": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  },
+  "ar": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  },
+  "zh-Hans": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  },
+  "hi": {
+    "common": 0,
+    "nav": 1,
+    "auth": 0,
+    "errors": 0,
+    "roles": 0,
+    "pages": 1150,
+    "public": 437,
+    "__totalMissing": 1588
+  }
+}

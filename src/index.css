@@ -1,0 +1,428 @@
+@import "tailwindcss";
+
+/*
+ * Platform action color is modern blue (Tailwind blue-* hexes).
+ * Class names stay indigo-* / violet-* for compatibility; hex fallbacks are blue.
+ * After school login, Layout sets --school-brand-* from Settings → Appearance
+ * so that school’s portal recolors. Public / login / Super Admin stay blue.
+ */
+@theme {
+  --color-indigo-50: var(--school-brand-50, #eff6ff);
+  --color-indigo-100: var(--school-brand-100, #dbeafe);
+  --color-indigo-200: var(--school-brand-200, #bfdbfe);
+  --color-indigo-300: var(--school-brand-300, #93c5fd);
+  --color-indigo-400: var(--school-brand-400, #60a5fa);
+  --color-indigo-500: var(--school-brand-500, #3b82f6);
+  --color-indigo-600: var(--school-brand-600, #2563eb);
+  --color-indigo-700: var(--school-brand-700, #1d4ed8);
+  --color-indigo-800: var(--school-brand-800, #1e40af);
+  --color-indigo-900: var(--school-brand-900, #1e3a8a);
+  --color-indigo-950: var(--school-brand-950, #172554);
+
+  --color-violet-50: var(--school-brand-50, #eff6ff);
+  --color-violet-100: var(--school-brand-100, #dbeafe);
+  --color-violet-200: var(--school-brand-200, #bfdbfe);
+  --color-violet-300: var(--school-brand-300, #93c5fd);
+  --color-violet-400: var(--school-brand-400, #60a5fa);
+  --color-violet-500: var(--school-brand-500, #3b82f6);
+  --color-violet-600: var(--school-brand-600, #2563eb);
+  --color-violet-700: var(--school-brand-700, #1d4ed8);
+  --color-violet-800: var(--school-brand-800, #1e40af);
+  --color-violet-900: var(--school-brand-900, #1e3a8a);
+  --color-violet-950: var(--school-brand-950, #172554);
+
+  /* Executive Slate density tokens (see docs/UI_CONSISTENCY_PLAN.md) */
+  --radius-sms-surface: var(--sms-radius-surface);
+  --radius-sms-nested: var(--sms-radius-nested);
+  --radius-sms-control: var(--sms-radius-control);
+  --shadow-sms-surface: var(--sms-shadow-surface);
+
+  /* Public marketing landing (`src/features/landing`) */
+  --font-landing-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-landing-display: "Fraunces", ui-serif, Georgia, serif;
+
+  /* Dashboard page headings */
+  --font-dashboard: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Semantic density tokens — source of truth for ui primitives.
+ * Components should prefer these over inventing new px/py recipes.
+ */
+:root {
+  --sms-radius-surface: 32px;
+  --sms-radius-nested: 16px;
+  --sms-radius-control: 12px;
+  --sms-shadow-surface: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
+  --sms-canvas: #f1f5f9; /* slate-100 — page backing */
+  --sms-surface: #ffffff;
+  --sms-space-control-y: 0.75rem; /* 12px → py-3 */
+  --sms-space-control-x: 1.5rem; /* 24px → px-6 */
+  --sms-space-control-y-secondary: 0.625rem; /* 10px → py-2.5 */
+  --sms-space-control-x-secondary: 1rem; /* 16px → px-4 */
+  --sms-space-control-y-compact: 0.5rem; /* 8px → py-2 */
+  --sms-space-control-x-compact: 0.75rem; /* 12px → px-3 */
+  --sms-space-field-y: 0.625rem;
+  --sms-space-field-x: 1rem;
+  --sms-space-field-y-compact: 0.5rem;
+  --sms-focus-ring: 0 0 0 2px rgb(37 99 235 / 0.35);
+  --sms-target-min: 24px;
+  --sms-target-touch: 44px;
+  --sms-motion-duration: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sms-motion-duration: 0.01ms;
+  }
+}
+
+@layer base {
+  /* Custom Scrollbar Styles */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thumb-slate-200::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0; /* slate-200 */
+    border-radius: 20px;
+  }
+
+  .hover\:scrollbar-thumb-slate-300:hover::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* slate-300 */
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+  }
+}
+
+/* ── SweetAlert2 · Executive Slate theme ─────────────────────────
+   Third-party overlay chrome (matches FeatureModalShell / ConfirmDialog).
+   Intentionally outside @layer so it can override SweetAlert defaults. */
+
+@keyframes sms-swal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 15px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes sms-swal-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
+}
+
+@keyframes sms-swal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sms-swal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sms-swal-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sms-swal-toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sms-swal-toast-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+}
+
+.sms-swal-animate-in {
+  animation: sms-swal-in 0.2s ease-out both !important;
+}
+
+.sms-swal-animate-out {
+  animation: sms-swal-out 0.15s ease-in both !important;
+}
+
+.sms-swal-backdrop-in {
+  animation: sms-swal-backdrop-in 0.2s ease-out both !important;
+}
+
+.sms-swal-backdrop-out {
+  animation: sms-swal-backdrop-out 0.15s ease-in both !important;
+}
+
+.sms-swal-icon-in {
+  animation: sms-swal-icon-in 0.2s ease-out 0.05s both !important;
+}
+
+.sms-swal-icon-out {
+  animation: sms-swal-out 0.12s ease-in both !important;
+}
+
+.sms-swal-toast-in {
+  animation: sms-swal-toast-in 0.2s ease-out both !important;
+}
+
+.sms-swal-toast-out {
+  animation: sms-swal-toast-out 0.15s ease-in both !important;
+}
+
+.swal2-container.sms-swal-container {
+  z-index: 12000;
+}
+
+.swal2-popup.sms-swal-popup {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #f1f5f9;
+  border-radius: 32px;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.08);
+  padding: 2rem !important;
+  width: min(28rem, calc(100vw - 2rem)) !important;
+}
+
+.swal2-popup.sms-swal-popup-danger {
+  border-color: #ffe4e6;
+}
+
+.swal2-title.sms-swal-title {
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.swal2-html-container.sms-swal-html {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.625;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.swal2-actions.sms-swal-actions {
+  margin: 1.5rem 0 0;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.sms-swal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7.5rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.sms-swal-btn:active {
+  transform: scale(0.97);
+}
+
+.sms-swal-btn-confirm {
+  background: var(--school-brand-600, #2563eb);
+  color: #ffffff;
+}
+
+.sms-swal-btn-confirm:hover {
+  background: var(--school-brand-700, #1d4ed8);
+}
+
+.sms-swal-btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sms-swal-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.sms-swal-btn-danger {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+.sms-swal-btn-danger:hover {
+  background: #be123c;
+}
+
+.swal2-icon.sms-swal-icon {
+  margin: 0 auto 0.25rem;
+  border-width: 2px;
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.swal2-icon.sms-swal-icon .swal2-icon-content {
+  font-size: 1.75rem;
+}
+
+.swal2-icon.swal2-warning.sms-swal-icon {
+  border-color: #fecdd3;
+  color: #e11d48;
+  background: #fff1f2;
+}
+
+.swal2-icon.swal2-question.sms-swal-icon {
+  border-color: var(--school-brand-200, #bfdbfe);
+  color: var(--school-brand-600, #2563eb);
+  background: var(--school-brand-50, #eff6ff);
+}
+
+.swal2-icon.swal2-success.sms-swal-icon {
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.swal2-icon.swal2-error.sms-swal-icon {
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+
+.swal2-icon.swal2-info.sms-swal-icon {
+  border-color: #bae6fd;
+  color: #0284c7;
+  background: #f0f9ff;
+}
+
+.swal2-popup.sms-swal-toast {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.08);
+  padding: 0.85rem 1rem !important;
+  width: auto !important;
+}
+
+.sms-swal-toast-title {
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+}
+
+.sms-swal-timer {
+  background: var(--school-brand-600, #2563eb);
+}
+
+/* RTL: flip directional icons when Tailwind rtl:rotate-180 is not enough */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* ——— Public landing (`/`) ——— */
+.landing-root {
+  scroll-behavior: smooth;
+}
+
+.landing-root a[href^="#"] {
+  scroll-margin-top: 5.5rem;
+}
+
+.landing-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/* TrustLine-style soft graph paper behind centered hero */
+.landing-hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(226 232 240 / 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(226 232 240 / 0.55) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 20%, transparent 75%);
+}
+
+/* Dark hero band — subtle slate grid + soft vignette mask */
+.landing-hero-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(148 163 184 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(148 163 184 / 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 20%, transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root {
+    scroll-behavior: auto;
+  }
+
+  .landing-root * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .login-bg-photo {
+    transform: none !important;
+  }
+}
+
+/* Dashboard heading font */
+.font-dashboard {
+  font-family: var(--font-dashboard);
+}
+

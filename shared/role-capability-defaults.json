@@ -1,0 +1,598 @@
+{
+  "catalog": [
+    {
+      "key": "action.admissions.manage",
+      "label": "Manage / approve admissions",
+      "category": "Actions \u00b7 Admissions",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "action.leave.approve",
+      "label": "Approve staff leave requests",
+      "category": "Actions \u00b7 Staff",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "action.lesson_plans.approve",
+      "label": "Approve or return lesson plans",
+      "category": "Actions \u00b7 Academics",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "action.roles.assign",
+      "label": "Assign user roles",
+      "category": "Actions \u00b7 Admin",
+      "lockedForSchoolAdmin": true
+    },
+    {
+      "key": "action.roles.customize",
+      "label": "Customize role capabilities",
+      "category": "Actions \u00b7 Admin",
+      "lockedForSchoolAdmin": true
+    },
+    {
+      "key": "nav.admissions",
+      "label": "Admissions",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.api-docs",
+      "label": "API documentation",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.announcements",
+      "label": "Announcements",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.athletics",
+      "label": "Athletics",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.attendance",
+      "label": "Attendance",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.bus-routes",
+      "label": "Bus Routes",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.cafeteria",
+      "label": "Cafeteria",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.calendar",
+      "label": "Calendar",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.children",
+      "label": "My Children",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.classroom",
+      "label": "My Classes",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.classrooms",
+      "label": "Classrooms",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.clinic",
+      "label": "Clinic",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.counseling",
+      "label": "Counseling",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.curriculum",
+      "label": "Curriculum",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.dashboard",
+      "label": "Dashboard",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": true
+    },
+    {
+      "key": "nav.documents",
+      "label": "Documents",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.drivers",
+      "label": "Drivers",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.enrollment",
+      "label": "Enrollment",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.promotion-statement",
+      "label": "Promotion Statement",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.year-transition",
+      "label": "Year Transition",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.exam-paper-review",
+      "label": "Exam paper review",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.exams",
+      "label": "Exams",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.expenses",
+      "label": "Expenses",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.fees",
+      "label": "Fees",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.grade-review",
+      "label": "Grade Review",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.gradebook",
+      "label": "Gradebook",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.grades",
+      "label": "Grades",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.hostel",
+      "label": "Hostel",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.inventory",
+      "label": "Inventory",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.leave-approval",
+      "label": "Leave Approvals",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.lesson-plans",
+      "label": "Lesson Plans",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.library",
+      "label": "Library",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.maintenance",
+      "label": "Facilities Hub",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.my-schedule",
+      "label": "My Schedule",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.onboarding",
+      "label": "Setup",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.online-exams",
+      "label": "Online exams",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.payroll",
+      "label": "Payroll",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.procurement",
+      "label": "Procurement",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.pta",
+      "label": "PTA",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.reports",
+      "label": "Reports",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.roles",
+      "label": "Roles & Access",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": true
+    },
+    {
+      "key": "nav.schedules",
+      "label": "Class Schedules",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.security",
+      "label": "Security",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.settings",
+      "label": "Settings",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.settings/academic-calendar",
+      "label": "Academic Calendar",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.staff",
+      "label": "Staff",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.staff-portal",
+      "label": "Staff Portal",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.students",
+      "label": "Students",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.transcripts",
+      "label": "Transcripts",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.vehicle-maintenance",
+      "label": "Vehicle Maintenance",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "nav.work-orders",
+      "label": "Work Orders",
+      "category": "Navigation",
+      "lockedForSchoolAdmin": false
+    }
+  ],
+  "defaults": {
+    "SCHOOL_ADMIN": [
+      "action.admissions.manage",
+      "action.leave.approve",
+      "action.lesson_plans.approve",
+      "action.roles.assign",
+      "action.roles.customize",
+      "nav.admissions",
+      "nav.api-docs",
+      "nav.announcements",
+      "nav.attendance",
+      "nav.calendar",
+      "nav.classrooms",
+      "nav.curriculum",
+      "nav.dashboard",
+      "nav.documents",
+      "nav.enrollment",
+      "nav.year-transition",
+      "nav.promotion-statement",
+      "nav.exam-paper-review",
+      "nav.exams",
+      "nav.expenses",
+      "nav.fees",
+      "nav.grade-review",
+      "nav.gradebook",
+      "nav.leave-approval",
+      "nav.lesson-plans",
+      "nav.maintenance",
+      "nav.onboarding",
+      "nav.online-exams",
+      "nav.payroll",
+      "nav.pta",
+      "nav.reports",
+      "nav.roles",
+      "nav.schedules",
+      "nav.settings",
+      "nav.settings/academic-calendar",
+      "nav.staff",
+      "nav.staff-portal",
+      "nav.students",
+      "nav.work-orders"
+    ],
+    "PRINCIPAL": [
+      "action.admissions.manage",
+      "action.leave.approve",
+      "action.lesson_plans.approve",
+      "nav.admissions",
+      "nav.api-docs",
+      "nav.announcements",
+      "nav.attendance",
+      "nav.calendar",
+      "nav.classrooms",
+      "nav.curriculum",
+      "nav.dashboard",
+      "nav.documents",
+      "nav.exam-paper-review",
+      "nav.exams",
+      "nav.grade-review",
+      "nav.gradebook",
+      "nav.leave-approval",
+      "nav.lesson-plans",
+      "nav.maintenance",
+      "nav.online-exams",
+      "nav.promotion-statement",
+      "nav.reports",
+      "nav.schedules",
+      "nav.settings/academic-calendar",
+      "nav.staff",
+      "nav.staff-portal",
+      "nav.students",
+      "nav.work-orders",
+      "nav.year-transition"
+    ],
+    "REGISTRAR": [
+      "action.admissions.manage",
+      "nav.admissions",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.enrollment",
+      "nav.promotion-statement",
+      "nav.schedules",
+      "nav.staff-portal",
+      "nav.students",
+      "nav.transcripts",
+      "nav.year-transition"
+    ],
+    "VPI": [
+      "action.lesson_plans.approve",
+      "nav.attendance",
+      "nav.calendar",
+      "nav.classrooms",
+      "nav.curriculum",
+      "nav.dashboard",
+      "nav.exam-paper-review",
+      "nav.exams",
+      "nav.grade-review",
+      "nav.gradebook",
+      "nav.lesson-plans",
+      "nav.online-exams",
+      "nav.promotion-statement",
+      "nav.reports",
+      "nav.schedules",
+      "nav.staff-portal",
+      "nav.year-transition"
+    ],
+    "VPA": [
+      "action.leave.approve",
+      "nav.attendance",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.maintenance",
+      "nav.my-schedule",
+      "nav.procurement",
+      "nav.security",
+      "nav.staff",
+      "nav.staff-portal",
+      "nav.work-orders",
+      "nav.year-transition",
+      "nav.promotion-statement"
+    ],
+    "TEACHER": [
+      "nav.attendance",
+      "nav.calendar",
+      "nav.classroom",
+      "nav.curriculum",
+      "nav.dashboard",
+      "nav.exams",
+      "nav.grade-review",
+      "nav.gradebook",
+      "nav.lesson-plans",
+      "nav.my-schedule",
+      "nav.online-exams",
+      "nav.staff-portal",
+      "nav.students"
+    ],
+    "STUDENT": [
+      "nav.attendance",
+      "nav.calendar",
+      "nav.classroom",
+      "nav.dashboard",
+      "nav.exams",
+      "nav.fees",
+      "nav.grades",
+      "nav.my-schedule",
+      "nav.online-exams"
+    ],
+    "PARENT": [
+      "nav.announcements",
+      "nav.attendance",
+      "nav.calendar",
+      "nav.children",
+      "nav.classroom",
+      "nav.dashboard",
+      "nav.documents",
+      "nav.fees",
+      "nav.grades",
+      "nav.my-schedule",
+      "nav.online-exams",
+      "nav.pta"
+    ],
+    "ACCOUNTANT": [
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.expenses",
+      "nav.fees",
+      "nav.payroll",
+      "nav.staff-portal"
+    ],
+    "TRANSPORTATION": [
+      "nav.bus-routes",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.drivers",
+      "nav.staff-portal",
+      "nav.vehicle-maintenance"
+    ],
+    "MAINTENANCE": [
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.maintenance",
+      "nav.staff-portal",
+      "nav.work-orders"
+    ],
+    "LIBRARIAN": [
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.inventory",
+      "nav.library",
+      "nav.staff-portal"
+    ],
+    "NURSE": [
+      "nav.calendar",
+      "nav.clinic",
+      "nav.dashboard",
+      "nav.inventory",
+      "nav.staff-portal"
+    ],
+    "COUNSELOR": [
+      "nav.calendar",
+      "nav.counseling",
+      "nav.dashboard",
+      "nav.my-schedule",
+      "nav.staff-portal",
+      "nav.students"
+    ],
+    "SECURITY": [
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.security",
+      "nav.staff",
+      "nav.staff-portal"
+    ],
+    "IT_ADMIN": [
+      "nav.api-docs",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.my-schedule",
+      "nav.reports",
+      "nav.roles",
+      "nav.settings",
+      "nav.staff",
+      "nav.staff-portal"
+    ],
+    "PROCUREMENT": [
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.inventory",
+      "nav.procurement",
+      "nav.staff-portal"
+    ],
+    "ATHLETICS_DIRECTOR": [
+      "nav.athletics",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.staff",
+      "nav.staff-portal"
+    ],
+    "HOSTEL_WARDEN": [
+      "nav.attendance",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.hostel",
+      "nav.staff-portal"
+    ],
+    "CAFETERIA_MANAGER": [
+      "nav.cafeteria",
+      "nav.calendar",
+      "nav.dashboard",
+      "nav.inventory",
+      "nav.staff-portal"
+    ]
+  },
+  "lockedKeysForSchoolAdmin": [
+    "action.roles.assign",
+    "action.roles.customize",
+    "nav.roles",
+    "nav.dashboard"
+  ]
+}

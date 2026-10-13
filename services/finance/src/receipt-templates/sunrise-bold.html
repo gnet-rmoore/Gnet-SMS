@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Money Receipt — Sunrise Bold</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0c1f3d;
+    --navy-2:#122a52;
+    --orange:#f2600c;
+    --orange-2:#ffb37a;
+    --paper:#ffffff;
+    --ink:#141a24;
+    --muted:#8b93a3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;padding:48px 16px;
+    background:#eef1f6;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    display:flex;justify-content:center;
+  }
+  .sheet{width:100%;max-width:880px;}
+  .toolbar{display:flex;justify-content:flex-end;margin-bottom:18px;}
+  .toolbar button{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;font-size:12px;
+    letter-spacing:0.04em;text-transform:uppercase;
+    background:var(--navy);color:#fff;
+    border:none;padding:10px 20px;cursor:pointer;
+  }
+  .toolbar button:hover{background:var(--orange);}
+  .receipt{
+    background:var(--paper);
+    box-shadow:0 30px 60px -22px rgba(12,31,61,0.4);
+    position:relative;
+    overflow:hidden;
+  }
+  .header{
+    position:relative;
+    height:150px;
+    background:var(--navy);
+    overflow:hidden;
+  }
+  .header svg{position:absolute;inset:0;width:100%;height:100%;}
+  .header-content{
+    position:relative;z-index:2;
+    height:100%;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 44px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-mark{
+    width:46px;height:46px;background:var(--orange);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;
+    color:var(--navy);font-size:18px;
+    clip-path:polygon(0 0,100% 0,100% 70%,70% 100%,0 100%);
+  }
+  .brand-text{color:#fff;}
+  .brand-text .name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;}
+  .brand-text .tag{font-size:10px;color:var(--orange-2);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px;}
+  .title{
+    text-align:right;color:#fff;
+  }
+  .title h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .title .sub{font-size:10px;letter-spacing:0.2em;color:var(--orange-2);text-transform:uppercase;margin-top:4px;}
+  .meta-row{
+    display:flex;justify-content:space-between;
+    padding:20px 44px;
+    background:#fef4ec;
+    border-bottom:2px solid var(--orange);
+  }
+  .meta-row .field label{
+    display:block;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:5px;font-weight:600;
+  }
+  .meta-row .field input{
+    border:none;background:transparent;font-family:'Space Grotesk',sans-serif;
+    font-weight:600;font-size:14px;color:var(--navy);width:160px;
+    border-bottom:2px solid transparent;
+  }
+  .meta-row .field input:focus{outline:none;border-bottom-color:var(--orange);}
+  .body-grid{padding:32px 44px 6px;}
+  .row{display:flex;align-items:baseline;gap:16px;margin-bottom:24px;}
+  .row label{
+    font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--muted);width:170px;flex-shrink:0;
+  }
+  .row input{
+    flex:1;border:none;background:transparent;border-bottom:1.5px solid #e3e7ee;
+    font-size:16px;padding:2px 4px 8px;color:var(--ink);font-family:'Inter',sans-serif;
+  }
+  .row .val,.meta-row .val,.id-cell .val,.pay-row .val,.words-row .val,.memo .val,.amount-strip .val,.amount-box .val,.amount-line .val,.num-block .val,.row-date .val{font:inherit;color:inherit;flex:1;border-bottom:1px solid var(--line, #dde2e6);padding:2px 4px 6px;}
+  .signature-slot .line{border-bottom:1px solid var(--ink,#1a1a1a);min-height:42px;display:flex;align-items:flex-end;justify-content:center;}
+  .amount-words{font-style:italic;min-height:1.2em;}
+  .row input:focus{outline:none;border-bottom-color:var(--orange);}
+  .two-col{display:flex;gap:30px;}
+  .two-col > .row{flex:1;}
+  .amount-strip{
+    margin:28px 44px 0;
+    background:linear-gradient(100deg,var(--navy),var(--navy-2));
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 28px;
+    clip-path:polygon(0 0,100% 0,100% 100%,3% 100%);
+  }
+  .amount-strip label{color:var(--orange-2);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;}
+  .amount-strip .value{display:flex;align-items:baseline;gap:6px;color:#fff;}
+  .amount-strip .value .cur{font-size:16px;color:var(--orange-2);font-weight:600;}
+  .amount-strip input{
+    background:transparent;border:none;color:#fff;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;width:160px;
+  }
+  .amount-strip input:focus{outline:none;}
+  .sign-row{display:flex;justify-content:space-between;padding:42px 44px 34px;gap:40px;}
+  .sign-block{flex:1;text-align:center;}
+  .sign-block .line{border-bottom:1.5px solid var(--ink);height:42px;}
+  .sign-block label{display:block;margin-top:8px;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);}
+  .footer{height:12px;background:var(--orange);position:relative;}
+  .footer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:40%;background:var(--navy);clip-path:polygon(0 0,100% 0,88% 100%,0 100%);}
+  @media print{
+    body{background:#fff;padding:0;}
+    .toolbar{display:none;}
+    .receipt{box-shadow:none;}
+  }
+  @media (max-width:560px){
+    .header-content{flex-direction:column;gap:14px;padding:16px 24px;text-align:center;}
+    .title{text-align:center;}
+    .meta-row{flex-direction:column;gap:14px;padding:20px 24px;}
+    .body-grid{padding:24px 24px 6px;}
+    .two-col{flex-direction:column;gap:0;}
+    .row label{width:130px;font-size:10px;}
+    .amount-strip{margin:24px 24px 0;flex-direction:column;align-items:flex-start;gap:10px;}
+    .sign-row{flex-direction:column;gap:22px;padding:32px 24px;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+<div class="receipt">
+    <div class="header">
+      <svg viewBox="0 0 880 150" preserveAspectRatio="none">
+        <polygon points="0,0 880,0 880,150 0,150" fill="#0c1f3d"/>
+        <polygon points="620,0 880,0 880,150 480,150" fill="#122a52"/>
+        <polygon points="780,0 880,0 880,150 720,150" fill="#f2600c"/>
+      </svg>
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-mark">{{SCHOOL_INITIAL}}</div>
+          <div class="brand-text"><div class="name">{{SCHOOL_NAME}}</div><div class="tag">{{DOC_KICKER}}</div></div></div><div class="title">
+          <h1>{{DOC_TITLE}}</h1>
+          <div class="sub">Payment Acknowledged</div>
+        </div>
+      </div>
+    </div>
+    <div class="meta-row">
+      <div class="field"><label>Receipt No.</label><span class="val"></span></div>
+      <div class="field"><label>Date</label><span class="val">{{ISSUED_DATE}}</span></div>
+    </div>
+    <div class="body-grid">
+      <div class="row"><label>Received with thanks from</label><span class="val">{{PAYER_NAME}}</span></div>
+      <div class="two-col">
+        <div class="row"><label>Amount in words</label><span class="val amount-words">{{AMOUNT_WORDS}}</span></div>
+      </div>
+      <div class="two-col">
+        <div class="row"><label>By cash / cheque</label><span class="val">—</span></div>
+        <div class="row"><label>Bank &amp; ref. no.</label><span class="val">{{SOURCE_REF}}</span></div>
+      </div>
+      <div class="row"><label>For the purpose of</label><span class="val">{{PURPOSE_TEXT}}</span></div>
+    </div>
+    <div class="amount-strip">
+      <label>Amount</label>
+      <div class="value"><span class="cur">$</span><span class="val">{{TOTAL_FORMATTED}}</span></div>
+    </div>
+    <div class="sign-row">
+      <div class="sign-block"><div class="line"></div><label>Received By</label></div>
+      <div class="sign-block signature-slot">{{SIGNATURE_HTML}}<label>{{SIGNER_TITLE}}</label></div>
+    </div>
+    <div class="footer"></div>
+  </div>
+</div>
+  {{VERIFY_FOOTER_HTML}}
+  {{VOIDED_HTML}}
+</body>
+</html>

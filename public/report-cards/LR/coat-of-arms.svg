@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Coat of arms of Liberia (placeholder)">
+  <rect width="160" height="160" fill="#fff"/>
+  <circle cx="80" cy="80" r="74" fill="none" stroke="#111" stroke-width="3"/>
+  <path d="M28 118 Q80 28 132 118" fill="none" stroke="#111" stroke-width="2"/>
+  <ellipse cx="80" cy="78" rx="34" ry="22" fill="#cfe8ff" stroke="#111" stroke-width="1.5"/>
+  <path d="M48 78 L80 58 L112 78 L80 98 Z" fill="#fff" stroke="#111" stroke-width="1.5"/>
+  <circle cx="80" cy="52" r="8" fill="#f5c542" stroke="#111" stroke-width="1"/>
+  <rect x="70" y="98" width="20" height="14" fill="#8B4513" stroke="#111" stroke-width="1"/>
+  <text x="80" y="142" text-anchor="middle" font-family="Times New Roman, serif" font-size="7" font-weight="700" fill="#111">REPUBLIC OF LIBERIA</text>
+</svg>

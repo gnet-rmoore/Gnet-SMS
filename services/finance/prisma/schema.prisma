@@ -1,0 +1,192 @@
+// Finance schema (Phase 3-5 extraction)
+// Target Postgres schema: `finance` (see MICROSERVICES_ROADMAP.md §4 Phase A)
+//
+// Owns: FeePayment, FeeTemplate, Expense.
+// schoolId / studentId are plain UUID strings — no Prisma relation to
+// Identity.School / Identity.User.
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["finance"]
+}
+
+model FeePayment {
+  id            String    @id @default(uuid())
+  schoolId      String // Identity.School.id (no FK)
+  studentId     String // Identity.User.id or application:<uuid> placeholder
+  applicationId String?
+  // Billed amount after discount (net). Balance/receipt math always uses this. (G5)
+  amount        Float
+  /// Gross amount before discount (audit only — see G5)
+  originalAmount Float?
+  /// Applied percentage discount (audit only — see G5)
+  discountPercent Float?
+  /// Sum of successful payment txns (denormalized)
+  amountPaid    Float     @default(0)
+  type          String
+  status        String    @default("PENDING") // PENDING | PARTIAL | PAID | VOIDED | WRITTEN_OFF
+  dueDate       DateTime
+  paidAt        DateTime?
+  notes         String?
+  /// FeeTemplate.id when created from a template / batch-apply
+  templateId    String?
+  /// FeeTemplate.name snapshot at invoice creation (audit; survives template deletion)
+  templateNameSnapshot String?
+  /// JSON snapshot of template scope at create (audit / stale checks)
+  scopeSnapshot String?
+  /// e.g. 2025-2026 — used with templateId for idempotent batch apply
+  schoolYearKey String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  txns          FeePaymentTxn[]
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([applicationId])
+  @@index([schoolId, templateId, schoolYearKey])
+  @@schema("finance")
+}
+
+/// Append-only payment / audit row against a FeePayment invoice.
+model FeePaymentTxn {
+  id                  String   @id @default(uuid())
+  schoolId            String
+  feePaymentId        String
+  feePayment          FeePayment @relation(fields: [feePaymentId], references: [id], onDelete: Cascade)
+  studentId           String
+  /// PAYMENT | INVOICE_CREATED | VOID | WRITE_OFF | REFUND
+  kind                String   @default("PAYMENT")
+  amount              Float
+  balanceBefore       Float
+  balanceAfter        Float
+  billedAmount        Float?
+  invoiceStatusBefore String?
+  invoiceStatusAfter  String?
+  method              String   // CASH | CHECK | TRANSFER | CARD | OTHER | CHECKOUT
+  paidAt              DateTime
+  recordedBy          String?
+  recordedByRole      String?
+  payerUserId         String?
+  payerNameSnapshot   String?
+  studentNameSnapshot String?
+  feeTypeSnapshot     String?
+  notes               String?
+  checkoutSessionId   String?  @unique
+  receiptId           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([feePaymentId])
+  @@index([schoolId, paidAt])
+  @@index([schoolId, studentId, paidAt])
+  @@index([schoolId, recordedBy, paidAt])
+  @@schema("finance")
+}
+
+/// Per-school fee billing preferences (Finance-owned).
+model SchoolBillingSettings {
+  schoolId          String   @id
+  /// Minimum accepted installment / portal payment (USD). Full remaining balance always allowed even if below min.
+  minPaymentAmount  Float    @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@schema("finance")
+}
+
+/// Reusable fee schedules for invoicing / batch billing (per school).
+model FeeTemplate {
+  id            String   @id @default(uuid())
+  schoolId      String
+  name          String
+  type          String
+  amount        Float
+  description   String   @default("")
+  /// SCHOOL | GRADE | DIVISION
+  scopeMode     String   @default("SCHOOL")
+  gradeLevelId  String?
+  divisionId    String?
+  /// ALL | NEW | RETURNING
+  cohort        String   @default("ALL")
+  schoolYearKey String?
+  /// Optional granular label under the type (e.g. "Grade 8 core books")
+  subcategory   String?
+  /// Archived templates stay for audit; pickers hide them, lookups by id still resolve (G3)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("finance")
+}
+
+model Expense {
+  id         String   @id @default(uuid())
+  schoolId   String // Identity.School.id (no FK)
+  title      String
+  category   String // ACADEMIC, UTILITIES, MAINTENANCE, TRANSPORT, OFFICE, PROCUREMENT, SALARY, OTHER
+  amount     Float
+  date       DateTime @default(now())
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes      String?
+  receiptUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([schoolId])
+  @@schema("finance")
+}
+
+/// Official system-issued receipts (fees, payslips, expenses, transactions).
+model Receipt {
+  id             String    @id @default(uuid())
+  schoolId       String
+  type           String // FEE_PAYMENT | PAYSLIP | EXPENSE | TRANSACTION
+  sourceType     String
+  sourceId       String
+  receiptNumber  String
+  status         String    @default("ISSUED") // ISSUED | VOIDED | SUPERSEDED
+  issuedAt       DateTime  @default(now())
+  voidedAt       DateTime?
+  voidReason     String?
+  payeeName      String
+  payerName      String
+  currency       String    @default("USD")
+  amount         Float
+  lineItems      String // JSON array
+  branding       String? // JSON school snapshot at issue
+  payloadHash    String
+  verifyCode     String    @unique
+  verifySig      String
+  storageKey     String?
+  fileUrl        String?
+  pdfBase64      String? // local/dev fallback when S3 unset
+  issuedBy       String?
+  supersedesId   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([schoolId, receiptNumber])
+  @@index([schoolId])
+  @@index([schoolId, type, sourceId])
+  @@index([verifyCode])
+  @@schema("finance")
+}
+
+/// Per-school yearly counter for human receipt numbers.
+model ReceiptCounter {
+  id        String @id @default(uuid())
+  schoolId  String
+  year      Int
+  lastValue Int    @default(0)
+
+  @@unique([schoolId, year])
+  @@schema("finance")
+}

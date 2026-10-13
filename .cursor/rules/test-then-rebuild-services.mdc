@@ -1,0 +1,55 @@
+---
+description: After changing a service, run tests then rebuild that Docker image
+alwaysApply: true
+---
+
+# Test then rebuild touched services
+
+Whenever you change code for one or more deployable services, **finish the task** with:
+
+1. **Tests** — run the relevant suite(s) and fix failures before building.
+2. **Build + restart** — rebuild and recreate **only the images you changed** (and dependents if required).
+
+Do not leave the user on stale containers after a service edit.
+
+## Map path → compose service
+
+| Changed paths | Compose service(s) |
+| :--- | :--- |
+| `services/identity/**` | `identity` |
+| `services/lifecycle/**` | `lifecycle` |
+| `services/ops/**` | `ops` |
+| `services/staff/**` | `staff` |
+| `services/classroom/**` | `classroom` |
+| `services/academic/**` | `academic` |
+| `services/finance/**` | `finance` |
+| `services/comms/**` | `comms` |
+| `services/gateway/**` | `api-gateway` |
+| `src/pages/**`, `src/features/**`, `src/components/**`, `src/lib/**`, `src/App.tsx`, `src/constants/**`, `nginx.conf`, `Dockerfile.frontend` | `frontend-spa` |
+| `packages/**` shared by several services | rebuild every consumer you changed (or all that import it) |
+| `docker/postgres/**`, `docker-compose.yml` DB URLs / `db-roles` | `docker compose up -d db-roles` then recreate domain services (env only — rebuild images only if Dockerfiles changed) |
+| Root `tests/**` / `package.json` scripts only | tests only (no image unless a service also changed) |
+
+## Commands
+
+```bash
+# Prefer scoped tests when they exist; otherwise npm run test
+npm run test:security
+npm run test:onboarding
+npm run test:enroll
+npm run test:country-tz
+# or full: npm run test
+
+# Then rebuild only what changed (example)
+docker compose up --build -d identity api-gateway frontend-spa
+```
+
+If host Node is missing, run tests via `docker run --rm -v "$PWD:/app" -w /app node:20-alpine sh -c "npm run test…"`.
+
+## Rules of thumb
+
+- **Order:** tests green → `docker compose up --build -d <services>` → quick smoke (`/health/live` or a representative API/UI hit).
+- **Multi-service diffs:** rebuild every listed service in one compose command.
+- **Frontend-only:** still run relevant unit tests when helpers/lib changed; always rebuild `frontend-spa`.
+- **Do not** rebuild the entire stack unless many services changed or the user asks.
+- If build/test needs Docker approval, request it; do not skip the rebuild step silently.

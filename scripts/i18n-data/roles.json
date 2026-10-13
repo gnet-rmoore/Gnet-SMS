@@ -1,0 +1,23 @@
+[
+["Super Admin","Super administrateur","Superadministrador","Super-Admin","المشرف العام","超级管理员","सुपर एडमिन"],
+["School Admin","Administrateur de l’école","Administrador de la escuela","Schuladministrator","مدير المدرسة","学校管理员","विद्यालय एडमिन"],
+["Principal","Directeur","Director(a)","Schulleiter","المدير","校长","प्रधानाचार्य"],
+["VP Instruction (Academic)","VP Instruction (Académique)","Vicedirector Académico","Stellvertretender Schulleiter (Unterricht)","نائب المدير للشؤون الأكاديمية","教务副校长","उप-प्राचार्य (शैक्षणिक)"],
+["VP Admin","VP Administration","Vicedirector Administrativo","Stellvertretender Schulleiter (Verwaltung)","نائب المدير الإداري","行政副校长","उप-प्राचार्य (प्रशासन)"],
+["Registrar","Registraire","Secretario académico","Sekretariatsleiter","أمين السجلات","教务注册主任","रजिस्ट्रार"],
+["Teacher","Enseignant","Profesor","Lehrkraft","معلم","教师","शिक्षक"],
+["Student","Élève","Estudiante","Schüler","طالب","学生","छात्र"],
+["Parent","Parent","Padre/Madre","Elternteil","ولي الأمر","家长","अभिभावक"],
+["Accountant","Comptable","Contador","Buchhalter","محاسب","会计","लेखाकार"],
+["Transportation","Transport","Transporte","Transport","النقل","交通","परिवहन"],
+["Maintenance","Maintenance","Mantenimiento","Wartung","الصيانة","维护","रखरखाव"],
+["Librarian","Bibliothécaire","Bibliotecario","Bibliothekar","أمين المكتبة","图书管理员","पुस्तकालयाध्यक्ष"],
+["Nurse","Infirmier/ère","Enfermero/a","Krankenpfleger","الممرض","护士","नर्स"],
+["Counselor","Conseiller","Consejero/a","Berater","المرشد","心理辅导员","परामर्शदाता"],
+["Security","Sécurité","Seguridad","Sicherheit","الأمن","安保","सुरक्षा"],
+["IT Admin","Administrateur IT","Administrador de TI","IT-Administrator","مسؤول تقنية المعلومات","IT管理员","आईटी एडमिन"],
+["Procurement","Achats","Adquisiciones","Beschaffung","المشتريات","采购","खरीद"],
+["Athletics Director","Directeur sportif","Director de atletismo","Sportdirektor","مدير الأنشطة الرياضية","体育主任","खेलकूद निदेशक"],
+["Hostel Warden","Surveillant de l’internat","Encargado del internado","Internatsleiter","مشرف السكن الداخلي","宿舍管理员","छात्रावास वार्डन"],
+["Cafeteria Manager","Responsable de la cantine","Gerente de cafetería","Cafeteria-Leiter","مدير المقصف","食堂经理","कैफेटेरिया प्रबंधक"]
+]

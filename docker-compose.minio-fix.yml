@@ -1,0 +1,20 @@
+# Workaround: MinIO deleted `minio/minio` and `minio/mc` from Docker Hub (Sept 2026),
+# so `docker compose pull` fails with "pull access denied for minio/mc ...".
+# This pins both MinIO services to still-pullable mirrors of the same images.
+#
+# Usage (add this file to the usual command):
+#   docker compose -f docker-compose.yml -f docker-compose.hub.yml -f docker-compose.minio-fix.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.hub.yml -f docker-compose.minio-fix.yml up -d --no-build
+#
+# minio      -> elestio/minio (MinIO RELEASE.2025-09-07T16-13-09Z, same official entrypoint)
+# minio-init -> bitnamilegacy/minio-client (provides /bin/sh + mc, needed by docker/minio-init.sh)
+
+services:
+  minio:
+    image: elestio/minio:latest
+
+  minio-init:
+    image: bitnamilegacy/minio-client:latest
+    # bitnami image runs as uid 1001 with HOME=/ — point mc's config at /tmp
+    environment:
+      MC_CONFIG_DIR: /tmp/.mc

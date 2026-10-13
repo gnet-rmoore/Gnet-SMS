@@ -1,0 +1,212 @@
+/* Scoped under .cert-heritage-tan */
+.cert-heritage-tan {
+  box-sizing: border-box;
+  --ink: #3f3f46;
+  --tan: var(--cert-brand, #c4a574);
+  --tan-deep: color-mix(in srgb, var(--cert-brand, #c4a574) 75%, #3f3f46);
+  --paper: #fafaf9;
+  --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --font-body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+}
+.cert-heritage-tan *,
+.cert-heritage-tan *::before,
+.cert-heritage-tan *::after {
+  box-sizing: border-box;
+}
+
+.cert-heritage-tan .stage {
+  display: flex;
+  justify-content: center;
+  padding: 24px 12px 40px;
+}
+
+.cert-heritage-tan .sheet {
+  width: 11in;
+  height: 8.5in;
+  background: var(--paper);
+  position: relative;
+  padding: 0.35in;
+  box-shadow: 0 4px 8px rgba(60, 40, 20, 0.1), 0 20px 40px rgba(60, 40, 20, 0.12);
+}
+
+.cert-heritage-tan .outer-frame {
+  position: absolute;
+  inset: 0.22in;
+  border: 16px solid var(--tan);
+  pointer-events: none;
+}
+
+.cert-heritage-tan .inner-line {
+  position: absolute;
+  inset: 0.48in;
+  border: 1px solid #fff;
+  pointer-events: none;
+}
+
+.cert-heritage-tan .corner {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  z-index: 2;
+  color: var(--tan);
+}
+.cert-heritage-tan .corner.tl {
+  top: 0.55in;
+  left: 0.55in;
+}
+.cert-heritage-tan .corner.tr {
+  top: 0.55in;
+  right: 0.55in;
+  transform: scaleX(-1);
+}
+.cert-heritage-tan .corner.bl {
+  bottom: 0.55in;
+  left: 0.55in;
+  transform: scaleY(-1);
+}
+.cert-heritage-tan .corner.br {
+  bottom: 0.55in;
+  right: 0.55in;
+  transform: scale(-1);
+}
+
+.cert-heritage-tan .content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  padding: 0.7in 0.85in 0.4in;
+}
+
+.cert-heritage-tan .cert-school-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+.cert-heritage-tan .cert-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.cert-heritage-tan .cert-address {
+  margin: 0;
+  max-width: 28rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: #78716c;
+  line-height: 1.35;
+}
+
+.cert-heritage-tan .title {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--tan-deep);
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.cert-heritage-tan .lead-in {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.cert-heritage-tan .student-name {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-size: 2.35rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--tan-deep);
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+
+.cert-heritage-tan .body {
+  margin: 0.5rem 0 0;
+  max-width: 30rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.cert-heritage-tan .meta {
+  margin-top: 0.35rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: #78716c;
+}
+
+.cert-heritage-tan .footer {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.55rem;
+}
+
+.cert-heritage-tan .sig {
+  text-align: center;
+}
+.cert-heritage-tan .sig-image-slot {
+  min-height: 2.4rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.cert-heritage-tan .sig-image {
+  max-height: 2.4rem;
+  max-width: 90%;
+  object-fit: contain;
+}
+.cert-heritage-tan .sig-line {
+  border-top: 1.5px solid var(--tan);
+  margin: 0 auto 0.35rem;
+  width: 85%;
+  max-width: 11rem;
+}
+.cert-heritage-tan .sig-name {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  min-height: 1rem;
+}
+.cert-heritage-tan .sig-title {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: #78716c;
+}
+
+.cert-heritage-tan .seal-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+@media print {
+  .cert-heritage-tan .stage {
+    padding: 0;
+  }
+  .cert-heritage-tan .sheet {
+    box-shadow: none;
+  }
+  @page {
+    size: letter landscape;
+    margin: 0;
+  }
+}

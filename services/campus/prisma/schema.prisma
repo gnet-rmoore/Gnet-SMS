@@ -1,0 +1,226 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["campus"]
+}
+
+model LibraryItem {
+  id              String        @id @default(uuid())
+  schoolId        String
+  title           String
+  author          String?
+  isbn            String?
+  category        String        @default("GENERAL")
+  copiesTotal     Int           @default(1)
+  copiesAvailable Int           @default(1)
+  location        String?
+  status          String        @default("ACTIVE")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  loans           LibraryLoan[]
+
+  @@index([schoolId])
+  @@schema("campus")
+}
+
+model LibraryLoan {
+  id         String      @id @default(uuid())
+  schoolId   String
+  itemId     String
+  studentId  String
+  loanedAt   DateTime    @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  status     String      @default("OUT")
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  item       LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([itemId])
+  @@index([studentId])
+  @@schema("campus")
+}
+
+model StudentHealthProfile {
+  id               String   @id @default(uuid())
+  schoolId         String
+  studentId        String   @unique
+  bloodType        String?
+  allergies        String?
+  medications      String?
+  emergencyContact String?
+  updatedBy        String?
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+
+  @@index([schoolId])
+  @@schema("campus")
+}
+
+model ClinicVisit {
+  id              String   @id @default(uuid())
+  schoolId        String
+  studentId       String
+  visitDate       DateTime @default(now())
+  reason          String
+  treatment       String?
+  disposition     String   @default("OBSERVATION")
+  loggedBy        String
+  parentNotified  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([visitDate])
+  @@schema("campus")
+}
+
+model CounselingSession {
+  id                 String    @id @default(uuid())
+  schoolId           String
+  studentId          String
+  sessionDate        DateTime  @default(now())
+  sessionType        String    @default("CHECK_IN")
+  summary            String
+  confidentialNotes  String?
+  followUpAt         DateTime?
+  loggedBy           String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@schema("campus")
+}
+
+model AthleticsTeam {
+  id            String            @id @default(uuid())
+  schoolId      String
+  name          String
+  sport         String
+  season        String?
+  coachStaffId  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  roster        AthleticsRoster[]
+  events        AthleticsEvent[]
+
+  @@index([schoolId])
+  @@schema("campus")
+}
+
+model AthleticsRoster {
+  id           String        @id @default(uuid())
+  teamId       String
+  studentId    String
+  jerseyNumber String?
+  role         String?
+  createdAt    DateTime      @default(now())
+  team         AthleticsTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, studentId])
+  @@index([teamId])
+  @@schema("campus")
+}
+
+model AthleticsEvent {
+  id        String        @id @default(uuid())
+  teamId    String
+  title     String
+  startsAt  DateTime
+  location  String?
+  opponent  String?
+  result    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  team      AthleticsTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([startsAt])
+  @@schema("campus")
+}
+
+model HostelBuilding {
+  id           String       @id @default(uuid())
+  schoolId     String
+  name         String
+  genderPolicy String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  rooms        HostelRoom[]
+
+  @@index([schoolId])
+  @@schema("campus")
+}
+
+model HostelRoom {
+  id          String             @id @default(uuid())
+  buildingId  String
+  label       String
+  capacity    Int                @default(1)
+  status      String             @default("AVAILABLE")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  building    HostelBuilding     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  assignments HostelAssignment[]
+
+  @@index([buildingId])
+  @@schema("campus")
+}
+
+model HostelAssignment {
+  id        String     @id @default(uuid())
+  schoolId  String
+  roomId    String
+  studentId String
+  checkIn   DateTime   @default(now())
+  checkOut  DateTime?
+  status    String     @default("ACTIVE")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  room      HostelRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([roomId])
+  @@index([studentId])
+  @@schema("campus")
+}
+
+model CafeteriaMenuDay {
+  id        String   @id @default(uuid())
+  schoolId  String
+  date      DateTime @db.Date
+  mealType  String
+  items     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, date, mealType])
+  @@index([schoolId])
+  @@schema("campus")
+}
+
+model CafeteriaMealCount {
+  id        String   @id @default(uuid())
+  schoolId  String
+  date      DateTime @db.Date
+  mealType  String
+  planned   Int      @default(0)
+  served    Int      @default(0)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, date, mealType])
+  @@index([schoolId])
+  @@schema("campus")
+}

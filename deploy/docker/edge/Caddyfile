@@ -1,0 +1,23 @@
+{
+	# Set by the edge service environment (compose .env → ACME_EMAIL).
+	email {$ACME_EMAIL}
+}
+
+# Main app. frontend-spa's nginx serves SPA + /api/ + /socket.io/ in one place.
+{$APP_DOMAIN} {
+	encode gzip
+	# H4 defence-in-depth: no client outside the platform may send an internal token.
+	# (Gateway → service calls are unaffected — they happen on the internal network.)
+	header_upstream -X-Internal-Token
+	reverse_proxy http://frontend-spa:80
+}
+
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+# Object storage — this is what S3_PUBLIC_URL points at (presigned uploads, banner
+# images, receipts). Path-style URLs pass straight through to MinIO.
+files.{$APP_DOMAIN} {
+	reverse_proxy http://minio:9000
+}

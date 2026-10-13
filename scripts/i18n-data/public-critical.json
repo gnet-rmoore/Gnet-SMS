@@ -1,0 +1,47 @@
+[
+  [
+    "Confirm your email",
+    "Confirmez votre e-mail",
+    "Confirme su correo",
+    "E-Mail bestätigen",
+    "أكّد بريدك الإلكتروني",
+    "确认您的电子邮件",
+    "अपना ईमेल पुष्टि करें"
+  ],
+  [
+    "Confirming your email…",
+    "Confirmation de votre e-mail…",
+    "Confirmando su correo…",
+    "E-Mail wird bestätigt…",
+    "جارٍ تأكيد بريدك الإلكتروني…",
+    "正在确认您的电子邮件…",
+    "आपका ईमेल पुष्टि हो रहा है…"
+  ],
+  [
+    "Email confirmed. We will review your application and follow up soon.",
+    "E-mail confirmé. Nous examinerons votre demande et vous recontacterons bientôt.",
+    "Correo confirmado. Revisaremos su solicitud y le contactaremos pronto.",
+    "E-Mail bestätigt. Wir prüfen Ihre Bewerbung und melden uns in Kürze.",
+    "تم تأكيد البريد الإلكتروني. سنراجع طلبك ونتابع معك قريباً.",
+    "电子邮件已确认。我们将审核您的申请并尽快跟进。",
+    "ईमेल पुष्टि हो गया। हम आपका आवेदन समीक्षा करेंगे और जल्द संपर्क करेंगे।"
+  ],
+  [
+    "This confirmation link is invalid or has expired.",
+    "Ce lien de confirmation est invalide ou a expiré.",
+    "Este enlace de confirmación no es válido o ha caducado.",
+    "Dieser Bestätigungslink ist ungültig oder abgelaufen.",
+    "رابط التأكيد هذا غير صالح أو منتهٍ الصلاحية.",
+    "此确认链接无效或已过期。",
+    "यह पुष्टि लिंक अमान्य है या समाप्त हो गया है।"
+  ],
+  [
+    "Missing confirmation link. Open the link from your email or submit a new application.",
+    "Lien de confirmation manquant. Ouvrez le lien reçu par e-mail ou soumettez une nouvelle demande.",
+    "Falta el enlace de confirmación. Abra el enlace de su correo o envíe una nueva solicitud.",
+    "Bestätigungslink fehlt. Öffnen Sie den Link aus Ihrer E-Mail oder reichen Sie eine neue Bewerbung ein.",
+    "رابط التأكيد مفقود. افتح الرابط من بريدك الإلكتروني أو قدّم طلباً جديداً.",
+    "缺少确认链接。请打开邮件中的链接或提交新申请。",
+    "पुष्टि लिंक गायब है। अपने ईमेल से लिंक खोलें या नया आवेदन जमा करें।"
+  ]
+]

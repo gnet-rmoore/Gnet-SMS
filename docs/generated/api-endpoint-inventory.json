@@ -1,0 +1,3652 @@
+{
+  "generatedAt": "2026-10-12T15:35:58.316Z",
+  "total": 519,
+  "publicOrSchool": 465,
+  "internal": 54,
+  "byService": {
+    "academic": 157,
+    "campus": 28,
+    "classroom": 45,
+    "comms": 32,
+    "finance": 46,
+    "identity": 142,
+    "lifecycle": 30,
+    "ops": 20,
+    "staff": 19
+  },
+  "endpoints": [
+    {
+      "method": "DELETE",
+      "path": "/api/bell-schedules/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/bell-schedules/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/bell-schedules/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/bell-schedules/:id/periods",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/calendar/events",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/calendar/events",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/calendar/events/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/calendar/events/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/divisions/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/divisions/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exam-attempts/:attemptId",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exam-attempts/:attemptId/answers",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exam-attempts/:attemptId/results",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/submit",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/violations",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exam-components/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exam-components/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-papers/:packageId/review",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:examId/gradesheet/:studentId/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/pdfRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:examId/gradesheet/class/:classId/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/pdfRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:examId/report-card/:studentId/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/pdfRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exams/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/attempts",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/attempts",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/grades/bulk",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/live-attempts",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/live-stream",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exams/:id/online-config",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/online-preview",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/online-preview/score",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/paper",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exams/:id/paper",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exams/:id/paper/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/paper/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/paper/pdf/confirm",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/paper/pdf/presign",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exams/:id/paper/roster",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/paper/submit",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/process-results",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/push-to-gradebook",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/questions",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exams/:id/questions",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exams/:id/release-grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/retake",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/retake-eligibility",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exams/:id/retake-policy",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/submissions-summary",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/teacher-classrooms",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/preview/sample",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/preview/sample/score",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/grade-entries/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/grade-entries/:id/reopen",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/grade-levels/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/grade-levels/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/audit/events",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/calendar/attendance-event",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/divisions",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/divisions/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/grade-levels",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/grade-levels",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/grade-levels/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/grade-levels/seed",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/instructional-day",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/instructional-days",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/promotion/students/:studentUserId/next-grade",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/subject-offerings",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/lesson-plan-templates/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/lesson-plans/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/lesson-plans/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/lesson-plans/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/duplicate",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/reschedule",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/review",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/save-as-template",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/share-to-classroom",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/lesson-plans/:id/submit",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/periods/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/periods/:periodId/exam-components",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schedule-periods/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/academic-years",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/academic-years/:yearKey",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/academic-years/:yearKey/activate",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/academic-years/:yearKey/close",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/academic-years/active",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/bell-schedules",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/bell-schedules",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/bell-schedules/ensure",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/calendar",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/calendar",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/calendar/instructional-day",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/calendar/instructional-days",
+      "service": "academic",
+      "file": "services/academic/src/routes/calendarRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/calendar/templates",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/divisions",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/divisions",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/divisions/seed",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/exam-papers/pending",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/exams",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/exams",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grade-legends",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grade-legends",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/grade-legends/:legendId",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/grade-legends/:legendId",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grade-levels",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grade-levels",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grade-levels/seed",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/gradebook/assessment-grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/gradebook/component-grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/gradebook/component-grades/bulk",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/gradebook/sync-structure-template",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grades/edit-grants",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grades/edit-grants",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grades/edit-grants/:grantId/revoke",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grades/edit-grants/mine",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grades/my-submissions",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/grades/pending",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/grades/review-batch",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/lesson-plan-syllabus-units",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/lesson-plan-templates",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/lesson-plans",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/lesson-plans",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/lesson-plans/from-syllabus-unit",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/lesson-plans/from-template",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/lesson-plans/pending",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/online-exams",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/promotion/census",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/promotion/census",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/promotion/runs",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/promotion/runs",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/promotion/runs/:runId",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/promotion/runs/:runId/commit",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/promotion/runs/:runId/decisions",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/promotion/statement",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/subject-offerings",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/subject-offerings",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/subject-offerings/backfill",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/subjects",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/subjects",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/syllabi",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/syllabi",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/syllabi/generate-ai",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/timetable",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/timetable",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/timetable/copy",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/timetable/expand",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/timetable/validate",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/year-transition/start",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/students/:studentId/exam-attempts",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/students/:studentId/grades",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/subject-offerings/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/subjects/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/subjects/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/syllabi/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/syllabi/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/timetable-entries/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/athletics/teams/:teamId/events",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/athletics/teams/:teamId/roster",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/athletics/teams/:teamId/roster/:studentId",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/hostel/assignments/:id/checkout",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/hostel/buildings/:buildingId/rooms",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/library/items/:id",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/library/loans/:id/return",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/athletics/teams",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/athletics/teams",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/cafeteria/meal-counts",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/cafeteria/meal-counts",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/cafeteria/menus",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/cafeteria/menus",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/clinic/health-profiles/:studentId",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/clinic/health-profiles/:studentId",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/clinic/visits",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/clinic/visits",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/counseling/sessions",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/counseling/sessions",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/hostel/assignments",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/hostel/assignments",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/hostel/buildings",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/hostel/buildings",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/library/items",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/library/items",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/library/loans",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/library/loans",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/my-campus",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/classrooms/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/classrooms/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/attachments/presign",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms/:id/grades",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms/:id/members",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/members",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/classrooms/:id/members/:userId",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms/:id/posts",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/posts",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/propagate-roster",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/classrooms/:id/topics",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/topics",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/join",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/comments/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/classrooms/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/classrooms/:id/members",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/classrooms/:id/members",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/internal/classrooms/:id/members/:userId",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/classrooms/:id/posts",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/classrooms/count",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/classrooms/owned",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/classrooms/provision-offering",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/classrooms/sync-subject-rooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/posts/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/posts/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/posts/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/posts/:id/attachments",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/posts/:id/comments",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/posts/:id/comments",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/posts/:id/submissions",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/classrooms/backfill-parent-links",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/classrooms/offering-pairs",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/classrooms/sync-subject-rooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/submissions/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/submissions/:id/attachments",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/submissions/:id/reopen",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/submissions/:id/return",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/topics/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/topics/:id",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/announcements/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/announcementRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/announcements/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/announcementRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/announcements/:id/acknowledge",
+      "service": "comms",
+      "file": "services/comms/src/routes/announcementRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/documents/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/documentRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/documents/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/documentRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/notifications",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/sms/otp",
+      "service": "comms",
+      "file": "services/comms/src/routes/internalRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications/:id/read",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/nav-badges",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/read-all",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "service": "comms",
+      "file": "services/comms/src/routes/inAppNotificationRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/pta/campaigns/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/pta/meetings/:id",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/pta/meetings/:id/rsvp",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/pta/volunteers/:id/signup",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/announcements",
+      "service": "comms",
+      "file": "services/comms/src/routes/announcementRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/announcements",
+      "service": "comms",
+      "file": "services/comms/src/routes/announcementRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/documents",
+      "service": "comms",
+      "file": "services/comms/src/routes/documentRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/documents",
+      "service": "comms",
+      "file": "services/comms/src/routes/documentRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/notification-preferences",
+      "service": "comms",
+      "file": "services/comms/src/routes/notificationPreferenceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/notification-preferences",
+      "service": "comms",
+      "file": "services/comms/src/routes/notificationPreferenceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/pta",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/pta",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/pta/campaigns",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/pta/campaigns",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/pta/meetings",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/pta/meetings",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/pta/officers",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/pta/officers/:userId",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/pta/volunteers",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/pta/volunteers",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/fees/:id/checkout",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/fees/:id/pay",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/fees/:id/pay",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/fees/:id/payments",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/fees/:id/payments",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/fees/:id/remind",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/audit/events",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/fees",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/fees/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/receipts/issue",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/receipts/void-by-source",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/my-fee-payment-txns",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/my-fees",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/checkout/complete",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/fees/:id/checkout",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/receipts/verify/:code",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/receipts/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/receipts/:id/download",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/receipts/:id/reissue",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/receipts/:id/void",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/expenses",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/expenses",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/expenses/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/expenses/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/fee-billing-settings",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/fee-billing-settings",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/fee-payment-txns",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fee-payment-txns/backfill-legacy",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/fee-payment-txns/export",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/fee-templates",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fee-templates",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/fee-templates/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/fee-templates/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/fees",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fees",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/fees/:id",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fees/:id/collect",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fees/:id/void",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fees/:id/write-off",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/fees/batch-apply",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/finance/summary",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/receipts",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/receipts/issue",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/receipts/preview",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/receipts/templates",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/webhooks/stripe",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/auth/mfa",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/enroll/confirm",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/enroll/sms/confirm",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/enroll/sms/start",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/enroll/start",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/send-sms",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/mfa/status",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/mfa/verify",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/resend-verification",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/api-keys/verify",
+      "service": "identity",
+      "file": "services/identity/src/routes/apiKeyRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/capabilities",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/mail/render",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/mail/send",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/parent-links",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/parents/:parentId/children",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/parents/:parentId/students/:studentId/assert-link",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/admission-policy",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/entitlements",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/quotas",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/students",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/students/verify-returning",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/users",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/users/lookup",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/students/:studentId/parents",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/users/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/internal/users/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/users/find-or-create",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/parents/:parentId/children",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/domain-tls-ask",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/invites/:token/accept",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/plans",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/resolve-host",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/school-registrations",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/school-registrations/:id/confirm-email",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/school-registrations/:id/resend-confirmation",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/schools/:slug",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/schools/:slug/grade-levels",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/slug-available",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/admission-background/presign",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/admission-policy",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/admission-policy",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/api-keys",
+      "service": "identity",
+      "file": "services/identity/src/routes/apiKeyRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/api-keys",
+      "service": "identity",
+      "file": "services/identity/src/routes/apiKeyRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/api-keys/:keyId",
+      "service": "identity",
+      "file": "services/identity/src/routes/apiKeyRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/entitlements",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/guide-stats",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/onboarding/complete",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/receipt-template",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/role-audit",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/role-capabilities",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/role-capabilities/:role",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/setup/admission-policy-reviewed",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/staff",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/staff",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/staff/import",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/staff/import/preview",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/staff/import/template.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/stats",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/students",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/students",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/students/import",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/students/import/preview",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/students/import/template.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/subscription",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/users",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/students/:studentId/grades",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/activity",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/activity/export",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/auth/login",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/billing/console-complete",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/broadcast",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/credentials",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/credentials",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/super-admin/credentials/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/delete-requests",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/delete-requests/:requestId/approve",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/delivery-diagnostics",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/domain-edge",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/email-settings",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/email-settings",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/email-settings/test",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/impersonation/end",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/logs",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/logs/summary",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/operators",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/operators",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/operators/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/operators/:id/reset-password",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/operators/:id/role",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/plans",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/plans",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/plans/:code",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/platform-settings",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/platform-settings",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/reports/breakdown",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/school-registrations",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/school-registrations/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/school-registrations/:id/approve",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/school-registrations/:id/reject",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/school-registrations/:id/request-info",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/super-admin/schools/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/billing",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/billing/checkout",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/domain",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/domain/verify",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id/export/dsr",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id/health",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/notes",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id/parents",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/plan",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/request-delete",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/resend-invite",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id/staff",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/status",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/:id/students",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/schools/export.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/stats",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/users",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/users/:id/active",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/users/:id/impersonate",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/users/:id/reset-password",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/users/export.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/users/:userId",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/:userId",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/:userId",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/:userId/role",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/me/guide",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/me/guide",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/webhooks/platform-stripe",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/applications/:id",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/applications/:id",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/assign-classroom",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/create-entrance-fee",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/documents",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/applications/:id/documents/:docId",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/documents/confirm",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/documents/presign",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/enroll",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications/:id/transition",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/attendance/:id",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/attendanceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/applications/fee-paid",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/applications",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/applications/:id/documents",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/applications/:id/documents/confirm",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/applications/:id/documents/presign",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/applications/:id/status",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/applications/lookup",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/applications/verify-returning",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/applications",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/applications",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/applications/bulk-enroll",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/applications/bulk-transition",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/applications/export.csv",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/applications/funnel",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/attendance",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/attendanceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/attendance",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/attendanceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/attendance/stats",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/attendanceRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/my-applications",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/placement-summary",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/audit/events",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/students/:studentId/transport-summary",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/inventory/:id",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/inventory",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/inventory",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/security-logs",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/security-logs",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/transport/routes",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/transport/routes",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/vehicles",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/vehicles",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/work-orders",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/work-orders",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/transport/routes/:id",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transport/routes/:id/riders",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/transport/routes/:id/riders/:studentId",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transport/routes/:id/stops",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/vehicles/:id",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/vehicles/:id/maintenance",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/work-orders/:id",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/audit/events",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/payrolls",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/leave-requests/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/payrolls/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/payrolls/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/leave-balances",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/leave-policies",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/leave-policies",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/leave-requests",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/leave-requests",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/payrolls",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/payrolls",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/staff-attendance",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/staff-attendance",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/staff-attendance/summary",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/staff-tasks",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/staff-tasks",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff-tasks/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/:userId/payrolls",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    }
+  ]
+}

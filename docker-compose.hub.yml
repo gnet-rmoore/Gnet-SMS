@@ -1,0 +1,45 @@
+# Pull pre-built images from Docker Hub instead of building locally.
+#
+# Usage (team):
+#   docker compose -f docker-compose.yml -f docker-compose.hub.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.hub.yml up -d --no-build
+#
+# Override namespace/tag:
+#   DOCKERHUB_USER=youruser DOCKER_TAG=2026-08-07 docker compose -f docker-compose.yml -f docker-compose.hub.yml pull
+
+services:
+  identity:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-identity:${DOCKER_TAG:-latest}
+
+  lifecycle:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-lifecycle:${DOCKER_TAG:-latest}
+
+  ops:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-ops:${DOCKER_TAG:-latest}
+
+  staff:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-staff:${DOCKER_TAG:-latest}
+
+  classroom:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-classroom:${DOCKER_TAG:-latest}
+
+  academic:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-academic:${DOCKER_TAG:-latest}
+
+  finance:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-finance:${DOCKER_TAG:-latest}
+
+  comms:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-comms:${DOCKER_TAG:-latest}
+
+  campus:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-campus:${DOCKER_TAG:-latest}
+
+  api-gateway:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-api-gateway:${DOCKER_TAG:-latest}
+
+  frontend-spa:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-frontend-spa:${DOCKER_TAG:-latest}
+
+  sms-api:
+    image: ${DOCKERHUB_USER:-gnetllc}/gnet-sms-sms-api:${DOCKER_TAG:-latest}

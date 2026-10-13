@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="{{locale}}" dir="{{dir}}">
+<head>
+<meta charset="UTF-8">
+<title>{{title}} — {{receiptNumber}}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root{
+    --ink:#0f172a; --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0;
+    --paper:#ffffff; --canvas:#eef1f5; --brand:#2563EB; --void:#be123c;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:Georgia,'Times New Roman',serif;
+    color:var(--ink); background:var(--canvas);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .page{ position:relative; width:210mm; min-height:297mm; margin:0 auto; background:var(--paper); padding:12mm; overflow:hidden; }
+  .frame{ position:relative; height:100%; border:2px solid var(--ink); padding:14mm 16mm; }
+  .frame::before{ content:""; position:absolute; inset:5px; border:1px solid var(--line); pointer-events:none; }
+
+  .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .school{ display:flex; gap:12px; align-items:center; }
+  .logo{ width:44px;height:44px; border-radius:50%; object-fit:contain; border:1px solid var(--line); background:#fff; flex-shrink:0; }
+  .logo-fallback{ width:44px;height:44px; border-radius:50%; background:var(--brand); color:#fff; display:flex;align-items:center;justify-content:center; font-size:17px;font-weight:700; flex-shrink:0; font-family:Georgia,serif; }
+  .school-name{ font-size:14px; font-weight:700; }
+  .school-meta{ font-size:10px; color:var(--muted); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; margin-top:2px; }
+  .status-row{ display:inline-flex; align-items:center; gap:6px; font-size:9.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .status-dot{ width:6px;height:6px;border-radius:50%; background:var(--brand); display:inline-block; }
+
+  .center-title{ text-align:center; margin-top:18px; }
+  .eyebrow{ font-size:9px; letter-spacing:0.3em; text-transform:uppercase; color:var(--faint); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .doc-title{ font-size:26px; font-weight:700; margin:8px 0; letter-spacing:0.01em; }
+  .doc-meta{ font-size:11px; color:var(--muted); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .rule{ width:90px; height:1px; background:var(--brand); margin:14px auto 0; }
+
+  .section{ margin-top:26px; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .section-label{ font-size:9px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; text-align:center; }
+  .parties{ display:flex; justify-content:center; gap:40px; text-align:center; }
+  .party{ font-size:12.5px; line-height:1.6; }
+  .party .k{ color:var(--muted); }
+  .reference{ margin-top:8px; font-size:11.5px; color:var(--muted); text-align:center; }
+
+  table.items{ width:100%; border-collapse:collapse; margin-top:20px; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  table.items thead{ display:table-header-group; }
+  table.items th{ text-align:start; font-size:9.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--faint); padding:8px 0; border-bottom:1px solid var(--line); }
+  table.items th.num, table.items td.num{ text-align:end; font-variant-numeric:tabular-nums; }
+  table.items td{ font-size:12.5px; padding:10px 0; border-bottom:1px solid var(--line); page-break-inside:avoid; }
+
+  .total-row{ display:flex; justify-content:center; margin-top:16px; padding-top:14px; border-top:2px solid var(--ink); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .total{ font-size:17px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+
+  .foot{ display:flex; justify-content:space-between; align-items:flex-end; gap:30px; margin-top:40px; padding-top:16px; border-top:1px solid var(--line); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+  .sig{ flex:1; text-align:center; }
+  .sig img.sig-img{ max-height:42px; max-width:170px; object-fit:contain; display:block; margin:0 auto 6px; }
+  .sig-line{ width:170px; border-bottom:1px solid var(--ink); height:36px; margin:0 auto; }
+  .sig-name{ font-size:12px; font-weight:700; margin-top:6px; }
+  .sig-title{ font-size:10px; color:var(--muted); }
+  .verify{ flex:1; text-align:center; }
+  .verify-label{ font-size:9.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .qr{ width:60px;height:60px; border:1px solid var(--line); border-radius:4px; object-fit:contain; background:#fff; margin:0 auto 6px; }
+  .verify-url{ font-size:9.5px; color:var(--brand); word-break:break-all; }
+  .fingerprint{ font-size:8.5px; color:var(--faint); margin-top:4px; }
+
+  .void-stamp{
+    display:none; position:absolute; top:46%; left:50%; transform:translate(-50%,-50%) rotate(-28deg);
+    font-size:80px; font-weight:800; letter-spacing:0.1em; color:var(--void); opacity:0.22;
+    border:6px solid var(--void); padding:6px 36px; border-radius:8px; pointer-events:none; white-space:nowrap; z-index:5;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .page.is-voided .void-stamp{ display:block; }
+  @media print{ body{ background:#fff; } .page{ box-shadow:none; margin:0; } }
+</style>
+</head>
+<body>
+<div class="{{pageClass}}" style="--brand: {{brandColor}};">
+  <div class="void-stamp">{{t.voided}}</div>
+  <div class="frame">
+    <div class="top">
+      <div class="school">
+        {{#schoolLogoUrl}}<img class="logo" src="{{schoolLogoUrl}}" alt="" />{{/schoolLogoUrl}}
+        {{^schoolLogoUrl}}<div class="logo-fallback" data-school-monogram="{{schoolName}}"></div>{{/schoolLogoUrl}}
+        <div>
+          <div class="school-name">{{schoolName}}</div>
+          <div class="school-meta">{{schoolAddress}}</div>
+        </div>
+      </div>
+      <div class="status-row"><span class="status-dot"></span>{{t.status}}</div>
+    </div>
+
+    <div class="center-title">
+      <div class="eyebrow">{{schoolName}}</div>
+      <h1 class="doc-title">{{title}}</h1>
+      <div class="doc-meta">{{t.receiptNumber}} &nbsp;·&nbsp; {{t.issuedAt}}</div>
+      <div class="rule"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">{{t.parties}}</div>
+      <div class="parties">
+        <div class="party"><span class="k">{{t.payer}}</span></div>
+        <div class="party"><span class="k">{{t.payee}}</span></div>
+      </div>
+      <div class="reference">{{t.reference}}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">{{t.lineItems}}</div>
+      <table class="items">
+        <thead><tr><th>{{t.description}}</th><th class="num">{{t.amount}}</th></tr></thead>
+        <tbody>
+          {{#lineItems}}<tr><td>{{label}}</td><td class="num">{{currency}} {{amountFormatted}}</td></tr>{{/lineItems}}
+        </tbody>
+      </table>
+      <div class="total-row"><div class="total">{{t.total}}</div></div>
+    </div>
+
+    <div class="foot">
+      <div class="sig">
+        {{#authorizedSignatureUrl}}<img class="sig-img" src="{{authorizedSignatureUrl}}" alt="" />{{/authorizedSignatureUrl}}
+        {{^authorizedSignatureUrl}}<div class="sig-line"></div>{{/authorizedSignatureUrl}}
+        <div class="sig-name">{{authorizedSignerName}}</div>
+        <div class="sig-title">{{authorizedSignerTitle}}</div>
+      </div>
+      <div class="verify">
+        <div class="verify-label">{{t.verifyAuthenticity}}</div>
+        {{#qrDataUrl}}<img class="qr" src="{{qrDataUrl}}" alt="" />{{/qrDataUrl}}
+        <div class="verify-url">{{verifyUrl}}</div>
+        <div class="fingerprint">{{t.fingerprint}}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('[data-school-monogram]').forEach(function (el) {
+    var name = el.getAttribute('data-school-monogram') || '';
+    el.textContent = name.trim().charAt(0).toUpperCase() || '?';
+  });
+</script>
+</body>
+</html>

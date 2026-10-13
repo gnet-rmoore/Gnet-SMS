@@ -1,0 +1,514 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sms
+      POSTGRES_PASSWORD: sms
+      POSTGRES_DB: sms_db
+    # PostgreSQL is internal-only: not published to host (Lightsail firewall handles 22 SSH only)
+    ports: []
+    volumes:
+      - sms_pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init-schemas.sql:/docker-entrypoint-initdb.d/01-schemas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sms -d sms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Applies schemas + per-service roles on every up (idempotent). Needed because
+  # initdb.d only runs on empty volumes. One Postgres cluster — not 8 databases.
+  db-roles:
+    image: postgres:16-alpine
+    restart: "on-failure"
+    environment:
+      PGPASSWORD: sms
+    volumes:
+      - ./docker/postgres/init-schemas.sql:/apply-roles.sql:ro
+    entrypoint:
+      [
+        "psql",
+        "-h",
+        "postgres",
+        "-U",
+        "sms",
+        "-d",
+        "sms_db",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-f",
+        "/apply-roles.sql",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    # Redis is internal-only: not published to host
+    ports: []
+    volumes:
+      - sms_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: smsminio
+      MINIO_ROOT_PASSWORD: smsminio-secret
+      # Production: replace "*" with explicit approved origins (e.g. https://sms.example.com)
+      MINIO_API_CORS_ALLOW_ORIGIN: "${APP_URL}"
+    ports:
+      - "127.0.0.1:9000:9000"  # Internal only via SSH tunnel; not exposed to public internet
+      - "127.0.0.1:9001:9001"  # Console localhost-only
+    volumes:
+      - sms_miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Browser uploads need CORS + public GET (banner images, admission docs, receipts).
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: smsminio
+      MINIO_ROOT_PASSWORD: smsminio-secret
+    volumes:
+      - ./docker/minio-init.sh:/minio-init.sh:ro
+    entrypoint: ["/bin/sh", "/minio-init.sh"]
+    restart: "no"
+
+  # Phase 6: monolith is off by default. Emergency only:
+  #   docker compose --profile monolith up -d sms-api
+  # and set api-gateway DISABLE_MONOLITH=false + MONOLITH_URL.
+  sms-api:
+    profiles: ["monolith"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Admin role — monolith may touch public + tooling only
+      DATABASE_URL: postgresql://sms:sms@postgres:5432/sms_db?schema=public
+      DATABASE_PROVIDER: postgresql
+      REDIS_URL: redis://redis:6379
+      # JWT secrets provided via .env file (see .env production)
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      APP_URL: ${APP_URL:-https://sms.example.com}
+      # All domains cut over — monolith unused unless profile enabled.
+      CUTOVER_LIFECYCLE: "true"
+      CUTOVER_COMMS: "true"
+      CUTOVER_OPS: "true"
+      CUTOVER_STAFF: "true"
+      CUTOVER_CLASSROOM: "true"
+      CUTOVER_ACADEMIC: "true"
+      CUTOVER_FINANCE: "true"
+      CUTOVER_IDENTITY: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  identity:
+    build:
+      context: ./services/identity
+      dockerfile: Dockerfile
+    ports:
+      - "3011:3011"
+    environment:
+      NODE_ENV: production
+      PORT: "3011"
+      DATABASE_URL: postgresql://sms_identity:sms_identity@postgres:5432/sms_db?schema=identity
+      DATABASE_PROVIDER: postgresql
+      REDIS_URL: redis://redis:6379
+      # JWT secrets and internal service token provided via .env file
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      ACADEMIC_URL: http://academic:3015
+      CLASSROOM_URL: http://classroom:3014
+      FINANCE_URL: http://finance:3016
+      STAFF_URL: http://staff:3013
+      OPS_URL: http://ops:3012
+      COMMS_URL: http://comms:3017
+      # Custom domain edge (see docs/CUSTOM_DOMAIN_EDGE.md)
+      PLATFORM_EDGE_HOSTNAME: ${PLATFORM_EDGE_HOSTNAME:-sms.example.com}
+      PLATFORM_CNAME_TARGET: ${PLATFORM_CNAME_TARGET:-sms.example.com}
+      PLATFORM_HOSTS: ${PLATFORM_HOSTS:-sms.example.com,www.sms.example.com}
+      APP_URL: ${APP_URL:-https://sms.example.com}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@yoursms.local}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
+      MAILGUN_REGION: ${MAILGUN_REGION:-us}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      REQUIRE_REGISTRATION_EMAIL_CONFIRM: ${REQUIRE_REGISTRATION_EMAIL_CONFIRM:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  lifecycle:
+    build:
+      context: ./services/lifecycle
+      dockerfile: Dockerfile
+    ports:
+      - "3010:3010"
+    environment:
+      NODE_ENV: production
+      PORT: "3010"
+      DATABASE_URL: postgresql://sms_lifecycle:sms_lifecycle@postgres:5432/sms_db?schema=lifecycle
+      DATABASE_PROVIDER: postgresql
+      REDIS_URL: redis://redis:6379
+      # JWT secrets provided via .env file
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      IDENTITY_URL: http://identity:3011
+      CLASSROOM_URL: http://classroom:3014
+      ACADEMIC_URL: http://academic:3015
+      FINANCE_URL: http://finance:3016
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_URL: http://localhost:9000
+      S3_ACCESS_KEY_ID: smsminio
+      S3_SECRET_ACCESS_KEY: smsminio-secret
+      S3_BUCKET: sms-admissions
+      S3_FORCE_PATH_STYLE: "true"
+      # Optional: CLAMAV_URL=http://clamav-rest:8080 with --profile clamav
+      VIRUS_SCAN_FAIL_OPEN: "false"
+      CLAMAV_URL: ${CLAMAV_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      identity:
+        condition: service_started
+      classroom:
+        condition: service_started
+      academic:
+        condition: service_started
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  ops:
+    build:
+      context: ./services/ops
+      dockerfile: Dockerfile
+    ports:
+      - "3012:3012"
+    environment:
+      NODE_ENV: production
+      PORT: "3012"
+      DATABASE_URL: postgresql://sms_ops:sms_ops@postgres:5432/sms_db?schema=ops
+      JWT_ACCESS_SECRET: local-dev-access-secret-change-me
+      SUPER_ADMIN_JWT_SECRET: local-dev-super-admin-secret-change-me
+      INTERNAL_SERVICE_TOKEN: local-dev-internal-service-token-change-me
+      IDENTITY_URL: http://identity:3011
+      COMMS_URL: http://comms:3017
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+
+  staff:
+    build:
+      context: ./services/staff
+      dockerfile: Dockerfile
+    ports:
+      - "3013:3013"
+    environment:
+      NODE_ENV: production
+      PORT: "3013"
+      DATABASE_URL: postgresql://sms_staff:sms_staff@postgres:5432/sms_db?schema=staff
+      REDIS_URL: redis://redis:6379
+      # JWT secrets provided via .env file
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      IDENTITY_URL: http://identity:3011
+      FINANCE_URL: http://finance:3016
+      COMMS_URL: http://comms:3017
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      identity:
+        condition: service_started
+      academic:
+        condition: service_started
+      finance:
+        condition: service_started
+
+  classroom:
+    build:
+      context: ./services/classroom
+      dockerfile: Dockerfile
+    ports:
+      - "3014:3014"
+    environment:
+      NODE_ENV: production
+      PORT: "3014"
+      DATABASE_URL: postgresql://sms_classroom:sms_classroom@postgres:5432/sms_db?schema=classroom
+      REDIS_URL: redis://redis:6379
+      # JWT secrets provided via .env file (see .env production)
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      IDENTITY_URL: http://identity:3011
+      APP_URL: ${APP_URL:-https://sms.example.com}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-https://files.sms.example.com}
+      S3_ACCESS_KEY_ID: smsminio
+      S3_SECRET_ACCESS_KEY: smsminio-secret
+      S3_BUCKET: sms-classroom
+      S3_FORCE_PATH_STYLE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  academic:
+    build:
+      context: ./services/academic
+      dockerfile: Dockerfile
+    ports:
+      - "3015:3015"
+    environment:
+      NODE_ENV: production
+      PORT: "3015"
+      DATABASE_URL: postgresql://sms_academic:sms_academic@postgres:5432/sms_db?schema=academic
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: local-dev-access-secret-change-me
+      SUPER_ADMIN_JWT_SECRET: local-dev-super-admin-secret-change-me
+      INTERNAL_SERVICE_TOKEN: local-dev-internal-service-token-change-me
+      CLASSROOM_URL: http://classroom:3014
+      IDENTITY_URL: http://identity:3011
+      COMMS_URL: http://comms:3017
+      # ONLINE_EXAM_PROCTOR_EMAIL: "1"
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_URL: http://localhost:9000
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET: sms-exam-papers
+      S3_FORCE_PATH_STYLE: "true"
+      S3_REGION: us-east-1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      identity:
+        condition: service_started
+      minio:
+        condition: service_started
+
+  finance:
+    build:
+      context: ./services/finance
+      dockerfile: Dockerfile
+    ports:
+      - "3016:3016"
+    environment:
+      NODE_ENV: production
+      PORT: "3016"
+      DATABASE_URL: postgresql://sms_finance:sms_finance@postgres:5432/sms_db?schema=finance
+      REDIS_URL: redis://redis:6379
+      # JWT secrets and receipt HMAC provided via .env file
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      # RECEIPT_HMAC_SECRET is set from .env production values
+      IDENTITY_URL: http://identity:3011
+      STAFF_URL: http://staff:3013
+      LIFECYCLE_URL: http://lifecycle:3010
+      COMMS_URL: http://comms:3017
+      APP_URL: ${APP_URL:-https://sms.example.com}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_URL: http://localhost:9000
+      S3_ACCESS_KEY_ID: smsminio
+      S3_SECRET_ACCESS_KEY: smsminio-secret
+      S3_BUCKET: sms-receipts
+      S3_FORCE_PATH_STYLE: "true"
+      # Optional: STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET for live Stripe
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  comms:
+    build:
+      context: ./services/comms
+      dockerfile: Dockerfile
+    ports:
+      - "3017:3017"
+    environment:
+      NODE_ENV: production
+      PORT: "3017"
+      DATABASE_URL: postgresql://sms_comms:sms_comms@postgres:5432/sms_db?schema=comms
+      REDIS_URL: redis://redis:6379
+      # JWT secrets provided via .env file
+      # JWT_ACCESS_SECRET and SUPER_ADMIN_JWT_SECRET are set from .env production values
+      # INTERNAL_SERVICE_TOKEN is set from .env production values
+      IDENTITY_URL: http://identity:3011
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      identity:
+        condition: service_started
+
+  campus:
+    build:
+      context: ./services/campus
+      dockerfile: Dockerfile
+    ports:
+      - "3018:3018"
+    environment:
+      NODE_ENV: production
+      PORT: "3018"
+      DATABASE_URL: postgresql://sms_campus:sms_campus@postgres:5432/sms_db?schema=campus
+      JWT_ACCESS_SECRET: local-dev-access-secret-change-me
+      SUPER_ADMIN_JWT_SECRET: local-dev-super-admin-secret-change-me
+      INTERNAL_SERVICE_TOKEN: local-dev-internal-service-token-change-me
+      IDENTITY_URL: http://identity:3011
+      OPS_URL: http://ops:3012
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+      identity:
+        condition: service_started
+
+  api-gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      NODE_ENV: production
+      PORT: "8081"
+      # Phase 6: no monolith fallback. Emergency: DISABLE_MONOLITH=false + MONOLITH_URL.
+      DISABLE_MONOLITH: "true"
+      APP_URL: ${APP_URL:-https://sms.example.com}
+      IDENTITY_URL: http://identity:3011
+      LIFECYCLE_URL: http://lifecycle:3010
+      OPS_URL: http://ops:3012
+      STAFF_URL: http://staff:3013
+      CLASSROOM_URL: http://classroom:3014
+      ACADEMIC_URL: http://academic:3015
+      FINANCE_URL: http://finance:3016
+      COMMS_URL: http://comms:3017
+      CAMPUS_URL: http://campus:3018
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    depends_on:
+      - identity
+      - lifecycle
+      - ops
+      - staff
+      - classroom
+      - academic
+      - finance
+      - comms
+      - campus
+
+  frontend-spa:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api-gateway
+
+  # Optional HTTPS edge for custom domains (Let's Encrypt on-demand).
+  # Usage: ACME_EMAIL=you@example.com docker compose --profile edge up -d edge
+  # Point PLATFORM_CNAME_TARGET / PLATFORM_EDGE_HOSTNAME at this host; CNAMEs → here.
+  edge:
+    profiles: ["edge"]
+    image: caddy:2.8-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-ops@localhost}
+    volumes:
+      - ./docker/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - sms_caddy_data:/data
+      - sms_caddy_config:/config
+    depends_on:
+      - frontend-spa
+      - api-gateway
+
+volumes:
+      - sms_caddy_data:/data
+      - sms_caddy_config:/config
+
+  # Optional: ClamAV REST API for virus scanning (enable with --profile clamav)
+  clamav:
+    profiles: ["clamav"]
+    image: ghcr.io/tnmunro/clamav-rest:latest
+    ports:
+      - "8080:8080"
+    environment:
+      CLAMAV_REST_MAX_FILE_SIZE: "50M"
+      CLAMAV_REST_TIMEOUT: "120"
+    volumes:
+      - clamav-db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  sms_pgdata:
+  sms_redisdata:
+  sms_miniodata:
+  sms_caddy_data:
+  sms_caddy_config:
+  clamav-db:

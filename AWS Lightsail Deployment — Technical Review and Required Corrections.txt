@@ -1,0 +1,355 @@
+# GNET School Management System — AWS Lightsail Deployment Audit
+
+Review date: 11 October 2026 · Scope: deployment, security, database, backups, monitoring, and budget
+
+My recommendation is to hold off on deploying the current plan to production. The documents contain useful engineering practices, but several deployment instructions conflict with each other or could cause the application to fail, expose sensitive services, or lose school records.
+
+The good news is that you do not necessarily need an expensive AWS architecture. With your 2026 AWS credits and the additional $100 you are willing to spend, we can aim for a lean initial deployment, provided we select the right Lightsail option and validate the application's resource requirements first.
+
+I reviewed the six documents you uploaded, including the deployment plan and its backup copy, API security guidelines, database migration guide, disaster recovery plan, and monitoring guide. The two deployment-plan files also contain differing workflow instructions, so we should establish one authoritative version rather than follow both.
+
+## 1. Overall readiness assessment
+
+Deployment architecture
+
+Critical changes required
+
+The plan mixes a Docker Compose deployment on a virtual machine with a Lightsail container-service deployment. Those are different deployment models, and the proposed automation does not reliably connect the two.
+
+Security and configuration
+
+Not production-ready
+
+The examples contain weak database credentials, public-port risks, and ambiguous secret handling. Some security controls are described as if they exist, but the documents do not prove they have been implemented in the application.
+
+Database and recovery
+
+Major corrections needed
+
+Backup storage, migration execution, restore commands, schema definitions, and recovery targets need to be reconciled and tested.
+
+Monitoring and cost control
+
+Needs simplification
+
+The monitoring document describes a large observability stack, while recommending a much smaller setup elsewhere. Some metrics and example measurements appear illustrative rather than verified.
+
+These are findings about the plans, not proof that the application itself has all these defects. To certify the actual application, we will also need to inspect the Docker Compose file, Dockerfiles, environment-variable definitions, Prisma configuration, and GitHub Actions workflow in your repository.
+
+## 2. The biggest problem: the deployment model is inconsistent
+
+Your documents describe two different ways of running Docker on Lightsail.
+
+[Connect to Lightsail Linux or Unix instances with the SSH command - Amazon Lightsail](https://images.openai.com/static-rsc-4/sCMYwcP-vomFdlKqHG5CoEAT3Cp-bR6OD3ksE5j_K0Y0Q2IgcjrxulIAN-TVp9sPUGH21pciJeYWPBs6NN_VyIVga7wNlwg4BqAif0O28OBvEQ_YFMf-scW1u7Z1s7K6YqC-Mp0nr4j9jErRSO0FwZ8xn6w16sH67p-2ataN6Wg?purpose=inline)
+
+Option A — Lightsail Linux instance with Docker Compose
+
+Best fit for your current architecture
+
+One Linux server runs your Compose stack: API gateway, frontend, microservices, PostgreSQL, Redis, MinIO, and any supporting services. You control Docker networking, persistent volumes, reverse proxy, and deployment scripts.
+
+[Create and manage container service deployments in Lightsail - Amazon Lightsail](https://images.openai.com/static-rsc-4/QO4R2yDoWsN_za1wz_sI7f1sCCQ5M_ZA1ADy8wo4SMmyUTsJevs-qdAOktMUGEBzFrhjnLb3FeNjj7IGTd105gJ-ivA6lPhKlTovKhl4n6bMhYzLqCPpupAI7U-Z9sJtrm_KegLXilXZqsiP0C0rMgr2uJcOc1tZwv8sE_BAt-k?purpose=inline)
+
+Option B — Lightsail Container Service
+
+Managed container deployments with AWS-managed infrastructure, but with important limits: up to 10 container entries per deployment and only one public endpoint container. You cannot simply deploy an entire Docker Compose project as one multi-image application.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://docs.aws.amazon.com\&sz=32)
+
+Amazon Lightsail
+
++1
+
+
+
+### Why I recommend Option A
+
+Your documented application has nine backend services plus a frontend, with additional infrastructure containers. The deployment plan tries to build separate images and then deploy `gnet-sms:latest` as if that image automatically contained the entire system.
+
+It does not. Building ten images does not create a combined multi-container image.
+
+The proposed Lightsail container-service workflow also does not deploy the PostgreSQL, Redis, and MinIO volumes defined in your Compose configuration. Even if you squeezed the application containers into the service's limit, you would still need to redesign infrastructure and inter-service communication.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://docs.aws.amazon.com\&sz=32)
+
+Amazon Lightsail
+
++1
+
+
+
+Recommended direction: use a Linux Lightsail instance with Docker Compose for the initial deployment. Keep the existing service boundaries, subject to verifying the actual Compose configuration and resource usage.
+
+## 3. Current Lightsail pricing and a sensible starting size
+
+AWS's published Linux/Unix instance prices currently list these relevant plans. Actual billing, credits, taxes, and regional availability should be checked in your account before creating the instance.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://aws.amazon.com\&sz=32)
+
+Amazon Web Services, Inc.
+
+
+
+## $12/month
+
+2 GB RAM · 2 vCPUs · 60 GB SSD
+
+Lower-cost testing candidate
+
+Test first
+
+## $24/month
+
+4 GB RAM · 2 vCPUs · 80 GB SSD
+
+Potential starting point after resource testing
+
+Preferred initial test
+
+## $44/month
+
+8 GB RAM · 2 vCPUs · 160 GB SSD
+
+Safer candidate if the full stack is memory-heavy
+
+More headroom
+
+Prices shown are AWS's listed monthly rates, not a guarantee of your final bill.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://aws.amazon.com\&sz=32)
+
+Amazon Web Services, Inc.
+
+
+
+I would not start with the $5 plan for this full application. That plan has only 512 MB of RAM. Your stack includes multiple Node.js services, a database, caching, object storage, and potentially antivirus scanning. The complete workload could exceed that memory budget before meaningful student traffic arrives.
+
+The $24 plan is a reasonable initial test candidate, not a promise that the entire stack will fit. If your actual containers and database require more memory, move to $44 or reduce the number of services running on the server.
+
+Also, the plan's resource settings should be tested under load. Setting memory limits in Compose is useful, but setting every service to a 2 GB limit does not make a 4 GB machine capable of running all of them simultaneously.
+
+## 4. The $100 budget: how to avoid an unpleasant surprise
+
+The most important distinction is that AWS promotional credits and your own $100 cash budget are separate. I cannot determine from the documents how much credit remains in your account, its expiration date, or which services are eligible.
+
+Here is an illustrative budget using the published instance rates, before credits and additional charges:
+
+| Instance plan | 1 month | 3 months | 6 months |
+| ------------- | ------- | -------- | -------- |
+| $12/month     | $12     | $36      | $72      |
+| $24/month     | $24     | $72      | $144     |
+| $44/month     | $44     | $132     | $264     |
+
+This is server-only expenditure, not a complete bill. Snapshots, extra storage, a domain, email services, or other resources can add costs.
+
+For snapshots, AWS currently lists storage at $0.05 per GB-month. Automatic instance snapshots retain the latest seven daily snapshots; they are not a substitute for separately stored database and file backups.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://docs.aws.amazon.com\&sz=32)
+
+Amazon Lightsail
+
++1
+
+
+
+My budget strategy would be:
+
+- Use the eligible 2026 AWS credits for the Lightsail instance if your account allows it.
+- Keep the $100 cash reserve for anything not covered by credits, backup storage, and deployment troubleshooting.
+- Begin with one instance and a small number of paid supporting services, rather than adding managed databases, load balancers, or a large monitoring stack.
+- Set an AWS billing budget and alerts where available. An alert is not necessarily a hard spending cap.
+- Confirm the credit expiry date before committing to a monthly plan.
+
+Don't assume that a credit covers every AWS product or every charge. Check the credit's terms and your Billing and Cost Management page first.
+
+## 5. Critical corrections required in the deployment plan
+
+These are the changes I would make before creating the production instance.
+
+1\. Replace the Lightsail deployment workflow
+
+The documented `aws-actions/amazon-lightsail-deploy-image@v1` approach targets Lightsail container services, not an ordinary Linux instance running Docker Compose. The workflow also refers to `gnet-sms:latest`, although the build steps publish separate service images.
+
+Fix: build each image, tag it with the Git commit SHA, push it to a registry, and deploy to the Linux instance using a controlled SSH-based deployment script or a similarly secured deployment mechanism. The script should pull the intended image versions and run `docker compose up -d` using the correct Compose file.
+
+2\. Remove default production credentials
+
+The Compose example uses `sms` / `sms` for PostgreSQL and example MinIO credentials such as `smsminio-secret`. These are demonstration values, not production secrets.
+
+Fix: generate strong unique credentials, use a dedicated database role per service with least privilege, and ensure the `postgres` container is not published to the internet. Keep production secrets outside Git, and do not include `.env.production` in the repository or backups that lack appropriate encryption and access controls.
+
+3\. Correct exposed ports and external URLs
+
+The example publishes Redis port `6379` and MinIO ports `9000` and `9001`. The example also sets `S3_PUBLIC_URL=http://localhost:9000`.
+
+Fix: keep PostgreSQL, Redis, MinIO's API, and MinIO's console private on the Docker network. Expose only the reverse proxy's HTTP/HTTPS ports. `localhost` in a browser refers to the visitor's own computer, not your server, so externally accessed file URLs must use a valid public HTTPS hostname or an appropriately designed presigned-upload/download flow.
+
+4\. Make database migrations an explicit deployment stage
+
+The plan says migrations should run after startup in some places and as part of the GitHub Actions deployment in others.
+
+Fix: build and test images first, take a verified backup, run the approved Prisma production migrations exactly once, then deploy compatible application versions and run smoke tests. Do not run schema migrations independently from every application replica or blindly roll back a schema when application rollback occurs.
+
+5\. Fix the backup architecture
+
+The disaster-recovery plan puts PostgreSQL backups in a MinIO bucket on the same system. If the instance or its storage is lost, both the live files and backups may disappear together.
+
+Fix: maintain encrypted, verified backups outside the production instance and outside the only live MinIO storage location. Amazon S3 is one possible destination if the account's credit terms and storage costs make it suitable. Keep separate database dumps and object-storage backups, and perform actual restore tests.
+
+## 6. Database and migration audit
+
+The database guide needs a technical consistency pass, not just a deployment edit.
+
+| Finding in the documents                                                                        | Why it matters                                                                                    | Required correction                                                                        |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Schema list does not agree across sections                                                      | `ops` appears in Prisma configuration but is not included in the main database architecture list. | Establish the authoritative schema list from the actual Prisma schemas and SQL migrations. |
+| Example Prisma generator uses `provider = "postgresql"`                                         | This is not the usual Prisma Client generator configuration.                                      | Validate against the exact Prisma version and actual project configuration.                |
+| Database roles are described as restricted, but the root `sms` role is described as a superuser | Application services could have more privileges than necessary.                                   | Use a separate migration/admin role and least-privilege runtime roles.                     |
+| Production migrations and restore procedures are inconsistent                                   | The guide includes database names and table names that may not match the actual database.         | Test the exact commands against a fresh restored copy of the real schema.                  |
+| Manual `down.sql` files are treated as universal rollback mechanisms                            | Prisma Migrate does not automatically execute arbitrary down migrations as a built-in rollback.   | Document tested forward-fix and recovery procedures for each migration.                    |
+
+One additional point: your API security guidelines say all database queries should use Prisma and that Zod validation prevents malicious input. Zod is valuable for validating data, but it does not replace database authorization, correct tenant isolation, or safe handling of raw SQL.
+
+For a multi-tenant school management system, we should explicitly test that users from one school cannot read or modify another school's student records, receipts, exams, or documents—even if they manipulate request IDs or call an API endpoint directly.
+
+## 7. Disaster recovery: the current targets are too optimistic
+
+Your recovery plan claims a database restore can typically take 2–5 minutes and a complete disaster recovery can take 45–60 minutes. Those are targets or estimates, not verified results.
+
+There are also inconsistencies:
+
+- A daily database backup at 02:00 UTC can leave nearly 24 hours of transactions exposed to loss, not guarantee an RPO below four hours.
+- Some restore commands reference a database named `sms`, while the documented production database is `sms_db`.
+- Several MinIO restoration examples use bucket operations and archive commands that need verification against the actual `mc` version and backup format.
+- A database restore alone is not enough: database records and uploaded documents must correspond to the same recovery point.
+- The sample procedures include destructive commands such as removing a live bucket or dropping a database. Those must never be run against production without a verified backup, explicit target confirmation, and a tested recovery procedure.
+
+My recommendation: start with daily encrypted database backups, daily object-storage backups or synchronization to an independent destination, a retention policy, and a documented restore test. If losing a full school day of changes is unacceptable, add more frequent database backups or point-in-time recovery once the budget and storage architecture are confirmed.
+
+## 8. Security audit: important issues beyond deployment
+
+The security guide has good intentions, but several recommendations need tightening before this system handles real student and financial data.
+
+JWT and internal service authentication
+
+The guide describes HS256 JWTs, a shared `INTERNAL_SERVICE_TOKEN`, and refresh tokens that are not yet implemented. A shared token across services increases the impact of a leak.
+
+Generate independent production secrets, validate token issuer/audience and expiry, implement secure refresh-token rotation if required, and ensure internal endpoints cannot be accessed by bypassing the gateway. Consider per-service credentials where practical.
+
+File uploads and MinIO
+
+The guide correctly identifies MIME validation and file-size restrictions, but a client-supplied MIME type is not proof of file content. Validate file signatures, enforce size limits on the actual upload, use short-lived presigned URLs, and scan untrusted files before making them available.
+
+CORS and rate limiting
+
+The example uses a wildcard MinIO CORS origin. Replace it with explicit permitted origins and methods appropriate to the application. Login rate limits and IP-blocking rules must be implemented and tested; listing them in a document does not activate them automatically.
+
+Secret handling and access control
+
+The documents sometimes say configuration is stored in Git and elsewhere say secrets must never be committed. These instructions conflict. Store only non-secret templates in Git, keep real secrets in GitHub Actions secrets or an appropriate secrets manager, and never log credentials or tokens.
+
+Also correct the operational examples before using them:
+
+- The documented SSH hostname and username are placeholders and do not constitute a working connection command.
+- Verify the Docker Compose installation instructions for the chosen Ubuntu release; the package name `v2-plugin` should not be assumed to be valid.
+- The sample Caddy configuration must use the actual application hostname and the correct Docker service name or network address. `localhost` inside a container normally means that same container.
+- Check every public port in the final Compose configuration, not just the Lightsail firewall. A Docker port publication can create exposure that differs from what you intended.
+- The monitoring guide's sample dashboard values, including the example memory and storage readings, should be treated as illustrations, not measured production results.
+
+## 9. Monitoring: start small and verify what actually works
+
+Your monitoring document proposes Prometheus, Grafana, alerting, tracing, log aggregation, and numerous custom metrics. That is more infrastructure to maintain and pay for than I would introduce during your first deployment.
+
+Start with:
+
+1. Lightsail's built-in instance metrics for CPU, network traffic, and server health.
+2. Docker Compose health checks, restart policies, and log rotation.
+3. A working `/health/live` endpoint for process health and `/health/ready` for readiness, including relevant database dependencies.
+4. Automated alerts for service downtime, low disk space, high memory use, and failed or stale backups.
+5. A documented manual check that verifies login, tenant isolation, student records, fee receipts, uploads, and report generation.
+
+Only add a full metrics and logging stack after confirming the application runs reliably and the server has enough headroom. Metrics endpoints should be private or appropriately authenticated; don't expose them publicly just to make a monitoring dashboard work.
+
+## 10. The corrected deployment architecture
+
+GitHub repository
+
+Tests · Type checks · Security scan
+
+Container image registry
+
+Versioned images tagged with the commit SHA
+
+Lightsail Linux instance
+
+Docker Compose · Private service network · Persistent volumes
+
+Frontend + reverse proxy
+
+API gateway + services
+
+PostgreSQL + Redis
+
+MinIO + supporting services
+
+Independent backup destination
+
+Encrypted database dumps and object backups · Retention · Restore verification
+
+For HTTPS, use a domain pointed to the Lightsail instance's static IP, with Caddy or another correctly configured reverse proxy managing TLS. Keep SSH restricted to trusted source IPs where feasible and only expose ports 80 and 443 to the public. If you don't have a domain yet, obtain one before the final HTTPS setup.
+
+## 11. Deployment acceptance checklist
+
+I would consider the deployment plan ready only when all of the following have been completed.
+
+## Readiness checklist
+
+### 0/15
+
+Architecture
+
+Choose the Lightsail Linux instance + Docker Compose model.
+
+Verify the actual Compose file, image names, service dependencies and ports.
+
+Measure memory, CPU and disk usage with the full application running.
+
+Security
+
+Replace all example credentials and generate production secrets.
+
+Confirm only the reverse proxy is publicly accessible.
+
+Verify tenant isolation, authorization, uploads and HTTPS.
+
+Database and recovery
+
+Validate Prisma schemas and production migration commands.
+
+Create an independent backup and successfully restore it to a test database.
+
+Test restoring MinIO objects and matching them to database records.
+
+CI/CD and monitoring
+
+Run tests, build versioned images and deploy through one authoritative workflow.
+
+Verify readiness checks, smoke tests and a documented rollback procedure.
+
+Confirm backup-failure and service-downtime alerts actually fire.
+
+Budget
+
+Check remaining AWS credit, expiry and eligible services.
+
+Set a billing budget and review all billable resources.
+
+Confirm the expected monthly cost with snapshots and storage included.
+
+## My final recommendation
+
+Keep Lightsail, but revise the deployment plan before launch. The current documents are a good starting point, not a deployment procedure I would trust with real school data yet.
+
+The most useful next step is to review the actual repository files that the plans depend on. That will let us replace assumptions with verified facts and produce a corrected, executable deployment guide without unnecessarily rebuilding your architecture.
+
+One question before we finalize the server size: is the application currently running successfully on your computer using a single `docker compose up` command, including PostgreSQL, Redis, MinIO, and all the microservices? Or are some of those services started separately?

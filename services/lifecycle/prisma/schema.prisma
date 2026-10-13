@@ -1,0 +1,111 @@
+// Student Lifecycle schema
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["lifecycle"]
+}
+
+model AdmissionApplication {
+  id                String    @id @default(uuid())
+  schoolId          String
+  applicationNumber String?
+  studentIdNumber   String?
+  studentName       String
+  studentEmail      String?
+  studentPhone      String?
+  dob               DateTime?
+  gender            String?
+  address           String?
+  parentName        String
+  parentEmail       String?
+  parentPhone       String
+  gradeLevelId      String
+  gradeLevelName    String?
+  /// PENDING | UNDER_REVIEW | APPROVED | REJECTED | WAITLISTED | FEE_PENDING | DOCS_PENDING | ENROLLED | WITHDRAWN
+  status            String    @default("PENDING")
+  source            String    @default("STAFF_DIRECT")
+  previousSchool    String?
+  documents         String?
+  notes             String?
+  evaluation        String?
+  studentUserId     String?
+  parentUserId      String?
+  classroomId       String?
+  feePaymentId      String?
+  statusTokenHash   String?   @unique
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  enrolledAt        DateTime?
+  classAssignFailed Boolean   @default(false)
+  appliedAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  admissionDocuments AdmissionDocument[]
+
+  @@index([schoolId])
+  @@index([status])
+  @@schema("lifecycle")
+}
+
+model AdmissionDocument {
+  id              String    @id @default(uuid())
+  applicationId   String
+  schoolId        String
+  docType         String
+  status          String    @default("UPLOADED")
+  fileUrl         String
+  fileName        String?
+  mimeType        String?
+  sizeBytes       Int?
+  uploadedBy      String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  application AdmissionApplication @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+  @@index([schoolId])
+  @@schema("lifecycle")
+}
+
+model Attendance {
+  id           String             @id @default(uuid())
+  schoolId     String
+  classroomId  String?
+  teacherId    String
+  date         DateTime           @default(now())
+  presentCount Int
+  absentCount  Int
+  notes        String?
+  status       String             @default("COMPLETED")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  records      AttendanceRecord[]
+
+  @@index([schoolId])
+  @@index([classroomId])
+  @@index([schoolId, classroomId, date])
+  @@schema("lifecycle")
+}
+
+model AttendanceRecord {
+  id           String     @id @default(uuid())
+  attendanceId String
+  studentId    String
+  status       String
+  notes        String?
+  attendance   Attendance @relation(fields: [attendanceId], references: [id])
+
+  @@index([attendanceId])
+  @@index([studentId])
+  @@schema("lifecycle")
+}
