@@ -233,6 +233,11 @@ function collectPlatformHosts(): Set<string> {
   }
   const edge = normalizeHostname(process.env.PLATFORM_EDGE_HOSTNAME || "");
   if (edge) platformHosts.add(edge);
+  const appDomain = normalizeHostname(process.env.APP_DOMAIN || "");
+  if (appDomain) {
+    platformHosts.add(appDomain);
+    platformHosts.add(`www.${appDomain}`);
+  }
   return platformHosts;
 }
 

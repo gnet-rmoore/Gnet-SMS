@@ -91,12 +91,21 @@ jobs:
               "
 
       - name: Health check
+        env:
+          # Canonical public URL. Override with a repo variable `PUBLIC_URL`.
+          PUBLIC_URL: ${{ vars.PUBLIC_URL || 'https://gnetsms.com' }}
         run: |
-          if curl -fsS -o /dev/null https://gnetsms.com; then
-            echo "OK  https://gnetsms.com"
-          elif curl -fsS -o /dev/null "http://${{ secrets.LIGHTSAIL_HOSTNAME }}/"; then
-            echo "OK  http://${{ secrets.LIGHTSAIL_HOSTNAME }}/"
-          else
-            echo "Site is not responding"
-            exit 1
-          fi
+          set -euo pipefail
+          echo "Checking ${PUBLIC_URL} over HTTPS (valid cert + HTTP 200) ..."
+          code=""
+          for attempt in $(seq 1 12); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "${PUBLIC_URL}" || true)"
+            if [ "$code" = "200" ]; then
+              echo "OK  ${PUBLIC_URL} -> HTTP ${code}"
+              exit 0
+            fi
+            echo "attempt ${attempt}/12: ${PUBLIC_URL} -> HTTP ${code:-none}; retrying in 5s"
+            sleep 5
+          done
+          echo "::error::${PUBLIC_URL} did not return HTTP 200 over HTTPS (last: ${code:-none}). Check DNS, Caddy TLS issuance, and that the port-80 ACME challenge is reachable."
+          exit 1
