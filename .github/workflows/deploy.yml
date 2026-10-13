@@ -25,12 +25,18 @@ jobs:
         run: |
           set -euo pipefail
           HUB="${{ secrets.DOCKERHUB_USERNAME }}"
-          for svc in identity lifecycle ops staff classroom academic finance comms campus api-gateway; do
-            image="$HUB/gnet-sms-${svc}:${TAG}"
-            docker build -t "$image" -f "services/${svc}/Dockerfile" "services/${svc}"
+          # folder:image pairs (image name differs from folder for the gateway)
+          for pair in \
+              identity:identity lifecycle:lifecycle ops:ops staff:staff \
+              classroom:classroom academic:academic finance:finance comms:comms \
+              campus:campus gateway:api-gateway; do
+            dir="${pair%%:*}"
+            name="${pair##*:}"
+            image="$HUB/gnet-sms-${name}:${TAG}"
+            docker build -t "$image" -f "services/${dir}/Dockerfile" "services/${dir}"
             docker push "$image"
-            docker tag "$image" "$HUB/gnet-sms-${svc}:latest"
-            docker push "$HUB/gnet-sms-${svc}:latest"
+            docker tag "$image" "$HUB/gnet-sms-${name}:latest"
+            docker push "$HUB/gnet-sms-${name}:latest"
           done
 
       - name: Build and push frontend image
