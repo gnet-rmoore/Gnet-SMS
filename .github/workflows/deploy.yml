@@ -56,14 +56,20 @@ jobs:
           DIR: ${{ secrets.LIGHTSAIL_DEPLOY_DIR }}
           HOST: ${{ secrets.LIGHTSAIL_HOSTNAME }}
           USER: ${{ secrets.LIGHTSAIL_SSH_USER }}
+          KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
         run: |
           set -euo pipefail
+          for v in HOST USER KEY DIR; do
+            [ -n "${!v}" ] || { echo "::error::secret for $v is empty or unset (check Settings -> Secrets and variables -> Actions)"; exit 1; }
+          done
           mkdir -p ~/.ssh
-          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail.pem
+          printf '%s\n' "$KEY" > ~/.ssh/lightsail.pem
           chmod 600 ~/.ssh/lightsail.pem
+          echo "Deploying to ${USER}@${HOST}:${DIR} (key ${#KEY} bytes)"
           ssh -i ~/.ssh/lightsail.pem \
               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-              "$USER@$HOST" \
+              -o BatchMode=yes \
+              "${USER}@${HOST}" \
               "cd '$DIR' && \
                git pull --ff-only && \
                docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge pull && \
