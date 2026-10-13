@@ -293,10 +293,8 @@ export const academicYearsService = {
           const overlapping = await tx.academicYear.findFirst({
             where: {
               schoolId,
-              startsAt: { not: null },
-              endsAt: { not: null },
-              startsAt: { lt: endsAt },
-              endsAt: { gt: startsAt },
+              startsAt: { not: null, lt: endsAt },
+              endsAt: { not: null, gt: startsAt },
             },
             select: { yearKey: true, label: true, startsAt: true, endsAt: true },
           });
