@@ -62,10 +62,14 @@ jobs:
           for v in HOST USER KEY DIR; do
             [ -n "${!v}" ] || { echo "::error::secret for $v is empty or unset (check Settings -> Secrets and variables -> Actions)"; exit 1; }
           done
+          # Normalize single-line secrets: strip stray CR/LF/newlines and surrounding whitespace
+          HOST="$(printf '%s' "$HOST" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          USER="$(printf '%s' "$USER" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          DIR="$(printf '%s' "$DIR" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           mkdir -p ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/lightsail.pem
           chmod 600 ~/.ssh/lightsail.pem
-          echo "Deploying to ${USER}@${HOST}:${DIR} (key ${#KEY} bytes)"
+          echo "Deploying to ${USER}@${HOST}:${DIR} (key ${#KEY} bytes, dir ${#DIR} bytes)"
           ssh -i ~/.ssh/lightsail.pem \
               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
               -o BatchMode=yes \
