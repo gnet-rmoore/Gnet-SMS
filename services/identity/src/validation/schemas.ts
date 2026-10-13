@@ -55,6 +55,7 @@ export const schoolUpdateSchema = z
     address: z.string().nullable(),
     country: z.string().min(1).max(120),
     timezone: z.string(),
+    defaultLocale: z.string().min(1).max(20).optional(),
     region: z.string().nullable().optional(),
     city: z.string().nullable().optional(),
     holidayEnabled: z.boolean().optional(),

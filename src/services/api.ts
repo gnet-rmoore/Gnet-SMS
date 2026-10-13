@@ -45,11 +45,6 @@ function buildUrl(path: string, params?: Record<string, ApiQueryValue>): string 
   return path.includes("?") ? `${path}&${qs}` : `${path}?${qs}`;
 }
 
-function authHeaders(): Record<string, string> {
-  const token = useAuthStore.getState().accessToken;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 async function parseBody(res: Response): Promise<any> {
   if (res.status === 204 || res.status === 205) return null;
   const text = await res.text();
@@ -67,7 +62,11 @@ async function request(
   body?: unknown,
   options?: ApiRequestOptions
 ): Promise<any> {
-  const headers: Record<string, string> = { ...authHeaders(), ...options?.headers };
+  const token = useAuthStore.getState().accessToken;
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options?.headers,
+  };
   let payload: BodyInit | undefined;
   if (body !== undefined) {
     if (!headers["Content-Type"] && !(body instanceof FormData)) {
@@ -86,6 +85,12 @@ async function request(
   const data = await parseBody(res);
 
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      useAuthStore.getState().logout();
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.assign("/login?expired=true");
+      }
+    }
     const message =
       (data && typeof data === "object" && (data.error || data.message)) ||
       res.statusText ||

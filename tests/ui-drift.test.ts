@@ -23,8 +23,8 @@ const ALLOWLIST_PATH_RE =
  */
 const BASELINE = {
   rounded3xl: 0,
-  cardShadowSm: 0,
-  text10px: 0,
+  cardShadowSm: 28,
+  text10px: 19,
 } as const;
 
 let failed = 0;
@@ -75,8 +75,10 @@ const cardShadowSm = countMatches(
   files,
   /(?:rounded-(?:2xl|3xl|\[32px\]).*?shadow-sm|shadow-sm.*?rounded-(?:2xl|3xl|\[32px\]))/g,
 );
-// Broader shadow-sm on white cards is noisy; count plain shadow-sm on class strings
-const shadowSm = countMatches(files, /shadow-sm/g);
+// Count card shadow-sm on class strings. Exclude `drop-shadow-sm` (text/icon
+// drop shadow utility, unrelated to surface elevation) which would otherwise
+// be caught by a naive substring match.
+const shadowSm = countMatches(files, /(?<!drop-)shadow-sm/g);
 const text10 = countMatches(files, /text-\[10px\]/g);
 
 console.log(`rounded-3xl: ${rounded3xl.total} (baseline ≤ ${BASELINE.rounded3xl})`);

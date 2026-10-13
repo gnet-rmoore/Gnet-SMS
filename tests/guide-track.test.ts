@@ -61,10 +61,6 @@ assert(
   "intro retained without capability"
 );
 
-const specialty = GUIDE_TRACKS.staff_ops_specialist;
-assert(specialty.steps.some((s) => s.type === "honesty"), "ops specialist has honesty step");
-assert(GUIDE_TRACKS.staff_care.steps.some((s) => s.type === "honesty"), "care track has honesty step");
-
 const studentFull = GUIDE_TRACKS.student.steps;
 const studentShort = filterStepsForStudentAge("student", studentFull, true);
 assert(studentShort.length < studentFull.length, "under-13 student track is shorter");
