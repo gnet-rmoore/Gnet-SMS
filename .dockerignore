@@ -10,9 +10,6 @@ dist
 build
 coverage
 
-# Legacy SPA snapshot — Dockerfile.frontend now builds from source (src/, vite.config.ts)
-frontend/public
-
 # Recovered reference material (not needed to build)
 recovered-from-image
 
