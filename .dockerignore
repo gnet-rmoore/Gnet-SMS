@@ -1,0 +1,27 @@
+# Keep the Docker build context small and portable (never ship host node_modules,
+# secrets, or build output into the image).
+
+# Dependencies — reinstalled inside the image (npm ci)
+node_modules
+**/node_modules
+
+# Build output — regenerated inside the image
+dist
+build
+coverage
+
+# Legacy SPA snapshot — Dockerfile.frontend now builds from source (src/, vite.config.ts)
+frontend/public
+
+# Recovered reference material (not needed to build)
+recovered-from-image
+
+# Test / local output
+playwright-report
+test-results
+blob-report
+*.log
+
+# Secrets / local env
+.env
+.env.*
