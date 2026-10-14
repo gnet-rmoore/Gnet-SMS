@@ -25,6 +25,7 @@ import {
 } from "../lib/feeScope";
 import {
   assertMinPaymentAmount,
+  computeInvoiceAmounts,
   DEFAULT_MIN_PAYMENT,
   effectiveAmountPaid,
   invoiceBalance,
@@ -356,28 +357,27 @@ export const financeService = {
       }
     }
 
-    const amount = data.amount !== undefined ? Number(data.amount) : Number(template?.amount);
     const type = data.type || template?.type;
-    if (!type || !Number.isFinite(amount) || amount <= 0) {
-      throw Object.assign(new Error("Valid amount and type are required"), {
-        status: 400,
-      });
+    if (!type) {
+      throw Object.assign(new Error("Valid amount and type are required"), { status: 400 });
     }
+    const sourceAmount =
+      data.amount !== undefined ? data.amount : (template?.amount as number | undefined);
+    // Server owns discount math: reconcile amount / originalAmount / discountPercent.
+    const amounts = computeInvoiceAmounts({
+      amount: sourceAmount,
+      originalAmount: data.originalAmount,
+      discountPercent: data.discountPercent,
+    });
 
     const created = await prisma.feePayment.create({
       data: {
         schoolId,
         studentId,
         applicationId: data.applicationId || null,
-        amount,
-        originalAmount:
-          data.originalAmount !== undefined && data.originalAmount !== null
-            ? Number(data.originalAmount)
-            : null,
-        discountPercent:
-          data.discountPercent !== undefined && data.discountPercent !== null
-            ? Number(data.discountPercent)
-            : null,
+        amount: amounts.amount,
+        originalAmount: amounts.originalAmount,
+        discountPercent: amounts.discountPercent,
         amountPaid: 0,
         type: String(type),
         status: data.status || "PENDING",
@@ -400,8 +400,8 @@ export const financeService = {
           kind: "INVOICE_CREATED",
           amount: 0,
           balanceBefore: 0,
-          balanceAfter: roundMoney(amount),
-          billedAmount: amount,
+          balanceAfter: roundMoney(amounts.amount),
+          billedAmount: amounts.amount,
           invoiceStatusBefore: null,
           invoiceStatusAfter: created.status,
           method: "OTHER",
@@ -438,16 +438,37 @@ export const financeService = {
       throw Object.assign(new Error("Only open invoices can be edited"), { status: 409 });
     }
     const paid = effectiveAmountPaid(existing);
-    if (paid > 0 && data.amount !== undefined) {
+    const hasMoneyChange =
+      data.amount !== undefined ||
+      data.originalAmount !== undefined ||
+      data.discountPercent !== undefined;
+    if (paid > 0 && hasMoneyChange) {
       throw Object.assign(
         new Error("Cannot change billed amount after payments have been recorded"),
         { status: 409, code: "FEE_HAS_PAYMENTS" }
       );
     }
+    let money:
+      | { amount: number; originalAmount: number | null; discountPercent: number | null }
+      | undefined;
+    if (hasMoneyChange) {
+      money = computeInvoiceAmounts({
+        amount:
+          data.amount !== undefined
+            ? data.amount
+            : (existing.originalAmount ?? existing.amount),
+        originalAmount:
+          data.originalAmount !== undefined ? data.originalAmount : existing.originalAmount,
+        discountPercent:
+          data.discountPercent !== undefined ? data.discountPercent : existing.discountPercent,
+      });
+    }
     const updated = await prisma.feePayment.update({
       where: { id },
       data: {
-        amount: data.amount !== undefined ? Number(data.amount) : undefined,
+        amount: money ? money.amount : undefined,
+        originalAmount: money ? money.originalAmount : undefined,
+        discountPercent: money ? money.discountPercent : undefined,
         type: data.type,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         notes: data.notes === undefined ? undefined : data.notes,
@@ -747,6 +768,7 @@ export const financeService = {
     });
 
     let receiptId: string | null = null;
+    let receiptIssueFailed = false;
     try {
       const { receiptService } = await import("./receiptService");
       const receipt = await receiptService.issueForFeePaymentTxn(result.txn.id, input.recordedBy || "system");
@@ -759,12 +781,22 @@ export const financeService = {
         result.txn.receiptId = receiptId;
       }
     } catch (err: any) {
+      receiptIssueFailed = true;
       console.warn("[finance] receipt issue after payment:", err?.message || err);
     }
 
     if (result.fee.status === "PAID") {
       const { notifyFeePaid } = await import("../lib/lifecycleClient");
-      await notifyFeePaid({ feeId: result.fee.id, applicationId: result.fee.applicationId });
+      const ok = await notifyFeePaid({
+        feeId: result.fee.id,
+        applicationId: result.fee.applicationId,
+      });
+      if (!ok && result.fee.applicationId) {
+        console.error(
+          `[finance] DURABLE: fee ${result.fee.id} is PAID but lifecycle application ` +
+            `${result.fee.applicationId} was not advanced after retries; needs reconciliation.`
+        );
+      }
     }
 
     if (result.fee.studentId && !String(result.fee.studentId).startsWith("application:")) {
@@ -811,6 +843,7 @@ export const financeService = {
     return {
       fee: serializeFeeInvoice(result.fee),
       txn: serializeTxn({ ...result.txn, receiptId }),
+      receiptIssueFailed,
     };
   },
 
@@ -1096,6 +1129,47 @@ export const financeService = {
       customerEmail: opts.email,
       successUrl: opts.successUrl || `${appBase}/checkout/success?fee_id=${fee.id}`,
       cancelUrl: opts.cancelUrl || `${appBase}/checkout/cancel?fee_id=${fee.id}`,
+    });
+  },
+
+  /**
+   * Public (unauthenticated) checkout for an applicant's entrance fee.
+   * Authorization comes from the application status token; the amount is always the
+   * server-computed remaining balance (client-supplied amounts are ignored).
+   */
+  async createPublicCheckoutForFee(
+    feeId: string,
+    opts: {
+      applicationId?: string;
+      token?: string;
+      successUrl?: string;
+      cancelUrl?: string;
+      email?: string;
+    }
+  ) {
+    const fee = await prisma.feePayment.findUnique({ where: { id: feeId } });
+    if (!fee) throw Object.assign(new Error("Fee not found"), { status: 404 });
+    const applicationId = String(opts.applicationId || fee.applicationId || "");
+    const token = String(opts.token || "");
+    if (!applicationId || !token) {
+      throw Object.assign(new Error("A valid application reference and access code are required"), {
+        status: 400,
+        code: "CHECKOUT_TOKEN_REQUIRED",
+      });
+    }
+    const { verifyApplicationFeeAccess } = await import("../lib/lifecycleClient");
+    const allowed = await verifyApplicationFeeAccess(applicationId, token, fee.id);
+    if (!allowed) {
+      throw Object.assign(new Error("Invalid or expired checkout link"), {
+        status: 403,
+        code: "CHECKOUT_FORBIDDEN",
+      });
+    }
+    return this.createCheckoutForFee(fee.id, {
+      successUrl: opts.successUrl,
+      cancelUrl: opts.cancelUrl,
+      email: opts.email,
+      amount: undefined,
     });
   },
 

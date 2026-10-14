@@ -21,6 +21,8 @@ export const feeCreateSchema = z.object({
 
 export const feeUpdateSchema = z.object({
   amount: z.coerce.number().positive().optional(),
+  originalAmount: z.coerce.number().positive().optional(),
+  discountPercent: z.coerce.number().min(0).max(100).optional(),
   type: z.string().min(1).optional(),
   dueDate: z.union([z.string().min(1), z.coerce.date()]).optional(),
   notes: z.string().max(2000).nullable().optional(),
@@ -55,5 +57,3 @@ export const feeCollectSchema = z.object({
   payerUserId: z.string().optional().nullable(),
   confirmStale: z.boolean().optional(),
 });
-
-export const feePaymentRecordSchema = feeCollectSchema;

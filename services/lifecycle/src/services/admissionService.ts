@@ -13,6 +13,7 @@ import {
 } from "../domain/admissionPolicy";
 import { notifyAdmissionStatusChange } from "../lib/admissionNotifications";
 import { getParentChildIds } from "../lib/identityClient";
+import { nextActionFor } from "../domain/admissionFunnel";
 
 const parseDateSafely = (dateStr: any) => {
   if (!dateStr || String(dateStr).trim() === "") return null;
@@ -62,6 +63,8 @@ export const admissionService = {
       gradeLevelId?: string;
       page?: number | string;
       pageSize?: number | string;
+      /** Raise the hard cap for exports (CSV). Normal listing stays at 100. */
+      maxPageSize?: number;
     }
   ) {
     const where: any = { schoolId };
@@ -77,7 +80,8 @@ export const admissionService = {
       ];
     }
     const page = Math.max(1, Number(opts?.page) || 1);
-    const pageSize = Math.min(100, Math.max(1, Number(opts?.pageSize) || 50));
+    const cap = Math.min(5000, Math.max(100, Number(opts?.maxPageSize) || 100));
+    const pageSize = Math.min(cap, Math.max(1, Number(opts?.pageSize) || 50));
     const [total, items] = await Promise.all([
       prisma.admissionApplication.count({ where }),
       prisma.admissionApplication.findMany({
@@ -140,6 +144,55 @@ export const admissionService = {
       where: { id },
       include: { admissionDocuments: true },
     });
+  },
+
+  /**
+   * Server-derived "what happens next" for an application. Single source of truth for
+   * every UI so the client never re-implements the status machine.
+   */
+  async getNextAction(id: string) {
+    const app = await prisma.admissionApplication.findUnique({
+      where: { id },
+      include: { admissionDocuments: true },
+    });
+    if (!app) throw Object.assign(new Error("Application not found"), { status: 404 });
+    const policy = await loadSchoolPolicy(app.schoolId);
+    let fee: { id: string; status: string | null; balance: number | null } | null = null;
+    if (app.feePaymentId) {
+      const f = await getFee(app.feePaymentId);
+      if (f) {
+        fee = {
+          id: f.id,
+          status: f.status ?? null,
+          balance:
+            typeof f.balance === "number"
+              ? f.balance
+              : typeof f.amount === "number"
+                ? Math.max(0, Number(f.amount) - Number(f.amountPaid || 0))
+                : null,
+        };
+      }
+    }
+    const step = nextActionFor({
+      status: app.status,
+      feePaymentId: app.feePaymentId,
+      classroomId: app.classroomId,
+      fee,
+      policy,
+    });
+    return {
+      id: app.id,
+      status: app.status,
+      applicationNumber: app.applicationNumber,
+      nextAction: step.action,
+      blockedBy: step.blockedBy,
+      required: step.required,
+      fee,
+      documents: (app.admissionDocuments ?? []).map((d: any) => ({
+        docType: d.docType,
+        status: d.status,
+      })),
+    };
   },
 
   async createApplication(schoolId: string, data: any, source = "STAFF_DIRECT") {
@@ -261,6 +314,15 @@ export const admissionService = {
           idempotencyKey: data.idempotencyKey,
         });
       }
+      if (data.status === "APPROVED" || data.status === "FEE_PENDING") {
+        // Reuse the transition path so the auto entrance invoice fires on approval.
+        return this.transition(id, data.status, {
+          amount: data.amount,
+          entranceFeeAmount: data.entranceFeeAmount,
+          createFee: data.createFee,
+          reason: data.reason,
+        });
+      }
     }
 
     let nextNotes = data.notes;
@@ -315,22 +377,39 @@ export const admissionService = {
       return result;
     }
 
-    if (to === "FEE_PENDING" || (to === "APPROVED" && opts.createFee)) {
-      const amount = Number(opts.amount || opts.entranceFeeAmount || 0);
+    if (to === "APPROVED" || to === "FEE_PENDING") {
+      // Approving a fee-required application auto-raises the entrance invoice and parks
+      // the application on FEE_PENDING, so staff never forget to bill the applicant.
+      const policy = to === "APPROVED" ? await loadSchoolPolicy(current.schoolId) : null;
+      const autoAmount =
+        policy && policy.requireEntranceFee ? Number(policy.entranceFeeAmount) || 0 : 0;
+      const needsAutoFee = to === "APPROVED" && autoAmount > 0 && !current.feePaymentId;
+      const amount = Number(
+        opts.amount || opts.entranceFeeAmount || (needsAutoFee ? autoAmount : 0)
+      );
+      const shouldCreate =
+        !current.feePaymentId && amount > 0 && (to === "FEE_PENDING" || opts.createFee || needsAutoFee);
       let feePaymentId = current.feePaymentId;
-      if (amount > 0 && !feePaymentId) {
-        const fee = await createEntranceFee({
-          schoolId: current.schoolId,
-          applicationId: current.id,
-          studentId: current.studentUserId,
-          amount,
-        });
-        feePaymentId = fee.id;
-        to = "FEE_PENDING";
+      let target = to;
+      if (shouldCreate) {
+        try {
+          const fee = await createEntranceFee({
+            schoolId: current.schoolId,
+            applicationId: current.id,
+            studentId: current.studentUserId,
+            amount,
+          });
+          feePaymentId = fee.id;
+          target = "FEE_PENDING";
+        } catch (err: any) {
+          // Finance unavailable: keep the approval, let staff retry the invoice explicitly.
+          console.warn("[lifecycle] auto entrance fee failed:", err?.message || err);
+          target = "APPROVED";
+        }
       }
       const updated = await prisma.admissionApplication.update({
         where: { id },
-        data: { status: to, feePaymentId, reviewedAt: new Date() },
+        data: { status: target, feePaymentId, reviewedAt: new Date() },
         include: { admissionDocuments: true },
       });
       void notifyAdmissionStatusChange(updated, fromStatus);
@@ -449,9 +528,11 @@ export const admissionService = {
       feeCohort,
     });
 
+    const studentCreated = studentUser.created !== false;
     let parentUserId: string | null = app.parentUserId;
     let parentPassword: string | undefined;
     let parentCreated = false;
+    let parentLinkFailed = false;
     if (app.parentEmail && app.parentEmail.trim() !== "") {
       parentPassword = randomPassword();
       const parentUser = await findOrCreateIdentityUser({
@@ -466,7 +547,13 @@ export const admissionService = {
       });
       parentUserId = parentUser.id;
       parentCreated = Boolean(parentUser.created);
-      await linkParentStudent(parentUser.id, studentUser.id);
+      try {
+        await linkParentStudent(parentUser.id, studentUser.id);
+      } catch (err: any) {
+        // Non-fatal: the parent account exists; record the gap for follow-up.
+        parentLinkFailed = true;
+        console.warn("[lifecycle] parent-student link failed:", err?.message || err);
+      }
     }
 
     let classAssignFailed = false;
@@ -480,8 +567,11 @@ export const admissionService = {
       }
     }
 
-    const updated = await prisma.admissionApplication.update({
-      where: { id },
+    // Conditional claim: only the first concurrent caller flips the row to ENROLLED.
+    // Replays/races get count 0 and return the already-enrolled application (idempotent).
+    const idempotencyKey = opts.idempotencyKey || `enroll:${id}`;
+    const claim = await prisma.admissionApplication.updateMany({
+      where: { id, status: { not: "ENROLLED" } },
       data: {
         status: "ENROLLED",
         studentUserId: studentUser.id,
@@ -490,21 +580,33 @@ export const admissionService = {
         enrolledAt: new Date(),
         classAssignFailed,
       },
+    });
+    if (claim.count === 0) {
+      const already = await prisma.admissionApplication.findUnique({
+        where: { id },
+        include: { admissionDocuments: true },
+      });
+      return { ...(already as any), idempotent: true, idempotencyKey, credentials: null };
+    }
+    const updated = await prisma.admissionApplication.findUnique({
+      where: { id },
       include: { admissionDocuments: true },
     });
 
     return {
-      ...updated,
+      ...(updated as any),
       credentials: {
         studentEmail,
-        studentPassword: studentUser.created === false ? undefined : studentPassword,
-        studentMustChangePassword: true,
+        studentPassword: studentCreated ? studentPassword : undefined,
+        studentMustChangePassword: studentCreated ? !isReturning : undefined,
         parentEmail: app.parentEmail,
         parentPassword: parentCreated ? parentPassword : undefined,
         parentMustChangePassword: parentCreated ? true : undefined,
-        welcomeEmailSent: true,
+        welcomeEmailSent: studentCreated ? !isReturning : false,
       },
+      idempotencyKey,
       classAssignFailed,
+      parentLinkFailed,
       policySnapshot: {
         requireEntranceFee: policy.requireEntranceFee,
         requiredDocTypes: policy.requiredDocTypes,
@@ -575,10 +677,12 @@ export const admissionService = {
       ? await prisma.admissionApplication.findUnique({ where: { id: applicationId } })
       : await prisma.admissionApplication.findFirst({ where: { feePaymentId: feeId } });
     if (!app) return null;
+    // Never advance an application via an unrelated fee id.
+    if (app.feePaymentId && feeId && app.feePaymentId !== feeId) return app;
     if (app.status === "FEE_PENDING") {
       return prisma.admissionApplication.update({
         where: { id: app.id },
-        data: { status: "DOCS_PENDING", feePaymentId: feeId },
+        data: { status: "DOCS_PENDING", feePaymentId: feeId || app.feePaymentId },
         include: { admissionDocuments: true },
       });
     }

@@ -131,18 +131,6 @@ export function mergeReceiptTemplates(
   return merged;
 }
 
-export function parseReceiptTemplatesJson(
-  rawJson: string | null | undefined,
-  legacySingle?: unknown
-): ReceiptTemplatesByType {
-  if (!rawJson) return mergeReceiptTemplates(null, legacySingle);
-  try {
-    return mergeReceiptTemplates(JSON.parse(rawJson), legacySingle);
-  } catch {
-    return mergeReceiptTemplates(null, legacySingle);
-  }
-}
-
 export function resolveReceiptTemplateForType(
   type: ReceiptTypeKey | string,
   templates: unknown,

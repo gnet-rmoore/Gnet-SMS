@@ -249,7 +249,7 @@ router.post(
   financeController.createCheckout
 );
 
-router.post("/api/public/fees/:id/checkout", financeController.createCheckout);
+router.post("/api/public/fees/:id/checkout", financeController.createPublicCheckout);
 router.post("/api/public/checkout/complete", financeController.completeMockCheckout);
 router.post("/api/webhooks/stripe", financeController.stripeWebhook);
 

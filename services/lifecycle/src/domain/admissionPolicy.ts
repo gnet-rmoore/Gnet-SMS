@@ -58,12 +58,11 @@ export function parseAdmissionPolicy(raw: unknown): AdmissionPolicy {
   };
 }
 
-/** Statuses that may call orchestrated enroll (after gates). */
-export const ENROLLABLE_STATUSES = ["APPROVED", "FEE_PENDING", "DOCS_PENDING"] as const;
-
-export function isEnrollableStatus(status: string): boolean {
-  return (ENROLLABLE_STATUSES as readonly string[]).includes(status);
-}
+/**
+ * Statuses that may call orchestrated enroll (after gates).
+ * Derived from the canonical transition map so it can never drift (see admissionStates).
+ */
+export { ENROLLABLE_STATUSES, isEnrollableStatus } from "./admissionStates";
 
 export function parseApplicationNotes(notes: string | null | undefined): Record<string, unknown> {
   if (!notes) return {};

@@ -14,7 +14,8 @@ export const ADMISSION_STATUSES = [
 
 export type AdmissionStatus = (typeof ADMISSION_STATUSES)[number];
 
-const ALLOWED: Record<string, string[]> = {
+/** Canonical server-enforced transition map (single source of truth). */
+export const ALLOWED: Record<string, string[]> = {
   PENDING: ["UNDER_REVIEW", "WITHDRAWN", "REJECTED"],
   UNDER_REVIEW: ["APPROVED", "REJECTED", "WAITLISTED", "UNDER_REVIEW", "DOCS_PENDING"],
   APPROVED: ["FEE_PENDING", "DOCS_PENDING", "ENROLLED", "UNDER_REVIEW"],
@@ -25,6 +26,20 @@ const ALLOWED: Record<string, string[]> = {
   WITHDRAWN: [],
   ENROLLED: [],
 };
+
+/** Statuses the state machine permits a direct transition into ENROLLED. */
+export const ENROLLABLE_STATUSES = Object.keys(ALLOWED).filter((from) =>
+  (ALLOWED[from] || []).includes("ENROLLED")
+) as readonly string[];
+
+export function isEnrollableStatus(status: string): boolean {
+  return ENROLLABLE_STATUSES.includes(status);
+}
+
+export function canTransition(from: string, to: string): boolean {
+  if (from === to) return true;
+  return (ALLOWED[from] || []).includes(to);
+}
 
 export function assertTransition(from: string, to: string) {
   if (from === to) return;

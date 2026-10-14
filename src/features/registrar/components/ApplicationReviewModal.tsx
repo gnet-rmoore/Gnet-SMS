@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
@@ -13,6 +13,8 @@ import {
 import { format } from "date-fns";
 import { Button } from "../../../components/ui";
 import { AdmissionApplicantPhoto } from "./AdmissionApplicantPhoto";
+import { OnboardingStepper } from "../../../components/OnboardingStepper";
+import { registrarApi } from "../api";
 
 const REGISTRY_CHARCOAL =
   "bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 shadow-sm";
@@ -83,6 +85,31 @@ export function ApplicationReviewModal({
   const fileDocs = Array.isArray(selectedApp?.admissionDocuments)
     ? selectedApp.admissionDocuments
     : [];
+  const [nextAction, setNextAction] = useState<string | null>(null);
+  const [blockedBy, setBlockedBy] = useState<string[]>([]);
+
+  useEffect(() => {
+    const id = selectedApp?.id;
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await registrarApi.getNextAction(id);
+        if (!cancelled) {
+          setNextAction(data?.nextAction || null);
+          setBlockedBy(Array.isArray(data?.blockedBy) ? data.blockedBy : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setNextAction(null);
+          setBlockedBy([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedApp?.id]);
 
   const interviewOptions = (["1", "2", "3", "4", "5"] as const).map((n) => ({
     value: n,
@@ -134,6 +161,14 @@ export function ApplicationReviewModal({
                   >
                     <X className="w-5 h-5" />
                   </Button>
+                </div>
+
+                <div className="px-6 pt-5 pb-1 bg-white shrink-0 border-b border-slate-100">
+                  <OnboardingStepper
+                    status={selectedApp.status}
+                    nextAction={nextAction}
+                    blockedBy={blockedBy}
+                  />
                 </div>
 
                 <div className="p-6 space-y-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -12,6 +12,7 @@ import {
   parseApplyStatusUrl,
 } from "../lib/publicApplyStatus";
 import { Button } from "../components/ui";
+import { OnboardingStepper } from "../components/OnboardingStepper";
 
 const inputClass =
   "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white";
@@ -270,6 +271,9 @@ export default function PublicApplyStatusPage() {
 
         {data && !lookupMode ? (
           <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <OnboardingStepper status={data.status} />
+            </div>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-2 text-sm text-slate-600">
               <p>
                 <span className="font-medium text-slate-900">{t("public:applyStatus.number")}:</span>{" "}

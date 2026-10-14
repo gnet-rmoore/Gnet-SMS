@@ -312,6 +312,21 @@ export const financeController = {
     }
   },
 
+  async createPublicCheckout(req: Request, res: Response) {
+    try {
+      const session = await financeService.createPublicCheckoutForFee(req.params.id, {
+        applicationId: req.body?.applicationId,
+        token: req.body?.token,
+        successUrl: req.body?.successUrl,
+        cancelUrl: req.body?.cancelUrl,
+        email: req.body?.email,
+      });
+      res.json(session);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message, code: err.code });
+    }
+  },
+
   async completeMockCheckout(req: Request, res: Response) {
     try {
       const user = (req as any).user;
@@ -331,10 +346,14 @@ export const financeController = {
       const raw = (req as any).rawBody || JSON.stringify(req.body);
       const result = await verifyStripeWebhook(raw, req.headers["stripe-signature"] as string);
       if (!result) return res.status(200).json({ received: true, ignored: true });
+      // Idempotency: the real Stripe session id is unique per checkout, so a replayed
+      // webhook resolves to the already-recorded txn instead of double-booking.
+      const checkoutSessionId =
+        result.sessionId || `stripe_${result.feeId}_${result.amount ?? "full"}`;
       await financeService.recordPayment(result.feeId, {
         amount: result.amount,
         method: "CHECKOUT",
-        checkoutSessionId: `stripe_${result.feeId}_${result.amount ?? "full"}`,
+        checkoutSessionId,
         recordedByRole: "SYSTEM",
         confirmStale: true,
         role: "SCHOOL_ADMIN",

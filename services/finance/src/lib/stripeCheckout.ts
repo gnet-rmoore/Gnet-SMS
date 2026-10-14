@@ -109,7 +109,12 @@ export function resolveConsoleSession(
 export async function verifyStripeWebhook(
   rawBody: Buffer | string,
   signature: string | undefined
-): Promise<{ feeId: string; applicationId?: string; amount?: number } | null> {
+): Promise<{
+  feeId: string;
+  applicationId?: string;
+  amount?: number;
+  sessionId?: string;
+} | null> {
   if (!stripeEnabled() || !process.env.STRIPE_WEBHOOK_SECRET || !signature) return null;
   const Stripe = (await import("stripe")).default;
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -128,5 +133,7 @@ export async function verifyStripeWebhook(
     feeId,
     applicationId: session.metadata?.applicationId,
     amount: Number.isFinite(amount) ? amount : undefined,
+    // Real Stripe session id — used as the idempotency key on FeePaymentTxn.checkoutSessionId.
+    sessionId: typeof session.id === "string" ? session.id : undefined,
   };
 }

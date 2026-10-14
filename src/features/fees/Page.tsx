@@ -13,6 +13,7 @@ import { OverviewTab } from "./components/OverviewTab";
 import { LedgerTab } from "./components/LedgerTab";
 import { TemplatesTab } from "./components/TemplatesTab";
 import { HistoryTab } from "./components/HistoryTab";
+import { ReceiptsTab } from "./components/ReceiptsTab";
 import type { FeePayment, FeeTemplate } from "./types";
 import { FeesChrome } from "./components/FeesChrome";
 import { usePageActions } from "./hooks/usePageActions";
@@ -39,10 +40,11 @@ export const Fees = () => {
   };
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "ledger" | "history" | "templates" | "batch"
+    "overview" | "ledger" | "history" | "templates" | "batch" | "receipts"
   >(() => {
     const tab = searchParams.get("tab");
     if (tab === "history" || tab === "transactions") return "history";
+    if (tab === "receipts") return "receipts";
     if (tab === "ledger" || tab === "invoices") return "ledger";
     if (tab === "templates") return "templates";
     if (tab === "batch") return "batch";
@@ -373,6 +375,10 @@ export const Fees = () => {
           setIsDrawerOpen={setIsDrawerOpen}
           showToast={showToast}
         />
+      )}
+
+      {!isStudent && activeTab === "receipts" && school?.id && (
+        <ReceiptsTab schoolId={school.id} showToast={showToast} />
       )}
 
       {!isStudent && activeTab === "templates" && (

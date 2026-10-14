@@ -8,6 +8,7 @@ import {
   Wallet,
   Users,
   History,
+  FileCheck2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
@@ -44,6 +45,7 @@ export function FeesChrome({
     { id: "overview", label: t("fees.tabs.overview"), icon: TrendingUp },
     { id: "ledger", label: t("fees.tabs.ledger"), icon: Receipt },
     { id: "history", label: t("fees.tabs.history"), icon: History },
+    { id: "receipts", label: t("fees.tabs.receipts"), icon: FileCheck2 },
     { id: "templates", label: t("fees.tabs.templates"), icon: Layers },
     { id: "batch", label: t("fees.tabs.batch"), icon: Users },
   ];

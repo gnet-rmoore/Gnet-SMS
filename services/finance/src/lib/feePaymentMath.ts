@@ -45,10 +45,84 @@ export function serializeFeeInvoice<T extends {
   amount: number;
   amountPaid?: number | null;
   status: string;
-}>(fee: T): T & { amountPaid: number; balance: number } {
+}>(fee: T): T & { amountPaid: number; balance: number; receiptCount: number | null } {
   const amountPaid = effectiveAmountPaid(fee);
   const balance = invoiceBalance(fee.amount, amountPaid, fee.status);
-  return { ...fee, amountPaid, balance };
+  const anyFee = fee as any;
+  const receiptCount =
+    typeof anyFee.receiptCount === "number"
+      ? anyFee.receiptCount
+      : typeof anyFee._count?.receipts === "number"
+        ? anyFee._count.receipts
+        : null;
+  return { ...fee, amountPaid, balance, receiptCount };
+}
+
+export type InvoiceAmounts = {
+  /** Net billed amount (always present, > 0). Balance/receipt math uses this. */
+  amount: number;
+  /** Gross amount before discount, or null when no discount applies. */
+  originalAmount: number | null;
+  /** Applied percentage discount, or null when no discount applies. */
+  discountPercent: number | null;
+};
+
+/**
+ * Reconcile amount / originalAmount / discountPercent server-side so stored money is
+ * always consistent. Accepts any subset and returns the canonical triple.
+ *
+ * - `discountPercent` wins when supplied (> 0): net = base * (1 - pct/100), base = originalAmount ?? amount.
+ * - `amount` + `originalAmount` with no percent: percent is derived.
+ * - Only `amount`: no discount.
+ * - Only `originalAmount`: treated as the net (no discount known).
+ */
+export function computeInvoiceAmounts(input: {
+  amount?: number | string | null;
+  originalAmount?: number | string | null;
+  discountPercent?: number | string | null;
+}): InvoiceAmounts {
+  const hasAmount = input.amount !== undefined && input.amount !== null && input.amount !== "";
+  const hasOriginal =
+    input.originalAmount !== undefined && input.originalAmount !== null && input.originalAmount !== "";
+  const hasPercent =
+    input.discountPercent !== undefined &&
+    input.discountPercent !== null &&
+    input.discountPercent !== "";
+
+  const amount = hasAmount ? Number(input.amount) : NaN;
+  const original = hasOriginal ? Number(input.originalAmount) : NaN;
+  const percent = hasPercent ? Number(input.discountPercent) : NaN;
+
+  const pct = hasPercent && Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : null;
+  if (pct !== null && pct > 0) {
+    const base = hasOriginal && Number.isFinite(original) ? original : amount;
+    if (!Number.isFinite(base) || base <= 0) {
+      throw Object.assign(new Error("A positive amount is required to apply a discount"), {
+        status: 400,
+        code: "FEE_DISCOUNT_BASE_REQUIRED",
+      });
+    }
+    const net = roundMoney(base * (1 - pct / 100));
+    return {
+      amount: net > 0 ? net : roundMoney(base),
+      originalAmount: roundMoney(base),
+      discountPercent: pct,
+    };
+  }
+
+  if (hasAmount && hasOriginal && Number.isFinite(amount) && Number.isFinite(original) && original > amount) {
+    const derived = roundMoney((1 - amount / original) * 100);
+    return { amount: roundMoney(amount), originalAmount: roundMoney(original), discountPercent: derived };
+  }
+
+  const net = hasAmount ? amount : hasOriginal ? original : NaN;
+  if (!Number.isFinite(net) || net <= 0) {
+    throw Object.assign(new Error("A valid positive amount is required"), {
+      status: 400,
+      code: "FEE_INVALID_AMOUNT",
+    });
+  }
+  return { amount: roundMoney(net), originalAmount: null, discountPercent: null };
 }
 
 export const DEFAULT_MIN_PAYMENT = 1;

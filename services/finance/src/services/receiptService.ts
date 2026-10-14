@@ -36,12 +36,21 @@ export type IssueReceiptInput = {
   supersedesId?: string | null;
 };
 
+let warnedMissingHmacSecret = false;
+
 function hmacSecret() {
-  return (
-    process.env.RECEIPT_HMAC_SECRET ||
-    process.env.JWT_ACCESS_SECRET ||
-    "dev-receipt-hmac-change-me"
-  );
+  if (process.env.RECEIPT_HMAC_SECRET) return process.env.RECEIPT_HMAC_SECRET;
+  if (!warnedMissingHmacSecret) {
+    warnedMissingHmacSecret = true;
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[finance] SECURITY: RECEIPT_HMAC_SECRET is unset in production — falling back to " +
+          "JWT_ACCESS_SECRET/dev secret. Set RECEIPT_HMAC_SECRET to a dedicated random value; " +
+          "rotating it will invalidate existing receipt verification signatures."
+      );
+    }
+  }
+  return process.env.JWT_ACCESS_SECRET || "dev-receipt-hmac-change-me";
 }
 
 async function resolveAuthorizedSigner(opts: {
@@ -323,20 +332,6 @@ export const receiptService = {
     return publicDto(receipt, sigValid);
   },
 
-  async getPdfBuffer(receipt: {
-    storageKey: string | null;
-    pdfBase64: string | null;
-  }): Promise<Buffer | null> {
-    if (receipt.pdfBase64) {
-      return Buffer.from(receipt.pdfBase64, "base64");
-    }
-    if (!receipt.storageKey || receipt.storageKey.startsWith("local://")) {
-      return null;
-    }
-    // Prefer signed URL for clients; when streaming needed, caller uses pdfBase64 or re-fetch
-    return null;
-  },
-
   async getDownloadTarget(receipt: {
     id: string;
     storageKey: string | null;
@@ -485,29 +480,46 @@ export const receiptService = {
     });
   },
 
-  /** Issue fee payment receipt after fee becomes PAID (legacy full-invoice path). */
-  async issueForFeePayment(feeId: string, issuedBy?: string | null, supersedesId?: string | null) {
-    const fee = await prisma.feePayment.findUnique({ where: { id: feeId } });
-    if (!fee) throw Object.assign(new Error("Fee not found"), { status: 404 });
-    if (fee.status !== "PAID") {
-      throw Object.assign(new Error("Fee must be PAID to issue a receipt"), { status: 409 });
+  /**
+   * Resolve a fee receipt source to the canonical settlement unit: a single PAYMENT txn.
+   * Accepts either a `FeePaymentTxn.id` or a `FeePayment.id`.
+   * - txn id → itself (must be a PAYMENT).
+   * - invoice id → its sole PAYMENT txn; errors when 0 or >1 exist (one receipt per payment).
+   */
+  async resolveFeePaymentTxnId(sourceId: string): Promise<string> {
+    const txn = await prisma.feePaymentTxn.findUnique({ where: { id: sourceId } });
+    if (txn) {
+      if (txn.kind !== "PAYMENT") {
+        throw Object.assign(new Error("Only payment transactions issue receipts"), { status: 409 });
+      }
+      return txn.id;
     }
-    const student = await getIdentityUser(fee.studentId);
-    const school = await getIdentitySchool(fee.schoolId);
-    return this.issue({
-      schoolId: fee.schoolId,
-      type: "FEE_PAYMENT",
-      sourceType: "FeePayment",
-      sourceId: fee.id,
-      payeeName: school?.name || "School",
-      payerName: student?.name || "Student",
-      amount: fee.amount,
-      currency: "USD",
-      lineItems: [{ label: `${fee.type} fee`, amount: fee.amount }],
-      sourceRef: `Invoice ${fee.id.slice(0, 8).toUpperCase()}`,
-      issuedBy: issuedBy || null,
-      supersedesId: supersedesId || null,
+    const fee = await prisma.feePayment.findUnique({ where: { id: sourceId } });
+    if (!fee) throw Object.assign(new Error("Fee not found"), { status: 404 });
+    const payments = await prisma.feePaymentTxn.findMany({
+      where: { feePaymentId: fee.id, kind: "PAYMENT" },
+      orderBy: { paidAt: "asc" },
+      select: { id: true },
     });
+    if (payments.length === 0) {
+      throw Object.assign(new Error("No payments recorded on this invoice yet"), {
+        status: 409,
+        code: "FEE_NO_PAYMENTS",
+      });
+    }
+    if (payments.length > 1) {
+      throw Object.assign(
+        new Error("This invoice has multiple payments; issue a receipt per payment transaction"),
+        { status: 409, code: "FEE_PER_TXN_RECEIPTS" }
+      );
+    }
+    return payments[0].id;
+  },
+
+  /** Issue a fee receipt for a payment txn or a single-payment invoice (one receipt per payment). */
+  async issueForFeePayment(sourceIdOrTxnId: string, issuedBy?: string | null, supersedesId?: string | null) {
+    const txnId = await this.resolveFeePaymentTxnId(sourceIdOrTxnId);
+    return this.issueForFeePaymentTxn(txnId, issuedBy, supersedesId);
   },
 
   /** Issue receipt for a single installment / payment txn. */
@@ -610,15 +622,6 @@ export const receiptService = {
 
   listTemplates() {
     return RECEIPT_TEMPLATES;
-  },
-
-  async previewHtml(
-    schoolId: string,
-    templateId: ReceiptTemplateId | string | null | undefined,
-    opts?: PreviewSampleOpts
-  ) {
-    const sample = await buildPreviewSample(schoolId, opts);
-    return renderReceiptPreviewHtml(templateId, sample);
   },
 
   async previewDocument(

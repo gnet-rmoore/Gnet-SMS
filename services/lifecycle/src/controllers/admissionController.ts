@@ -43,6 +43,15 @@ export const admissionController = {
     }
   },
 
+  async getNextAction(req: Request, res: Response) {
+    try {
+      const result = await admissionService.getNextAction(req.params.id);
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to resolve next action" });
+    }
+  },
+
   async getFunnel(req: Request, res: Response) {
     const { schoolId } = req.params;
     try {
@@ -66,6 +75,7 @@ export const admissionController = {
       const { items: applications } = await admissionService.getApplications(schoolId, {
         page: 1,
         pageSize: 5000,
+        maxPageSize: 5000,
       });
       const status = String(req.query.status || "").trim();
       const filtered =
@@ -288,6 +298,21 @@ export const admissionController = {
       res.status(201).json(doc);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message });
+    }
+  },
+
+  async publicConfirmUpload(req: Request, res: Response) {
+    try {
+      const token = String(req.body?.token || req.query.token || "");
+      // Validate the applicant's access code before allowing the upload to be finalized.
+      await admissionService.publicStatus(req.params.id, token);
+      const doc = await admissionService.confirmDocumentUpload(req.params.id, {
+        ...req.body,
+        uploadedBy: null,
+      });
+      res.status(201).json(doc);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message, code: err.code });
     }
   },
 

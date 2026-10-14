@@ -812,6 +812,24 @@ Rationale: harden auth/invites first; stabilize staff admissions before public s
 
 ## 7. Change log
 
+### 2026-10-14 — Admission → enrollment → finance overhaul (phases 0–7)
+
+- **Change:** Server-owned funnel and money math. Admissions gained a single source-of-truth
+  funnel (`nextActionFor`) exposed at `GET /api/applications/:id/next-action`; approving an
+  application auto-raises the entrance invoice (lifecycle → finance) and moves it to
+  `FEE_PENDING`. Enroll is idempotent (conditional claim; truthful credential flags). Discount
+  math is reconciled server-side (`computeInvoiceAmounts`) so `amount` / `originalAmount` /
+  `discountPercent` are always consistent. One receipt per payment txn (`resolveFeePaymentTxnId`);
+  Stripe webhook uses the real session id as the idempotency key; public fee checkout is locked
+  down (`verifyApplicationFeeAccess`, full-balance only); `recordPayment` reports
+  `receiptIssueFailed`. Frontend registrar actions migrated to `registrarApi` (no client status
+  walk); shared `OnboardingStepper` in the review modal and public status page; new staff
+  **Receipts** tab. Dead code removed; receipt HMAC secret warns loudly in production when
+  `RECEIPT_HMAC_SECRET` is unset.
+- **Services:** lifecycle, finance, frontend-spa
+- **Status:** Done (see `docs/ENROLLMENT_ADMISSION_FINANCE_OVERHAUL.md`)
+- **Verify:** `npm run test:onboarding && npm run test:enroll && npm run test:fee-partial && npm run test:fee-scope && npm run test:fee-invoice-amounts && npm run test:admission-funnel`; root `tsc --noEmit`; finance/lifecycle `esbuild` bundles clean
+
 ### 2026-07-30 — Bulk roster import (companion)
 
 - **Change:** Existing-school **CSV/Excel student import** shipped as **direct Identity create** (same door as Students → Enroll), **not** Lifecycle applications / enroll saga — so fee/docs gates do not block roster migration. See `docs/BULK_IMPORT_PLAN.md`.

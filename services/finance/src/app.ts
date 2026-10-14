@@ -8,7 +8,16 @@ import prisma from "./lib/prisma";
 const app = express();
 
 app.use(helmet());
-app.use(express.json({ limit: "2mb" }));
+// Capture the raw request body so Stripe webhook signature verification can use it
+// (constructEvent requires the exact bytes; the parsed JSON body is not sufficient).
+app.use(
+  express.json({
+    limit: "2mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 mountEntitlementGate(app, FINANCE_ENTITLEMENT_RULES);
 

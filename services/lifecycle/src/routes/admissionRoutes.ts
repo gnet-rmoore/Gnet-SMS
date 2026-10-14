@@ -69,6 +69,14 @@ router.post(
   admissionController.bulkEnroll
 );
 
+router.get(
+  "/api/applications/:id/next-action",
+  authenticate,
+  requireCapability("action.admissions.manage", STAFF),
+  requireResourceTenant(resourceLoaders.application),
+  admissionController.getNextAction
+);
+
 router.patch(
   "/api/applications/:id",
   authenticate,
@@ -163,7 +171,7 @@ router.get("/api/public/applications/lookup", admissionController.publicStatusLo
 router.get("/api/public/applications/:id/status", admissionController.publicStatus);
 router.post("/api/public/applications/:id/documents", admissionController.publicAddDocument);
 router.post("/api/public/applications/:id/documents/presign", admissionController.publicCreateUpload);
-router.post("/api/public/applications/:id/documents/confirm", admissionController.confirmUpload);
+router.post("/api/public/applications/:id/documents/confirm", admissionController.publicConfirmUpload);
 
 router.post(
   "/api/internal/applications/fee-paid",

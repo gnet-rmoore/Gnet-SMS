@@ -30,6 +30,25 @@ export const registrarApi = {
   deleteUser: (userId: string) => api.delete(`/api/users/${userId}`),
   updateApplication: (applicationId: string, data: unknown) =>
     api.patch(`/api/applications/${applicationId}`, data),
+  transitionApplication: (applicationId: string, to: string, data?: Record<string, unknown>) =>
+    api.post(`/api/applications/${applicationId}/transition`, { to, ...(data || {}) }),
+  enrollApplication: (
+    applicationId: string,
+    data?: { classroomId?: string; waiveFee?: boolean; waiveDocs?: boolean },
+    idempotencyKey?: string
+  ) =>
+    api.post(`/api/applications/${applicationId}/enroll`, data || {}, {
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+    }),
+  getNextAction: (applicationId: string) => api.get(`/api/applications/${applicationId}/next-action`),
+  createEntranceFee: (applicationId: string, amount: number) =>
+    api.post(`/api/applications/${applicationId}/create-entrance-fee`, { amount }),
+  presignDocument: (applicationId: string, data: unknown) =>
+    api.post(`/api/applications/${applicationId}/documents/presign`, data),
+  confirmDocument: (applicationId: string, data: unknown) =>
+    api.post(`/api/applications/${applicationId}/documents/confirm`, data),
+  reviewDocument: (applicationId: string, docId: string, data: unknown) =>
+    api.patch(`/api/applications/${applicationId}/documents/${docId}`, data),
   createApplication: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/applications`, data),
   addClassroomMember: (classroomId: string, data: unknown) =>

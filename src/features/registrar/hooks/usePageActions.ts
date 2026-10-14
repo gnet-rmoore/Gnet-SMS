@@ -2,6 +2,7 @@ import type React from "react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { registrarApi } from "../api";
+import { ApiError } from "../../../services/api";
 import { confirmAction } from "../../../lib/swal";
 import { buildAdmissionApiPayload, emptyManualAdmissionForm } from "../lib/manualAdmissionForm";
 import { persistUserPhoto } from "../../../lib/persistUserPhoto";
@@ -84,6 +85,14 @@ export function usePageActions(deps: PageActionsDeps) {
     waiveDocs = false,
     setEnrollCredentials,
   } = deps;
+
+  const apiErrorMessage = (err: unknown, fallback: string): string => {
+    if (err instanceof ApiError) {
+      return err.code ? `${err.message} (${err.code})` : err.message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
 
   // Helper parser for application notes
   const parseAppNotes = (notesStr: string) => {
@@ -194,37 +203,24 @@ export function usePageActions(deps: PageActionsDeps) {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await fetch(`/api/users/${studentFormData.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          name: studentFormData.name,
-          email: studentFormData.email,
-          phone: studentFormData.phone,
-          photoUrl: studentFormData.photoUrl ?? undefined,
-          dob: studentFormData.dob || undefined,
-          gender: studentFormData.gender,
-          address: studentFormData.address,
-          parentName: studentFormData.parentName,
-          parentPhone: studentFormData.parentPhone,
-          gradeLevelId: studentFormData.gradeLevelId || undefined,
-          isActive: studentFormData.isActive
-        })
+      await registrarApi.updateUser(studentFormData.id, {
+        name: studentFormData.name,
+        email: studentFormData.email,
+        phone: studentFormData.phone,
+        photoUrl: studentFormData.photoUrl ?? undefined,
+        dob: studentFormData.dob || undefined,
+        gender: studentFormData.gender,
+        address: studentFormData.address,
+        parentName: studentFormData.parentName,
+        parentPhone: studentFormData.parentPhone,
+        gradeLevelId: studentFormData.gradeLevelId || undefined,
+        isActive: studentFormData.isActive,
       });
-
-      if (response.ok) {
-        setSuccessMessage(t("admissions.toast.studentUpdated"));
-        setShowEditStudentModal(false);
-        fetchData();
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.studentUpdateFailed"));
-      }
+      setSuccessMessage(t("admissions.toast.studentUpdated"));
+      setShowEditStudentModal(false);
+      fetchData();
     } catch (error) {
-      setErrorMessage(t("admissions.toast.errorGeneric"));
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.studentUpdateFailed")));
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -240,18 +236,11 @@ export function usePageActions(deps: PageActionsDeps) {
     });
     if (!ok) return;
     try {
-      const response = await fetch(`/api/users/${studentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      if (response.ok) {
-        fetchData();
-        setSuccessMessage(t("admissions.toast.studentDeleted"));
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.studentDeleteFailed"));
-      }
+      await registrarApi.deleteUser(studentId);
+      fetchData();
+      setSuccessMessage(t("admissions.toast.studentDeleted"));
     } catch (error) {
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.studentDeleteFailed")));
       console.error(error);
     }
   };
@@ -296,69 +285,30 @@ export function usePageActions(deps: PageActionsDeps) {
     try {
       // Orchestrated enroll owns Identity + optional classroom assignment.
       if (newStatus === "ENROLLED") {
-        // Persist notes/docs and advance to an enrollable status first
-        if (selectedApp.status !== "ENROLLED") {
-          const steps: string[] = [];
-          if (selectedApp.status === "PENDING") steps.push("UNDER_REVIEW", "APPROVED");
-          else if (selectedApp.status === "UNDER_REVIEW" || selectedApp.status === "WAITLISTED") {
-            steps.push("APPROVED");
-          }
-          for (const step of steps) {
-            const prep = await fetch(`/api/applications/${selectedApp.id}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify({
-                status: step,
-                notes: finalNotes,
-                documents: finalDocs,
-              }),
-            });
-            if (!prep.ok) {
-              const prepData = await prep.json().catch(() => ({}));
-              setErrorMessage(prepData.error || t("admissions.toast.moveStatusFailed", { step }));
-              return;
-            }
-          }
-          if (steps.length === 0) {
-            await fetch(`/api/applications/${selectedApp.id}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify({
-                notes: finalNotes,
-                documents: finalDocs,
-              }),
-            });
-          }
+        // Persist review notes/docs without changing status.
+        await registrarApi.updateApplication(selectedApp.id, {
+          notes: finalNotes,
+          documents: finalDocs,
+        });
+
+        // Server owns the status machine: only enrollable statuses may enroll. If the
+        // candidate is still in review, approve it first (a single allowed transition),
+        // otherwise the enroll endpoint would (correctly) reject it.
+        const enrollable = ["APPROVED", "FEE_PENDING", "DOCS_PENDING"];
+        if (!enrollable.includes(selectedApp.status)) {
+          await registrarApi.transitionApplication(selectedApp.id, "APPROVED");
         }
 
-        const enrollResp = await fetch(`/api/applications/${selectedApp.id}/enroll`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            "Idempotency-Key": `enroll-${selectedApp.id}`,
-          },
-          body: JSON.stringify({
+        const enrollData = await registrarApi.enrollApplication(
+          selectedApp.id,
+          {
             classroomId: selectedClassroomId || undefined,
             waiveFee: Boolean(waiveFee),
             waiveDocs: Boolean(waiveDocs),
-          }),
-        });
-        const enrollData = await enrollResp.json();
-        if (!enrollResp.ok) {
-          setErrorMessage(
-            enrollData.code
-              ? `${enrollData.error || t("admissions.toast.enrollmentFailed")} (${enrollData.code})`
-              : enrollData.error || t("admissions.toast.enrollmentFailed")
-          );
-          return;
-        }
+          },
+          `enroll-${selectedApp.id}`
+        );
+
         if (enrollData.credentials && setEnrollCredentials) {
           setEnrollCredentials(enrollData.credentials);
         }
@@ -382,30 +332,17 @@ export function usePageActions(deps: PageActionsDeps) {
         return;
       }
 
-      const response = await fetch(`/api/applications/${selectedApp.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          status: newStatus,
-          notes: finalNotes,
-          documents: finalDocs
-        })
+      await registrarApi.updateApplication(selectedApp.id, {
+        status: newStatus,
+        notes: finalNotes,
+        documents: finalDocs,
       });
-
-      if (response.ok) {
-        setSuccessMessage(t("admissions.toast.candidateUpdated"));
-        setSelectedClassroomId("");
-        setShowAppReviewModal(false);
-        fetchData();
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.reviewSaveFailed"));
-      }
+      setSuccessMessage(t("admissions.toast.candidateUpdated"));
+      setSelectedClassroomId("");
+      setShowAppReviewModal(false);
+      fetchData();
     } catch (error) {
-      setErrorMessage(t("admissions.toast.reviewSaveError"));
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.reviewSaveFailed")));
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -418,25 +355,15 @@ export function usePageActions(deps: PageActionsDeps) {
     if (!selectedClassroom || !classAllocationStudentId) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/classrooms/${selectedClassroom.id}/members`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ userId: classAllocationStudentId })
+      await registrarApi.addClassroomMember(selectedClassroom.id, {
+        userId: classAllocationStudentId,
       });
-
-      if (response.ok) {
-        setClassAllocationStudentId("");
-        fetchClassroomRoster(selectedClassroom.id);
-        fetchData();
-        setSuccessMessage(t("admissions.toast.studentAddedToClass"));
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.addToClassFailed"));
-      }
+      setClassAllocationStudentId("");
+      fetchClassroomRoster(selectedClassroom.id);
+      fetchData();
+      setSuccessMessage(t("admissions.toast.studentAddedToClass"));
     } catch (error) {
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.addToClassFailed")));
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -453,20 +380,12 @@ export function usePageActions(deps: PageActionsDeps) {
     });
     if (!ok) return;
     try {
-      const response = await fetch(`/api/classrooms/${selectedClassroom.id}/members/${memberUserId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-
-      if (response.ok) {
-        fetchClassroomRoster(selectedClassroom.id);
-        fetchData();
-        setSuccessMessage(t("admissions.toast.studentRemovedFromClass"));
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.removeMemberFailed"));
-      }
+      await registrarApi.removeClassroomMember(selectedClassroom.id, memberUserId);
+      fetchClassroomRoster(selectedClassroom.id);
+      fetchData();
+      setSuccessMessage(t("admissions.toast.studentRemovedFromClass"));
     } catch (error) {
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.removeMemberFailed")));
       console.error(error);
     }
   };
@@ -492,16 +411,9 @@ export function usePageActions(deps: PageActionsDeps) {
         sourceNote: "Direct offline entry",
       });
 
-      const response = await fetch(`/api/schools/${school?.id}/applications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await registrarApi.createApplication(school?.id, payload);
 
-      if (response.ok) {
+      if (response) {
         setSuccessMessage(
           existingStudentId
             ? t("admissions.toast.returningRegistered")
@@ -514,11 +426,10 @@ export function usePageActions(deps: PageActionsDeps) {
           setSuccessMessage("");
         }, 2000);
       } else {
-        const data = await response.json();
-        setErrorMessage(data.error || t("admissions.toast.offlineSubmitFailed"));
+        setErrorMessage(t("admissions.toast.offlineSubmitFailed"));
       }
     } catch (error) {
-      setErrorMessage(t("admissions.toast.submitUnexpectedError"));
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.offlineSubmitFailed")));
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -530,21 +441,14 @@ export function usePageActions(deps: PageActionsDeps) {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const presignRes = await fetch(`/api/applications/${selectedApp.id}/documents/presign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          docType,
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-        }),
+      const presign = await registrarApi.presignDocument(selectedApp.id, {
+        docType,
+        fileName: file.name,
+        mimeType: file.type || "application/pdf",
       });
-      const presign = await presignRes.json();
-      if (!presignRes.ok) throw new Error(presign.error || "Presign failed");
+      if (!presign || !presign.fileUrl) throw new Error(presign?.error || "Presign failed");
 
+      // Direct-to-storage upload (external signed URL — intentionally a raw fetch, no auth header).
       if (presign.uploadUrl) {
         const put = await fetch(presign.uploadUrl, {
           method: "PUT",
@@ -554,24 +458,15 @@ export function usePageActions(deps: PageActionsDeps) {
         if (!put.ok) throw new Error("Upload to storage failed");
       }
 
-      const confirmRes = await fetch(`/api/applications/${selectedApp.id}/documents/confirm`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          docType,
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          sizeBytes: file.size,
-          fileUrl: presign.fileUrl,
-          storageKey: presign.storageKey,
-          runScan: true,
-        }),
+      const doc = await registrarApi.confirmDocument(selectedApp.id, {
+        docType,
+        fileName: file.name,
+        mimeType: file.type || "application/pdf",
+        sizeBytes: file.size,
+        fileUrl: presign.fileUrl,
+        storageKey: presign.storageKey,
+        runScan: true,
       });
-      const doc = await confirmRes.json();
-      if (!confirmRes.ok) throw new Error(doc.error || "Confirm upload failed");
 
       setSelectedApp((prev: any) =>
         prev
@@ -584,23 +479,14 @@ export function usePageActions(deps: PageActionsDeps) {
       setSuccessMessage(t("admissions.toast.docUploaded"));
       fetchData();
     } catch (err: any) {
-      setErrorMessage(err.message || t("admissions.toast.docUploadFailed"));
+      setErrorMessage(apiErrorMessage(err, t("admissions.toast.docUploadFailed")));
     }
   };
 
   const handleReviewAdmissionDoc = async (docId: string, status: "APPROVED" | "REJECTED") => {
     if (!selectedApp) return;
     try {
-      const res = await fetch(`/api/applications/${selectedApp.id}/documents/${docId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Review failed");
+      const data = await registrarApi.reviewDocument(selectedApp.id, docId, { status });
       setSelectedApp((prev: any) =>
         prev
           ? {
@@ -616,7 +502,7 @@ export function usePageActions(deps: PageActionsDeps) {
       );
       fetchData();
     } catch (err: any) {
-      setErrorMessage(err.message || t("admissions.toast.docReviewFailed"));
+      setErrorMessage(apiErrorMessage(err, t("admissions.toast.docReviewFailed")));
     }
   };
 
@@ -630,16 +516,7 @@ export function usePageActions(deps: PageActionsDeps) {
     setSubmitting(true);
     setErrorMessage("");
     try {
-      const res = await fetch(`/api/applications/${selectedApp.id}/create-entrance-fee`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ amount: feeAmount }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create entrance fee");
+      const data = await registrarApi.createEntranceFee(selectedApp.id, feeAmount);
       setSelectedApp((prev: any) =>
         prev
           ? {
@@ -657,7 +534,7 @@ export function usePageActions(deps: PageActionsDeps) {
       );
       fetchData();
     } catch (err: any) {
-      setErrorMessage(err.message || t("admissions.toast.entranceFeeFailed"));
+      setErrorMessage(apiErrorMessage(err, t("admissions.toast.entranceFeeFailed")));
     } finally {
       setSubmitting(false);
     }
