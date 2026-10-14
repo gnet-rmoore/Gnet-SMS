@@ -11,7 +11,8 @@ import {
   Edit,
   Trash2,
   X,
-  Download
+  Download,
+  UserCheck
 } from "lucide-react";
 import { CountryTimezoneFields } from "../../components/CountryTimezoneFields";
 import { DEFAULT_COUNTRY, DEFAULT_TIMEZONE, resolveTimezoneForCountry } from "../../lib/countryTimezones";
@@ -45,6 +46,56 @@ export const Schools = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [impersonatingId, setImpersonatingId] = React.useState<string | null>(null);
+  const [impersonateReason, setImpersonateReason] = React.useState("");
+  const [impersonateSchoolId, setImpersonateSchoolId] = React.useState<string | null>(null);
+  const [showImpersonateModal, setShowImpersonateModal] = React.useState(false);
+
+  const beginImpersonateSchool = (school: School) => {
+    setImpersonateSchoolId(school.id);
+    setImpersonateReason("");
+    setShowImpersonateModal(true);
+  };
+
+  const runImpersonateSchool = async () => {
+    if (!impersonateSchoolId) return;
+    const reason = impersonateReason.trim();
+    if (reason.length < 5) {
+      toast.fire({ icon: "warning", title: "Reason too short", text: "Please provide a reason (min 5 characters)" });
+      return;
+    }
+    try {
+      setImpersonatingId(impersonateSchoolId);
+      const res = await fetch(`/api/super-admin/schools/${impersonateSchoolId}/impersonate`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason, minutes: 30 }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || `Failed (${res.status})`);
+      }
+      const data = await res.json();
+      const { beginImpersonation } = useAuthStore.getState();
+      beginImpersonation({
+        accessToken: data.accessToken,
+        user: data.user,
+        school: data.school,
+        capabilities: data.capabilities,
+        reason: data.reason,
+        expiresAt: data.expiresAt,
+      });
+      window.location.href = `/${data.school.slug}/dashboard`;
+    } catch (e: any) {
+      toast.fire({ icon: "error", title: "Impersonation failed", text: e.message });
+    } finally {
+      setImpersonatingId(null);
+      setShowImpersonateModal(false);
+    }
+  };
 
   const fields: FilterFieldDef[] = React.useMemo(
     () => [
@@ -447,6 +498,17 @@ export const Schools = () => {
                             <CheckCircle2 className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="compact"
+                          aria-label="Impersonate school"
+                          onClick={() => beginImpersonateSchool(school)}
+                          title="Impersonate school"
+                          disabled={impersonatingId === school.id}
+                          className="px-2 min-w-8"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
                         <Link to={`/super-admin/schools/${school.id}`}>
                           <Button
                             variant="ghost"
@@ -678,6 +740,75 @@ export const Schools = () => {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Impersonate School Modal */}
+      <AnimatePresence>
+        {showImpersonateModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowImpersonateModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden p-6 space-y-5"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Impersonate a School</h3>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Super Admins can act as a school user for troubleshooting
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close"
+                  onClick={() => setShowImpersonateModal(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">
+                  Reason for impersonation
+                </label>
+                <textarea
+                  value={impersonateReason}
+                  onChange={(e) => setImpersonateReason(e.target.value)}
+                  placeholder="e.g. Troubleshooting fee report issue"
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                />
+                <p className="text-xs text-slate-500 ml-1">
+                  Minimum 5 characters. Session expires in 30 minutes.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => setShowImpersonateModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={runImpersonateSchool}
+                  disabled={impersonatingId !== null}
+                >
+                  Start Impersonation
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}

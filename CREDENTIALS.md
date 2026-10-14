@@ -3,9 +3,14 @@
 This file contains the default credentials for the application. These are automatically seeded when the application starts if the database is empty.
 
 ## Super Admin
-- **Email:** superadmin@yoursms.com
-- **Password:** admin123
+- **Email:** superadmin@yoursms.com (or `SUPER_ADMIN_EMAIL`)
+- **Password:** admin123 (or `SUPER_ADMIN_PASSWORD`)
 - **Portal:** Super Admin Login
+- **Seeding:** the Identity seed runs automatically on every boot and is
+  idempotent — it creates the Super Admin only if none exists (checked by role
+  `SUPER_ADMIN`), then skips every later boot. No manual step and no password
+  reset. Set `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD` to control the first
+  account. See `services/identity/prisma/seed.ts`.
 
 ## School Staff (Demo School)
 - **School Admin:** schooladmin@yoursms.com

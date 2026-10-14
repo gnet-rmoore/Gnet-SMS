@@ -72,6 +72,7 @@ router.get("/api/super-admin/users/export.csv", sa, superAdminController.exportU
 router.post("/api/super-admin/users/:id/reset-password", sa, superAdminController.resetUserPassword);
 router.patch("/api/super-admin/users/:id/active", sa, superAdminController.setUserActive);
 router.post("/api/super-admin/users/:id/impersonate", sa, superAdminController.impersonate);
+router.post("/api/super-admin/schools/:id/impersonate", sa, superAdminController.impersonateSchool);
 router.post("/api/super-admin/impersonation/end", sa, superAdminController.endImpersonation);
 
 router.get("/api/super-admin/operators", sa, superAdminController.listOperators);

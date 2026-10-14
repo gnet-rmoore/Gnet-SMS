@@ -519,6 +519,21 @@ export const superAdminController = {
     }
   },
 
+  async impersonateSchool(req: Request, res: Response) {
+    try {
+      res.json(
+        await platformOpsService.startImpersonationBySchool(
+          req.params.id,
+          { reason: req.body?.reason, minutes: req.body?.minutes },
+          actorFromReq(req),
+          req
+        )
+      );
+    } catch (err: any) {
+      sendErr(res, err, "Failed to start impersonation");
+    }
+  },
+
   async endImpersonation(req: Request, res: Response) {
     try {
       res.json(await platformOpsService.endImpersonation(actorFromReq(req), req));

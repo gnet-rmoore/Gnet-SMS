@@ -1417,6 +1417,96 @@ export const platformOpsService = {
     };
   },
 
+  async startImpersonationBySchool(
+    schoolId: string,
+    body: { reason: string; minutes?: number },
+    actor: Actor,
+    req?: any
+  ) {
+    await requireCap(actor, "impersonate");
+    const reason = String(body.reason || "").trim();
+    if (reason.length < 5) {
+      throw Object.assign(new Error("Impersonation reason required (min 5 chars)"), {
+        status: 400,
+        code: "REASON_REQUIRED",
+      });
+    }
+    const minutes = Math.min(120, Math.max(5, Number(body.minutes) || 30));
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) {
+      throw Object.assign(new Error("School not found"), { status: 404 });
+    }
+    if (!isSchoolLoginAllowed(school.status)) {
+      throw Object.assign(new Error("School is not login-allowed"), { status: 403 });
+    }
+
+    const candidates = await prisma.user.findMany({
+      where: {
+        schoolId,
+        isActive: true,
+        role: { not: "SUPER_ADMIN" },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    let target = candidates.find((u) => u.role === "SCHOOL_ADMIN") || candidates.find((u) => u.role === "IT_ADMIN") || candidates[0];
+
+    if (!target) {
+      throw Object.assign(new Error("No active school users found to impersonate"), { status: 400 });
+    }
+
+    const targetWithSchool = await prisma.user.findUnique({
+      where: { id: target.id },
+      include: { school: true },
+    });
+    if (!targetWithSchool) {
+      throw Object.assign(new Error("Target not found"), { status: 404 });
+    }
+
+    const capabilities = await capabilityService.resolveEffective(schoolId, targetWithSchool.role);
+    const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
+    const accessToken = jwt.sign(
+      {
+        id: targetWithSchool.id,
+        email: targetWithSchool.email,
+        role: targetWithSchool.role,
+        schoolId: targetWithSchool.schoolId,
+        schoolStatus: targetWithSchool.school?.status || school.status,
+        capabilities,
+        impersonatedBy: actor.id,
+        impersonationExpiresAt: expiresAt.toISOString(),
+      },
+      getJwtAccessSecret(),
+      { expiresIn: `${minutes}m` }
+    );
+
+    await logSystemEvent(
+      "impersonation_start",
+      "SUPER_ADMIN",
+      `Impersonation of ${targetWithSchool.email} (${targetWithSchool.id}) by ${actor.id}; reason=${reason}; minutes=${minutes}; via=school:${schoolId}`,
+      "WARN",
+      { ...req, user: { id: actor.id, schoolId } }
+    );
+
+    return {
+      accessToken,
+      expiresAt: expiresAt.toISOString(),
+      reason,
+      impersonatedBy: actor.id,
+      user: {
+        id: targetWithSchool.id,
+        email: targetWithSchool.email,
+        name: targetWithSchool.name,
+        role: targetWithSchool.role,
+        photoUrl: targetWithSchool.photoUrl,
+        mustChangePassword: false,
+      },
+      school: targetWithSchool.school || school,
+      capabilities,
+    };
+  },
+
   async endImpersonation(actor: Actor, req?: any) {
     await requireCap(actor, "impersonate");
     await logSystemEvent(

@@ -310,7 +310,7 @@ docker start gnet-sms-old
 - **Entrypoint** (`scripts/service-entrypoint.sh`): runs `npx prisma migrate deploy` on container start
 - **Schema changes**: `npx prisma migrate dev --name <name>` locally, then `npx prisma migrate deploy` to production
 - **Production**: `npx prisma migrate deploy` (no `--accept-data-loss`, no `--skip-generate`)
-- **Seed data**: `RUN_SEED=true` env var controls seeding (conditional `prisma db seed` in entrypoint)
+- **Seed data**: `RUN_SEED=true` env var controls the demo/data seeds (conditional `prisma db seed` in entrypoint). The **identity** Super Admin seed is different: it runs on every boot by default and is idempotent — it creates the Super Admin only if none exists, then skips (`services/identity/prisma/seed.ts`). Set `RUN_SEED=false` to disable it entirely.
 - **Zero-downtime**: Migrations run inside container before server starts; `prisma migrate deploy` will fail if migrations are out of order or conflicting, preventing bad deployments
 
 ### 8.4 Backup & Restore Cycle

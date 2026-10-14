@@ -17,7 +17,8 @@ ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x
 # Placeholder so `prisma generate` can run at build time without a live DB
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/placeholder?schema=identity
 RUN npx prisma generate \
-  && npm run build
+  && npm run build \
+  && npx esbuild prisma/seed.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/seed.cjs
 
 # --- Stage 2: Runtime ---
 FROM node:20-alpine

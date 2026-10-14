@@ -49,6 +49,7 @@ export const toast = showSwal.mixin({
   timerProgressBar: true,
   width: "auto",
   padding: "1rem 1.25rem",
+  backdrop: false,
   customClass: {
     ...slateClasses,
     popup: "sms-swal-toast",

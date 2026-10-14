@@ -170,6 +170,11 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
       REQUIRE_REGISTRATION_EMAIL_CONFIRM: ${REQUIRE_REGISTRATION_EMAIL_CONFIRM:-true}
+      # Seed runs on every boot; the seed is idempotent and only creates the
+      # Super Admin if none exists. Set RUN_SEED=false to disable.
+      RUN_SEED: ${RUN_SEED:-true}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@yoursms.com}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy

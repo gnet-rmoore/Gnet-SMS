@@ -8,8 +8,6 @@ import {
   Lock,
   ArrowRight,
   ArrowLeft,
-  ShieldCheck,
-  School as SchoolIcon,
   Languages,
   Eye,
   EyeOff,
@@ -33,7 +31,6 @@ export const Login = () => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const { toast, showToast } = usePageToast(4500);
   const [locale, setLocale] = React.useState<AppLocale>(
@@ -72,9 +69,7 @@ export const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const endpoint = isSuperAdmin ? "/api/super-admin/auth/login" : "/api/auth/login";
-
-    try {
+    const postCredentials = async (endpoint: string) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,10 +90,20 @@ export const Login = () => {
         throw new Error(t("auth:invalidResponse"));
       }
 
-      const data = await response.json();
+      return { response, data: await response.json() };
+    };
+
+    try {
+      // A single sign-in serves both school users and Super Admins. The school
+      // endpoint already routes SUPER_ADMIN accounts; older backends may still
+      // ask the client to switch endpoints, so retry silently if told to.
+      let { response, data } = await postCredentials("/api/auth/login");
+      if (!response.ok && data?.code === "USE_SUPER_ADMIN_LOGIN") {
+        ({ response, data } = await postCredentials("/api/super-admin/auth/login"));
+      }
 
       if (!response.ok) {
-        if ((data?.code === "SCHOOL_SUSPENDED" || data?.code === "TRIAL_EXPIRED") && !isSuperAdmin) {
+        if (data?.code === "SCHOOL_SUSPENDED" || data?.code === "TRIAL_EXPIRED") {
           const { rememberSchoolUnavailable, buildSchoolUnavailableUrl } = await import(
             "../lib/schoolUnavailable"
           );
@@ -110,13 +115,6 @@ export const Login = () => {
           rememberSchoolUnavailable(payload);
           navigate(buildSchoolUnavailableUrl(payload), { replace: true });
           return;
-        }
-        if (data?.code === "USE_SUPER_ADMIN_LOGIN" && !isSuperAdmin) {
-          setIsSuperAdmin(true);
-          throw Object.assign(
-            new Error(translateApiError(data) || data.error || t("auth:useSuperAdminLogin")),
-            { code: data.code }
-          );
         }
         throw Object.assign(new Error(translateApiError(data) || data.error || t("auth:invalidCredentials")), {
           code: data?.code,
@@ -146,7 +144,7 @@ export const Login = () => {
         })
       );
 
-      if (!isSuperAdmin && (!data.school || !data.school.slug)) {
+      if (data.user?.role !== "SUPER_ADMIN" && (!data.school || !data.school.slug)) {
         throw new Error(t("auth:noSchool"));
       }
       navigate(getPostLoginPath(data.user, data.school ?? null));
@@ -251,7 +249,7 @@ export const Login = () => {
               </div>
             </div>
             <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500">{t("auth:subtitle")}</p>
-            {hostSchool && !isSuperAdmin && (
+            {hostSchool && (
               <p className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800">
                 Signing in to <span className="font-extrabold">{hostSchool.schoolName}</span>
                 <span className="font-mono text-xs text-blue-600"> · /{hostSchool.schoolSlug}</span>
@@ -260,44 +258,6 @@ export const Login = () => {
           </div>
 
           <div className="px-6 py-6 sm:px-8 sm:py-7">
-            {/* Workspace mode */}
-            <div
-              role="tablist"
-              aria-label={t("auth:workspaceMode")}
-              className="mb-6 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={!isSuperAdmin}
-                onClick={() => setIsSuperAdmin(false)}
-                className={cn(
-                  "flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all",
-                  !isSuperAdmin
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/80"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                <SchoolIcon className="h-4 w-4 shrink-0" aria-hidden />
-                {t("auth:schoolLogin")}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isSuperAdmin}
-                onClick={() => setIsSuperAdmin(true)}
-                className={cn(
-                  "flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all",
-                  isSuperAdmin
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/80"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
-                {t("auth:superAdminLogin")}
-              </button>
-            </div>
-
             {mfaToken ? (
               <form onSubmit={handleMfaVerify} className="space-y-5" noValidate>
                 <p className="text-sm text-slate-600">
