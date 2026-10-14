@@ -1,1 +1,0 @@
-import{j as c,f as n,aQ as o}from"./index-CKvPyGwx.js";function i({children:s,variant:a="primary",as:r="section",className:e,...t}){return c.jsx(r,{className:n(o[a],e),...t,children:s})}export{i as S};

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Ministry of Education seal (placeholder)">
-  <circle cx="80" cy="80" r="76" fill="#fff" stroke="#111" stroke-width="3"/>
-  <circle cx="80" cy="80" r="68" fill="none" stroke="#002868" stroke-width="2"/>
-  <path d="M80 38 L86 54 H104 L90 64 L96 82 L80 72 L64 82 L70 64 L56 54 H74 Z" fill="#f5c542" stroke="#bf0a30" stroke-width="1"/>
-  <rect x="62" y="88" width="36" height="22" rx="2" fill="#fff" stroke="#002868" stroke-width="2"/>
-  <path d="M62 92 H98 M62 98 H98 M62 104 H98" stroke="#002868" stroke-width="1"/>
-  <text x="80" y="28" text-anchor="middle" font-family="Times New Roman, serif" font-size="6.5" font-weight="700" fill="#111">MINISTRY OF EDUCATION</text>
-  <text x="80" y="148" text-anchor="middle" font-family="Times New Roman, serif" font-size="6.5" font-weight="700" fill="#111">SHOW THE LIGHT</text>
-</svg>

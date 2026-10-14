@@ -1,1 +1,0 @@
-import{ae as a}from"./index-CKvPyGwx.js";const o={list:(s,e)=>{const r=e?`?${new URLSearchParams(e).toString()}`:"";return a.get(`/api/schools/${s}/exams${r}`)},create:(s,e)=>a.post(`/api/schools/${s}/exams`,e),releaseGrades:(s,e)=>a.patch(`/api/exams/${s}/release-grades`,{isGradesReleased:e})};export{o as e};

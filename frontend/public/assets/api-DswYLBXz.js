@@ -1,1 +1,0 @@
-import{ae as t}from"./index-CKvPyGwx.js";const a={fetchStats:e=>t.get(`/api/schools/${e}/stats`),fetchAttendanceStats:e=>t.get(`/api/schools/${e}/attendance/stats`),fetchFinanceSummary:e=>t.get(`/api/schools/${e}/finance/summary`),fetchWorkOrders:e=>t.get(`/api/schools/${e}/work-orders`),fetchLeaveRequests:e=>t.get(`/api/schools/${e}/leave-requests`)};export{a as r};
