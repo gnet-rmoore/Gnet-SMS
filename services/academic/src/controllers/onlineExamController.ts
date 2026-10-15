@@ -55,6 +55,46 @@ export const onlineExamController = {
     }
   },
 
+  async previewQuestionImport(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.previewQuestionImport(
+        req.params.id,
+        user.schoolId,
+        req.body?.rows ?? []
+      );
+      res.json(data);
+    } catch (err: any) {
+      res
+        .status(err.status || 500)
+        .json({ error: err.message || "Failed to preview import", code: err.code });
+    }
+  },
+
+  async importQuestions(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.importQuestions(
+        req.params.id,
+        user.schoolId,
+        req.body?.rows ?? []
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({
+        error: err.message || "Failed to import questions",
+        code: err.code,
+        rows: err.rows,
+      });
+    }
+  },
+
   async listOnlineExams(req: Request, res: Response) {
     const user = (req as any).user;
     const { schoolId } = req.params;

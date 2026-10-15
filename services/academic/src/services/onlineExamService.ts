@@ -6,6 +6,13 @@ import {
   type ScoreableQuestion,
 } from "../lib/onlineExamScoring";
 import {
+  MAX_QUESTIONS,
+  normalizeQuestion,
+  serializeImportRows,
+  validateImportRows,
+  type NormalizedQuestion,
+} from "../lib/questionImport";
+import {
   getStudentParentIds,
   getIdentityUsersByRoles,
   getIdentityUsersByIds,
@@ -47,13 +54,6 @@ import {
 } from "../lib/onlineExamPreviewSample";
 import { getClassroomsByMember } from "../lib/classroomClient";
 import { emitLiveExamEvent } from "../lib/liveExamEvents";
-
-const QUESTION_TYPES = new Set([
-  "MULTIPLE_CHOICE",
-  "TRUE_FALSE",
-  "FILL_BLANK",
-  "ESSAY",
-]);
 
 function httpError(message: string, status: number, code?: string) {
   return Object.assign(new Error(message), { status, code });
@@ -849,7 +849,12 @@ export const onlineExamService = {
     });
   },
 
-  async replaceQuestions(examId: string, schoolId: string, questionsInput: any[]) {
+  /**
+   * Shared guard for question edits (manual save + spreadsheet import).
+   * Returns the exam after checking tenant, legacy paper approval, the paper
+   * approval lock, and in-progress attempts.
+   */
+  async assertQuestionsEditable(examId: string, schoolId: string) {
     const exam = await loadExamOrThrow(examId);
     if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
 
@@ -878,72 +883,16 @@ export const onlineExamService = {
       );
     }
 
-    if (!Array.isArray(questionsInput)) {
-      throw httpError("questions must be an array", 400);
-    }
-    if (questionsInput.length > 100) {
-      throw httpError("Maximum 100 questions per exam", 400);
-    }
+    return exam;
+  },
 
-    const normalized = questionsInput.map((raw, index) => {
-      const type = String(raw.type || "").toUpperCase();
-      if (!QUESTION_TYPES.has(type)) {
-        throw httpError(`Invalid question type at index ${index}`, 400);
-      }
-      const prompt = String(raw.prompt || "").trim();
-      if (!prompt) throw httpError(`Question ${index + 1} needs a prompt`, 400);
-      const points = Number(raw.points);
-      if (!Number.isFinite(points) || points <= 0 || points > 100) {
-        throw httpError(`Question ${index + 1} points must be between 0 and 100`, 400);
-      }
-
-      let choices: { label: string; text: string; isCorrect: boolean }[] = [];
-      let correctAnswer: string | null = null;
-      const caseSensitive = Boolean(raw.caseSensitive);
-
-      if (type === "MULTIPLE_CHOICE") {
-        const rawChoices = Array.isArray(raw.choices) ? raw.choices : [];
-        if (rawChoices.length < 2 || rawChoices.length > 8) {
-          throw httpError(`MCQ ${index + 1} needs 2–8 choices`, 400);
-        }
-        choices = rawChoices.map((c: any, ci: number) => ({
-          label: String(c.label || String.fromCharCode(65 + ci)).slice(0, 4),
-          text: String(c.text || "").trim(),
-          isCorrect: Boolean(c.isCorrect),
-        }));
-        if (choices.some((c) => !c.text)) {
-          throw httpError(`MCQ ${index + 1} has empty choice text`, 400);
-        }
-        if (choices.filter((c) => c.isCorrect).length !== 1) {
-          throw httpError(`MCQ ${index + 1} must have exactly one correct choice`, 400);
-        }
-      } else if (type === "TRUE_FALSE") {
-        const truth = raw.correctBoolean;
-        if (typeof truth !== "boolean") {
-          throw httpError(`True/False ${index + 1} needs correctBoolean`, 400);
-        }
-        choices = [
-          { label: "T", text: "True", isCorrect: truth === true },
-          { label: "F", text: "False", isCorrect: truth === false },
-        ];
-      } else if (type === "FILL_BLANK") {
-        correctAnswer = String(raw.correctAnswer || "").trim();
-        if (!correctAnswer) {
-          throw httpError(`Fill-blank ${index + 1} needs correctAnswer`, 400);
-        }
-      }
-
-      return {
-        type,
-        prompt,
-        points,
-        orderIndex: index,
-        correctAnswer,
-        caseSensitive,
-        choices,
-      };
-    });
-
+  /** Destructive replace of an exam's question set inside one transaction. */
+  async persistQuestions(
+    examId: string,
+    schoolId: string,
+    normalized: NormalizedQuestion[],
+    forceOnline: boolean
+  ) {
     await prisma.$transaction(async (tx) => {
       await tx.examQuestion.deleteMany({ where: { examId, schoolId } });
       for (const q of normalized) {
@@ -971,13 +920,107 @@ export const onlineExamService = {
           },
         });
       }
-      if (!exam.isOnline) {
+      if (forceOnline) {
         await tx.exam.update({
           where: { id: examId },
           data: { isOnline: true },
         });
       }
     });
+  },
+
+  /** Non-throwing edit blockers for the import preview (403 still propagates). */
+  async collectQuestionEditBlockers(examId: string, schoolId: string) {
+    try {
+      await this.assertQuestionsEditable(examId, schoolId);
+      return { blockers: [] as string[], code: null as string | null };
+    } catch (err: any) {
+      if (err?.status === 403) throw err;
+      return { blockers: [err?.message || "This paper cannot be edited"], code: err?.code || null };
+    }
+  },
+
+  async replaceQuestions(examId: string, schoolId: string, questionsInput: any[]) {
+    const exam = await this.assertQuestionsEditable(examId, schoolId);
+
+    if (!Array.isArray(questionsInput)) {
+      throw httpError("questions must be an array", 400);
+    }
+    if (questionsInput.length > MAX_QUESTIONS) {
+      throw httpError(`Maximum ${MAX_QUESTIONS} questions per exam`, 400);
+    }
+
+    const normalized = questionsInput.map((raw, index) => {
+      const result = normalizeQuestion(raw, index);
+      if (!result.ok || !result.normalized) {
+        throw httpError(`Question ${index + 1}: ${result.errors[0]}`, 400);
+      }
+      return result.normalized;
+    });
+
+    await this.persistQuestions(examId, schoolId, normalized, !exam.isOnline);
+
+    return this.getQuestions(examId, true);
+  },
+
+  /**
+   * Validate an uploaded spreadsheet without writing anything. Returns
+   * per-row results plus human-readable blockers (paper locked, attempts in
+   * progress, too many questions) so the UI can explain why import is blocked.
+   */
+  async previewQuestionImport(examId: string, schoolId: string, rows: Record<string, unknown>[]) {
+    const { blockers, code } = await this.collectQuestionEditBlockers(examId, schoolId);
+    const validation = validateImportRows(rows);
+
+    let blockingCode = code;
+    if (validation.validCount > MAX_QUESTIONS) {
+      blockers.push(
+        `This exam can hold at most ${MAX_QUESTIONS} questions, but the file has ${validation.validCount}.`
+      );
+      blockingCode = blockingCode || "TOO_MANY_QUESTIONS";
+    }
+
+    return {
+      ok: blockers.length === 0 && validation.errorCount === 0,
+      canImport: blockers.length === 0 && validation.errorCount === 0,
+      rowCount: validation.rowCount,
+      validCount: validation.validCount,
+      errorCount: validation.errorCount,
+      rows: serializeImportRows(validation.rows),
+      blockers,
+      code: blockingCode,
+    };
+  },
+
+  /**
+   * Authoritative import: re-validates the rows, enforces the same locks as the
+   * manual editor, then atomically replaces the exam's questions.
+   */
+  async importQuestions(examId: string, schoolId: string, rows: Record<string, unknown>[]) {
+    const exam = await this.assertQuestionsEditable(examId, schoolId);
+    const validation = validateImportRows(rows);
+
+    if (validation.validCount > MAX_QUESTIONS) {
+      throw httpError(
+        `This exam can hold at most ${MAX_QUESTIONS} questions`,
+        400,
+        "TOO_MANY_QUESTIONS"
+      );
+    }
+    if (validation.errorCount > 0) {
+      const err: any = httpError(
+        "Some rows could not be imported. Fix the highlighted rows and try again.",
+        422,
+        "IMPORT_VALIDATION"
+      );
+      err.rows = serializeImportRows(validation.rows);
+      throw err;
+    }
+    if (validation.validCount === 0) {
+      throw httpError("No questions were found in the file", 400, "EMPTY_IMPORT");
+    }
+
+    await this.persistQuestions(examId, schoolId, validation.validQuestions, !exam.isOnline);
 
     return this.getQuestions(examId, true);
   },
@@ -991,7 +1034,6 @@ export const onlineExamService = {
       where: {
         schoolId,
         deliveryMode: { in: ["ONLINE", "HYBRID"] },
-        startDate: { lte: now },
         endDate: { gte: now },
       },
       include: {

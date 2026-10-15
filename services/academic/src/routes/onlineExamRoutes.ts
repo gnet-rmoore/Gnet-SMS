@@ -6,6 +6,7 @@ import { onlineExamController } from "../controllers/onlineExamController";
 import {
   onlineExamConfigSchema,
   onlineExamQuestionsSchema,
+  questionImportRowsSchema,
   onlineExamAnswersSchema,
   onlineExamPreviewScoreSchema,
   onlineExamViolationSchema,
@@ -96,6 +97,24 @@ router.put(
   requireResourceTenant(resourceLoaders.exam),
   validateBody(onlineExamQuestionsSchema),
   onlineExamController.replaceQuestions
+);
+
+router.post(
+  "/api/exams/:id/questions/import/preview",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.exam),
+  validateBody(questionImportRowsSchema),
+  onlineExamController.previewQuestionImport
+);
+
+router.post(
+  "/api/exams/:id/questions/import",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.exam),
+  validateBody(questionImportRowsSchema),
+  onlineExamController.importQuestions
 );
 
 router.get(

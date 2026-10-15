@@ -110,6 +110,12 @@ export const onlineExamQuestionsSchema = z.object({
   questions: z.array(onlineQuestionSchema).max(100),
 });
 
+/** Spreadsheet question import: rows are client-parsed; the server validates. */
+export const questionImportRowsSchema = z.object({
+  rows: z.array(z.record(z.string(), z.unknown())).max(500),
+  sourceFileName: z.string().max(255).optional(),
+});
+
 export const onlineExamAnswersSchema = z.object({
   answers: z
     .array(
