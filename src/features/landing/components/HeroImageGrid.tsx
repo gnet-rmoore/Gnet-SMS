@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import { Reveal } from "./Reveal";
 import { fadeUp, revealViewport, landingSpring } from "../motion";
 
-const MOSAIC_SRC = "/marketing/gallery-connected-students.png";
-const DETAIL_SRC = "/marketing/gallery-connected-students.png";
+const MOSAIC_SRC = "/marketing/front-images/split-grid-image.jpg";
+const DETAIL_SRC = "/marketing/front-images/split-grid-image.jpg";
 
 type MosaicTile = {
   /** Position/size as % of mosaic box */

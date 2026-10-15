@@ -1,0 +1,20 @@
+GNET SMS Overview
+
+GNET SMS is a comprehensive school management system (monorepo).
+
+Core Modules:
+- Authentication & roles, onboarding, setup checklist
+- Students, teachers, classes, attendance, behavior
+- Academics: syllabus, lesson plans, exams, online exams, gradebook, report cards, certificates
+- Finance: fees, invoices, payments, receipts, ledgers
+- Admissions/enrollment, registrar, staff management
+- Notifications, platform guide, multi-locale i18n
+
+Technical Stack:
+- Frontend: React + Vite + TypeScript + Tailwind CSS + TanStack Query + React Router
+- Backend: Node.js/Express microservices (academic, identity, finance, lifecycle, classroom, calendar, gateway)
+- Data: PostgreSQL (multi-schema), Redis (sockets/cache)
+- Infrastructure: Nginx, Docker/Kubernetes, AWS S3 for file storage
+- Realtime: Socket.IO for classroom & online exam proctoring
+
+Key Highlight: Secure online exams with kiosk lockdown, consent-gated screen capture, live proctor dashboard, violation tracking, and automatic grade posting.

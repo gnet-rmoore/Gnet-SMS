@@ -4,7 +4,7 @@ import React from "react";
 export const STUDENT_REGISTRATION_BG = "/marketing/student-registration-campus.png";
 
 /** School onboarding photo for /register-school. */
-export const SCHOOL_REGISTRATION_BG = "/marketing/school-registration-bg.png";
+export const SCHOOL_REGISTRATION_BG = "/marketing/front-images/pexels-workman-19344119.jpg";
 
 type PublicPortalBackgroundProps = {
   className?: string;

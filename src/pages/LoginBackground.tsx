@@ -3,14 +3,10 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 /** User-provided campus / student photos for the login backdrop slideshow */
 export const LOGIN_SLIDES = [
-  "/marketing/login-slides/01-study-group.png",
-  "/marketing/login-slides/02-campus-selfie-railing.png",
-  "/marketing/login-slides/03-campus-selfie-glass.png",
-  "/marketing/login-slides/04-friends-together.png",
-  "/marketing/login-slides/05-walking-campus.png",
-  "/marketing/login-slides/06-cheerful-group.png",
-  "/marketing/login-slides/07-golden-hour-selfie.png",
-  "/marketing/login-slides/08-thumbs-up-campus.png",
+  "/marketing/front-images/pexels-mickael-ange-konan-2156070331-34526413.jpg",
+  "/marketing/front-images/pexels-finix-photographer-826467311-32733730.jpg",
+  "/marketing/front-images/pexels-workman-19344119.jpg",
+  "/marketing/front-images/pexels-gabriel-joe-amuzu-842963358-37456293.jpg",
 ] as const;
 
 const SLIDE_MS = 7000;

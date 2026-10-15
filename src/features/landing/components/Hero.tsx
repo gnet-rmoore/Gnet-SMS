@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { LandingCta } from "./Reveal";
 import { landingEase } from "../motion";
 
-const HERO_IMAGE = "/marketing/hero-students-laptop.jpg";
+const HERO_IMAGE = "/marketing/front-images/hero-section-image.jpg";
 
 /**
  * Full-bleed campus photo hero — headline + CTAs over a readable gradient overlay.

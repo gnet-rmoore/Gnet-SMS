@@ -1,0 +1,9 @@
+Boss,
+
+Just a quick update: gnetsms.com is finally live. The exams overhaul is complete and deployed. 
+
+All the major pieces (kiosk mode, live proctoring with screen view, auto grade posting) are working as expected. 
+
+Thanks for the support!
+
+– Team
