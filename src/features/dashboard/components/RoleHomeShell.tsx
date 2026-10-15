@@ -65,24 +65,29 @@ export function RoleHomeShell({
       </div>
 
       {guideTrack && guideIncomplete ? (
-        <div className="flex flex-col gap-3 rounded-[28px] border border-indigo-100 bg-indigo-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-extrabold tracking-tight text-slate-900">
-              {t("guide.dashboardBannerTitle")}
-            </p>
-            <p className="mt-1 text-sm text-slate-600">{t("guide.dashboardBannerBody")}</p>
+        <div className="flex flex-col gap-4 rounded-[28px] border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+              <BookOpen className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-heading text-sm font-extrabold tracking-tight text-slate-900">
+                {t("guide.dashboardBannerTitle")}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">{t("guide.dashboardBannerBody")}</p>
+            </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void onStartTour?.()}
-              className="inline-flex min-h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-500"
+              className="inline-flex min-h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-500"
             >
               {t("guide.continue")}
             </button>
             <Link
               to={`/${slug}/guide`}
-              className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:border-indigo-200"
             >
               {t("guide.dashboardBannerCta")}
             </Link>

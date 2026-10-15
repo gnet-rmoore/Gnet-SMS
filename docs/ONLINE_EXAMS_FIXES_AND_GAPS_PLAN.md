@@ -4,6 +4,7 @@
 > **Scope:** (A) Fix correctness / robustness issues found in the online-exam stack, and (B) close the gaps between the shipped feature set and the 10 requested requirements (setup + paper deadline, per-student papers, live proctoring, exam analytics, gradebook auto-posting, live screen monitoring).
 > **Companion:** `docs/ONLINE_EXAMS_PLAN.md`, `docs/EXAM_PAPER_APPROVAL_PLAN.md`, `docs/ACADEMICS_ASSESSMENT_GAPS_PLAN.md`, `docs/GRADEBOOK_ARCHITECTURE.md`
 > **Owners:** Academic service (backend) · Frontend SPA · Product (priority of Phases / scope of live monitoring)
+> **Superseded (in part) by:** `docs/EXAM_SYSTEM_OVERHAUL_PLAN.md` (2026-10-15) — re-scopes and supersedes Phases 3–5 below against what has shipped since (proctor console + manual gradebook push). Fixes in Parts A0/A1 remain valid.
 
 ---
 

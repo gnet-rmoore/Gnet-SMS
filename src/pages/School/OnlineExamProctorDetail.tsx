@@ -16,9 +16,12 @@ import {
   Download,
   Printer,
   AlertCircle,
+  Monitor,
+  RefreshCw,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { onlineExamApi } from "../../features/online-exam/api";
+import { useExamSocket } from "../../features/online-exam/useExamSocket";
 import { PageToast, usePageToast } from "../../features/academics-shared/PageToast";
 import { alertError } from "../../lib/swal";
 import { useTranslation } from "react-i18next";
@@ -33,6 +36,27 @@ export const OnlineExamProctorDetail = () => {
   const [loading, setLoading] = React.useState(true);
   const [data, setData] = React.useState<any>(null);
   const [exam, setExam] = React.useState<any>(null);
+  const [savingQ, setSavingQ] = React.useState<string | null>(null);
+  const [essayScores, setEssayScores] = React.useState<Record<string, string>>({});
+  const [frames, setFrames] = React.useState<
+    { id: string; capturedAt: string; byteSize: number | null; url: string }[]
+  >([]);
+  const [framesLoading, setFramesLoading] = React.useState(false);
+  const [framesError, setFramesError] = React.useState<string | null>(null);
+
+  const loadFrames = React.useCallback(async () => {
+    if (!attemptId) return;
+    try {
+      setFramesLoading(true);
+      const res = await onlineExamApi.listProctorFrames(attemptId);
+      setFrames(Array.isArray(res) ? res : []);
+      setFramesError(null);
+    } catch (err: any) {
+      setFramesError(err?.message || "Failed to load frames");
+    } finally {
+      setFramesLoading(false);
+    }
+  }, [attemptId]);
 
   const loadData = React.useCallback(async () => {
     if (!attemptId || !examId) return;
@@ -54,6 +78,43 @@ export const OnlineExamProctorDetail = () => {
   React.useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const isLiveScreen =
+    data?.attempt?.status === "IN_PROGRESS" && data?.exam?.proctorLevel === "SCREEN_VIEW";
+
+  React.useEffect(() => {
+    if (!isLiveScreen) {
+      setFrames([]);
+      return;
+    }
+    void loadFrames();
+    const id = window.setInterval(() => void loadFrames(), 12000);
+    return () => window.clearInterval(id);
+  }, [isLiveScreen, loadFrames]);
+
+  useExamSocket(
+    { attemptId: isLiveScreen ? attemptId : undefined },
+    (event) => {
+      if (event.type === "screen.frame") void loadFrames();
+    }
+  );
+
+  const handleMarkEssay = async (questionId: string) => {
+    if (!attemptId) return;
+    const raw = essayScores[questionId];
+    const value = raw === undefined || raw === "" ? null : Number(raw);
+    if (value !== null && (!Number.isFinite(value) || value < 0)) return;
+    setSavingQ(questionId);
+    try {
+      await onlineExamApi.markEssayAnswer(attemptId, questionId, value);
+      showToast(t("onlineExams.proctor.markSaved"), "success");
+      await loadData();
+    } catch (err: any) {
+      showToast(t("onlineExams.proctor.markFailed", { error: err?.message }), "error");
+    } finally {
+      setSavingQ(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -155,6 +216,64 @@ export const OnlineExamProctorDetail = () => {
         </div>
       </div>
 
+      {isLiveScreen && (
+        <div className="rounded-[32px] border border-slate-200 bg-slate-950 p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="font-extrabold tracking-tight text-white flex items-center gap-2">
+              <Monitor className="w-5 h-5 text-emerald-400" />
+              {t("onlineExams.proctor.liveScreen")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                {t("onlineExams.proctor.liveBadge")}
+              </span>
+              <button
+                type="button"
+                onClick={() => void loadFrames()}
+                disabled={framesLoading}
+                className="inline-flex items-center gap-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-1.5 text-xs font-bold disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${framesLoading ? "animate-spin" : ""}`} />
+                {t("onlineExams.proctor.refreshFrames")}
+              </button>
+            </div>
+          </div>
+
+          {frames.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">
+              {framesError ? framesError : t("onlineExams.proctor.noFrames")}
+            </p>
+          ) : (
+            <>
+              <div className="rounded-2xl overflow-hidden border border-slate-800 bg-black">
+                <img
+                  src={frames[0].url}
+                  alt={t("onlineExams.proctor.liveScreen")}
+                  className="w-full max-h-[420px] object-contain"
+                />
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {frames.slice(1).map((f) => (
+                  <img
+                    key={f.id}
+                    src={f.url}
+                    alt={t("onlineExams.proctor.liveScreen")}
+                    loading="lazy"
+                    className="h-16 w-28 shrink-0 rounded-lg border border-slate-800 object-cover"
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 font-mono">
+                {t("onlineExams.proctor.lastFrame", {
+                  time: format(new Date(frames[0].capturedAt), "PPpp"),
+                })}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
       {canSeeScore && attempt.score != null && (
         <div className="grid sm:grid-cols-4 gap-4">
           {[
@@ -239,6 +358,31 @@ export const OnlineExamProctorDetail = () => {
                   <p className="mt-1 text-sm text-emerald-700">
                     {t("onlineExams.results.expected", { text: q.correctAnswer })}
                   </p>
+                )}
+                {q.type === "ESSAY" && attempt.status !== "IN_PROGRESS" && (
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {t("onlineExams.proctor.awardedPoints")}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={q.points}
+                      value={essayScores[q.id] ?? (q.answer?.pointsAwarded ?? "").toString()}
+                      onChange={(e) => setEssayScores((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      className="w-24 rounded-xl border border-slate-200 px-3 py-1.5 text-sm"
+                    />
+                    <span className="text-xs text-slate-500">{t("onlineExams.proctor.outOf", { max: q.points })}</span>
+                    <button
+                      type="button"
+                      disabled={savingQ === q.id}
+                      onClick={() => handleMarkEssay(q.id)}
+                      className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-50"
+                    >
+                      {savingQ === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      {t("onlineExams.proctor.saveMark")}
+                    </button>
+                  </div>
                 )}
               </div>
             );

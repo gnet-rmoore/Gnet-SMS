@@ -3,6 +3,37 @@ import { receiptService, type ReceiptType } from "../services/receiptService";
 
 const ISSUE_TYPES: ReceiptType[] = ["FEE_PAYMENT", "PAYSLIP", "EXPENSE", "TRANSACTION"];
 
+/** Roles allowed to read every receipt in the school. */
+const FULL_RECEIPT_ACCESS = new Set([
+  "SCHOOL_ADMIN",
+  "ACCOUNTANT",
+  "PRINCIPAL",
+  "REGISTRAR",
+  "VPA",
+  "IT_ADMIN",
+]);
+
+/**
+ * Resolve the set of receipt `sourceId`s a non-staff caller may read.
+ * `undefined` = unrestricted (staff); an array (possibly empty) = hard ownership filter.
+ */
+async function receiptScopeSourceIds(
+  schoolId: string,
+  user: any
+): Promise<string[] | undefined> {
+  if (!user || FULL_RECEIPT_ACCESS.has(user.role)) return undefined;
+  if (user.role === "STUDENT") {
+    return receiptService.getFeeReceiptSourceIds(schoolId, [user.id], user.id);
+  }
+  if (user.role === "PARENT") {
+    const { getParentChildrenIds } = await import("../lib/identityClient");
+    const children = await getParentChildrenIds(user.id);
+    return receiptService.getFeeReceiptSourceIds(schoolId, children, user.id);
+  }
+  // Teachers & other roles have no fee receipts of their own.
+  return [];
+}
+
 function mapReceipt(r: any) {
   if (!r) return null;
   return {
@@ -46,10 +77,13 @@ function rateLimitVerify(ip: string, limit = 60, windowMs = 60_000): boolean {
 export const receiptController = {
   async list(req: Request, res: Response) {
     try {
-      const rows = await receiptService.list(req.params.schoolId, {
+      const schoolId = req.params.schoolId;
+      const sourceIds = await receiptScopeSourceIds(schoolId, (req as any).user);
+      const rows = await receiptService.list(schoolId, {
         type: req.query.type as string | undefined,
         sourceId: req.query.sourceId as string | undefined,
         status: req.query.status as string | undefined,
+        sourceIds,
       });
       res.json(rows.map(mapReceipt));
     } catch (err: any) {
@@ -127,6 +161,10 @@ export const receiptController = {
     try {
       const receipt = await receiptService.getById(req.params.id);
       if (!receipt) return res.status(404).json({ error: "Receipt not found" });
+      const sourceIds = await receiptScopeSourceIds(receipt.schoolId, (req as any).user);
+      if (sourceIds !== undefined && !sourceIds.includes(receipt.sourceId)) {
+        return res.status(404).json({ error: "Receipt not found" });
+      }
       res.json(mapReceipt(receipt));
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch receipt" });
@@ -137,6 +175,10 @@ export const receiptController = {
     try {
       let receipt = await receiptService.getById(req.params.id);
       if (!receipt) return res.status(404).json({ error: "Receipt not found" });
+      const sourceIds = await receiptScopeSourceIds(receipt.schoolId, (req as any).user);
+      if (sourceIds !== undefined && !sourceIds.includes(receipt.sourceId)) {
+        return res.status(404).json({ error: "Receipt not found" });
+      }
       // Re-render with current template + school header (logo, address, brand color)
       // so design updates apply without void/reissue. Snapshot amounts/hash stay intact.
       try {

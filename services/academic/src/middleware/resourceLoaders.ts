@@ -72,6 +72,13 @@ export const resourceLoaders = {
     });
     return row?.schoolId;
   },
+  examSchedule: async (req: any) => {
+    const row = await prisma.examSchedule.findUnique({
+      where: { id: req.params.scheduleId || req.params.id },
+      select: { schoolId: true },
+    });
+    return row?.schoolId;
+  },
   gradeEntry: async (req: any) => {
     const row = await prisma.gradeEntry.findUnique({
       where: { id: req.params.id },

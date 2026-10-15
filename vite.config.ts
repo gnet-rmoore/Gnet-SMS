@@ -25,6 +25,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/exam-socket': {
+        target: process.env.VITE_ACADEMIC_PROXY || 'http://localhost:3015',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 });

@@ -116,6 +116,12 @@ model Exam {
   /// Retake policy for continuous assessment quizzes
   /// JSON: { maxRetakes: Int, waitingPeriodHours: Int, scoreRetention: "best"|"last"|"average" }
   retakePolicy            String?
+  /// Proctoring level: OFF | MONITOR | SCREEN_VIEW
+  proctorLevel            String       @default("MONITOR")
+  /// JSON kiosk policy: { requireFullscreen, requireScreenShare, maxViolations, warnAt, blockedEvents[], allowReconnect }
+  kioskConfig             String?
+  /// When true, finalized online-exam attempts auto-post to the gradebook
+  autoPostGrades          Boolean      @default(true)
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
   gradeEntries            GradeEntry[]
@@ -123,11 +129,63 @@ model Exam {
   attempts                ExamAttempt[]
   paperPackages           ExamPaperPackage[]
   rosterFlags             ExamPaperRosterFlag[]
+  schedules               ExamSchedule[]
+  paperRevisions          ExamPaperRevision[]
 
   @@index([schoolId])
   @@index([examComponentId])
   @@index([schoolId, isOnline])
   @@index([schoolId, paperStatus])
+  @@schema("academic")
+}
+
+/// First-class exam scheduling (one exam can be scheduled per class/room/session).
+/// Backfilled from Exam.startDate/endDate where no explicit rows exist.
+model ExamSchedule {
+  id            String   @id @default(uuid())
+  schoolId      String
+  examId        String
+  /// Optional Classroom.Classroom.id — the class this sitting is for (audience scoping).
+  classId       String?
+  room          String?
+  /// Free-form session label, e.g. "Morning", "Afternoon", "Session A".
+  session       String?
+  invigilatorId String?
+  startAt       DateTime
+  endAt         DateTime
+  note          String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId])
+  @@index([schoolId, startAt])
+  @@index([classId])
+  @@schema("academic")
+}
+
+/// Immutable revision history for a paper package (append-only).
+/// Captured on create / submit / approve / return so prior reviews survive resubmits.
+model ExamPaperRevision {
+  id           String   @id @default(uuid())
+  packageId    String
+  examId       String
+  schoolId     String
+  revision     Int
+  status       String
+  deliveryMode String
+  /// Snapshot JSON: { pdfObjectKey, pdfFileName, feedback, authorId, reviewedBy, reviewedAt, submittedAt }
+  snapshot     String?
+  actorId      String
+  /// CREATE | UPDATE | SUBMIT | APPROVE | RETURN
+  action       String
+  createdAt    DateTime @default(now())
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([packageId, revision])
+  @@index([examId])
+  @@index([schoolId, createdAt])
   @@schema("academic")
 }
 
@@ -237,6 +295,10 @@ model ExamAttempt {
   submitReason          String?
   /// Set when the student explicitly accepted the exam instructions before starting
   instructionsAcceptedAt DateTime?
+  /// Set when the student consented to live screen capture (SCREEN_VIEW proctoring)
+  screenShareConsentedAt DateTime?
+  /// Last heartbeat seen from the client (used for proctor connection state)
+  lastSeenAt            DateTime?
   /// Link to GradeEntry created when results are pushed to gradebook
   gradeEntryId          String?
   createdAt             DateTime        @default(now())
@@ -244,6 +306,7 @@ model ExamAttempt {
   exam                  Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
   answers               ExamAnswer[]
   violations            ExamViolation[]
+  proctorFrames         ExamProctorFrame[]
 
   @@unique([examId, studentId, attemptNumber])
   @@index([schoolId])
@@ -287,6 +350,31 @@ model ExamViolation {
   @@schema("academic")
 }
 
+/// Consent-gated SCREEN_VIEW snapshot metadata (JPEG bytes live in object storage).
+model ExamProctorFrame {
+  id          String      @id @default(uuid())
+  attemptId   String
+  examId      String
+  schoolId    String
+  /// Object key in the exam object store (proctor-frames/{school}/{exam}/{attempt}/{ts}.jpg)
+  storageKey  String
+  contentType String      @default("image/jpeg")
+  byteSize    Int?
+  capturedAt  DateTime    @default(now())
+  /// Set once the client confirms the upload; only uploaded frames are listed
+  uploadedAt  DateTime?
+  /// Retention deadline; frames past this are purged by the sweep
+  expiresAt   DateTime
+  createdAt   DateTime    @default(now())
+  attempt     ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, uploadedAt])
+  @@index([examId])
+  @@index([schoolId])
+  @@index([expiresAt])
+  @@schema("academic")
+}
+
 model GradeEntry {
   id                 String                @id @default(uuid())
   studentId          String // Identity.User.id (no FK)
@@ -309,6 +397,15 @@ model GradeEntry {
   isIncomplete       Boolean               @default(false)
   incompleteNote     String?
   notes              String?
+  /// Provenance: ONLINE_EXAM | MANUAL | IMPORT
+  source             String?
+  /// e.g. ExamAttempt.id when source = ONLINE_EXAM
+  sourceRef          String?
+  /// Raw exam points and denominator before scaling onto the column
+  rawScore           Float?
+  maxScore           Float?
+  /// Percentage (0–100) the scaled score represents, for reporting
+  scorePercent       Float?
   /// Formal submission group created when teacher submits for review
   submissionBatchId  String?
   reviewedBy         String? // Identity.User.id

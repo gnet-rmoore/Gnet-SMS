@@ -177,4 +177,17 @@ export const examPaperController = {
         .json({ error: err.message || "Failed to save roster", code: err.code });
     }
   },
+
+  async listRevisions(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!TEACHER_ROLES.includes(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const rows = await examPaperService.listRevisions(req.params.id, user.schoolId);
+      res.json(rows);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to list revisions" });
+    }
+  },
 };

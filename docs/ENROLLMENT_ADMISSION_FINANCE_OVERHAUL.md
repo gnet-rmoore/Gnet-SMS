@@ -280,3 +280,44 @@ Acceptance
 - P7: Removed dead `receiptService.getPdfBuffer`/`previewHtml`, `receiptTemplateRegistry.parseReceiptTemplatesJson`, and unused `feePaymentRecordSchema`. Retained `collectPayment` (used by `feesApi.collectFee`) and `resolveReceiptTemplateForType` (used by `receipt-context.test.ts`) — the plan's F8 note was inaccurate for these two.
 - P7: Added `tests/fee-invoice-amounts.test.ts` (27 asserts) and `tests/admission-funnel.test.ts` (19 asserts); both pass. Registered `test:fee-invoice-amounts` + `test:admission-funnel` and added to `test:unit`.
 - P5–P7 gate: root `tsc --noEmit` clean; `test:ui-drift` passes (stepper `text-[10px]` corrected to `text-[11px]`); finance bundle clean (194.1kb).
+
+### 2026-10-15 — Follow-up fixes (audit found phases marked done but incomplete)
+
+Re-audit against the "done" checklist found six defects that contradicted the claims above:
+
+- **Approve dropped review data.** `updateApplication` routed `APPROVED`/`FEE_PENDING` through
+  `transition()`, which never persisted `notes`/`documents`. Rewrote `updateApplication` to persist
+  the review patch (`buildReviewPatch`) **before** routing special paths, so an approval never loses
+  reviewer notes/documents.
+- **Entrance fee never re-linked on enroll.** The invoice raised pre-enrollment
+  (`studentId = application:<appId>`) stayed orphaned after enrollment, so it was invisible in the
+  ledger/parent portal. `enroll` now best-effort calls `financeClient.linkFeeToStudent` after the
+  enrollment claim (new internal `PATCH /api/internal/fees/:id/link-student`), returning
+  `feeRelinkFailed` on failure. `financeService.linkStudentToFee` moves only `application:`
+  placeholders (idempotent, guarded).
+- **Discount math still bypassed 5** `fees` invoice creates sent only `amount`, so
+  `originalAmount`/`discountPercent` were never persisted. `createFee`'s `amount` is now optional and
+  the fees UI sends `originalAmount` + `discountPercent` for both single and batch invoices
+  (server computes net).
+- **Client status walk still present.** Removed the last client-side transition walk in
+  `registrar/hooks/usePageActions.ts`; `enroll` now resolves approval server-side via
+  `admissionStates.resolveApprovalPath` (new pure helper + `AUTO_APPROVE_FROM`).
+- **Receipt IDOR.** Receipt `list`/`getOne`/`download` were unscoped — any STUDENT/PARENT/TEACHER
+  could read every school receipt. Added `receiptScopeSourceIds` scoping in `receiptController`
+  (non-staff → 404 on unowned) and `receiptService.list({ sourceIds })`.
+- **Applicant pay/receipt UI missing.** `PublicApplyStatus` ignored `feePaymentId`. `formatPublicStatus`
+  is now async and returns `fee` + `receipt`; the status page renders the balance, a
+  **Pay entrance fee** button (`POST /api/public/fees/:id/checkout` with `{ applicationId, token,
+  successUrl, cancelUrl }`) and a receipt link to `/verify/receipt/:code`.
+
+Tests/verification (2026-10-15): root `tsc --noEmit` clean; `enroll-approval-path` (new,
+10 asserts), `enroll-integration`, `fee-invoice-amounts`, `fee-partial-payments`, `fee-scope`,
+`onboarding-admission`, `public-apply-policy`, `i18n-resolve`, `spa/route-matrix` (461 passed),
+`ui-drift` all pass. New i18n keys added to `en` + all six locale catalogs; `scripts/i18n-check.ts`
+now passes for the `public` namespace.
+
+Known remaining i18n gap (pre-existing, **not** introduced here): `fees.receipts.*` and
+`fees.tabs.receipts` were added to `en` only in P6, so `scripts/i18n-check.ts` still fails the
+`pages` namespace for the six complete/incomplete locales (29 keys × 6). Localise those or mark the
+namespace incomplete.
+

@@ -11,6 +11,11 @@ import {
   onlineExamViolationSchema,
   onlineExamRetakePolicySchema,
   onlineExamPushGradebookSchema,
+  proctorWarnSchema,
+  proctorFlagSchema,
+  proctorExtendSchema,
+  essayGradeSchema,
+  screenFrameSchema,
 } from "../validation/schemas";
 
 const router = express.Router();
@@ -126,6 +131,14 @@ router.get(
 );
 
 router.get(
+  "/api/exams/:id/attempt",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  requireResourceTenant(resourceLoaders.exam),
+  onlineExamController.resumeAttempt
+);
+
+router.get(
   "/api/exam-attempts/:attemptId",
   authenticate,
   requireRoles(EXAM_READ_ROLES),
@@ -149,6 +162,14 @@ router.post(
   requireResourceTenant(resourceLoaders.examAttempt),
   validateBody(onlineExamViolationSchema),
   onlineExamController.reportViolation
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/heartbeat",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  onlineExamController.heartbeat
 );
 
 router.post(
@@ -202,6 +223,95 @@ router.patch(
   requireResourceTenant(resourceLoaders.exam),
   validateBody(onlineExamRetakePolicySchema),
   onlineExamController.updateRetakePolicy
+);
+
+// Live Proctor actions (staff, school-scoped).
+router.post(
+  "/api/exam-attempts/:attemptId/warn",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(proctorWarnSchema),
+  onlineExamController.warnStudent
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/flag",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(proctorFlagSchema),
+  onlineExamController.flagAttempt
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/force-submit",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  onlineExamController.forceSubmitAttempt
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/extend",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(proctorExtendSchema),
+  onlineExamController.extendAttemptTime
+);
+
+// Live screen view (Phase 3): student-captured frames, proctor-signed reads.
+router.get(
+  "/api/exam-attempts/:attemptId/screen-config",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  onlineExamController.getScreenCaptureConfig
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/screen-frame",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(screenFrameSchema),
+  onlineExamController.createScreenFrameUpload
+);
+
+router.post(
+  "/api/exam-attempts/:attemptId/screen-frame/:frameId/uploaded",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(screenFrameSchema),
+  onlineExamController.markScreenFrameUploaded
+);
+
+router.get(
+  "/api/exam-attempts/:attemptId/frames",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  onlineExamController.listProctorFrames
+);
+
+// Manual essay marking (staff, school-scoped).
+router.patch(
+  "/api/exam-attempts/:attemptId/answers/:questionId/grade",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examAttempt),
+  validateBody(essayGradeSchema),
+  onlineExamController.markEssayAnswer
+);
+
+// Ops/manual trigger for the server-side expired-attempt sweep.
+router.post(
+  "/api/exams/sweep-expired",
+  authenticate,
+  requireRoles(["SCHOOL_ADMIN"]),
+  onlineExamController.sweepExpiredAttempts
 );
 
 export default router;

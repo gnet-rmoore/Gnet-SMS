@@ -1,8 +1,8 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { Clock, ShieldAlert, Send, Loader2, RotateCcw, Play } from "lucide-react";
-import { onlineExamApi } from "./api";
+import { Clock, ShieldAlert, Send, Loader2, RotateCcw, Play, MonitorUp } from "lucide-react";
+import { onlineExamApi, type KioskConfig, type ProctorLevel } from "./api";
 import { formatRemaining } from "./types";
 import { confirmAction, alertError } from "../../lib/swal";
 import { useAuthStore } from "../../store/authStore";
@@ -12,6 +12,15 @@ type AnswerMap = Record<
   string,
   { selectedChoiceId?: string | null; textAnswer?: string | null }
 >;
+
+const DEFAULT_KIOSK: KioskConfig = {
+  requireFullscreen: true,
+  requireScreenShare: false,
+  maxViolations: 3,
+  warnAt: 1,
+  blockedEvents: ["EXIT_FULLSCREEN", "TAB_BLUR", "VISIBILITY_HIDDEN", "COPY_ATTEMPT"],
+  allowReconnect: true,
+};
 
 export default function TakeOnlineExamPage() {
   const { t } = useTranslation(["pages", "common"]);
@@ -32,11 +41,23 @@ export default function TakeOnlineExamPage() {
   const [maxViolations, setMaxViolations] = React.useState(3);
   const [started, setStarted] = React.useState(false);
   const [consentChecked, setConsentChecked] = React.useState(false);
+  const [screenShareConsented, setScreenShareConsented] = React.useState(false);
+  const [kioskConfig, setKioskConfig] = React.useState<KioskConfig>(DEFAULT_KIOSK);
   const [warning, setWarning] = React.useState<string | null>(null);
+  const [warnLevel, setWarnLevel] = React.useState<"info" | "danger">("info");
   const [retakeEligibility, setRetakeEligibility] = React.useState<{ eligible: boolean; reason: string; nextAttemptNumber?: number; isFirstAttempt?: boolean } | null>(null);
+  const [proctorLevel, setProctorLevel] = React.useState<ProctorLevel>("MONITOR");
+  const [screenCaptureEnabled, setScreenCaptureEnabled] = React.useState(false);
+  const [frameIntervalMs, setFrameIntervalMs] = React.useState(15000);
   const reportingRef = React.useRef(false);
   const answersRef = React.useRef(answers);
   answersRef.current = answers;
+  const screenStreamRef = React.useRef<MediaStream | null>(null);
+  const captureVideoRef = React.useRef<HTMLVideoElement | null>(null);
+  const [screenSharing, setScreenSharing] = React.useState(false);
+
+  const capturesScreen = proctorLevel === "SCREEN_VIEW";
+  const needsScreenConsent = kioskConfig.requireScreenShare || capturesScreen;
 
   const goResults = React.useCallback(
     (id: string) => {
@@ -65,13 +86,15 @@ export default function TakeOnlineExamPage() {
         setViolationCount(res.attempt?.violationCount ?? 0);
         if (res.attempt?.maxViolations != null) setMaxViolations(res.attempt.maxViolations);
         if (res.attempt?.autoSubmitted) {
+          setWarnLevel("danger");
           setWarning(t("onlineExams.take.maxViolationsReached"));
           goResults(attemptId);
           return;
         }
+        setWarnLevel(res.attempt?.warn ? "danger" : "info");
         setWarning(
           t("onlineExams.take.violationWarning", {
-            count: res.attempt?.violationCount,
+            count: res.attempt?.countedViolations ?? res.attempt?.violationCount,
             max: res.attempt?.maxViolations || maxViolations,
           })
         );
@@ -115,6 +138,12 @@ export default function TakeOnlineExamPage() {
       setQuestions(data.questions || []);
       setViolationCount(data.attempt?.violationCount || 0);
       setMaxViolations(data.attempt?.maxViolations ?? data.exam?.maxViolations ?? 3);
+      if (data.exam?.kiosk) {
+        setKioskConfig({ ...DEFAULT_KIOSK, ...data.exam.kiosk });
+      }
+      if (data.exam?.proctorLevel) {
+        setProctorLevel(data.exam.proctorLevel);
+      }
       const serverNow = data.attempt?.serverNow
         ? new Date(data.attempt.serverNow).getTime()
         : Date.now();
@@ -152,6 +181,21 @@ export default function TakeOnlineExamPage() {
           setExamTitle(meta?.exam?.title || t("onlineExams.take.examFallback"));
           setInstructions(meta?.exam?.instructions || null);
           setMaxViolations(meta?.exam?.maxViolations ?? 3);
+          if (meta?.exam?.kioskConfig) {
+            setKioskConfig({ ...DEFAULT_KIOSK, ...meta.exam.kioskConfig });
+          }
+          if (meta?.exam?.proctorLevel) {
+            setProctorLevel(meta.exam.proctorLevel);
+          }
+          // Offer to resume an attempt that is still running on the server.
+          try {
+            const active = await onlineExamApi.resumeAttempt(examId);
+            if (!cancelled && active?.inProgress && active?.attempt) {
+              hydrateAttempt(active);
+            }
+          } catch {
+            /* no active attempt */
+          }
         }
       } catch (err: any) {
         await alertError(t("onlineExams.take.startFailed"), err?.message);
@@ -202,6 +246,99 @@ export default function TakeOnlineExamPage() {
     }, 15000);
     return () => window.clearInterval(id);
   }, [started, attemptId, flushAnswers]);
+
+  // Heartbeat so proctors can show live connection state.
+  React.useEffect(() => {
+    if (!started || !attemptId) return;
+    let cancelled = false;
+    const beat = async () => {
+      try {
+        const res = await onlineExamApi.heartbeat(attemptId);
+        if (!cancelled && res?.expired && attemptId) {
+          goResults(attemptId);
+        }
+      } catch {
+        /* transient */
+      }
+    };
+    void beat();
+    const id = window.setInterval(beat, 20000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") void beat();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [started, attemptId, goResults]);
+
+  // Resolve server-driven screen-capture policy once the attempt is running.
+  React.useEffect(() => {
+    if (!started || !attemptId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const cfg = await onlineExamApi.getScreenConfig(attemptId);
+        if (cancelled) return;
+        setProctorLevel(cfg.proctorLevel);
+        setScreenCaptureEnabled(cfg.enabled);
+        if (cfg.intervalMs) setFrameIntervalMs(cfg.intervalMs);
+      } catch {
+        /* capture stays disabled */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [started, attemptId]);
+
+  // Periodically capture downscaled JPEG snapshots and upload them for proctors.
+  React.useEffect(() => {
+    if (!started || !attemptId || !screenCaptureEnabled) return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const grab = async () => {
+      const video = captureVideoRef.current;
+      if (!video || video.readyState < 2 || !video.videoWidth) return;
+      try {
+        const vw = video.videoWidth || 1280;
+        const vh = video.videoHeight || 720;
+        const targetW = 720;
+        const scale = Math.min(1, targetW / vw);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(vw * scale));
+        canvas.height = Math.max(1, Math.round(vh * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.6)
+        );
+        if (!blob || cancelled) return;
+        const upload = await onlineExamApi.createScreenFrameUpload(attemptId, "image/jpeg");
+        if (!upload.enabled || cancelled) return;
+        const put = await fetch(upload.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": upload.contentType },
+          body: blob,
+        });
+        if (!put.ok || cancelled) return;
+        await onlineExamApi.markScreenFrameUploaded(attemptId, upload.frameId, blob.size);
+      } catch {
+        /* transient capture/upload failure */
+      }
+    };
+
+    void grab();
+    timer = window.setInterval(() => void grab(), Math.max(5000, frameIntervalMs));
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
+  }, [started, attemptId, screenCaptureEnabled, frameIntervalMs]);
 
   React.useEffect(() => {
     if (!started) return;
@@ -263,16 +400,69 @@ export default function TakeOnlineExamPage() {
     };
   }, [started, reportViolation, enterFullscreen]);
 
+  const attachCaptureVideo = React.useCallback((stream: MediaStream) => {
+    let el = captureVideoRef.current;
+    if (!el) {
+      el = document.createElement("video");
+      el.muted = true;
+      el.playsInline = true;
+      captureVideoRef.current = el;
+    }
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
+      void el.play().catch(() => undefined);
+    }
+  }, []);
+
+  const beginScreenShare = React.useCallback(async () => {
+    if (!needsScreenConsent) return true;
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenStreamRef.current = stream;
+      attachCaptureVideo(stream);
+      setScreenSharing(true);
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        setScreenSharing(false);
+        screenStreamRef.current = null;
+        captureVideoRef.current = null;
+        void reportViolation("SCREEN_SHARE_STOPPED");
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [needsScreenConsent, reportViolation, attachCaptureVideo]);
+
+  const stopScreenShare = React.useCallback(() => {
+    screenStreamRef.current?.getTracks().forEach((track) => track.stop());
+    screenStreamRef.current = null;
+    if (captureVideoRef.current) {
+      captureVideoRef.current.srcObject = null;
+      captureVideoRef.current = null;
+    }
+    setScreenSharing(false);
+  }, []);
+
+  React.useEffect(() => () => stopScreenShare(), [stopScreenShare]);
+
   const beginKiosk = async () => {
     await enterFullscreen();
+    if (needsScreenConsent && !screenSharing) {
+      const ok = await beginScreenShare();
+      if (!ok) {
+        await alertError(t("onlineExams.take.startFailed"), t("onlineExams.take.screenShareRequired"));
+        return;
+      }
+    }
     setStarted(true);
   };
 
   const beginExam = async () => {
     if (!examId || !consentChecked || submitting) return;
+    if (needsScreenConsent && !screenShareConsented) return;
     setSubmitting(true);
     try {
-      const data = await onlineExamApi.startAttempt(examId, true);
+      const data = await onlineExamApi.startAttempt(examId, true, screenShareConsented);
       if (data.attempt?.status && data.attempt.status !== "IN_PROGRESS") {
         goResults(data.attempt.id);
         return;
@@ -298,6 +488,7 @@ export default function TakeOnlineExamPage() {
     try {
       await flushAnswers();
       await onlineExamApi.submit(attemptId);
+      stopScreenShare();
       if (document.fullscreenElement) {
         await document.exitFullscreen().catch(() => undefined);
       }
@@ -336,7 +527,13 @@ export default function TakeOnlineExamPage() {
             </div>
           </div>
           <ul className="text-sm text-slate-300 space-y-2 list-disc pl-5">
-            <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>
+            {kioskConfig.requireFullscreen && <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>}
+            {needsScreenConsent && (
+              <li className="flex items-start gap-2">
+                <MonitorUp className="w-4 h-4 mt-0.5 shrink-0 text-indigo-300" />
+                {t("onlineExams.take.secureBullets.screenShare")}
+              </li>
+            )}
             <li>
               {t("onlineExams.take.secureBullets.violations", {
                 suffix:
@@ -366,11 +563,22 @@ export default function TakeOnlineExamPage() {
               <span>{t("onlineExams.take.consentLabel")}</span>
             </label>
           )}
+          {!attemptId && needsScreenConsent && (
+            <label className="flex items-start gap-3 text-sm text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={screenShareConsented}
+                onChange={(e) => setScreenShareConsented(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-indigo-500"
+              />
+              <span>{t("onlineExams.take.screenShareConsentLabel")}</span>
+            </label>
+          )}
           {retakeEligibility?.eligible && !attemptId && (
             <button
               type="button"
               onClick={beginExam}
-              disabled={!consentChecked || submitting}
+              disabled={!consentChecked || submitting || (needsScreenConsent && !screenShareConsented)}
               className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -391,7 +599,7 @@ export default function TakeOnlineExamPage() {
             <button
               type="button"
               onClick={beginExam}
-              disabled={!consentChecked || submitting}
+              disabled={!consentChecked || submitting || (needsScreenConsent && !screenShareConsented)}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -453,7 +661,18 @@ export default function TakeOnlineExamPage() {
           </div>
         </div>
         {warning && (
-          <div className="bg-rose-600 text-white text-center text-sm font-medium py-2">{warning}</div>
+          <div
+            className={`${
+              warnLevel === "danger" ? "bg-rose-600" : "bg-amber-500"
+            } text-white text-center text-sm font-medium py-2`}
+          >
+            {warning}
+          </div>
+        )}
+        {needsScreenConsent && screenSharing && (
+          <div className="bg-slate-900 text-emerald-300 text-center text-xs font-mono py-1">
+            ● {t("onlineExams.take.screenSharingActive")}
+          </div>
         )}
       </div>
 

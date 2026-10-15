@@ -240,6 +240,16 @@ router.get(
 
 router.post("/api/internal/fees", authenticateInternal, financeController.createFeeInternal);
 router.get("/api/internal/fees/:id", authenticateInternal, financeController.getFeeInternal);
+router.patch(
+  "/api/internal/fees/:id/link-student",
+  authenticateInternal,
+  financeController.linkFeeStudentInternal
+);
+router.get(
+  "/api/internal/fees/:id/receipt",
+  authenticateInternal,
+  financeController.getFeeReceiptInternal
+);
 
 router.post(
   "/api/fees/:id/checkout",

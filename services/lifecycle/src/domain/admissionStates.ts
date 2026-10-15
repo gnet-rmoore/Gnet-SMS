@@ -41,6 +41,26 @@ export function canTransition(from: string, to: string): boolean {
   return (ALLOWED[from] || []).includes(to);
 }
 
+/** In-progress statuses a server-driven enroll may auto-approve from. */
+export const AUTO_APPROVE_FROM = ["PENDING", "UNDER_REVIEW", "WAITLISTED"] as const;
+
+/**
+ * Ordered statuses to walk so an application becomes enrollable from `from`, resolving the
+ * status machine server-side instead of letting the client guess the next transition.
+ *
+ * Returns `[]` when already enrollable, `null` when no automatic approval path exists
+ * (e.g. REJECTED/WITHDRAWN — those must be handled explicitly by staff).
+ */
+export function resolveApprovalPath(from: string): string[] | null {
+  if (isEnrollableStatus(from)) return [];
+  if (!(AUTO_APPROVE_FROM as readonly string[]).includes(from)) return null;
+  if (canTransition(from, "APPROVED")) return ["APPROVED"];
+  if (canTransition(from, "UNDER_REVIEW") && canTransition("UNDER_REVIEW", "APPROVED")) {
+    return ["UNDER_REVIEW", "APPROVED"];
+  }
+  return null;
+}
+
 export function assertTransition(from: string, to: string) {
   if (from === to) return;
   const allowed = ALLOWED[from] || [];

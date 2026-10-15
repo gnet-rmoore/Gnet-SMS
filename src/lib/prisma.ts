@@ -41,8 +41,7 @@ export async function verifyAndHealDatabase(): Promise<boolean> {
 
   verificationPromise = (async () => {
     try {
-      await activePrisma.$queryRawUnsafe("SELECT 1;");
-      await activePrisma.user.count();
+      await (activePrisma as any).user?.count?.();
       globalForPrisma.isVerified = true;
       return true;
     } catch (err: any) {

@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Copy, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, Receipt, RefreshCw } from "lucide-react";
 import { LanguageSelect } from "../i18n/LanguageSelect";
 import { getStoredLocale, normalizeLocale } from "../i18n";
 import { translateApiError } from "../i18n/apiErrors";
@@ -18,6 +18,24 @@ const inputClass =
   "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white";
 const labelClass = "text-xs font-bold uppercase tracking-wider text-slate-500";
 
+const formatMoney = (n: number | null | undefined) =>
+  `$${Number(n || 0).toFixed(2)}`;
+
+type StatusFee = {
+  id: string;
+  status: string | null;
+  amount: number | null;
+  amountPaid: number | null;
+  balance: number | null;
+  paid: boolean;
+};
+
+type StatusReceipt = {
+  verifyCode: string;
+  receiptNumber?: string | null;
+  amount?: number | null;
+};
+
 type StatusPayload = {
   id: string;
   applicationNumber?: string | null;
@@ -25,6 +43,9 @@ type StatusPayload = {
   studentName: string;
   gradeLevelName?: string | null;
   appliedAt?: string;
+  feePaymentId?: string | null;
+  fee?: StatusFee | null;
+  receipt?: StatusReceipt | null;
 };
 
 async function fetchStatusById(id: string, token: string): Promise<StatusPayload> {
@@ -78,6 +99,9 @@ export default function PublicApplyStatusPage() {
     () => normalizeLocale(undefined) || getStoredLocale() || "en"
   );
 
+  const [paying, setPaying] = React.useState(false);
+  const [payError, setPayError] = React.useState("");
+
   React.useEffect(() => {
     if (!slug) return;
     (async () => {
@@ -125,6 +149,47 @@ export default function PublicApplyStatusPage() {
     if (!id || !token) return;
     void loadFromCredentials(id, token);
   }, [id, token, loadFromCredentials]);
+
+  const handlePayFee = async () => {
+    if (!data?.fee?.id) return;
+    setPaying(true);
+    setPayError("");
+    try {
+      const returnUrl =
+        slug && token
+          ? `${window.location.origin}/apply/${slug}/status?id=${encodeURIComponent(
+              data.id
+            )}&token=${encodeURIComponent(token)}`
+          : window.location.href;
+      const res = await fetch(
+        `/api/public/fees/${encodeURIComponent(data.fee.id)}/checkout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            applicationId: data.id,
+            token,
+            successUrl: returnUrl,
+            cancelUrl: returnUrl,
+          }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || !json?.url) {
+        throw new Error(
+          translateApiError(json) ||
+            json?.error ||
+            t("public:applyStatus.payFeeFailed")
+        );
+      }
+      window.location.href = json.url;
+    } catch (err: any) {
+      setPayError(
+        translateApiError(err) || err.message || t("public:applyStatus.payFeeFailed")
+      );
+      setPaying(false);
+    }
+  };
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,6 +368,56 @@ export default function PublicApplyStatusPage() {
                 </p>
               ) : null}
             </div>
+
+            {data.fee ? (
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-slate-800">
+                    {t("public:applyStatus.feeTitle")}
+                  </p>
+                  <span className="text-sm font-mono font-bold text-slate-900">
+                    {formatMoney(data.fee.balance ?? data.fee.amount)}
+                  </span>
+                </div>
+                {data.fee.paid ? (
+                  <p className="text-sm font-medium text-emerald-700">
+                    {t("public:applyStatus.feePaid")}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-500">
+                      {t("public:applyStatus.feeBalance", {
+                        amount: formatMoney(data.fee.balance ?? data.fee.amount),
+                      })}
+                    </p>
+                    <p className="text-xs text-slate-500">{t("public:applyStatus.feeDueHint")}</p>
+                    {payError ? (
+                      <p className="text-xs font-medium text-rose-600">{payError}</p>
+                    ) : null}
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={paying}
+                      onClick={() => void handlePayFee()}
+                    >
+                      {paying
+                        ? t("public:applyStatus.payFeeProcessing")
+                        : t("public:applyStatus.payFee")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {data.receipt?.verifyCode ? (
+              <Link
+                to={`/verify/receipt/${encodeURIComponent(data.receipt.verifyCode)}`}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
+              >
+                <Receipt className="w-4 h-4" />
+                {t("public:applyStatus.viewReceipt")}
+              </Link>
+            ) : null}
 
             <p className="text-xs text-slate-500 leading-relaxed">{t("public:applyStatus.statusHint")}</p>
 

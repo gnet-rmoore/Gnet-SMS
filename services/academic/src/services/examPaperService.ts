@@ -5,6 +5,7 @@ import {
 } from "../lib/examPaperStorage";
 import { getIdentityUsersByRoles } from "../lib/identityClient";
 import { notifyInApp, notifyInAppMany } from "../lib/notifyInApp";
+import { evaluatePaperStart } from "../lib/paperApproval";
 
 const REVIEWER_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
 const DELIVERY_MODES = new Set(["ONLINE", "OFFLINE", "HYBRID"]);
@@ -39,6 +40,77 @@ async function latestPackage(examId: string) {
     where: { examId },
     orderBy: { revision: "desc" },
   });
+}
+
+type PaperSnapshot = {
+  examId: string;
+  schoolId: string;
+  packageId: string;
+  revision: number;
+  status: string;
+  deliveryMode: string;
+  authorId: string;
+  pdfObjectKey: string | null;
+  pdfFileName: string | null;
+  feedback: string | null;
+  submittedAt: Date | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+};
+
+/** Append an immutable revision row capturing a package state transition. */
+async function recordRevision(
+  pkg: PaperSnapshot,
+  action: "CREATE" | "UPDATE" | "SUBMIT" | "APPROVE" | "RETURN",
+  actorId: string
+) {
+  try {
+    await prisma.examPaperRevision.create({
+      data: {
+        packageId: pkg.packageId,
+        examId: pkg.examId,
+        schoolId: pkg.schoolId,
+        revision: pkg.revision,
+        status: pkg.status,
+        deliveryMode: pkg.deliveryMode,
+        actorId: actorId || "system",
+        action,
+        snapshot: JSON.stringify({
+          pdfObjectKey: pkg.pdfObjectKey,
+          pdfFileName: pkg.pdfFileName,
+          feedback: pkg.feedback,
+          authorId: pkg.authorId,
+          submittedAt: pkg.submittedAt,
+          reviewedBy: pkg.reviewedBy,
+          reviewedAt: pkg.reviewedAt,
+        }),
+      },
+    });
+  } catch (err) {
+    // Revision history must never block the paper workflow.
+    console.warn("[exam-paper] recordRevision failed:", (err as any)?.message || err);
+  }
+}
+
+function toSnapshot(
+  pkg: any,
+  ids: { examId: string; schoolId: string }
+): PaperSnapshot {
+  return {
+    examId: ids.examId,
+    schoolId: ids.schoolId,
+    packageId: pkg.id,
+    revision: pkg.revision,
+    status: pkg.status,
+    deliveryMode: pkg.deliveryMode,
+    authorId: pkg.authorId,
+    pdfObjectKey: pkg.pdfObjectKey ?? null,
+    pdfFileName: pkg.pdfFileName ?? null,
+    feedback: pkg.feedback ?? null,
+    submittedAt: pkg.submittedAt ?? null,
+    reviewedBy: pkg.reviewedBy ?? null,
+    reviewedAt: pkg.reviewedAt ?? null,
+  };
 }
 
 async function assertEditable(pkg: { status: string }) {
@@ -134,6 +206,7 @@ export const examPaperService = {
         paperStatus: "DRAFT",
         deliveryMode: pkg.deliveryMode,
       });
+      await recordRevision(toSnapshot(pkg, { examId, schoolId }), "CREATE", authorId);
     } else if (pkg.status === "APPROVED") {
       // Read-only view of approved head
     } else if (pkg.status === "RETURNED" || pkg.status === "DRAFT") {
@@ -221,6 +294,8 @@ export const examPaperService = {
       });
       return nextPkg;
     });
+
+    await recordRevision(toSnapshot(updated, { examId, schoolId }), "UPDATE", authorId);
 
     return this.getOrCreateDraft(examId, schoolId, authorId);
   },
@@ -331,6 +406,7 @@ export const examPaperService = {
       isOnline:
         updated.deliveryMode === "ONLINE" || updated.deliveryMode === "HYBRID",
     });
+    await recordRevision(toSnapshot(updated, { examId, schoolId }), "SUBMIT", authorId);
 
     const exam = await prisma.exam.findUnique({ where: { id: examId } });
     const reviewers = await getIdentityUsersByRoles(schoolId, REVIEWER_ROLES);
@@ -415,6 +491,7 @@ export const examPaperService = {
         },
       });
       await syncExamDenorm(pkg.examId, schoolId, { paperStatus: "RETURNED" });
+      await recordRevision(toSnapshot(updated, { examId: pkg.examId, schoolId }), "RETURN", reviewerId);
       if (pkg.authorId && pkg.authorId !== "system-migration") {
         await notifyInApp({
           schoolId,
@@ -451,6 +528,7 @@ export const examPaperService = {
       deliveryMode,
       isOnline: deliveryMode === "ONLINE" || deliveryMode === "HYBRID",
     });
+    await recordRevision(toSnapshot(updated, { examId: pkg.examId, schoolId }), "APPROVE", reviewerId);
 
     if (pkg.authorId && pkg.authorId !== "system-migration") {
       await notifyInApp({
@@ -558,26 +636,54 @@ export const examPaperService = {
     await ensureLegacyPaperApproved(examId, schoolId);
     const exam = await prisma.exam.findFirst({ where: { id: examId, schoolId } });
     if (!exam) throw httpError("Exam not found", 404);
-    if (exam.paperStatus !== "APPROVED") {
-      throw httpError(
-        "Exam paper is not approved yet",
-        403,
-        "PAPER_NOT_APPROVED"
-      );
-    }
-    if (exam.deliveryMode === "OFFLINE") {
-      throw httpError("This exam is offline-only", 403, "OFFLINE_ONLY");
-    }
-    if (exam.deliveryMode === "HYBRID") {
-      const leg = await this.getStudentLeg(examId, schoolId, studentId);
-      if (leg !== "ONLINE") {
-        throw httpError(
-          "You are assigned to the offline leg of this hybrid exam",
-          403,
-          "HYBRID_OFFLINE_LEG"
-        );
-      }
-    }
+
+    const pkg = await latestPackage(examId);
+    const leg =
+      exam.deliveryMode === "HYBRID"
+        ? await this.getStudentLeg(examId, schoolId, studentId)
+        : undefined;
+
+    const decision = evaluatePaperStart({
+      paperStatus: exam.paperStatus,
+      latestPackageStatus: pkg?.status ?? null,
+      deliveryMode: exam.deliveryMode,
+      leg,
+    });
+    if (!decision.ok) throw httpError(decision.message, 403, decision.code);
+
     return exam;
   },
+
+  /** Immutable revision history for an exam's paper (newest first). */
+  async listRevisions(examId: string, schoolId: string) {
+    const exam = await prisma.exam.findFirst({
+      where: { id: examId, schoolId },
+      select: { id: true, title: true },
+    });
+    if (!exam) throw httpError("Exam not found", 404);
+    const rows = await prisma.examPaperRevision.findMany({
+      where: { examId, schoolId },
+      orderBy: [{ createdAt: "desc" }],
+      take: 100,
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      packageId: r.packageId,
+      revision: r.revision,
+      status: r.status,
+      deliveryMode: r.deliveryMode,
+      action: r.action,
+      actorId: r.actorId,
+      createdAt: r.createdAt,
+      snapshot: r.snapshot ? safeParse(r.snapshot) : null,
+    }));
+  },
 };
+
+function safeParse(raw: string): any {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}

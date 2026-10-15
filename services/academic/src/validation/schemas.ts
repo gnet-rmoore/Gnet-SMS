@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VIOLATION_TYPES } from "../lib/onlineExamKiosk";
 
 /** Ported from src/server/validation/schemas.ts (exam grade subset only). */
 export const gradeEntryUpsertSchema = z.object({
@@ -45,6 +46,15 @@ export const componentGradeBulkSchema = z.object({
     .max(2000),
 });
 
+export const onlineExamKioskConfigSchema = z.object({
+  requireFullscreen: z.boolean().optional(),
+  requireScreenShare: z.boolean().optional(),
+  maxViolations: z.coerce.number().int().min(0).max(50).optional(),
+  warnAt: z.coerce.number().int().min(0).max(50).optional(),
+  blockedEvents: z.array(z.enum(VIOLATION_TYPES)).max(20).optional(),
+  allowReconnect: z.boolean().optional(),
+});
+
 export const onlineExamConfigSchema = z.object({
   isOnline: z.boolean().optional(),
   maxViolations: z.coerce.number().int().min(0).max(50).optional(),
@@ -53,6 +63,9 @@ export const onlineExamConfigSchema = z.object({
   classId: z.string().nullable().optional(),
   subjectId: z.string().nullable().optional(),
   paperDueAt: z.coerce.date().nullable().optional(),
+  proctorLevel: z.enum(["OFF", "MONITOR", "SCREEN_VIEW"]).optional(),
+  kioskConfig: onlineExamKioskConfigSchema.nullable().optional(),
+  autoPostGrades: z.boolean().optional(),
 });
 
 const onlineQuestionSchema = z.object({
@@ -71,6 +84,26 @@ const onlineQuestionSchema = z.object({
       })
     )
     .optional(),
+});
+
+export const examScheduleCreateSchema = z.object({
+  classId: z.string().nullable().optional(),
+  room: z.string().max(120).nullable().optional(),
+  session: z.string().max(120).nullable().optional(),
+  invigilatorId: z.string().nullable().optional(),
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date(),
+  note: z.string().max(1000).nullable().optional(),
+});
+
+export const examScheduleUpdateSchema = z.object({
+  classId: z.string().nullable().optional(),
+  room: z.string().max(120).nullable().optional(),
+  session: z.string().max(120).nullable().optional(),
+  invigilatorId: z.string().nullable().optional(),
+  startAt: z.coerce.date().optional(),
+  endAt: z.coerce.date().optional(),
+  note: z.string().max(1000).nullable().optional(),
 });
 
 export const onlineExamQuestionsSchema = z.object({
@@ -105,13 +138,7 @@ export const onlineExamPreviewScoreSchema = z.object({
 });
 
 export const onlineExamViolationSchema = z.object({
-  type: z.enum([
-    "EXIT_FULLSCREEN",
-    "TAB_BLUR",
-    "VISIBILITY_HIDDEN",
-    "CONTEXT_MENU",
-    "COPY_ATTEMPT",
-  ]),
+  type: z.enum(VIOLATION_TYPES),
   detail: z.string().max(500).optional().nullable(),
 });
 
@@ -131,12 +158,40 @@ export const onlineExamRetakePolicySchema = z.object({
   path: ["maxRetakes"],
 });
 
+export const proctorWarnSchema = z.object({
+  message: z.string().max(300).optional(),
+});
+
+export const proctorFlagSchema = z.object({
+  flagged: z.boolean(),
+  note: z.string().max(300).optional().nullable(),
+});
+
+export const proctorExtendSchema = z.object({
+  extraMinutes: z.coerce.number().int().min(1).max(180),
+});
+
 export const onlineExamPushGradebookSchema = z.object({
   attemptId: z.string().optional(),
   pushAll: z.boolean().optional(),
+  /** Preview only — compute the outcome without writing to the gradebook. */
+  dryRun: z.boolean().optional(),
+  /** Overwrite human-entered grades (bulk push). */
+  force: z.boolean().optional(),
 }).refine((data) => (data.attemptId ? 1 : 0) + (data.pushAll ? 1 : 0) === 1, {
   message: "Exactly one of attemptId or pushAll must be provided",
   path: ["attemptId"],
+});
+
+/** Manual essay marking. `pointsAwarded: null` resets the answer to pending. */
+export const essayGradeSchema = z.object({
+  pointsAwarded: z.coerce.number().min(0).nullable(),
+});
+
+/** Proctor screen-frame upload request/confirmation (Phase 3). */
+export const screenFrameSchema = z.object({
+  mimeType: z.string().max(80).optional(),
+  byteSize: z.coerce.number().int().min(0).optional(),
 });
 
 export const examPaperDraftSchema = z.object({

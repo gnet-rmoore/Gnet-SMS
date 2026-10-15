@@ -101,4 +101,12 @@ router.put(
   examPaperController.setRoster
 );
 
+router.get(
+  "/api/exams/:id/paper/revisions",
+  authenticate,
+  requireRoles(WRITE),
+  requireResourceTenant(resourceLoaders.exam),
+  examPaperController.listRevisions
+);
+
 export default router;

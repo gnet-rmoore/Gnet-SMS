@@ -600,7 +600,10 @@ export const examService = {
       ? deliveryModeRaw
       : "ONLINE";
 
-    return prisma.exam.create({
+    const classId = data.classId ? String(data.classId) : null;
+    const subjectId = data.subjectId ? String(data.subjectId) : null;
+
+    const exam = await prisma.exam.create({
       data: {
         schoolId,
         title,
@@ -612,6 +615,8 @@ export const examService = {
         deliveryMode,
         paperDueAt,
         paperStatus: "NONE",
+        classId,
+        subjectId,
         isOnline: deliveryMode === "ONLINE" || deliveryMode === "HYBRID",
         status: deriveExamDisplayStatus({
           status: "SCHEDULED",
@@ -620,6 +625,20 @@ export const examService = {
         }),
       },
     });
+
+    // Seed a default schedule row so the exam has a first-class sitting record.
+    await prisma.examSchedule.create({
+      data: {
+        examId: exam.id,
+        schoolId,
+        classId,
+        startAt: startDate,
+        endAt: endDate,
+        createdById: null,
+      },
+    });
+
+    return exam;
   },
 
   async updateExam(id: string, data: any) {
@@ -712,7 +731,12 @@ export const examService = {
 
     const isOnline = ["ONLINE", "HYBRID"].includes(deliveryMode);
 
-    return prisma.exam.update({
+    const classId =
+      data.classId === undefined ? existing.classId : data.classId ? String(data.classId) : null;
+    const subjectId =
+      data.subjectId === undefined ? existing.subjectId : data.subjectId ? String(data.subjectId) : null;
+
+    const exam = await prisma.exam.update({
       where: { id },
       data: {
         title,
@@ -724,6 +748,8 @@ export const examService = {
         deliveryMode,
         isOnline,
         paperDueAt,
+        classId,
+        subjectId,
         status: deriveExamDisplayStatus({
           status: existing.status,
           startDate,
@@ -731,6 +757,18 @@ export const examService = {
         }),
       },
     });
+
+    // Keep the single default schedule in step with a direct date edit.
+    // Multi-sitting schedules are managed explicitly via the schedule API.
+    const scheduleCount = await prisma.examSchedule.count({ where: { examId: id, schoolId: existing.schoolId } });
+    if (scheduleCount === 1) {
+      await prisma.examSchedule.updateMany({
+        where: { examId: id, schoolId: existing.schoolId },
+        data: { startAt: startDate, endAt: endDate, classId },
+      });
+    }
+
+    return exam;
   },
 
   async getExamById(id: string) {

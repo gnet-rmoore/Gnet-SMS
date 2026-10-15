@@ -431,6 +431,51 @@ export const financeService = {
     return prisma.feePayment.findUnique({ where: { id } });
   },
 
+  /**
+   * Move an application-scoped (placeholder `studentId = application:<id>`) invoice — and its
+   * transactions — onto the real enrolled student. Idempotent and guarded: it never moves an
+   * invoice that already belongs to a real student.
+   */
+  async linkStudentToFee(feeId: string, studentId: string) {
+    const fee = await prisma.feePayment.findUnique({ where: { id: feeId } });
+    if (!fee) return { ok: false, reason: "NOT_FOUND" };
+    const target = String(studentId || "").trim();
+    if (!target) return { ok: false, reason: "STUDENT_REQUIRED" };
+    if (fee.studentId === target) return { ok: true, changed: false };
+    if (!String(fee.studentId).startsWith("application:")) {
+      return { ok: false, reason: "NOT_PLACEHOLDER" };
+    }
+    await prisma.$transaction([
+      prisma.feePayment.update({ where: { id: feeId }, data: { studentId: target } }),
+      prisma.feePaymentTxn.updateMany({
+        where: { feePaymentId: feeId, studentId: fee.studentId },
+        data: { studentId: target },
+      }),
+    ]);
+    return { ok: true, changed: true };
+  },
+
+  /** Latest ISSUED payment receipt for a fee (used to surface receipts to the applicant). */
+  async getReceiptSummaryForFee(feeId: string) {
+    const txns = await prisma.feePaymentTxn.findMany({
+      where: { feePaymentId: feeId, kind: "PAYMENT" },
+      select: { id: true },
+      orderBy: { paidAt: "asc" },
+    });
+    if (!txns.length) return null;
+    const receipt = await prisma.receipt.findFirst({
+      where: {
+        type: "FEE_PAYMENT",
+        sourceType: "FEE_PAYMENT_TXN",
+        sourceId: { in: txns.map((t) => t.id) },
+        status: "ISSUED",
+      },
+      orderBy: { issuedAt: "desc" },
+      select: { id: true, receiptNumber: true, verifyCode: true, amount: true, issuedAt: true },
+    });
+    return receipt || null;
+  },
+
   async updateFee(id: string, schoolId: string, data: any) {
     const existing = await prisma.feePayment.findFirst({ where: { id, schoolId } });
     if (!existing) throw Object.assign(new Error("Fee not found"), { status: 404 });
@@ -452,16 +497,28 @@ export const financeService = {
       | { amount: number; originalAmount: number | null; discountPercent: number | null }
       | undefined;
     if (hasMoneyChange) {
-      money = computeInvoiceAmounts({
-        amount:
-          data.amount !== undefined
-            ? data.amount
-            : (existing.originalAmount ?? existing.amount),
-        originalAmount:
-          data.originalAmount !== undefined ? data.originalAmount : existing.originalAmount,
-        discountPercent:
-          data.discountPercent !== undefined ? data.discountPercent : existing.discountPercent,
-      });
+      const amountInput = data.amount !== undefined ? data.amount : undefined;
+      const originalInput = data.originalAmount !== undefined ? data.originalAmount : undefined;
+      const percentInput = data.discountPercent !== undefined ? data.discountPercent : undefined;
+
+      if (percentInput !== undefined && Number(percentInput) > 0) {
+        // Explicit discount: base falls back to the stored original (or amount).
+        money = computeInvoiceAmounts({
+          amount: amountInput !== undefined ? amountInput : existing.amount,
+          originalAmount:
+            originalInput !== undefined ? originalInput : (existing.originalAmount ?? undefined),
+          discountPercent: percentInput,
+        });
+      } else if (percentInput !== undefined) {
+        // Explicit zero percent clears any discount; keep/set the net amount.
+        money = computeInvoiceAmounts({
+          amount: amountInput !== undefined ? amountInput : existing.amount,
+        });
+      } else {
+        // No discount supplied: reconcile exactly what was provided so a new `amount`
+        // is not silently overridden by a stale stored discount.
+        money = computeInvoiceAmounts({ amount: amountInput, originalAmount: originalInput });
+      }
     }
     const updated = await prisma.feePayment.update({
       where: { id },

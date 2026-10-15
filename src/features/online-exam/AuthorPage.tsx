@@ -109,6 +109,12 @@ export default function OnlineExamAuthorPage() {
   const [isOnline, setIsOnline] = React.useState(true);
   const [maxViolations, setMaxViolations] = React.useState("3");
   const [showResultsImmediately, setShowResultsImmediately] = React.useState(true);
+  const [proctorLevel, setProctorLevel] = React.useState<"OFF" | "MONITOR" | "SCREEN_VIEW">("MONITOR");
+  const [kioskFullscreen, setKioskFullscreen] = React.useState(true);
+  const [kioskScreenShare, setKioskScreenShare] = React.useState(false);
+  const [kioskAllowReconnect, setKioskAllowReconnect] = React.useState(true);
+  const [kioskWarnAt, setKioskWarnAt] = React.useState("1");
+  const [autoPostGrades, setAutoPostGrades] = React.useState(true);
   const [instructions, setInstructions] = React.useState("");
   const [questions, setQuestions] = React.useState<DraftQuestion[]>([emptyQuestion()]);
   const [classId, setClassId] = React.useState("");
@@ -133,6 +139,15 @@ export default function OnlineExamAuthorPage() {
         setShowResultsImmediately(data.exam?.showResultsImmediately !== false);
         setInstructions(data.exam?.instructions || "");
         setClassId(data.exam?.classId || "");
+        setProctorLevel(data.exam?.proctorLevel ?? "MONITOR");
+        setAutoPostGrades(data.exam?.autoPostGrades !== false);
+        const kiosk = data.exam?.kioskConfig;
+        if (kiosk) {
+          setKioskFullscreen(kiosk.requireFullscreen !== false);
+          setKioskScreenShare(Boolean(kiosk.requireScreenShare));
+          setKioskAllowReconnect(kiosk.allowReconnect !== false);
+          setKioskWarnAt(String(kiosk.warnAt ?? 1));
+        }
         // Load retake policy
         const policy = data.exam?.retakePolicy;
         if (policy) {
@@ -179,12 +194,25 @@ export default function OnlineExamAuthorPage() {
     if (!examId) return;
     setSaving(true);
     try {
+      const blockedEvents: string[] = ["TAB_BLUR", "VISIBILITY_HIDDEN", "COPY_ATTEMPT"];
+      if (kioskFullscreen) blockedEvents.push("EXIT_FULLSCREEN");
+      if (kioskScreenShare) blockedEvents.push("SCREEN_SHARE_STOPPED");
       await onlineExamApi.updateConfig(examId, {
         isOnline,
         maxViolations: Number(maxViolations) || 0,
         showResultsImmediately,
         instructions: instructions.trim() || null,
         classId: classId || null,
+        proctorLevel,
+        autoPostGrades,
+        kioskConfig: {
+          requireFullscreen: kioskFullscreen,
+          requireScreenShare: kioskScreenShare,
+          allowReconnect: kioskAllowReconnect,
+          warnAt: Number(kioskWarnAt) || 0,
+          maxViolations: Number(maxViolations) || 0,
+          blockedEvents: blockedEvents as any,
+        },
         retakePolicy: retakeEnabled
           ? {
               maxRetakes: Number(maxRetakes) || 0,
@@ -281,6 +309,74 @@ export default function OnlineExamAuthorPage() {
             />
             <span className="font-medium text-slate-800">{t("onlineExams.author.showScoreAfter")}</span>
           </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4">
+            <input
+              type="checkbox"
+              checked={kioskFullscreen}
+              onChange={(e) => setKioskFullscreen(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="font-medium text-slate-800">{t("onlineExams.author.requireFullscreen")}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4">
+            <input
+              type="checkbox"
+              checked={kioskScreenShare}
+              onChange={(e) => {
+                setKioskScreenShare(e.target.checked);
+                if (e.target.checked && proctorLevel === "OFF") setProctorLevel("SCREEN_VIEW");
+              }}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="font-medium text-slate-800">{t("onlineExams.author.requireScreenShare")}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4">
+            <input
+              type="checkbox"
+              checked={kioskAllowReconnect}
+              onChange={(e) => setKioskAllowReconnect(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="font-medium text-slate-800">{t("onlineExams.author.allowReconnect")}</span>
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4">
+            <input
+              type="checkbox"
+              checked={autoPostGrades}
+              onChange={(e) => setAutoPostGrades(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="font-medium text-slate-800">{t("onlineExams.author.autoPostGrades")}</span>
+          </label>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t("onlineExams.author.proctorLevel")}
+            </label>
+            <select
+              value={proctorLevel}
+              onChange={(e) => setProctorLevel(e.target.value as "OFF" | "MONITOR" | "SCREEN_VIEW")}
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"
+            >
+              <option value="OFF">{t("onlineExams.author.proctorLevelOptions.off")}</option>
+              <option value="MONITOR">{t("onlineExams.author.proctorLevelOptions.monitor")}</option>
+              <option value="SCREEN_VIEW">{t("onlineExams.author.proctorLevelOptions.screenView")}</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.proctorLevelHint")}</p>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {t("onlineExams.author.warnAt")}
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={50}
+              value={kioskWarnAt}
+              onChange={(e) => setKioskWarnAt(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono"
+            />
+            <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.warnAtHint")}</p>
+          </div>
           <div className="sm:col-span-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {t("onlineExams.author.audience")}

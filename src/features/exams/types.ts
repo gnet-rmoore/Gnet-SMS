@@ -40,6 +40,8 @@ export type ScheduleExamFormData = {
   periodId: string;
   deliveryMode: string;
   paperDueAt: string;
+  classId?: string | null;
+  subjectId?: string | null;
 };
 
 export const emptyScheduleForm = (): ScheduleExamFormData => ({
@@ -52,4 +54,6 @@ export const emptyScheduleForm = (): ScheduleExamFormData => ({
   periodId: "",
   deliveryMode: "ONLINE",
   paperDueAt: "",
+  classId: null,
+  subjectId: null,
 });

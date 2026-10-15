@@ -37,12 +37,21 @@
   --radius-sms-control: var(--sms-radius-control);
   --shadow-sms-surface: var(--sms-shadow-surface);
 
+  /*
+   * Typography — self-hosted via @fontsource (see `src/main.tsx`), so every
+   * device renders the exact same faces with no CDN / FOUT drift.
+   *   Inter            → body / UI text
+   *   Plus Jakarta Sans → headings, page titles, KPI numerals
+   */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
   /* Public marketing landing (`src/features/landing`) */
   --font-landing-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-landing-display: "Fraunces", ui-serif, Georgia, serif;
 
-  /* Dashboard page headings */
-  --font-dashboard: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  /* Dashboard page headings (alias of --font-heading, kept for compatibility) */
+  --font-dashboard: var(--font-heading);
 }
 
 /*
@@ -78,6 +87,13 @@
 }
 
 @layer base {
+  /* Body font is self-hosted Inter everywhere (deterministic across devices). */
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
   /* Custom Scrollbar Styles */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;

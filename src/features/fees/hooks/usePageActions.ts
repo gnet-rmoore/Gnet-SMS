@@ -323,16 +323,17 @@ export function usePageActions(deps: PageActionsDeps) {
       return showToast(t("fees.toast.selectFeeTemplate"), "error");
     }
     const originalAmount = parseFloat(invoiceForm.amount);
-    const discount = parseFloat(invoiceForm.discountPercent || "0") / 100;
-    const finalAmount = originalAmount * (1 - discount);
-    if (isNaN(finalAmount) || finalAmount <= 0) {
+    const discountPercent = parseFloat(invoiceForm.discountPercent || "0");
+    if (isNaN(originalAmount) || originalAmount <= 0) {
       return showToast(t("fees.toast.invalidInvoiceAmount"), "error");
     }
     setSubmitting(true);
     try {
+      // Server owns discount math: send the gross + percent and let finance compute the net.
       await feesApi.createFee(school.id, {
         studentId: invoiceForm.studentId,
-        amount: finalAmount,
+        originalAmount,
+        discountPercent: isNaN(discountPercent) ? 0 : discountPercent,
         type: invoiceForm.type,
         dueDate: new Date(invoiceForm.dueDate).toISOString(),
         status: "PENDING",
@@ -687,10 +688,13 @@ export function usePageActions(deps: PageActionsDeps) {
     }
 
     const baseVal = parseFloat(batchForm.amount);
-    const discount = parseFloat(batchForm.discountPercent || "0") / 100;
-    const finalVal = baseVal * (1 - discount);
+    const discountPercent = parseFloat(batchForm.discountPercent || "0");
+    const pct = isNaN(discountPercent) ? 0 : discountPercent;
+    const discounted = baseVal * (1 - pct / 100);
+    // Mirror the server (computeInvoiceAmounts): a 100% discount floors to the gross, never zero.
+    const confirmAmount = discounted > 0 ? discounted : baseVal;
 
-    if (isNaN(finalVal) || finalVal <= 0) {
+    if (isNaN(baseVal) || baseVal <= 0) {
       return showToast(t("fees.toast.invalidAmount"), "error");
     }
 
@@ -702,7 +706,7 @@ export function usePageActions(deps: PageActionsDeps) {
           : "fees.confirm.batchInvoicesText_plural",
         {
           count: targetGroup.length,
-          amount: formatMoney(finalVal),
+          amount: formatMoney(confirmAmount),
         }
       ),
       confirmText: t("fees.confirm.batchInvoicesConfirm"),
@@ -719,7 +723,8 @@ export function usePageActions(deps: PageActionsDeps) {
       try {
         await feesApi.createFee(school.id, {
           studentId: stud.id,
-          amount: finalVal,
+          originalAmount: baseVal,
+          discountPercent: isNaN(discountPercent) ? 0 : discountPercent,
           type: batchForm.type,
           dueDate: new Date(batchForm.dueDate).toISOString(),
           status: "PENDING",

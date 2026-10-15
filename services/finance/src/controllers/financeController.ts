@@ -448,6 +448,31 @@ export const financeController = {
     }
   },
 
+  async linkFeeStudentInternal(req: Request, res: Response) {
+    try {
+      const result = await financeService.linkStudentToFee(
+        req.params.id,
+        String(req.body?.studentId || "")
+      );
+      if (!result.ok) {
+        const status = result.reason === "NOT_FOUND" ? 404 : 400;
+        return res.status(status).json({ error: result.reason, ...result });
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  async getFeeReceiptInternal(req: Request, res: Response) {
+    try {
+      const receipt = await financeService.getReceiptSummaryForFee(req.params.id);
+      res.json(receipt || null);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
   // EXPENSES METHODS
   async getExpenses(req: Request, res: Response) {
     const { schoolId } = req.params;

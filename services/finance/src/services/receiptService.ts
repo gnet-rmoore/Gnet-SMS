@@ -153,17 +153,44 @@ export const receiptService = {
     return prisma.receipt.findUnique({ where: { id } });
   },
 
-  async list(schoolId: string, opts?: { type?: string; sourceId?: string; status?: string }) {
+  async list(
+    schoolId: string,
+    opts?: { type?: string; sourceId?: string; status?: string; sourceIds?: string[] }
+  ) {
+    // `sourceIds` is a hard ownership filter (fee receipts belong to the caller's payments).
+    // An explicitly empty array must match nothing rather than fall through to "all".
+    if (opts?.sourceIds && opts.sourceIds.length === 0) return [];
     return prisma.receipt.findMany({
       where: {
         schoolId,
         ...(opts?.type ? { type: opts.type } : {}),
         ...(opts?.sourceId ? { sourceId: opts.sourceId } : {}),
         ...(opts?.status ? { status: opts.status } : {}),
+        ...(opts?.sourceIds ? { sourceId: { in: opts.sourceIds } } : {}),
       },
       orderBy: { issuedAt: "desc" },
       take: 200,
     });
+  },
+
+  /**
+   * Source ids of fee receipts a student/parent may see: payment txns for the caller's own/
+   * children's invoices, plus anything the caller personally paid for.
+   */
+  async getFeeReceiptSourceIds(
+    schoolId: string,
+    studentIds: string[],
+    payerUserId?: string
+  ): Promise<string[]> {
+    const or: any[] = [];
+    if (studentIds.length) or.push({ studentId: { in: studentIds } });
+    if (payerUserId) or.push({ payerUserId });
+    if (!or.length) return [];
+    const txns = await prisma.feePaymentTxn.findMany({
+      where: { schoolId, kind: "PAYMENT", OR: or },
+      select: { id: true },
+    });
+    return txns.map((t) => t.id);
   },
 
   async issue(input: IssueReceiptInput) {

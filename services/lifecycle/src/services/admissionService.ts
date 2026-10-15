@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import prisma from "../lib/prisma";
 import { findOrCreateIdentityUser, getSchoolStudentTotal, linkParentStudent, getIdentitySchool, verifyReturningStudent } from "../lib/identityClient";
-import { createEntranceFee, getFee, randomPassword } from "../lib/financeClient";
+import { createEntranceFee, getFee, getFeeReceipt, linkFeeToStudent, randomPassword } from "../lib/financeClient";
 import { addClassroomMember, getHomeroomPlacedStudentIds, resolveStudentNextGrade } from "../lib/classroomClient";
-import { assertTransition, generateApplicationNumber } from "../domain/admissionStates";
+import { assertTransition, generateApplicationNumber, resolveApprovalPath } from "../domain/admissionStates";
 import {
   parseAdmissionPolicy,
   isEnrollableStatus,
@@ -25,7 +25,62 @@ function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
-function formatPublicStatus(app: {
+/**
+ * Build the non-status fields a review submit may carry, merging free-text `notes` with the
+ * preserved applicantType/existing-student markers so approval never loses reviewer input.
+ */
+/**
+ * Append a status-change reason without corrupting structured (JSON) application notes.
+ * Plain notes keep the legacy `\n[STATUS] reason` format; JSON notes get a `statusLog`
+ * entry so `applicantType` / `existingStudentUserId` markers survive staff transitions
+ * (including the server-driven auto-approve walk during enroll).
+ */
+function appendStatusReason(notes: string | null, to: string, reason: string): string | null {
+  const trimmed = String(reason || "").trim();
+  if (!trimmed) return notes;
+  if (notes && notes.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(notes) as Record<string, unknown>;
+      const log = Array.isArray(parsed.statusLog) ? (parsed.statusLog as unknown[]) : [];
+      parsed.statusLog = [...log, { status: to, reason: trimmed, at: new Date().toISOString() }];
+      return JSON.stringify(parsed);
+    } catch {
+      /* fall through to legacy plain-text append */
+    }
+  }
+  return `${notes || ""}\n[${to}] ${trimmed}`.trim();
+}
+
+function buildReviewPatch(currentNotes: string | null, data: any): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  if (data.notes !== undefined) {
+    const preserved = parseApplicationNotes(currentNotes);
+    const incoming =
+      typeof data.notes === "string"
+        ? parseApplicationNotes(data.notes)
+        : data.notes && typeof data.notes === "object"
+          ? (data.notes as Record<string, unknown>)
+          : {};
+    const applicantType =
+      incoming.applicantType === "RETURNING" || preserved.applicantType === "RETURNING"
+        ? "RETURNING"
+        : incoming.applicantType || preserved.applicantType || "NEW";
+    const existingStudentUserId =
+      incoming.existingStudentUserId || preserved.existingStudentUserId || undefined;
+    patch.notes = JSON.stringify({
+      ...preserved,
+      ...incoming,
+      applicantType,
+      ...(existingStudentUserId ? { existingStudentUserId } : {}),
+    });
+  }
+  if (data.documents !== undefined) patch.documents = data.documents;
+  if (data.evaluation !== undefined) patch.evaluation = data.evaluation;
+  if (data.classroomId !== undefined) patch.classroomId = data.classroomId;
+  return patch;
+}
+
+async function formatPublicStatus(app: {
   id: string;
   applicationNumber: string | null;
   studentIdNumber: string | null;
@@ -36,6 +91,52 @@ function formatPublicStatus(app: {
   feePaymentId: string | null;
   admissionDocuments?: { docType: string; status: string }[];
 }) {
+  let fee: {
+    id: string;
+    status: string | null;
+    amount: number | null;
+    amountPaid: number | null;
+    balance: number | null;
+    paid: boolean;
+  } | null = null;
+  let receipt: { verifyCode: string; receiptNumber: string | null; amount: number | null } | null =
+    null;
+  if (app.feePaymentId) {
+    try {
+      const f = await getFee(app.feePaymentId);
+      if (f) {
+        const amount = typeof f.amount === "number" ? Number(f.amount) : null;
+        const amountPaid = typeof f.amountPaid === "number" ? Number(f.amountPaid) : 0;
+        const balance =
+          typeof f.balance === "number"
+            ? Number(f.balance)
+            : amount != null
+              ? Math.max(0, amount - amountPaid)
+              : null;
+        fee = {
+          id: f.id,
+          status: f.status ?? null,
+          amount,
+          amountPaid,
+          balance,
+          paid: f.status === "PAID",
+        };
+        if (fee.paid) {
+          const r = await getFeeReceipt(app.feePaymentId);
+          if (r?.verifyCode) {
+            receipt = {
+              verifyCode: r.verifyCode,
+              receiptNumber: r.receiptNumber ?? null,
+              amount: typeof r.amount === "number" ? Number(r.amount) : null,
+            };
+          }
+        }
+      }
+    } catch (err: any) {
+      // Finance outage must not break the public status page; degrade to "no fee info".
+      console.warn("[lifecycle] public status fee lookup failed:", err?.message || err);
+    }
+  }
   return {
     id: app.id,
     applicationNumber: app.applicationNumber,
@@ -46,6 +147,8 @@ function formatPublicStatus(app: {
     appliedAt: app.appliedAt,
     documents: app.admissionDocuments ?? [],
     feePaymentId: app.feePaymentId,
+    fee,
+    receipt,
   };
 }
 
@@ -304,8 +407,19 @@ export const admissionService = {
       throw Object.assign(new Error("Application not found"), { status: 404 });
     }
 
-    if (data.status !== undefined && data.status !== current.status) {
+    const hasStatusChange = data.status !== undefined && data.status !== current.status;
+    if (hasStatusChange) {
       assertTransition(current.status, data.status);
+    }
+
+    // Persist the review payload (notes/documents/evaluation/classroom) up-front so the
+    // orchestrated approve/enroll paths below never silently drop the reviewer's input.
+    const reviewPatch = buildReviewPatch(current.notes, data);
+
+    if (hasStatusChange && (data.status === "ENROLLED" || data.status === "APPROVED" || data.status === "FEE_PENDING")) {
+      if (Object.keys(reviewPatch).length) {
+        await prisma.admissionApplication.update({ where: { id }, data: reviewPatch });
+      }
       if (data.status === "ENROLLED") {
         return this.enroll(id, {
           classroomId: data.classroomId || current.classroomId,
@@ -314,48 +428,20 @@ export const admissionService = {
           idempotencyKey: data.idempotencyKey,
         });
       }
-      if (data.status === "APPROVED" || data.status === "FEE_PENDING") {
-        // Reuse the transition path so the auto entrance invoice fires on approval.
-        return this.transition(id, data.status, {
-          amount: data.amount,
-          entranceFeeAmount: data.entranceFeeAmount,
-          createFee: data.createFee,
-          reason: data.reason,
-        });
-      }
-    }
-
-    let nextNotes = data.notes;
-    if (data.notes !== undefined) {
-      const preserved = parseApplicationNotes(current.notes);
-      const incoming =
-        typeof data.notes === "string"
-          ? parseApplicationNotes(data.notes)
-          : data.notes && typeof data.notes === "object"
-            ? (data.notes as Record<string, unknown>)
-            : {};
-      const applicantType =
-        incoming.applicantType === "RETURNING" || preserved.applicantType === "RETURNING"
-          ? "RETURNING"
-          : incoming.applicantType || preserved.applicantType || "NEW";
-      const existingStudentUserId =
-        incoming.existingStudentUserId || preserved.existingStudentUserId || undefined;
-      nextNotes = JSON.stringify({
-        ...preserved,
-        ...incoming,
-        applicantType,
-        ...(existingStudentUserId ? { existingStudentUserId } : {}),
+      // Reuse the transition path so the auto entrance invoice fires on approval.
+      return this.transition(id, data.status, {
+        amount: data.amount,
+        entranceFeeAmount: data.entranceFeeAmount,
+        createFee: data.createFee,
+        reason: data.reason,
       });
     }
 
     return prisma.admissionApplication.update({
       where: { id },
       data: {
+        ...reviewPatch,
         status: data.status !== undefined ? data.status : undefined,
-        notes: nextNotes !== undefined ? nextNotes : undefined,
-        documents: data.documents !== undefined ? data.documents : undefined,
-        evaluation: data.evaluation !== undefined ? data.evaluation : undefined,
-        classroomId: data.classroomId !== undefined ? data.classroomId : undefined,
         reviewedAt: data.status ? new Date() : undefined,
       },
       include: { admissionDocuments: true },
@@ -420,7 +506,7 @@ export const admissionService = {
       where: { id },
       data: {
         status: to,
-        notes: opts.reason ? `${current.notes || ""}\n[${to}] ${opts.reason}`.trim() : current.notes,
+        notes: opts.reason ? appendStatusReason(current.notes, to, opts.reason) : current.notes,
         reviewedAt: new Date(),
       },
       include: { admissionDocuments: true },
@@ -475,7 +561,7 @@ export const admissionService = {
       idempotencyKey?: string;
     } = {}
   ) {
-    const app = await prisma.admissionApplication.findUnique({
+    let app = await prisma.admissionApplication.findUnique({
       where: { id },
       include: { admissionDocuments: true },
     });
@@ -486,12 +572,30 @@ export const admissionService = {
     }
 
     if (!isEnrollableStatus(app.status)) {
-      throw Object.assign(
-        new Error(
-          `Cannot enroll from status ${app.status}. Approve the application (and clear fee/docs gates) first.`
-        ),
-        { status: 400, code: "INVALID_STATUS_TRANSITION" }
-      );
+      // Server owns the status machine: walk the minimal allowed approval path so the client
+      // never has to guess/pre-execute transitions before enrolling.
+      const path = resolveApprovalPath(app.status);
+      if (!path || path.length === 0) {
+        throw Object.assign(
+          new Error(
+            `Cannot enroll from status ${app.status}. Approve the application (and clear fee/docs gates) first.`
+          ),
+          { status: 400, code: "INVALID_STATUS_TRANSITION" }
+        );
+      }
+      for (const to of path) {
+        app = await this.transition(id, to, { reason: "Auto-approved during enrollment" });
+      }
+      app = await prisma.admissionApplication.findUnique({
+        where: { id },
+        include: { admissionDocuments: true },
+      });
+      if (!app || !isEnrollableStatus(app.status)) {
+        throw Object.assign(
+          new Error(`Cannot enroll from status ${app?.status ?? "UNKNOWN"}`),
+          { status: 400, code: "INVALID_STATUS_TRANSITION" }
+        );
+      }
     }
 
     const policy = await this.assertEnrollGates(app, opts);
@@ -586,12 +690,34 @@ export const admissionService = {
         where: { id },
         include: { admissionDocuments: true },
       });
-      return { ...(already as any), idempotent: true, idempotencyKey, credentials: null };
+      let feeRelinkFailed = false;
+      if (already?.feePaymentId && already?.studentUserId) {
+        try {
+          await linkFeeToStudent(already.feePaymentId, already.studentUserId);
+        } catch (err: any) {
+          feeRelinkFailed = true;
+          console.warn("[lifecycle] entrance fee relink failed:", err?.message || err);
+        }
+      }
+      return { ...(already as any), idempotent: true, idempotencyKey, credentials: null, feeRelinkFailed };
     }
     const updated = await prisma.admissionApplication.findUnique({
       where: { id },
       include: { admissionDocuments: true },
     });
+
+    // Move the entrance fee (created under the `application:<id>` placeholder) onto the real
+    // student so it shows in their ledger / parent portal once enrolled. Best-effort: a
+    // finance hiccup must not fail an otherwise-successful enrollment.
+    let feeRelinkFailed = false;
+    if (app.feePaymentId) {
+      try {
+        await linkFeeToStudent(app.feePaymentId, studentUser.id);
+      } catch (err: any) {
+        feeRelinkFailed = true;
+        console.warn("[lifecycle] entrance fee relink failed:", err?.message || err);
+      }
+    }
 
     return {
       ...(updated as any),
@@ -607,6 +733,7 @@ export const admissionService = {
       idempotencyKey,
       classAssignFailed,
       parentLinkFailed,
+      feeRelinkFailed,
       policySnapshot: {
         requireEntranceFee: policy.requireEntranceFee,
         requiredDocTypes: policy.requiredDocTypes,
@@ -725,7 +852,11 @@ export const admissionService = {
     return formatPublicStatus(app);
   },
 
-  async publicStatusByReference(schoolId: string, applicationNumber: string, rawToken: string) {
+  async publicStatusByReference(
+    schoolId: string,
+    applicationNumber: string,
+    rawToken: string
+  ) {
     const number = String(applicationNumber || "").trim();
     const token = String(rawToken || "").trim();
     if (!schoolId || !number || !token) {

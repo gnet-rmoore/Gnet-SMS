@@ -3,7 +3,13 @@ import { authenticate, requireTenant, requireRoles, requireResourceTenant } from
 import { validateBody } from "../middleware/validate";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { examController } from "../controllers/examController";
-import { gradeEntryUpsertSchema, gradeEntryBulkSchema, componentGradeBulkSchema } from "../validation/schemas";
+import {
+  gradeEntryUpsertSchema,
+  gradeEntryBulkSchema,
+  componentGradeBulkSchema,
+  examScheduleCreateSchema,
+  examScheduleUpdateSchema,
+} from "../validation/schemas";
 
 /** Same paths as monolith src/server/routes/examRoutes.ts. */
 const router = express.Router();
@@ -73,6 +79,40 @@ router.put(
   requireRoles(EXAM_WRITE_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   examController.updateExam
+);
+
+router.get(
+  "/api/exams/:id/schedule",
+  authenticate,
+  requireRoles(EXAM_READ_ROLES),
+  requireResourceTenant(resourceLoaders.exam),
+  examController.listExamSchedules
+);
+
+router.post(
+  "/api/exams/:id/schedule",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.exam),
+  validateBody(examScheduleCreateSchema),
+  examController.createExamSchedule
+);
+
+router.patch(
+  "/api/exam-schedules/:scheduleId",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examSchedule),
+  validateBody(examScheduleUpdateSchema),
+  examController.updateExamSchedule
+);
+
+router.delete(
+  "/api/exam-schedules/:scheduleId",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.examSchedule),
+  examController.deleteExamSchedule
 );
 
 router.get(

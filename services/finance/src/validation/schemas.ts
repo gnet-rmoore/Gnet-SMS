@@ -3,7 +3,9 @@ import { z } from "zod";
 /** Ported from src/server/validation/schemas.ts (fee subset only). */
 export const feeCreateSchema = z.object({
   studentId: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  // `amount` is the net bill; may be omitted when a discount is supplied and the server
+  // derives the net from `originalAmount`/`discountPercent` (single source of discount math).
+  amount: z.coerce.number().positive().optional(),
   type: z.string().min(1),
   status: z.string().optional(),
   dueDate: z.union([z.string().min(1), z.coerce.date()]),

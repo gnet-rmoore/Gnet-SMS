@@ -439,4 +439,53 @@ export const examController = {
       res.status(err.status || 500).json({ error: err.message || "Failed to revoke grant" });
     }
   },
+
+  async listExamSchedules(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { examScheduleService } = await import("../services/examScheduleService");
+      const rows = await examScheduleService.listForExam(req.params.id, user.schoolId);
+      res.json(rows);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to list schedules" });
+    }
+  },
+
+  async createExamSchedule(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { examScheduleService } = await import("../services/examScheduleService");
+      const row = await examScheduleService.createForExam(
+        req.params.id,
+        user.schoolId,
+        user.id,
+        req.body || {}
+      );
+      res.status(201).json(row);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to create schedule", code: err.code });
+    }
+  },
+
+  async updateExamSchedule(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { examScheduleService } = await import("../services/examScheduleService");
+      const row = await examScheduleService.updateFor(req.params.scheduleId, user.schoolId, req.body || {});
+      res.json(row);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to update schedule", code: err.code });
+    }
+  },
+
+  async deleteExamSchedule(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { examScheduleService } = await import("../services/examScheduleService");
+      const row = await examScheduleService.deleteFor(req.params.scheduleId, user.schoolId);
+      res.json(row);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to delete schedule" });
+    }
+  },
 };

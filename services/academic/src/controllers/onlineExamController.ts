@@ -123,13 +123,52 @@ export const onlineExamController = {
         req.params.id,
         user.id,
         user.schoolId,
-        req.body?.accepted === true
+        req.body?.accepted === true,
+        req.body?.screenShareConsented === true
       );
       res.status(201).json(data);
     } catch (err: any) {
       res
         .status(err.status || 500)
         .json({ error: err.message || "Failed to start attempt", code: err.code });
+    }
+  },
+
+  /** Resume the student's active attempt for an exam (server-authoritative clock). */
+  async resumeAttempt(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") {
+      return res.status(403).json({ error: "Only students can resume an attempt" });
+    }
+    try {
+      const data = await onlineExamService.getActiveAttempt(req.params.id, user.id);
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to resume attempt" });
+    }
+  },
+
+  /** Client heartbeat so proctors can show connection state. */
+  async heartbeat(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.heartbeat(req.params.attemptId, user.id);
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to record heartbeat" });
+    }
+  },
+
+  /** Finalize attempts whose deadline has passed (idempotent server sweep). */
+  async sweepExpiredAttempts(_req: Request, res: Response) {
+    try {
+      const data = await onlineExamService.sweepExpiredAttempts();
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to sweep attempts" });
     }
   },
 
@@ -350,7 +389,8 @@ export const onlineExamController = {
         req.params.id,
         user.id,
         user.schoolId,
-        req.body?.accepted === true
+        req.body?.accepted === true,
+        req.body?.screenShareConsented === true
       );
       res.status(201).json(data);
     } catch (err: any) {
@@ -365,13 +405,14 @@ export const onlineExamController = {
       return res.status(403).json({ error: "Unauthorized" });
     }
     try {
-      const { attemptId, pushAll } = req.body;
+      const { attemptId, pushAll, dryRun, force } = req.body;
 
       // For single attempt push, verify teacher has access to the class
       if (attemptId) {
-        const attempt = await onlineExamService.getAttemptForStudent(attemptId, user.id);
-        // This will fail if user is not the student, so we need a different approach
-        // Instead, load the exam to get classId
+        const attempt = await onlineExamService.getAttemptForStaff(attemptId, user.schoolId);
+        if (attempt.examId !== req.params.id) {
+          return res.status(400).json({ error: "Attempt does not belong to this exam" });
+        }
         const exam = await onlineExamService.getQuestions(req.params.id, false);
         if (exam.exam?.classId) {
           await assertTeacherClassAccess(user.id, exam.exam.classId, user.role);
@@ -385,8 +426,17 @@ export const onlineExamController = {
       }
 
       if (pushAll) {
-        const results = await onlineExamService.bulkPushToGradebook(req.params.id, user.id);
-        res.json({ pushed: results.filter((r) => r.success).length, failed: results.filter((r) => !r.success).length, details: results });
+        const results = await onlineExamService.bulkPushToGradebook(req.params.id, user.id, {
+          dryRun,
+          force,
+        });
+        res.json({
+          dryRun: Boolean(dryRun),
+          pushed: results.filter((r) => r.success).length,
+          skipped: results.filter((r) => r.status === "SKIPPED").length,
+          failed: results.filter((r) => r.status === "FAILED").length,
+          details: results,
+        });
       } else if (attemptId) {
         const gradeEntry = await onlineExamService.pushToGradebook(req.params.id, attemptId, user.id);
         res.json(gradeEntry);
@@ -398,6 +448,158 @@ export const onlineExamController = {
     }
   },
 
+  /** Proctor: send a warning banner to a student. */
+  async warnStudent(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.warnStudent(
+        req.params.attemptId,
+        user.schoolId,
+        req.body?.message
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to warn student" });
+    }
+  },
+
+  /** Proctor: flag/unflag an attempt for review. */
+  async flagAttempt(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.flagAttempt(
+        req.params.attemptId,
+        user.schoolId,
+        req.body?.flagged === true,
+        req.body?.note
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to flag attempt" });
+    }
+  },
+
+  /** Proctor: force-submit an attempt. */
+  async forceSubmitAttempt(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.forceSubmitAttempt(
+        req.params.attemptId,
+        user.schoolId,
+        user.id
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to force-submit" });
+    }
+  },
+
+  /** Proctor: extend a student's time. */
+  async extendAttemptTime(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.extendAttemptTime(
+        req.params.attemptId,
+        user.schoolId,
+        req.body?.extraMinutes
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to extend time" });
+    }
+  },
+
+  /** Student: screen-capture config (SCREEN_VIEW + consent). */
+  async getScreenCaptureConfig(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const data = await onlineExamService.getScreenCaptureConfig(req.params.attemptId, user.id);
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to load screen config" });
+    }
+  },
+
+  /** Student: presigned upload URL for a screen frame. */
+  async createScreenFrameUpload(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const data = await onlineExamService.createScreenFrameUpload(
+        req.params.attemptId,
+        user.id,
+        user.schoolId,
+        req.body?.mimeType
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to create frame upload" });
+    }
+  },
+
+  /** Student: confirm a frame upload (notifies proctors). */
+  async markScreenFrameUploaded(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const data = await onlineExamService.markScreenFrameUploaded(
+        req.params.attemptId,
+        req.params.frameId,
+        user.id,
+        req.body?.byteSize
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to confirm frame upload" });
+    }
+  },
+
+  /** Staff: recent screen frames for an attempt (signed URLs). */
+  async listProctorFrames(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.listProctorFrames(req.params.attemptId, user.schoolId);
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to load frames" });
+    }
+  },
+
+  /** Staff: manually mark an essay answer (null resets to pending). */
+  async markEssayAnswer(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.markEssayAnswer(
+        req.params.attemptId,
+        req.params.questionId,
+        user.schoolId,
+        req.body?.pointsAwarded ?? null
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to mark essay answer" });
+    }
+  },
+
   /** Update retake policy for an exam. */
   async updateRetakePolicy(req: Request, res: Response) {
     const user = (req as any).user;
@@ -406,7 +608,7 @@ export const onlineExamController = {
     }
     try {
       const exam = await onlineExamService.updateOnlineConfig(req.params.id, user.schoolId, {
-        retakePolicy: JSON.stringify(req.body),
+        retakePolicy: req.body,
       });
       res.json(exam);
     } catch (err: any) {

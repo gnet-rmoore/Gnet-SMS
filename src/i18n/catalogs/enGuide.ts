@@ -13,6 +13,8 @@ export const enGuide = {
   openStep: "Open",
   resetStep: "Reset",
   next: "Next",
+  back: "Back",
+  stepOf: "Step {{current}} of {{total}}",
   skip: "Skip",
   finish: "Finish",
   goThere: "Go there",

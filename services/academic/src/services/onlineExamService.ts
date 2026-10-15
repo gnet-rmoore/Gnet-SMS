@@ -1,12 +1,43 @@
 import prisma from "../lib/prisma";
 import {
   computeEndsAt,
-  shouldAutoSubmitForViolations,
   summarizeAttemptScore,
   type ScoreableAnswer,
   type ScoreableQuestion,
 } from "../lib/onlineExamScoring";
-import { getStudentParentIds, getIdentityUsersByRoles, getIdentityUsersByIds } from "../lib/identityClient";
+import {
+  getStudentParentIds,
+  getIdentityUsersByRoles,
+  getIdentityUsersByIds,
+  getSchoolGradebookConfig,
+} from "../lib/identityClient";
+import {
+  computeScorePercent,
+  resolveExamGradeColumn,
+  resolvePublishScore,
+  scaleScoreToColumn,
+  shouldSkipManualEntry,
+} from "../lib/onlineExamGradebook";
+import {
+  evaluateViolation,
+  isCountedViolation,
+  isKnownViolationType,
+  parseKioskConfig,
+} from "../lib/onlineExamKiosk";
+import {
+  capturesScreen,
+  computeFrameExpiry,
+  isFrameExpired,
+  resolveFrameIntervalMs,
+  resolveRetentionDays,
+  shouldCaptureScreen,
+} from "../lib/onlineExamScreen";
+import {
+  createProctorFrameDownloadUrl,
+  createProctorFrameUploadUrl,
+  deleteProctorFrameObject,
+  proctorScreenStorageEnabled,
+} from "../lib/liveScreenStorage";
 import { notifyInAppMany } from "../lib/notifyInApp";
 import { sendTransactionalEmail } from "../lib/mailClient";
 import {
@@ -15,7 +46,6 @@ import {
   sampleQuestions,
 } from "../lib/onlineExamPreviewSample";
 import { getClassroomsByMember } from "../lib/classroomClient";
-import { assertStudentInClass } from "../lib/gradeAccess";
 import { emitLiveExamEvent } from "../lib/liveExamEvents";
 
 const QUESTION_TYPES = new Set([
@@ -23,14 +53,6 @@ const QUESTION_TYPES = new Set([
   "TRUE_FALSE",
   "FILL_BLANK",
   "ESSAY",
-]);
-
-const VIOLATION_TYPES = new Set([
-  "EXIT_FULLSCREEN",
-  "TAB_BLUR",
-  "VISIBILITY_HIDDEN",
-  "CONTEXT_MENU",
-  "COPY_ATTEMPT",
 ]);
 
 function httpError(message: string, status: number, code?: string) {
@@ -251,6 +273,23 @@ await tx.examAttempt.update({
       },
     });
 
+    // A submitted/expired attempt with no pending (essay) answers is final;
+    // mixed exams become final only after essays are marked (see markEssayAnswer).
+    if (summary.pendingCount === 0) {
+      emitLiveExamEvent({
+        type: "attempt.final",
+        payload: {
+          examId: attempt.examId,
+          attemptId,
+          studentId: attempt.studentId,
+          finalAt: new Date(),
+          autoSubmitted: status === "AUTO_SUBMITTED" || status === "EXPIRED",
+        },
+      });
+      // Phase 4: auto-post the final grade (respects Exam.autoPostGrades).
+      await autoPostGradeForAttempt(attemptId);
+    }
+
     const parents = await getStudentParentIds(attempt.studentId);
   if (parents.length) {
     const title =
@@ -354,6 +393,254 @@ async function resolveStudentClassIds(
   }
 }
 
+/**
+ * Idempotently upsert exactly one GradeEntry for an online-exam attempt and
+ * link it back on the attempt. Shared by single and bulk push so the logic
+ * lives in one place.
+ */
+/** Actor recorded on auto-posted grade entries (no human teacher involved). */
+const AUTO_POST_ACTOR = "system:online-exam";
+
+type GradebookPushOptions = {
+  /** Marks the history entry as auto-posted (vs a teacher-initiated push). */
+  auto?: boolean;
+  /** Skip rows that already hold a human-entered grade. */
+  skipManualEntry?: boolean;
+  /** Overwrite even a human-entered grade (explicit teacher action). */
+  force?: boolean;
+};
+
+type GradebookPushResult = {
+  skipped: boolean;
+  reason?: string;
+  gradeEntryId?: string;
+  gradeEntry?: any;
+};
+
+async function pushAttemptToGradebook(
+  db: any,
+  exam: any,
+  attempt: { id: string; studentId: string; score: number | null; maxScore: number | null },
+  teacherId: string,
+  schoolGradebookConfigRaw: string | null,
+  opts: GradebookPushOptions = {}
+): Promise<GradebookPushResult> {
+  if (!exam.subjectId || !exam.classId) {
+    throw httpError("Exam must have subjectId and classId to push to gradebook", 400);
+  }
+
+  const allAttempts = await db.examAttempt.findMany({
+    where: {
+      examId: exam.id,
+      studentId: attempt.studentId,
+      status: { in: ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] },
+    },
+    select: { score: true, maxScore: true },
+  });
+  const { score: rawScore, maxScore: rawMax } = resolvePublishScore(
+    exam,
+    attempt,
+    allAttempts
+  );
+
+  const component = exam.examComponentId
+    ? await db.examComponent.findUnique({
+        where: { id: exam.examComponentId },
+        select: {
+          gradebookStructure: true,
+          gradebookStructureCustom: true,
+          componentType: true,
+        },
+      })
+    : null;
+  const column = resolveExamGradeColumn(component, schoolGradebookConfigRaw);
+  const structureColumnId = column?.id ?? null;
+
+  // Gradebook columns store points earned out of the column's max score.
+  // Scale the raw points onto that denominator so the weighted rollup is
+  // correct when the exam total differs from the column max.
+  const finalScore = scaleScoreToColumn(rawScore, rawMax, column);
+  const scorePercent = computeScorePercent(rawScore, rawMax);
+
+  const schoolYear = await db.academicYear.findFirst({
+    where: { schoolId: exam.schoolId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (!schoolYear) {
+    throw httpError("No active academic year found for this school", 400, "NO_ACTIVE_YEAR");
+  }
+
+  const existing = await db.gradeEntry.findFirst({
+    where: {
+      examId: exam.id,
+      studentId: attempt.studentId,
+      subjectId: exam.subjectId,
+      classId: exam.classId,
+      examComponentId: exam.examComponentId ?? null,
+      structureColumnId: structureColumnId,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  // Never silently overwrite a human-entered grade.
+  if (shouldSkipManualEntry(existing, opts)) {
+    return { skipped: true, reason: "MANUAL_ENTRY_EXISTS", gradeEntryId: existing!.id };
+  }
+
+  const provenance = {
+    source: "ONLINE_EXAM",
+    sourceRef: attempt.id,
+    rawScore,
+    maxScore: rawMax,
+    scorePercent,
+  };
+
+  const gradeEntry = existing
+    ? await db.gradeEntry.update({
+        where: { id: existing.id },
+        data: {
+          score: finalScore,
+          status: "SUBMITTED",
+          enteredBy: teacherId,
+          examComponentId: exam.examComponentId ?? null,
+          structureColumnId,
+          isIncomplete: false,
+          updatedAt: new Date(),
+          ...provenance,
+        },
+      })
+    : await db.gradeEntry.create({
+        data: {
+          examId: exam.id,
+          studentId: attempt.studentId,
+          subjectId: exam.subjectId,
+          classId: exam.classId,
+          schoolId: exam.schoolId,
+          schoolYearId: schoolYear.id,
+          score: finalScore,
+          status: "SUBMITTED",
+          enteredBy: teacherId,
+          examComponentId: exam.examComponentId ?? null,
+          structureColumnId,
+          isIncomplete: false,
+          ...provenance,
+        },
+      });
+
+  await db.examAttempt.update({
+    where: { id: attempt.id },
+    data: { gradeEntryId: gradeEntry.id },
+  });
+
+  await db.gradeHistory.create({
+    data: {
+      gradeEntryId: gradeEntry.id,
+      score: gradeEntry.score,
+      status: gradeEntry.status,
+      feedback: opts.auto
+        ? `Auto-posted from online exam attempt ${attempt.id}`
+        : `Pushed from online exam attempt ${attempt.id}`,
+      changedBy: teacherId,
+      changedAt: new Date(),
+    },
+  });
+
+  return { skipped: false, gradeEntry };
+}
+
+/**
+ * Auto-post a finalized, fully-scored attempt to the gradebook.
+ * No-op unless the exam has `autoPostGrades` on, the attempt is final
+ * (`pendingCount === 0`), and the exam maps to a gradebook column.
+ */
+async function autoPostGradeForAttempt(attemptId: string) {
+  const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+  if (!attempt) return null;
+  if (!["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"].includes(attempt.status)) return null;
+  if ((attempt.pendingCount ?? 0) > 0) return null;
+
+  const exam = await prisma.exam.findUnique({ where: { id: attempt.examId } });
+  if (!exam || !exam.autoPostGrades) return null;
+  if (!exam.subjectId || !exam.classId) return null;
+
+  const schoolGradebookConfigRaw = await getSchoolGradebookConfig(exam.schoolId);
+  try {
+    return await pushAttemptToGradebook(
+      prisma,
+      exam,
+      {
+        id: attempt.id,
+        studentId: attempt.studentId,
+        score: attempt.score,
+        maxScore: attempt.maxScore,
+      },
+      AUTO_POST_ACTOR,
+      schoolGradebookConfigRaw,
+      { auto: true, skipManualEntry: true }
+    );
+  } catch (err: any) {
+    console.error(`[onlineExam] auto-post grade failed for attempt ${attemptId}:`, err?.message || err);
+    return null;
+  }
+}
+
+/** Best-effort parse of an exam's stored kiosk config JSON (for extra fields). */
+function readKioskRaw(raw: string | null | undefined): { screenFrameIntervalMs?: unknown } | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Recompute an attempt's score totals from persisted per-answer points. */
+async function recomputeAttemptTotals(attemptId: string) {
+  const attempt = await prisma.examAttempt.findUnique({
+    where: { id: attemptId },
+    select: { id: true, examId: true, schoolId: true },
+  });
+  if (!attempt) throw httpError("Attempt not found", 404);
+
+  const [questions, answers] = await Promise.all([
+    prisma.examQuestion.findMany({
+      where: { examId: attempt.examId, schoolId: attempt.schoolId },
+      select: { id: true, points: true },
+    }),
+    prisma.examAnswer.findMany({
+      where: { attemptId, schoolId: attempt.schoolId },
+      select: { questionId: true, pointsAwarded: true, isCorrect: true },
+    }),
+  ]);
+  const answerByQ = new Map(answers.map((a) => [a.questionId, a]));
+
+  let score = 0;
+  let maxScore = 0;
+  let passedCount = 0;
+  let missedCount = 0;
+  let pendingCount = 0;
+
+  for (const q of questions) {
+    maxScore += Number(q.points) || 0;
+    const a = answerByQ.get(q.id);
+    if (!a || a.pointsAwarded === null || a.pointsAwarded === undefined) {
+      pendingCount += 1;
+      continue;
+    }
+    score += Number(a.pointsAwarded) || 0;
+    if (a.isCorrect === true) passedCount += 1;
+    else if (a.isCorrect === false) missedCount += 1;
+  }
+
+  await prisma.examAttempt.update({
+    where: { id: attemptId },
+    data: { score, maxScore, passedCount, missedCount, pendingCount },
+  });
+
+  return { score, maxScore, passedCount, missedCount, pendingCount };
+}
+
 export const onlineExamService = {
   async updateOnlineConfig(examId: string, schoolId: string, data: any) {
     const exam = await loadExamOrThrow(examId);
@@ -382,12 +669,48 @@ export const onlineExamService = {
       throw httpError("Paper deadline must be on or before the exam start", 400);
     }
 
+    let retakePolicy: string | null = exam.retakePolicy;
+    if (data.retakePolicy !== undefined) {
+      if (data.retakePolicy === null || data.retakePolicy === "") {
+        retakePolicy = null;
+      } else if (typeof data.retakePolicy === "string") {
+        retakePolicy = data.retakePolicy;
+      } else {
+        retakePolicy = JSON.stringify(data.retakePolicy);
+      }
+    }
+
+    let kioskConfig: string | null = exam.kioskConfig;
+    if (data.kioskConfig !== undefined) {
+      if (data.kioskConfig === null || data.kioskConfig === "") {
+        kioskConfig = null;
+      } else if (typeof data.kioskConfig === "string") {
+        kioskConfig = data.kioskConfig;
+      } else {
+        kioskConfig = JSON.stringify(data.kioskConfig);
+      }
+    }
+
+    const proctorLevel =
+      data.proctorLevel === undefined
+        ? exam.proctorLevel
+        : ["OFF", "MONITOR", "SCREEN_VIEW"].includes(String(data.proctorLevel))
+          ? String(data.proctorLevel)
+          : "MONITOR";
+
     return prisma.exam.update({
       where: { id: examId },
       data: {
         isOnline: data.isOnline === undefined ? exam.isOnline : Boolean(data.isOnline),
         maxViolations,
         paperDueAt,
+        retakePolicy,
+        kioskConfig,
+        proctorLevel,
+        autoPostGrades:
+          data.autoPostGrades === undefined
+            ? exam.autoPostGrades
+            : Boolean(data.autoPostGrades),
         showResultsImmediately:
           data.showResultsImmediately === undefined
             ? exam.showResultsImmediately
@@ -435,6 +758,10 @@ export const onlineExamService = {
         classId: exam.classId,
         subjectId: exam.subjectId,
         paperDueAt: exam.paperDueAt,
+        retakePolicy: exam.retakePolicy,
+        proctorLevel: exam.proctorLevel,
+        kioskConfig: parseKioskConfig(exam.kioskConfig, exam.maxViolations),
+        autoPostGrades: exam.autoPostGrades,
       },
       questions: questions.map((q) => stripCorrectFromQuestion(q, includeKeys)),
     };
@@ -669,6 +996,7 @@ export const onlineExamService = {
       },
       include: {
         _count: { select: { questions: true } },
+        schedules: { select: { classId: true } },
         attempts: {
           where: { studentId },
           orderBy: { attemptNumber: "desc" },
@@ -693,11 +1021,25 @@ export const onlineExamService = {
     const out: any[] = [];
     let studentClassIds: Set<string> | null | undefined;
     for (const e of exams) {
-      if (e.classId) {
+      // Audience scoping: an exam targets one or more classes via Exam.classId
+      // and/or its per-sitting ExamSchedule rows. Exams with no class target are
+      // treated as school-wide. Targeted exams require membership in at least one.
+      const audienceClassIds = new Set<string>();
+      if (e.classId) audienceClassIds.add(e.classId);
+      for (const s of e.schedules) if (s.classId) audienceClassIds.add(s.classId);
+      if (audienceClassIds.size) {
         if (studentClassIds === undefined) {
           studentClassIds = await resolveStudentClassIds(schoolId, studentId);
         }
-        if (!studentClassIds || !studentClassIds.has(e.classId)) continue;
+        if (!studentClassIds) continue;
+        let member = false;
+        for (const cid of audienceClassIds) {
+          if (studentClassIds.has(cid)) {
+            member = true;
+            break;
+          }
+        }
+        if (!member) continue;
       }
       await ensureLegacyPaperApproved(e.id, schoolId);
       const fresh = await prisma.exam.findUnique({ where: { id: e.id } });
@@ -825,36 +1167,370 @@ export const onlineExamService = {
     const exam = await loadExamOrThrow(examId);
     if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
 
-    const attempts = await prisma.examAttempt.findMany({
-      where: { examId, schoolId, status: "IN_PROGRESS" },
-      orderBy: { startedAt: "asc" },
-      select: {
-        id: true,
-        studentId: true,
-        startedAt: true,
-        endsAt: true,
-        violationCount: true,
-        answers: { select: { questionId: true } },
-      },
-    });
+    const [attempts, totalQuestions] = await Promise.all([
+      prisma.examAttempt.findMany({
+        where: { examId, schoolId, status: "IN_PROGRESS" },
+        orderBy: { startedAt: "asc" },
+        select: {
+          id: true,
+          studentId: true,
+          startedAt: true,
+          endsAt: true,
+          violationCount: true,
+          lastSeenAt: true,
+          answers: { select: { questionId: true } },
+        },
+      }),
+      prisma.examQuestion.count({ where: { examId, schoolId } }),
+    ]);
 
     const studentIds = [...new Set(attempts.map((a) => a.studentId))];
-    const users = await getIdentityUsersByIds(studentIds);
-    const userMap = new Map(users.map((u) => [u.id, u]));
+    const userMap = await getIdentityUsersByIds(studentIds);
+    const now = Date.now();
+    const CONNECTED_WINDOW_MS = 90_000;
 
     return attempts.map((a) => {
       const user = userMap.get(a.studentId);
+      const lastSeen = a.lastSeenAt ? a.lastSeenAt.getTime() : 0;
+      const secondsSinceSeen = lastSeen ? Math.round((now - lastSeen) / 1000) : null;
+      const connectionState =
+        !a.lastSeenAt || now - lastSeen > CONNECTED_WINDOW_MS ? "DISCONNECTED" : "CONNECTED";
       return {
         id: a.id,
         studentId: a.studentId,
-        studentName: user ? `${user.firstName} ${user.lastName}`.trim() : a.studentId,
+        studentName: user?.name || a.studentId,
         studentEmail: user?.email,
         startedAt: a.startedAt,
         endsAt: a.endsAt,
         violationCount: a.violationCount,
         answeredCount: a.answers.length,
+        totalQuestions,
+        lastSeenAt: a.lastSeenAt,
+        secondsSinceSeen,
+        connectionState,
+        elapsedMs: now - a.startedAt.getTime(),
+        remainingMs: Math.max(0, a.endsAt.getTime() - now),
       };
     });
+  },
+
+  /** Minimal access info for Socket.IO room authorization. */
+  async getAttemptAccess(attemptId: string) {
+    return prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, studentId: true, schoolId: true, examId: true, status: true },
+    });
+  },
+
+  /** Minimal access info for exam-feed room authorization. */
+  async getExamAccess(examId: string) {
+    return prisma.exam.findUnique({
+      where: { id: examId },
+      select: { id: true, schoolId: true },
+    });
+  },
+
+  /** Emit a connection lifecycle event for a student's attempt (proctor feed). */
+  async emitAttemptConnection(attemptId: string, type: "attempt.disconnected" | "attempt.reconnected") {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, examId: true, studentId: true, status: true },
+    });
+    if (!attempt || attempt.status !== "IN_PROGRESS") return;
+    emitLiveExamEvent({
+      type,
+      payload: {
+        examId: attempt.examId,
+        attemptId: attempt.id,
+        studentId: attempt.studentId,
+        at: new Date(),
+      },
+    });
+  },
+
+  /** Proctor → student warning banner (also persisted as a lightweight trail). */
+  async warnStudent(attemptId: string, schoolId: string, message: string) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+    if (attempt.status !== "IN_PROGRESS") throw httpError("Attempt is not in progress", 409);
+    const text = String(message || "").slice(0, 300) || "Proctor warning: please follow exam rules.";
+    emitLiveExamEvent({
+      type: "attempt.warning",
+      payload: { examId: attempt.examId, attemptId, message: text, at: new Date() },
+    });
+    return { ok: true, message: text };
+  },
+
+  async flagAttempt(attemptId: string, schoolId: string, flagged: boolean, note?: string) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+    emitLiveExamEvent({
+      type: "attempt.flagged",
+      payload: {
+        examId: attempt.examId,
+        attemptId,
+        flagged,
+        note: note ? String(note).slice(0, 300) : undefined,
+      },
+    });
+    return { ok: true, flagged };
+  },
+
+  /** Proctor force-submit (audited in submitReason). */
+  async forceSubmitAttempt(attemptId: string, schoolId: string, proctorId: string) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+    if (attempt.status !== "IN_PROGRESS") {
+      return { ok: true, status: attempt.status };
+    }
+    await finalizeAttempt(attemptId, `FORCE_SUBMITTED_BY:${proctorId}`, "AUTO_SUBMITTED");
+    emitLiveExamEvent({
+      type: "attempt.force_submitted",
+      payload: { examId: attempt.examId, attemptId, at: new Date() },
+    });
+    return { ok: true, status: "AUTO_SUBMITTED" };
+  },
+
+  /** Proctor time extension (audited). Caps a single extension to 180 minutes. */
+  async extendAttemptTime(attemptId: string, schoolId: string, extraMinutes: number) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+    if (attempt.status !== "IN_PROGRESS") throw httpError("Attempt is not in progress", 409);
+    const minutes = Math.max(1, Math.min(180, Math.trunc(Number(extraMinutes) || 0)));
+    const base = attempt.endsAt > new Date() ? attempt.endsAt : new Date();
+    const endsAt = new Date(base.getTime() + minutes * 60 * 1000);
+    await prisma.examAttempt.update({ where: { id: attemptId }, data: { endsAt } });
+    emitLiveExamEvent({
+      type: "attempt.extended",
+      payload: { examId: attempt.examId, attemptId, endsAt, extraMinutes: minutes },
+    });
+    return { ok: true, endsAt, extraMinutes: minutes };
+  },
+
+  /**
+   * Manually mark an essay answer. When the last pending essay is marked the
+   * attempt becomes final: emits `attempt.final` and auto-posts the grade.
+   * Pass `pointsAwarded = null` to reset the answer back to pending.
+   */
+  async markEssayAnswer(
+    attemptId: string,
+    questionId: string,
+    schoolId: string,
+    pointsAwarded: number | null
+  ) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+    if (!["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"].includes(attempt.status)) {
+      throw httpError("Attempt must be submitted before marking", 409);
+    }
+
+    const question = await prisma.examQuestion.findFirst({
+      where: { id: questionId, examId: attempt.examId, schoolId },
+      select: { id: true, type: true, points: true },
+    });
+    if (!question) throw httpError("Question not found", 404);
+    if (String(question.type).toUpperCase() !== "ESSAY") {
+      throw httpError("Only essay answers can be marked manually", 400);
+    }
+
+    const max = Number(question.points) || 0;
+    const pendingReset = pointsAwarded === null || pointsAwarded === undefined;
+    const points = pendingReset
+      ? null
+      : Math.max(0, Math.min(max, Number(pointsAwarded) || 0));
+    const isCorrect = pendingReset ? null : max > 0 && points === max;
+
+    await prisma.examAnswer.upsert({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      update: { pointsAwarded: points, isCorrect },
+      create: { attemptId, questionId, schoolId, pointsAwarded: points, isCorrect },
+    });
+
+    const totals = await recomputeAttemptTotals(attemptId);
+
+    if (totals.pendingCount === 0) {
+      emitLiveExamEvent({
+        type: "attempt.final",
+        payload: {
+          examId: attempt.examId,
+          attemptId,
+          studentId: attempt.studentId,
+          finalAt: new Date(),
+          autoSubmitted: false,
+        },
+      });
+      await autoPostGradeForAttempt(attemptId);
+    }
+
+    return { ok: true, ...totals };
+  },
+
+  /** Screen-capture config for the student agent (SCREEN_VIEW + consent). */
+  async getScreenCaptureConfig(attemptId: string, studentId: string) {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: { exam: { select: { proctorLevel: true, kioskConfig: true } } },
+    });
+    if (!attempt || attempt.studentId !== studentId) throw httpError("Attempt not found", 404);
+
+    const intervalMs = resolveFrameIntervalMs(readKioskRaw(attempt.exam.kioskConfig));
+    const storageEnabled = proctorScreenStorageEnabled();
+    const consented = Boolean(attempt.screenShareConsentedAt);
+    return {
+      proctorLevel: attempt.exam.proctorLevel,
+      consented,
+      storageEnabled,
+      intervalMs,
+      enabled: shouldCaptureScreen({
+        proctorLevel: attempt.exam.proctorLevel,
+        consented,
+        storageEnabled,
+      }),
+    };
+  },
+
+  /** Issue a presigned upload for a student screen frame (SCREEN_VIEW only). */
+  async createScreenFrameUpload(
+    attemptId: string,
+    studentId: string,
+    schoolId: string,
+    mimeType?: string
+  ) {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: { exam: { select: { proctorLevel: true } } },
+    });
+    if (!attempt || attempt.studentId !== studentId || attempt.schoolId !== schoolId) {
+      throw httpError("Attempt not found", 404);
+    }
+    if (attempt.status !== "IN_PROGRESS") throw httpError("Attempt is not in progress", 409);
+    if (!capturesScreen(attempt.exam.proctorLevel)) {
+      throw httpError("Screen capture is not enabled for this exam", 403);
+    }
+    if (!attempt.screenShareConsentedAt) {
+      throw httpError("Screen sharing consent is required", 403, "SCREEN_SHARE_CONSENT_REQUIRED");
+    }
+    if (!proctorScreenStorageEnabled()) {
+      return { enabled: false as const };
+    }
+
+    const capturedAt = new Date();
+    const upload = await createProctorFrameUploadUrl({
+      schoolId: attempt.schoolId,
+      examId: attempt.examId,
+      attemptId: attempt.id,
+      at: capturedAt,
+      mimeType,
+    });
+    const expiresAt = computeFrameExpiry(
+      capturedAt,
+      resolveRetentionDays(process.env.PROCTOR_FRAME_RETENTION_DAYS)
+    );
+
+    const frame = await prisma.examProctorFrame.create({
+      data: {
+        attemptId: attempt.id,
+        examId: attempt.examId,
+        schoolId: attempt.schoolId,
+        storageKey: upload.storageKey,
+        contentType: upload.contentType,
+        capturedAt,
+        expiresAt,
+      },
+      select: { id: true },
+    });
+
+    return {
+      enabled: true as const,
+      frameId: frame.id,
+      uploadUrl: upload.uploadUrl,
+      storageKey: upload.storageKey,
+      contentType: upload.contentType,
+      expiresIn: upload.expiresIn,
+    };
+  },
+
+  /** Confirm a frame upload and notify proctors. */
+  async markScreenFrameUploaded(
+    attemptId: string,
+    frameId: string,
+    studentId: string,
+    byteSize?: number
+  ) {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, studentId: true, examId: true },
+    });
+    if (!attempt || attempt.studentId !== studentId) throw httpError("Attempt not found", 404);
+
+    const frame = await prisma.examProctorFrame.findFirst({
+      where: { id: frameId, attemptId },
+    });
+    if (!frame) throw httpError("Frame not found", 404);
+
+    const updated = await prisma.examProctorFrame.update({
+      where: { id: frame.id },
+      data: {
+        uploadedAt: new Date(),
+        byteSize: Number.isFinite(byteSize) ? Math.trunc(Number(byteSize)) : undefined,
+      },
+    });
+
+    emitLiveExamEvent({
+      type: "screen.frame",
+      payload: {
+        examId: attempt.examId,
+        attemptId: attempt.id,
+        storageKey: updated.storageKey,
+        capturedAt: updated.capturedAt,
+      },
+    });
+
+    return { ok: true };
+  },
+
+  /** List recent uploaded frames for a proctor with short-lived signed URLs. */
+  async listProctorFrames(attemptId: string, schoolId: string) {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, schoolId: true },
+    });
+    if (!attempt || attempt.schoolId !== schoolId) throw httpError("Attempt not found", 404);
+
+    const frames = await prisma.examProctorFrame.findMany({
+      where: { attemptId, uploadedAt: { not: null }, expiresAt: { gt: new Date() } },
+      orderBy: { capturedAt: "desc" },
+      take: 30,
+      select: { id: true, capturedAt: true, storageKey: true, byteSize: true },
+    });
+
+    const withUrls = await Promise.all(
+      frames.map(async (f) => ({
+        id: f.id,
+        capturedAt: f.capturedAt,
+        byteSize: f.byteSize,
+        url: await createProctorFrameDownloadUrl(f.storageKey, 300),
+      }))
+    );
+    return withUrls.filter((f) => f.url);
+  },
+
+  /** Delete frames past their retention deadline (object + row). */
+  async purgeExpiredProctorFrames(limit = 200) {
+    const expired = await prisma.examProctorFrame.findMany({
+      where: { expiresAt: { lte: new Date() } },
+      take: limit,
+      select: { id: true, storageKey: true, expiresAt: true },
+    });
+    if (!expired.length) return { purged: 0 };
+
+    for (const f of expired) {
+      if (isFrameExpired(f.expiresAt)) {
+        await deleteProctorFrameObject(f.storageKey);
+      }
+    }
+    await prisma.examProctorFrame.deleteMany({ where: { id: { in: expired.map((f) => f.id) } } });
+    return { purged: expired.length };
   },
 
   /** Check if student is eligible for a retake based on exam's retakePolicy. */
@@ -879,7 +1555,14 @@ export const onlineExamService = {
     const attempts = await prisma.examAttempt.findMany({
       where: { examId, studentId },
       orderBy: { attemptNumber: "asc" },
-      select: { attemptNumber: true, status: true, submittedAt: true, score: true, maxScore: true },
+      select: {
+        id: true,
+        attemptNumber: true,
+        status: true,
+        submittedAt: true,
+        score: true,
+        maxScore: true,
+      },
     });
 
     if (attempts.length === 0) {
@@ -913,7 +1596,8 @@ export const onlineExamService = {
     examId: string,
     studentId: string,
     schoolId: string,
-    accepted: boolean = false
+    accepted: boolean = false,
+    screenShareConsented: boolean = false
   ) {
     const { examPaperService } = await import("./examPaperService");
     await examPaperService.assertCanStartOnline(examId, schoolId, studentId);
@@ -932,8 +1616,14 @@ export const onlineExamService = {
       );
     }
 
-    if (exam.classId) {
-      await assertStudentInClass(exam.classId, studentId);
+    const kiosk = parseKioskConfig(exam.kioskConfig, exam.maxViolations);
+    const needsScreenConsent = kiosk.requireScreenShare || capturesScreen(exam.proctorLevel);
+    if (needsScreenConsent && !screenShareConsented) {
+      throw httpError(
+        "This exam requires screen-share consent before starting",
+        400,
+        "SCREEN_SHARE_CONSENT_REQUIRED"
+      );
     }
 
     const now = new Date();
@@ -947,6 +1637,31 @@ export const onlineExamService = {
       throw httpError("Exam has no questions yet", 400);
     }
 
+    // Audience scoping: enforce membership when the exam targets specific
+    // classes (via Exam.classId and/or its ExamSchedule rows). No target = school-wide.
+    const scheduleClasses = await prisma.examSchedule.findMany({
+      where: { examId, schoolId },
+      select: { classId: true },
+    });
+    const audienceClassIds = new Set<string>();
+    if (exam.classId) audienceClassIds.add(exam.classId);
+    for (const s of scheduleClasses) if (s.classId) audienceClassIds.add(s.classId);
+    if (audienceClassIds.size) {
+      const studentClasses = await resolveStudentClassIds(schoolId, studentId);
+      let member = false;
+      if (studentClasses) {
+        for (const cid of audienceClassIds) {
+          if (studentClasses.has(cid)) {
+            member = true;
+            break;
+          }
+        }
+      }
+      if (!member) {
+        throw httpError("You are not enrolled in this exam's class", 403, "NOT_IN_AUDIENCE");
+      }
+    }
+
     // Check for existing in-progress attempt
     const inProgress = await prisma.examAttempt.findFirst({
       where: { examId, studentId, status: "IN_PROGRESS" },
@@ -957,6 +1672,10 @@ export const onlineExamService = {
         await finalizeAttempt(inProgress.id, "TIME_EXPIRED", "EXPIRED");
         throw httpError("Previous attempt expired", 409, "ATTEMPT_EXPIRED");
       }
+      await prisma.examAttempt.update({
+        where: { id: inProgress.id },
+        data: { lastSeenAt: now },
+      });
       return this.getAttemptForStudent(inProgress.id, studentId);
     }
 
@@ -977,6 +1696,8 @@ export const onlineExamService = {
         startedAt: now,
         endsAt,
         instructionsAcceptedAt: now,
+        screenShareConsentedAt: needsScreenConsent ? now : null,
+        lastSeenAt: now,
       },
     });
 
@@ -1056,6 +1777,8 @@ export const onlineExamService = {
         instructions: attempt.exam.instructions,
         duration: attempt.exam.duration,
         maxViolations: attempt.exam.maxViolations,
+        proctorLevel: attempt.exam.proctorLevel,
+        kiosk: parseKioskConfig(attempt.exam.kioskConfig, attempt.exam.maxViolations),
       },
       questions: questions.map((q) => stripCorrectFromQuestion(q, includeKeys && canSeeScore)),
       answers: attempt.answers.map((a) => ({
@@ -1073,6 +1796,15 @@ export const onlineExamService = {
         createdAt: v.createdAt,
       })),
     };
+  },
+
+  /** School-scoped attempt lookup for staff (proctor / teacher / admin). */
+  async getAttemptForStaff(attemptId: string, schoolId: string) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.schoolId !== schoolId) {
+      throw httpError("Attempt not found", 404);
+    }
+    return attempt;
   },
 
   async saveAnswers(
@@ -1180,11 +1912,14 @@ export const onlineExamService = {
     }
 
     const vType = String(type || "").toUpperCase();
-    if (!VIOLATION_TYPES.has(vType)) {
+    if (!isKnownViolationType(vType)) {
       throw httpError("Invalid violation type", 400);
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const kiosk = parseKioskConfig(attempt.exam.kioskConfig, attempt.exam.maxViolations);
+    const counted = isCountedViolation(kiosk, vType);
+
+    const { updated, countedTotal } = await prisma.$transaction(async (tx) => {
       await tx.examViolation.create({
         data: {
           attemptId,
@@ -1193,10 +1928,20 @@ export const onlineExamService = {
           detail: detail ? String(detail).slice(0, 500) : null,
         },
       });
-      return tx.examAttempt.update({
+      const next = await tx.examAttempt.update({
         where: { id: attemptId },
-        data: { violationCount: { increment: 1 } },
+        data: { violationCount: { increment: 1 }, lastSeenAt: now },
       });
+      const countedTotal = counted
+        ? await tx.examViolation.count({
+            where: { attemptId, type: { in: kiosk.blockedEvents } },
+          })
+        : kiosk.blockedEvents.length
+          ? await tx.examViolation.count({
+              where: { attemptId, type: { in: kiosk.blockedEvents } },
+            })
+          : 0;
+      return { updated: next, countedTotal };
     });
 
     emitLiveExamEvent({
@@ -1209,11 +1954,7 @@ export const onlineExamService = {
       },
     });
 
-    const auto =
-      shouldAutoSubmitForViolations(
-        updated.violationCount,
-        attempt.exam.maxViolations
-      );
+    const { warn, autoSubmit: auto } = evaluateViolation(kiosk, countedTotal);
     if (auto) {
       await finalizeAttempt(attemptId, `MAX_VIOLATIONS:${vType}`, "AUTO_SUBMITTED");
       return {
@@ -1221,7 +1962,9 @@ export const onlineExamService = {
           id: attemptId,
           status: "AUTO_SUBMITTED",
           violationCount: updated.violationCount,
-          maxViolations: attempt.exam.maxViolations,
+          countedViolations: countedTotal,
+          maxViolations: kiosk.maxViolations,
+          warn: false,
           autoSubmitted: true,
         },
       };
@@ -1232,10 +1975,70 @@ export const onlineExamService = {
         id: attemptId,
         status: "IN_PROGRESS",
         violationCount: updated.violationCount,
-        maxViolations: attempt.exam.maxViolations,
+        countedViolations: countedTotal,
+        maxViolations: kiosk.maxViolations,
+        warn,
         autoSubmitted: false,
       },
     };
+  },
+
+  /** Persist a lightweight heartbeat so proctors can show connection state. */
+  async heartbeat(attemptId: string, studentId: string) {
+    const attempt = await prisma.examAttempt.findUnique({ where: { id: attemptId } });
+    if (!attempt || attempt.studentId !== studentId) throw httpError("Forbidden", 403);
+    if (attempt.status !== "IN_PROGRESS") {
+      return { status: attempt.status, serverNow: new Date().toISOString() };
+    }
+    const now = new Date();
+    await prisma.examAttempt.update({
+      where: { id: attemptId },
+      data: { lastSeenAt: now },
+    });
+    return {
+      status: "IN_PROGRESS",
+      serverNow: now.toISOString(),
+      endsAt: attempt.endsAt,
+      expired: now > attempt.endsAt,
+    };
+  },
+
+  /**
+   * Server-side sweep that finalizes attempts whose deadline has passed.
+   * Idempotent and safe to run on a schedule (see server.ts).
+   */
+  async sweepExpiredAttempts(limit = 200) {
+    const now = new Date();
+    const expired = await prisma.examAttempt.findMany({
+      where: { status: "IN_PROGRESS", endsAt: { lt: now } },
+      select: { id: true },
+      take: limit,
+    });
+    let finalized = 0;
+    for (const row of expired) {
+      try {
+        await finalizeAttempt(row.id, "TIME_EXPIRED", "EXPIRED");
+        finalized += 1;
+      } catch (err: any) {
+        console.warn("[online-exam] sweep finalize failed:", row.id, err?.message || err);
+      }
+    }
+    return { scanned: expired.length, finalized };
+  },
+
+  /** Return the student's active (in-progress) attempt for an exam, if any. */
+  async getActiveAttempt(examId: string, studentId: string) {
+    const attempt = await prisma.examAttempt.findFirst({
+      where: { examId, studentId, status: "IN_PROGRESS" },
+      orderBy: { attemptNumber: "desc" },
+    });
+    if (!attempt) return { inProgress: false as const };
+    if (new Date() > attempt.endsAt) {
+      await finalizeAttempt(attempt.id, "TIME_EXPIRED", "EXPIRED");
+      return { inProgress: false as const, expired: true };
+    }
+    const data = await this.getAttemptForStudent(attempt.id, studentId);
+    return { inProgress: true as const, ...data };
   },
 
   async submitAttempt(attemptId: string, studentId: string) {
@@ -1257,262 +2060,83 @@ export const onlineExamService = {
     }
 
     const exam = await loadExamOrThrow(examId);
+    const schoolGradebookConfigRaw = await getSchoolGradebookConfig(exam.schoolId);
+    const result = await pushAttemptToGradebook(
+      prisma,
+      exam,
+      {
+        id: attempt.id,
+        studentId: attempt.studentId,
+        score: attempt.score,
+        maxScore: attempt.maxScore,
+      },
+      teacherId,
+      schoolGradebookConfigRaw,
+      { force: true }
+    );
+    if (result.skipped) return null;
+    return result.gradeEntry;
+  },
+
+  /**
+   * Bulk push all submitted attempts for an exam to gradebook.
+   * `dryRun` previews the outcome without writing. Human-entered grades are
+   * skipped unless `force` is set.
+   */
+  async bulkPushToGradebook(
+    examId: string,
+    teacherId: string,
+    opts: { dryRun?: boolean; force?: boolean } = {}
+  ) {
+    const exam = await loadExamOrThrow(examId);
     if (!exam.subjectId || !exam.classId) {
       throw httpError("Exam must have subjectId and classId to push to gradebook", 400);
     }
 
-    // Determine score based on retake policy (best/last/average)
-    let finalScore = attempt.score ?? 0;
-    let finalMaxScore = attempt.maxScore ?? 0;
-
-    const policy = exam.retakePolicy ? JSON.parse(exam.retakePolicy) : {};
-    const scoreRetention = policy.scoreRetention || "last";
-
-    if (scoreRetention !== "last") {
-      const allAttempts = await prisma.examAttempt.findMany({
-        where: { examId, studentId: attempt.studentId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] } },
-        select: { score: true, maxScore: true },
-      });
-      const validScores = allAttempts.filter((a) => a.score != null && a.maxScore != null);
-      if (validScores.length > 1) {
-        if (scoreRetention === "best") {
-          const best = validScores.reduce((max, a) => (a.score! / a.maxScore!) > (max.score! / max.maxScore!) ? a : max);
-          finalScore = best.score!;
-          finalMaxScore = best.maxScore!;
-        } else if (scoreRetention === "average") {
-          const avgPct = validScores.reduce((sum, a) => sum + a.score! / a.maxScore!, 0) / validScores.length;
-          finalScore = Math.round(avgPct * 100) / 100;
-          finalMaxScore = 100;
-        }
-      }
-    }
-
-    // Determine the structureColumnId from examComponent's gradebookStructure
-    let structureColumnId: string | null = null;
-    if (exam.examComponentId) {
-      const component = await prisma.examComponent.findUnique({
-        where: { id: exam.examComponentId },
-        select: { gradebookStructure: true },
-      });
-      if (component?.gradebookStructure) {
-        try {
-          const structure = JSON.parse(component.gradebookStructure);
-          const examColumn = structure.columns?.find((c: any) => {
-            const type = String(c.componentType || "").toUpperCase();
-            return type.includes("EXAM") || type === "FINAL" || type === "MIDTERM" || type === "TEST" || type === "QUIZ" || type === "SUMMATIVE";
-          });
-          if (examColumn) structureColumnId = examColumn.id;
-        } catch {
-          // ignore parse errors
-        }
-      }
-    }
-
-    const schoolYear = await prisma.academicYear.findFirst({
-      where: { schoolId: exam.schoolId, status: "ACTIVE" },
-      select: { id: true },
-    });
-    if (!schoolYear) {
-      throw httpError("No active academic year found for this school", 400, "NO_ACTIVE_YEAR");
-    }
-    const schoolYearId = schoolYear.id;
-
-    const gradeEntry = await prisma.gradeEntry.upsert({
-      where: {
-        examId_studentId_subjectId_classId_examComponentId_structureColumnId: {
-          examId,
-          studentId: attempt.studentId,
-          subjectId: exam.subjectId,
-          classId: exam.classId,
-          examComponentId: exam.examComponentId ?? "",
-          structureColumnId: structureColumnId ?? "",
-        },
-      },
-      create: {
-        examId,
-        studentId: attempt.studentId,
-        subjectId: exam.subjectId,
-        classId: exam.classId,
-        schoolId: exam.schoolId,
-        schoolYearId: schoolYearId?.id || "CURRENT_YEAR",
-        score: finalScore,
-        status: "SUBMITTED",
-        enteredBy: teacherId,
-        examComponentId: exam.examComponentId,
-        structureColumnId,
-        isIncomplete: false,
-      },
-      update: {
-        score: finalScore,
-        status: "SUBMITTED",
-        enteredBy: teacherId,
-        examComponentId: exam.examComponentId,
-        structureColumnId,
-        isIncomplete: false,
-        updatedAt: new Date(),
-      },
-    });
-
-    // Link the gradeEntry to the attempt for audit trail
-    await prisma.examAttempt.update({
-      where: { id: attemptId },
-      data: { gradeEntryId: gradeEntry.id },
-    });
-
-    // Create grade history entry
-    await prisma.gradeHistory.create({
-      data: {
-        gradeEntryId: gradeEntry.id,
-        score: gradeEntry.score,
-        status: gradeEntry.status,
-        feedback: `Pushed from online exam attempt ${attemptId}`,
-        changedBy: teacherId,
-        changedAt: new Date(),
-      },
-    });
-
-    return gradeEntry;
-  },
-
-  /** Bulk push all submitted attempts for an exam to gradebook. */
-  async bulkPushToGradebook(examId: string, teacherId: string) {
-    const exam = await loadExamOrThrow(examId);
     const attempts = await prisma.examAttempt.findMany({
       where: { examId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] } },
       select: { id: true, studentId: true },
     });
 
-    const results: { studentId: string; success: boolean; error?: string }[] = [];
-    await prisma.$transaction(async (tx) => {
-      for (const a of attempts) {
-        try {
-          // Replicate pushToGradebook logic within transaction
-          const attempt = await tx.examAttempt.findUniqueOrThrow({ where: { id: a.id } });
-          if (attempt.examId !== examId) throw httpError("Mismatched exam", 400);
-          if (attempt.status !== "SUBMITTED" && attempt.status !== "AUTO_SUBMITTED" && attempt.status !== "EXPIRED") {
-            throw httpError("Attempt must be finalized before pushing to gradebook", 409);
-          }
+    const schoolGradebookConfigRaw = await getSchoolGradebookConfig(exam.schoolId);
 
-          if (!exam.subjectId || !exam.classId) {
-            throw httpError("Exam must have subjectId and classId to push to gradebook", 400);
-          }
+    const results: {
+      studentId: string;
+      status: "PUSHED" | "SKIPPED" | "FAILED";
+      success: boolean;
+      reason?: string;
+      error?: string;
+    }[] = [];
 
-          // Determine score based on retake policy (best/last/average)
-          let finalScore = attempt.score ?? 0;
-          let finalMaxScore = attempt.maxScore ?? 0;
-
-          const policy = exam.retakePolicy ? JSON.parse(exam.retakePolicy) : {};
-          const scoreRetention = policy.scoreRetention || "last";
-
-          if (scoreRetention !== "last") {
-            const allAttempts = await tx.examAttempt.findMany({
-              where: { examId, studentId: attempt.studentId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] } },
-              select: { score: true, maxScore: true },
-            });
-            const validScores = allAttempts.filter((at) => at.score != null && at.maxScore != null);
-            if (validScores.length > 1) {
-              if (scoreRetention === "best") {
-                const best = validScores.reduce((max, at) => (at.score! / at.maxScore!) > (max.score! / max.maxScore!) ? at : max);
-                finalScore = best.score!;
-                finalMaxScore = best.maxScore!;
-              } else if (scoreRetention === "average") {
-                const avgPct = validScores.reduce((sum, at) => sum + at.score! / at.maxScore!, 0) / validScores.length;
-                finalScore = Math.round(avgPct * 100) / 100;
-                finalMaxScore = 100;
-              }
-            }
-          }
-
-          // Determine the structureColumnId from examComponent's gradebookStructure
-          let structureColumnId: string | null = null;
-          if (exam.examComponentId) {
-            const component = await tx.examComponent.findUnique({
-              where: { id: exam.examComponentId },
-              select: { gradebookStructure: true },
-            });
-            if (component?.gradebookStructure) {
-              try {
-                const structure = JSON.parse(component.gradebookStructure);
-                const examColumn = structure.columns?.find((c: any) => {
-                  const type = String(c.componentType || "").toUpperCase();
-                  return type.includes("EXAM") || type === "FINAL" || type === "MIDTERM" || type === "TEST" || type === "QUIZ" || type === "SUMMATIVE";
-                });
-                if (examColumn) structureColumnId = examColumn.id;
-              } catch {
-                // ignore parse errors
-              }
-            }
-          }
-
-          const schoolYear = await tx.academicYear.findFirst({
-            where: { schoolId: exam.schoolId, status: "ACTIVE" },
-            select: { id: true },
-          });
-          if (!schoolYear) {
-            throw httpError("No active academic year found for this school", 400, "NO_ACTIVE_YEAR");
-          }
-          const schoolYearId = schoolYear.id;
-
-          const gradeEntry = await tx.gradeEntry.upsert({
-            where: {
-              examId_studentId_subjectId_classId_examComponentId_structureColumnId: {
-                examId,
-                studentId: attempt.studentId,
-                subjectId: exam.subjectId,
-                classId: exam.classId,
-                examComponentId: exam.examComponentId ?? "",
-                structureColumnId: structureColumnId ?? "",
-              },
-            },
-            create: {
-              examId,
-              studentId: attempt.studentId,
-              subjectId: exam.subjectId,
-              classId: exam.classId,
-              schoolId: exam.schoolId,
-              schoolYearId: schoolYearId?.id ?? "CURRENT_YEAR",
-              score: finalScore,
-              status: "SUBMITTED",
-              enteredBy: teacherId,
-              examComponentId: exam.examComponentId,
-              structureColumnId,
-              isIncomplete: false,
-            },
-            update: {
-              score: finalScore,
-              status: "SUBMITTED",
-              enteredBy: teacherId,
-              examComponentId: exam.examComponentId,
-              structureColumnId,
-              isIncomplete: false,
-              updatedAt: new Date(),
-            },
-          });
-
-          // Link the gradeEntry to the attempt for audit trail
-          await tx.examAttempt.update({
-            where: { id: a.id },
-            data: { gradeEntryId: gradeEntry.id },
-          });
-
-          // Create grade history entry
-          await tx.gradeHistory.create({
-            data: {
-              gradeEntryId: gradeEntry.id,
-              score: gradeEntry.score,
-              status: gradeEntry.status,
-              feedback: `Pushed from online exam attempt ${a.id}`,
-              changedBy: teacherId,
-              changedAt: new Date(),
-            },
-          });
-
-          results.push({ studentId: a.studentId, success: true });
-        } catch (err: any) {
-          results.push({ studentId: a.studentId, success: false, error: err.message });
-        }
+    for (const a of attempts) {
+      if (opts.dryRun) {
+        results.push({ studentId: a.studentId, status: "PUSHED", success: true, reason: "DRY_RUN" });
+        continue;
       }
-    });
+      try {
+        const attempt = await prisma.examAttempt.findUniqueOrThrow({ where: { id: a.id } });
+        const result = await pushAttemptToGradebook(
+          prisma,
+          exam,
+          {
+            id: attempt.id,
+            studentId: attempt.studentId,
+            score: attempt.score,
+            maxScore: attempt.maxScore,
+          },
+          teacherId,
+          schoolGradebookConfigRaw,
+          { skipManualEntry: true, force: opts.force }
+        );
+        if (result.skipped) {
+          results.push({ studentId: a.studentId, status: "SKIPPED", success: false, reason: result.reason });
+        } else {
+          results.push({ studentId: a.studentId, status: "PUSHED", success: true });
+        }
+      } catch (err: any) {
+        results.push({ studentId: a.studentId, status: "FAILED", success: false, error: err.message });
+      }
+    }
     return results;
   },
 
@@ -1539,12 +2163,14 @@ export const onlineExamService = {
       if (!ok) throw httpError("Forbidden", 403);
     }
 
-    if (attempt.status === "IN_PROGRESS") {
+    const staffViewer = viewer.role !== "STUDENT" && viewer.role !== "PARENT";
+    if (attempt.status === "IN_PROGRESS" && !staffViewer) {
       throw httpError("Results not available until the exam is submitted", 409);
     }
 
     const canSeeScore =
-      attempt.exam.showResultsImmediately || attempt.exam.isGradesReleased;
+      attempt.status !== "IN_PROGRESS" &&
+      (attempt.exam.showResultsImmediately || attempt.exam.isGradesReleased);
     if (
       !canSeeScore &&
       (viewer.role === "STUDENT" || viewer.role === "PARENT")
@@ -1566,6 +2192,15 @@ export const onlineExamService = {
       include: { choices: { orderBy: { orderIndex: "asc" } } },
       orderBy: { orderIndex: "asc" },
     });
+
+    let studentName: string | undefined;
+    let studentEmail: string | undefined;
+    if (staffViewer) {
+      const users = await getIdentityUsersByIds([attempt.studentId]);
+      const u = users.get(attempt.studentId);
+      studentName = u?.name || attempt.studentId;
+      studentEmail = u?.email;
+    }
 
     const answerByQ = new Map(attempt.answers.map((a) => [a.questionId, a]));
     const scoreByQ = new Map(
@@ -1598,11 +2233,20 @@ export const onlineExamService = {
         missedCount: attempt.missedCount,
         pendingCount: attempt.pendingCount,
         resultsPending: false,
+        live: attempt.status === "IN_PROGRESS",
+        ...(staffViewer ? { studentName, studentEmail } : {}),
       },
       exam: {
         id: attempt.exam.id,
         title: attempt.exam.title,
         maxViolations: attempt.exam.maxViolations,
+        ...(staffViewer
+          ? {
+              proctorLevel: attempt.exam.proctorLevel,
+              showResultsImmediately: attempt.exam.showResultsImmediately,
+              isGradesReleased: attempt.exam.isGradesReleased,
+            }
+          : {}),
       },
       questions: questions.map((q) => {
         const a = answerByQ.get(q.id);

@@ -291,14 +291,8 @@ export function usePageActions(deps: PageActionsDeps) {
           documents: finalDocs,
         });
 
-        // Server owns the status machine: only enrollable statuses may enroll. If the
-        // candidate is still in review, approve it first (a single allowed transition),
-        // otherwise the enroll endpoint would (correctly) reject it.
-        const enrollable = ["APPROVED", "FEE_PENDING", "DOCS_PENDING"];
-        if (!enrollable.includes(selectedApp.status)) {
-          await registrarApi.transitionApplication(selectedApp.id, "APPROVED");
-        }
-
+        // Server owns the status machine: `enroll` walks the minimal approval path itself when
+        // the candidate is still in review, so the client never pre-executes transitions.
         const enrollData = await registrarApi.enrollApplication(
           selectedApp.id,
           {

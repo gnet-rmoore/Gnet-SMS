@@ -63,8 +63,9 @@ export const fieldControlClass = {
 } as const;
 
 export const typeClass = {
-  pageTitle: "text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900",
-  sectionTitle: "text-lg font-extrabold tracking-tight text-slate-900",
+  pageTitle:
+    "font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900",
+  sectionTitle: "font-heading text-lg font-extrabold tracking-tight text-slate-900",
   subtitle: "text-slate-500 font-medium",
   metaLabel: "text-xs font-bold uppercase tracking-wider text-slate-500",
   body: "text-sm text-slate-700",
