@@ -169,7 +169,7 @@ async function main() {
 
   // Reliable server-side auto-submit: finalize attempts whose deadline passed,
   // even if the student disconnected and never sent the submit request.
-  const SWEEP_INTERVAL_MS = Number(process.env.EXAM_SWEEP_INTERVAL_MS) || 60_000;
+  const SWEEP_INTERVAL_MS = Number(process.env.EXAM_SWEEP_INTERVAL_MS) || 30_000;
   const sweepTimer = setInterval(async () => {
     try {
       const result = await onlineExamService.sweepExpiredAttempts();

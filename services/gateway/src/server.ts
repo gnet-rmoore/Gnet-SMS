@@ -433,10 +433,16 @@ app.use(
     changeOrigin: true,
     pathRewrite: (path) => `/api${path.startsWith("/") ? path : `/${path}`}`,
     router: (req) => (req as any).__upstream,
+    timeout: 120_000,
+    proxyTimeout: 120_000,
     on: {
       proxyReq: (proxyReq, req) => {
         const requestId = req.headers["x-request-id"];
         if (requestId) proxyReq.setHeader("x-request-id", requestId);
+      },
+      error: (err, req, res) => {
+        console.error("[gateway] proxy error:", err.message);
+        if (!res.headersSent) res.status(502).json({ error: "Bad gateway" });
       },
     },
   })

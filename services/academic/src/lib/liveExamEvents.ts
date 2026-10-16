@@ -45,9 +45,14 @@ export function emitLiveExamEvent(event: LiveExamEvent) {
   emitter.emit("event", event);
   if (io) {
     const examId = examIdOf(event);
-    if (examId) io.to(examRoom(examId)).emit("exam-event", event);
+    const restrictFrames = process.env.EXAM_FRAME_FANOUT_RESTRICTED !== "false";
+    if (examId && !(restrictFrames && event.type === "screen.frame")) {
+      io.to(examRoom(examId)).emit("exam-event", event);
+    }
     const attemptId = attemptIdOf(event);
-    if (attemptId) io.to(attemptRoom(attemptId)).emit("exam-event", event);
+    if (attemptId) {
+      io.to(attemptRoom(attemptId)).emit("exam-event", event);
+    }
   }
 }
 

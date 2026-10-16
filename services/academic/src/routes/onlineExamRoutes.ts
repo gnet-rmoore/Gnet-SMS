@@ -3,6 +3,7 @@ import { authenticate, requireTenant, requireRoles, requireResourceTenant } from
 import { validateBody } from "../middleware/validate";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { onlineExamController } from "../controllers/onlineExamController";
+import { examRateLimit } from "../middleware/examRateLimit";
 import {
   onlineExamConfigSchema,
   onlineExamQuestionsSchema,
@@ -23,6 +24,20 @@ const router = express.Router();
 
 const EXAM_READ_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"];
 const EXAM_WRITE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"];
+
+const RL_ENABLED = process.env.EXAM_RATE_LIMIT_ENABLED === "true";
+async function rlOrPass(key: string, limit: number, windowSec: number, req: any, res: any) {
+  if (!RL_ENABLED) return true;
+  const r = await examRateLimit(key, limit, windowSec);
+  if (!r.allowed) {
+    res.setHeader("Retry-After", String(r.retryAfter));
+    res.setHeader("X-RateLimit-Limit", String(r.limit));
+    res.setHeader("X-RateLimit-Remaining", String(r.remaining));
+    res.status(429).json({ error: "Too many requests" });
+    return false;
+  }
+  return true;
+}
 
 // Staff preview/demo routes (no attempt persistence). Static "preview/sample"
 // does not collide with the `/api/exams/:id/...` patterns below.
@@ -47,6 +62,17 @@ router.get(
   requireTenant,
   requireRoles(EXAM_READ_ROLES),
   onlineExamController.listOnlineExams
+);
+
+// SSE live-stream deprecated in favour of Socket.IO (see liveExamEvents.ts).
+router.get(
+  "/api/exams/:id/live-stream",
+  authenticate,
+  requireTenant,
+  requireRoles(EXAM_WRITE_ROLES),
+  (req, res) => {
+    res.status(410).json({ error: "SSE deprecated; use Socket.IO" });
+  }
 );
 
 router.get(
@@ -171,6 +197,12 @@ router.patch(
   requireRoles(["STUDENT"]),
   requireResourceTenant(resourceLoaders.examAttempt),
   validateBody(onlineExamAnswersSchema),
+  async (req, res, next) => {
+    const key = `answers:${req.params.attemptId}`;
+    const ok = await rlOrPass(key, 10, 60, req, res);
+    if (!ok) return;
+    next();
+  },
   onlineExamController.saveAnswers
 );
 
@@ -180,6 +212,12 @@ router.post(
   requireRoles(["STUDENT"]),
   requireResourceTenant(resourceLoaders.examAttempt),
   validateBody(onlineExamViolationSchema),
+  async (req, res, next) => {
+    const key = `viol:${req.params.attemptId}`;
+    const ok = await rlOrPass(key, 30, 60, req, res);
+    if (!ok) return;
+    next();
+  },
   onlineExamController.reportViolation
 );
 
@@ -188,6 +226,12 @@ router.post(
   authenticate,
   requireRoles(["STUDENT"]),
   requireResourceTenant(resourceLoaders.examAttempt),
+  async (req, res, next) => {
+    const key = `hb:${req.params.attemptId}`;
+    const ok = await rlOrPass(key, 90, 60, req, res);
+    if (!ok) return;
+    next();
+  },
   onlineExamController.heartbeat
 );
 
@@ -196,6 +240,12 @@ router.post(
   authenticate,
   requireRoles(["STUDENT"]),
   requireResourceTenant(resourceLoaders.examAttempt),
+  async (req, res, next) => {
+    const key = `submit:${req.params.attemptId}`;
+    const ok = await rlOrPass(key, 6, 60, req, res);
+    if (!ok) return;
+    next();
+  },
   onlineExamController.submitAttempt
 );
 

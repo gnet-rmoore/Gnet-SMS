@@ -3,11 +3,24 @@
  */
 const IDENTITY_URL = process.env.IDENTITY_URL || process.env.MONOLITH_URL || "http://localhost:3011";
 const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
+const BATCH_ENABLED = process.env.EXAM_IDENTITY_BATCH_ENABLED === "true";
+const CACHE_TTL_MS = Number(process.env.EXAM_IDENTITY_CACHE_TTL_MS) || 60_000;
 
 function internalHeaders() {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (INTERNAL_TOKEN) headers["x-internal-token"] = INTERNAL_TOKEN;
   return headers;
+}
+
+type CacheEntry = { v: IdentityUserRef; exp: number };
+const cache = new Map<string, CacheEntry>();
+function getCached(id: string) {
+  const e = cache.get(id);
+  if (!e || Date.now() > e.exp) return null;
+  return e.v;
+}
+function setCached(id: string, v: IdentityUserRef) {
+  cache.set(id, { v, exp: Date.now() + CACHE_TTL_MS });
 }
 
 export type IdentityUserRef = {
@@ -36,12 +49,47 @@ export async function getIdentityUsersByIds(
 ): Promise<Map<string, IdentityUserRef>> {
   const unique = [...new Set(ids.filter(Boolean))];
   const map = new Map<string, IdentityUserRef>();
-  await Promise.all(
-    unique.map(async (id) => {
-      const user = await getIdentityUser(id);
-      if (user) map.set(id, user);
-    })
-  );
+  const missing: string[] = [];
+  for (const id of unique) {
+    const c = getCached(id);
+    if (c) map.set(id, c);
+    else missing.push(id);
+  }
+  if (missing.length === 0) return map;
+  if (BATCH_ENABLED) {
+    try {
+      const batch = missing.slice(0, 500);
+      const res = await fetch(`${IDENTITY_URL}/api/internal/users/bulk`, {
+        method: "POST",
+        headers: { ...internalHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: batch }),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        const list: IdentityUserRef[] = data.users || [];
+        for (const u of list) {
+          map.set(u.id, u);
+          setCached(u.id, u);
+        }
+        return map;
+      }
+    } catch {
+      // fall through to chunked
+    }
+  }
+  const CHUNK = 50;
+  for (let i = 0; i < missing.length; i += CHUNK) {
+    const chunk = missing.slice(i, i + CHUNK);
+    await Promise.all(
+      chunk.map(async (id) => {
+        const u = await getIdentityUser(id);
+        if (u) {
+          map.set(id, u);
+          setCached(id, u);
+        }
+      })
+    );
+  }
   return map;
 }
 

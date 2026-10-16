@@ -108,16 +108,33 @@ export default function TakeOnlineExamPage() {
     [attemptId, enterFullscreen, goResults, maxViolations, t]
   );
 
+  const dirtyRef = React.useRef<Set<string>>(new Set());
   const flushAnswers = React.useCallback(async () => {
     if (!attemptId) return;
-    const payload = Object.entries(answersRef.current).map(([questionId, v]) => ({
-      questionId,
-      selectedChoiceId: v.selectedChoiceId ?? null,
-      textAnswer: v.textAnswer ?? null,
-    }));
+    const useDeltas = (import.meta.env.VITE_EXAM_SEND_DELTAS_ENABLED as string | undefined) !== "false";
+    let payload: any[] = [];
+    if (useDeltas) {
+      payload = Array.from(dirtyRef.current).map((questionId) => {
+        const v = answersRef.current[questionId] || {};
+        return {
+          questionId,
+          selectedChoiceId: v.selectedChoiceId ?? null,
+          textAnswer: v.textAnswer ?? null,
+        };
+      });
+    } else {
+      payload = Object.entries(answersRef.current).map(([questionId, v]) => ({
+        questionId,
+        selectedChoiceId: v.selectedChoiceId ?? null,
+        textAnswer: v.textAnswer ?? null,
+      }));
+    }
     if (!payload.length) return;
     try {
       const res = await onlineExamApi.saveAnswers(attemptId, payload);
+      if (useDeltas) {
+        dirtyRef.current.clear();
+      }
       if (res.serverNow && res.endsAt) {
         const server = new Date(res.serverNow).getTime();
         setClockOffset(server - Date.now());
@@ -712,12 +729,13 @@ export default function TakeOnlineExamPage() {
                         type="radio"
                         name={`q-${q.id}`}
                         checked={ans.selectedChoiceId === c.id}
-                        onChange={() =>
+                        onChange={() => {
                           setAnswers((prev) => ({
                             ...prev,
                             [q.id]: { selectedChoiceId: c.id },
-                          }))
-                        }
+                          }));
+                          try { dirtyRef.current.add(q.id); } catch {}
+                        }}
                       />
                       <span className="font-mono text-slate-400 text-sm w-6">{c.label}</span>
                       <span className="text-slate-800">{c.text}</span>
@@ -729,12 +747,13 @@ export default function TakeOnlineExamPage() {
               {q.type === "FILL_BLANK" && (
                 <input
                   value={ans.textAnswer || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setAnswers((prev) => ({
                       ...prev,
                       [q.id]: { textAnswer: e.target.value },
-                    }))
-                  }
+                    }));
+                    try { dirtyRef.current.add(q.id); } catch {}
+                  }}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3"
                   placeholder={t("onlineExams.take.yourAnswer")}
                   autoComplete="off"
@@ -744,12 +763,13 @@ export default function TakeOnlineExamPage() {
               {q.type === "ESSAY" && (
                 <textarea
                   value={ans.textAnswer || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setAnswers((prev) => ({
                       ...prev,
                       [q.id]: { textAnswer: e.target.value },
-                    }))
-                  }
+                    }));
+                    try { dirtyRef.current.add(q.id); } catch {}
+                  }}
                   rows={6}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3"
                   placeholder={t("onlineExams.take.writeAnswer")}

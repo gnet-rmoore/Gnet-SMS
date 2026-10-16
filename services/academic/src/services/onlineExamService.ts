@@ -18,6 +18,7 @@ import {
   getIdentityUsersByIds,
   getSchoolGradebookConfig,
 } from "../lib/identityClient";
+import { mapLimit } from "../lib/concurrency";
 import {
   computeScorePercent,
   resolveExamGradeColumn,
@@ -1209,22 +1210,30 @@ export const onlineExamService = {
     const exam = await loadExamOrThrow(examId);
     if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
 
-    const [attempts, totalQuestions] = await Promise.all([
-      prisma.examAttempt.findMany({
-        where: { examId, schoolId, status: "IN_PROGRESS" },
-        orderBy: { startedAt: "asc" },
-        select: {
-          id: true,
-          studentId: true,
-          startedAt: true,
-          endsAt: true,
-          violationCount: true,
-          lastSeenAt: true,
-          answers: { select: { questionId: true } },
-        },
-      }),
-      prisma.examQuestion.count({ where: { examId, schoolId } }),
-    ]);
+    const attempts = await prisma.examAttempt.findMany({
+    where: { examId, schoolId, status: "IN_PROGRESS" },
+    orderBy: { startedAt: "asc" },
+    select: {
+      id: true,
+      studentId: true,
+      startedAt: true,
+      endsAt: true,
+      violationCount: true,
+      lastSeenAt: true,
+    },
+  });
+  const attemptIds = attempts.map((a) => a.id);
+  const [totalQuestions, answerCounts] = await Promise.all([
+    prisma.examQuestion.count({ where: { examId, schoolId } }),
+    attemptIds.length
+      ? prisma.examAnswer.groupBy({
+          by: ["attemptId"],
+          where: { attemptId: { in: attemptIds } },
+          _count: { _all: true },
+        })
+      : Promise.resolve([] as any[]),
+  ]);
+  const acMap = new Map<string, number>(answerCounts.map((c: any) => [c.attemptId, c._count._all]));
 
     const studentIds = [...new Set(attempts.map((a) => a.studentId))];
     const userMap = await getIdentityUsersByIds(studentIds);
@@ -1245,7 +1254,7 @@ export const onlineExamService = {
         startedAt: a.startedAt,
         endsAt: a.endsAt,
         violationCount: a.violationCount,
-        answeredCount: a.answers.length,
+        answeredCount: acMap.get(a.id) || 0,
         totalQuestions,
         lastSeenAt: a.lastSeenAt,
         secondsSinceSeen,
@@ -1558,21 +1567,33 @@ export const onlineExamService = {
   },
 
   /** Delete frames past their retention deadline (object + row). */
-  async purgeExpiredProctorFrames(limit = 200) {
+  async purgeExpiredProctorFrames(limit?: number) {
+    const batch = limit ?? (Number(process.env.EXAM_FRAME_PURGE_BATCH_SIZE) || 2000);
+    const conc = Number(process.env.EXAM_FRAME_PURGE_CONCURRENCY) || 20;
     const expired = await prisma.examProctorFrame.findMany({
       where: { expiresAt: { lte: new Date() } },
-      take: limit,
+      take: batch,
       select: { id: true, storageKey: true, expiresAt: true },
+      orderBy: { expiresAt: "asc" },
     });
     if (!expired.length) return { purged: 0 };
-
-    for (const f of expired) {
-      if (isFrameExpired(f.expiresAt)) {
+    const results = await mapLimit(expired, conc, async (f) => {
+      if (!isFrameExpired(f.expiresAt)) return null;
+      try {
         await deleteProctorFrameObject(f.storageKey);
+        return f.id;
+      } catch (e: any) {
+        console.warn("[online-exam] purge s3 delete failed:", f.id, e?.message || e);
+        return null;
       }
+    });
+    const succeeded = results
+      .map((r) => (r.status === "fulfilled" ? r.value : null))
+      .filter((x): x is string => !!x);
+    if (succeeded.length) {
+      await prisma.examProctorFrame.deleteMany({ where: { id: { in: succeeded } } });
     }
-    await prisma.examProctorFrame.deleteMany({ where: { id: { in: expired.map((f) => f.id) } } });
-    return { purged: expired.length };
+    return { purged: succeeded.length };
   },
 
   /** Check if student is eligible for a retake based on exam's retakePolicy. */
@@ -1915,9 +1936,20 @@ export const onlineExamService = {
       }
     });
 
-    const answeredCount = answersInput.filter(
-      (a) => a.selectedChoiceId != null || a.textAnswer != null
-    ).length;
+    // Compute the true total answered count (delta flushes only carry changed
+    // questions, so counting the input batch alone would under-report).
+    const merged = new Map<string, { selectedChoiceId?: string | null; textAnswer?: string | null }>();
+    for (const a of attempt.answers) {
+      merged.set(a.questionId, { selectedChoiceId: a.selectedChoiceId, textAnswer: a.textAnswer });
+    }
+    for (const a of answersInput) {
+      if (!qById.has(a.questionId)) continue;
+      merged.set(a.questionId, { selectedChoiceId: a.selectedChoiceId, textAnswer: a.textAnswer });
+    }
+    let answeredCount = 0;
+    for (const a of merged.values()) {
+      if (a.selectedChoiceId != null || (a.textAnswer != null && a.textAnswer !== "")) answeredCount += 1;
+    }
     emitLiveExamEvent({
       type: "attempt.answered",
       payload: { examId: attempt.examId, attemptId, answeredCount },
@@ -2049,23 +2081,28 @@ export const onlineExamService = {
    * Server-side sweep that finalizes attempts whose deadline has passed.
    * Idempotent and safe to run on a schedule (see server.ts).
    */
-  async sweepExpiredAttempts(limit = 200) {
+  async sweepExpiredAttempts(limit?: number) {
+    const batchSize = limit ?? (Number(process.env.EXAM_SWEEP_BATCH_SIZE) || 500);
+    const conc = Number(process.env.EXAM_SWEEP_CONCURRENCY) || 5;
     const now = new Date();
     const expired = await prisma.examAttempt.findMany({
       where: { status: "IN_PROGRESS", endsAt: { lt: now } },
       select: { id: true },
-      take: limit,
+      take: batchSize,
+      orderBy: { endsAt: "asc" },
     });
     let finalized = 0;
-    for (const row of expired) {
+    let failed = 0;
+    await mapLimit(expired, conc, async (row) => {
       try {
         await finalizeAttempt(row.id, "TIME_EXPIRED", "EXPIRED");
         finalized += 1;
       } catch (err: any) {
+        failed += 1;
         console.warn("[online-exam] sweep finalize failed:", row.id, err?.message || err);
       }
-    }
-    return { scanned: expired.length, finalized };
+    });
+    return { scanned: expired.length, finalized, failed };
   },
 
   /** Return the student's active (in-progress) attempt for an exam, if any. */

@@ -400,6 +400,16 @@ export const userController = {
     }
   },
 
+  async getUsersByIdsInternal(req: any, res: any) {
+    try {
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+      const users = await userService.getUsersByIds(ids);
+      res.json({ users });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch users" });
+    }
+  },
+
   /** Placement-only patch for Year Transition commit (Academic → Identity). */
   async patchUserInternal(req: any, res: any) {
     try {

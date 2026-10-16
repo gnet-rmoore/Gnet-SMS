@@ -313,6 +313,7 @@ model ExamAttempt {
   @@index([studentId])
   @@index([examId, status])
   @@index([examId, studentId])
+  @@index([status, endsAt]) // P0: speeds up expiry sweep
   @@schema("academic")
 }
 

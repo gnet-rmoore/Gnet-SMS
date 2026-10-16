@@ -519,6 +519,16 @@ export const userService = {
     });
   },
 
+  /** Bulk lookup by ids for cross-service enrichment (name/email/role/photo). */
+  async getUsersByIds(ids: string[]) {
+    const unique = [...new Set((ids || []).filter(Boolean))].slice(0, 500);
+    if (unique.length === 0) return [];
+    return prisma.user.findMany({
+      where: { id: { in: unique } },
+      select: { id: true, name: true, email: true, role: true, photoUrl: true },
+    });
+  },
+
   async updateUser(userId: string, data: any, actor?: { id: string; role: string; schoolId: string | null }) {
     const {
       name, email, role, phone, dob, gender, parentName, parentPhone,

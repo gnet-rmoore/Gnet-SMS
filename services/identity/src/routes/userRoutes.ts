@@ -195,6 +195,7 @@ router.post("/api/internal/mail/render", authenticateInternal, mailController.re
 router.post("/api/internal/users/find-or-create", authenticateInternal, userController.findOrCreateUserInternal);
 router.get("/api/internal/users/:id", authenticateInternal, userController.getUserByIdInternal);
 router.patch("/api/internal/users/:id", authenticateInternal, userController.patchUserInternal);
+router.post("/api/internal/users/bulk", authenticateInternal, userController.getUsersByIdsInternal);
 router.get(
   "/api/internal/schools/:schoolId/students",
   authenticateInternal,
