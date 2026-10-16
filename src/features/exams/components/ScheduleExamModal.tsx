@@ -42,7 +42,7 @@ export function ScheduleExamModal({
 }: Props) {
   const { t } = useTranslation(["pages", "common"]);
   const { slug } = useParams();
-  const { calendar, loading } = useAcademicCalendarQuery();
+  const { calendar, loading, activePeriod } = useAcademicCalendarQuery();
 
   const periods: Period[] = Array.isArray(calendar?.periods) ? calendar.periods : [];
   const selectedPeriod =
@@ -50,6 +50,13 @@ export function ScheduleExamModal({
   const components: ExamComponent[] = selectedPeriod?.examComponents || [];
   const selectedComponent =
     components.find((c) => String(c.id) === formData.examComponentId) || null;
+
+  // Default to the current Academic Calendar period so the user doesn't have
+  // to re-select the term the school is already in.
+  React.useEffect(() => {
+    if (formData.periodId || !activePeriod?.id) return;
+    setFormData((prev) => ({ ...prev, periodId: String(activePeriod.id) }));
+  }, [activePeriod?.id, formData.periodId, setFormData]);
 
   const periodMin = toDayBound(selectedPeriod?.startDate);
   const periodMax = toDayBound(selectedPeriod?.endDate, true);

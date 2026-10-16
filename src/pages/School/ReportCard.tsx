@@ -13,6 +13,7 @@ import {
   isLiberianReportCardTemplate,
 } from "../../features/report-cards";
 import { useAcademicCalendarQuery } from "../../features/academic-calendar/hooks/useAcademicCalendarQuery";
+import { academicYearLabel as academicYearLabelFor } from "../../features/academics-shared/calendar/selectors";
 import { useDocumentOfficialSignatures } from "../../hooks/useDocumentOfficialSignatures";
 
 interface GradeEntry {
@@ -43,7 +44,7 @@ export const ReportCard = () => {
   const liberian = isLiberianReportCardTemplate(templateId);
   const { calendar } = useAcademicCalendarQuery();
   const calendarPeriods = calendar?.periods ?? null;
-  const academicYearLabel = calendar?.name || undefined;
+  const academicYearLabel = academicYearLabelFor(calendar) || undefined;
   const { officialSignatures } = useDocumentOfficialSignatures(
     school?.id,
     school?.documentSignatories,

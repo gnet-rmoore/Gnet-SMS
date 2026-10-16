@@ -15,13 +15,19 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { changeAppLocale, getStoredLocale, normalizeLocale, resolveEffectiveLocale } from "../i18n";
-import { translateApiError } from "../i18n/apiErrors";
 import { LanguageSelect } from "../i18n/LanguageSelect";
 import type { AppLocale } from "../i18n/locales";
 import { cn } from "../lib/cn";
 import { LoginBackground } from "./LoginBackground";
+import { LoginErrorAlert } from "./LoginErrorAlert";
 import { PageToast, usePageToast } from "../features/academics-shared/PageToast";
 import { getPostLoginPath } from "../lib/postLoginPath";
+import {
+  classifyLoginError,
+  extractLoginErrorSignal,
+  loginErrorSignal,
+  type LoginErrorSignal,
+} from "../lib/loginError";
 
 const fieldClass =
   "w-full rounded-2xl border border-slate-200/90 bg-white py-3.5 text-base text-slate-900 shadow-[inset_0_1px_2px_rgb(15_23_42/0.04)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-[3px] focus:ring-blue-500/15 sm:text-sm";
@@ -33,6 +39,7 @@ export const Login = () => {
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const { toast, showToast } = usePageToast(4500);
+  const [loginError, setLoginError] = React.useState<LoginErrorSignal | null>(null);
   const [locale, setLocale] = React.useState<AppLocale>(
     () => normalizeLocale(i18n.language) || getStoredLocale() || "en"
   );
@@ -68,13 +75,19 @@ export const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError(null);
 
     const postCredentials = async (endpoint: string) => {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+      } catch {
+        throw loginErrorSignal({ case: "offline" });
+      }
 
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -85,9 +98,11 @@ export const Login = () => {
           text.includes("Please wait while your application starts") ||
           text.includes("<title>Starting Server...")
         ) {
-          throw new Error(t("auth:serverWarming"));
+          throw loginErrorSignal({ case: "warming" });
         }
-        throw new Error(t("auth:invalidResponse"));
+        throw loginErrorSignal(
+          classifyLoginError({ status: response.status, kind: "bad-response" })
+        );
       }
 
       return { response, data: await response.json() };
@@ -116,9 +131,9 @@ export const Login = () => {
           navigate(buildSchoolUnavailableUrl(payload), { replace: true });
           return;
         }
-        throw Object.assign(new Error(translateApiError(data) || data.error || t("auth:invalidCredentials")), {
-          code: data?.code,
-        });
+        throw loginErrorSignal(
+          classifyLoginError({ status: response.status, code: data?.code })
+        );
       }
 
       if (data.mfaRequired && data.mfaToken) {
@@ -145,12 +160,11 @@ export const Login = () => {
       );
 
       if (data.user?.role !== "SUPER_ADMIN" && (!data.school || !data.school.slug)) {
-        throw new Error(t("auth:noSchool"));
+        throw loginErrorSignal({ case: "noSchool" });
       }
       navigate(getPostLoginPath(data.user, data.school ?? null));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("common:errorGeneric");
-      showToast(translateApiError(err) || message, "error");
+      setLoginError(extractLoginErrorSignal(err));
     } finally {
       setLoading(false);
     }
@@ -160,15 +174,18 @@ export const Login = () => {
     e.preventDefault();
     if (!mfaToken) return;
     setLoading(true);
+    setLoginError(null);
     try {
       const response = await fetch("/api/auth/mfa/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mfaToken, code: mfaCode }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}) as Record<string, unknown>);
       if (!response.ok) {
-        throw new Error(translateApiError(data) || data.error || "Invalid code");
+        throw loginErrorSignal(
+          classifyLoginError({ status: response.status, code: data?.code, mfa: true })
+        );
       }
       setMfaToken(null);
       setAuth(
@@ -191,8 +208,7 @@ export const Login = () => {
       );
       navigate(getPostLoginPath(data.user, data.school ?? null));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("common:errorGeneric");
-      showToast(translateApiError(err) || message, "error");
+      setLoginError(extractLoginErrorSignal(err, { mfa: true }));
     } finally {
       setLoading(false);
     }
@@ -260,6 +276,7 @@ export const Login = () => {
           <div className="px-6 py-6 sm:px-8 sm:py-7">
             {mfaToken ? (
               <form onSubmit={handleMfaVerify} className="space-y-5" noValidate>
+                <LoginErrorAlert signal={loginError} />
                 <p className="text-sm text-slate-600">
                   Enter the 6-digit code from your authenticator app.
                 </p>
@@ -272,7 +289,10 @@ export const Login = () => {
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={mfaCode}
-                    onChange={(e) => setMfaCode(e.target.value)}
+                    onChange={(e) => {
+                      setMfaCode(e.target.value);
+                      setLoginError(null);
+                    }}
                     className={cn(fieldClass, "font-mono tracking-widest text-center")}
                     placeholder="000000"
                     required
@@ -292,18 +312,23 @@ export const Login = () => {
                     disabled={loading}
                     onClick={async () => {
                       setLoading(true);
+                      setLoginError(null);
                       try {
                         const res = await fetch("/api/auth/mfa/send-sms", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ mfaToken }),
                         });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Send failed");
+                        const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+                        if (!res.ok) {
+                          throw loginErrorSignal(
+                            classifyLoginError({ status: res.status, code: data?.code, mfa: true })
+                          );
+                        }
                         setSmsSent(true);
                         showToast(`Code sent to ${data.sentTo || "your phone"}`, "success");
                       } catch (err: unknown) {
-                        showToast(err instanceof Error ? err.message : "Send failed", "error");
+                        setLoginError(extractLoginErrorSignal(err, { mfa: true }));
                       } finally {
                         setLoading(false);
                       }
@@ -318,6 +343,7 @@ export const Login = () => {
                   onClick={() => {
                     setMfaToken(null);
                     setMfaCode("");
+                    setLoginError(null);
                   }}
                   className="w-full text-sm font-semibold text-slate-500 hover:text-slate-800"
                 >
@@ -326,6 +352,7 @@ export const Login = () => {
               </form>
             ) : (
             <form onSubmit={handleLogin} className="space-y-5" noValidate>
+              <LoginErrorAlert signal={loginError} />
               {isExpired ? (
                 <div
                   role="status"
@@ -348,7 +375,10 @@ export const Login = () => {
                     autoComplete="email"
                     inputMode="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setLoginError(null);
+                    }}
                     className={cn(fieldClass, "ps-11 pe-4")}
                     placeholder={t("auth:emailPlaceholder")}
                     required
@@ -376,7 +406,10 @@ export const Login = () => {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setLoginError(null);
+                    }}
                     className={cn(fieldClass, "ps-11 pe-12")}
                     placeholder="••••••••"
                     required

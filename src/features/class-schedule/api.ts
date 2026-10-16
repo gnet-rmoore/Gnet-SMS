@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { academicCalendarApi } from "../academics-shared/calendar/api";
 import type { BellScheduleDto, TimetableEntryDto } from "./types";
 
 export const classScheduleApi = {
@@ -84,5 +85,5 @@ export const classScheduleApi = {
     api.get(`/api/schools/${schoolId}/staff`) as Promise<unknown[]>,
 
   fetchAcademicCalendar: (schoolId: string) =>
-    api.get(`/api/schools/${schoolId}/calendar`) as Promise<unknown>,
+    academicCalendarApi.fetchCalendar(schoolId) as Promise<unknown>,
 };

@@ -12,12 +12,14 @@ import {
   Loader2,
   Eye,
   RotateCcw,
+  Upload,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { onlineExamApi, type OnlineQuestionInput } from "./api";
+import { onlineExamApi, type OnlineQuestionInput, type OnlineExamConfig } from "./api";
 import { emptyQuestion, type DraftQuestion, type QuestionType } from "./types";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError } from "../../lib/swal";
+import { ImportQuestionsModal } from "./ImportQuestionsModal";
 import { useTranslation } from "react-i18next";
 
 const TYPE_LABELS: Record<QuestionType, string> = {
@@ -100,13 +102,14 @@ function toApiQuestions(drafts: DraftQuestion[]): OnlineQuestionInput[] {
 export default function OnlineExamAuthorPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { examId } = useParams();
-  const { school } = useAuthStore();
+  const { school, user } = useAuthStore();
   const navigate = useNavigate();
   const { toast, showToast } = usePageToast();
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [title, setTitle] = React.useState("Online exam");
   const [isOnline, setIsOnline] = React.useState(true);
+  const [isQuiz, setIsQuiz] = React.useState(false);
   const [maxViolations, setMaxViolations] = React.useState("3");
   const [showResultsImmediately, setShowResultsImmediately] = React.useState(true);
   const [proctorLevel, setProctorLevel] = React.useState<"OFF" | "MONITOR" | "SCREEN_VIEW">("MONITOR");
@@ -118,12 +121,18 @@ export default function OnlineExamAuthorPage() {
   const [instructions, setInstructions] = React.useState("");
   const [questions, setQuestions] = React.useState<DraftQuestion[]>([emptyQuestion()]);
   const [classId, setClassId] = React.useState("");
+  const [showImport, setShowImport] = React.useState(false);
   const [classrooms, setClassrooms] = React.useState<Array<{ id: string; name: string; grade?: string; subject?: string }>>([]);
   // Retake policy state
   const [retakeEnabled, setRetakeEnabled] = React.useState(false);
   const [maxRetakes, setMaxRetakes] = React.useState("1");
   const [waitingPeriodHours, setWaitingPeriodHours] = React.useState("0");
   const [scoreRetention, setScoreRetention] = React.useState<"best" | "last" | "average">("last");
+
+  // Duration / max-violations / kiosk lockdown / retake policy are school
+  // administration settings for exams; teachers may set them for quizzes only.
+  const isSettingsAdmin = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
+  const canEditSettings = isSettingsAdmin || isQuiz;
 
   React.useEffect(() => {
     if (!examId) return;
@@ -135,6 +144,7 @@ export default function OnlineExamAuthorPage() {
         if (cancelled) return;
         setTitle(data.exam?.title || "Online exam");
         setIsOnline(Boolean(data.exam?.isOnline));
+        setIsQuiz(Boolean(data.exam?.isQuiz));
         setMaxViolations(String(data.exam?.maxViolations ?? 3));
         setShowResultsImmediately(data.exam?.showResultsImmediately !== false);
         setInstructions(data.exam?.instructions || "");
@@ -180,6 +190,17 @@ export default function OnlineExamAuthorPage() {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
   };
 
+  const refreshQuestions = async () => {
+    if (!examId) return;
+    try {
+      const data = await onlineExamApi.getQuestions(examId);
+      const drafts = fromApiQuestions(data.questions || []);
+      setQuestions(drafts.length ? drafts : [emptyQuestion()]);
+    } catch (err: any) {
+      await alertError(t("onlineExams.author.loadFailed"), err?.message);
+    }
+  };
+
   const changeType = (key: string, type: QuestionType) => {
     setQuestions((prev) =>
       prev.map((q) => {
@@ -194,33 +215,36 @@ export default function OnlineExamAuthorPage() {
     if (!examId) return;
     setSaving(true);
     try {
-      const blockedEvents: string[] = ["TAB_BLUR", "VISIBILITY_HIDDEN", "COPY_ATTEMPT"];
-      if (kioskFullscreen) blockedEvents.push("EXIT_FULLSCREEN");
-      if (kioskScreenShare) blockedEvents.push("SCREEN_SHARE_STOPPED");
-      await onlineExamApi.updateConfig(examId, {
+      const config: OnlineExamConfig = {
         isOnline,
-        maxViolations: Number(maxViolations) || 0,
         showResultsImmediately,
         instructions: instructions.trim() || null,
         classId: classId || null,
         proctorLevel,
         autoPostGrades,
-        kioskConfig: {
+      };
+      if (canEditSettings) {
+        const blockedEvents: string[] = ["TAB_BLUR", "VISIBILITY_HIDDEN", "COPY_ATTEMPT"];
+        if (kioskFullscreen) blockedEvents.push("EXIT_FULLSCREEN");
+        if (kioskScreenShare) blockedEvents.push("SCREEN_SHARE_STOPPED");
+        config.maxViolations = Number(maxViolations) || 0;
+        config.kioskConfig = {
           requireFullscreen: kioskFullscreen,
           requireScreenShare: kioskScreenShare,
           allowReconnect: kioskAllowReconnect,
           warnAt: Number(kioskWarnAt) || 0,
           maxViolations: Number(maxViolations) || 0,
           blockedEvents: blockedEvents as any,
-        },
-        retakePolicy: retakeEnabled
+        };
+        config.retakePolicy = retakeEnabled
           ? {
               maxRetakes: Number(maxRetakes) || 0,
               waitingPeriodHours: Number(waitingPeriodHours) || 0,
               scoreRetention,
             }
-          : null,
-      });
+          : null;
+      }
+      await onlineExamApi.updateConfig(examId, config);
       await onlineExamApi.saveQuestions(examId, toApiQuestions(questions));
       showToast(t("onlineExams.author.saved"));
       navigate(`/${school?.slug}/exams/${examId}`);
@@ -242,6 +266,15 @@ export default function OnlineExamAuthorPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0">
       <PageToast toast={toast} />
+      {examId ? (
+        <ImportQuestionsModal
+          examId={examId}
+          open={showImport}
+          onClose={() => setShowImport(false)}
+          existingCount={questions.filter((q) => q.prompt.trim()).length}
+          onImported={refreshQuestions}
+        />
+      ) : null}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -290,6 +323,11 @@ export default function OnlineExamAuthorPage() {
             <p className="text-sm text-slate-500">{t("onlineExams.author.kioskHint")}</p>
           </div>
         </div>
+        {!canEditSettings && (
+          <p className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {t("onlineExams.author.settingsAdminOnly")}
+          </p>
+        )}
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4">
             <input
@@ -313,8 +351,9 @@ export default function OnlineExamAuthorPage() {
             <input
               type="checkbox"
               checked={kioskFullscreen}
+              disabled={!canEditSettings}
               onChange={(e) => setKioskFullscreen(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
             />
             <span className="font-medium text-slate-800">{t("onlineExams.author.requireFullscreen")}</span>
           </label>
@@ -322,11 +361,12 @@ export default function OnlineExamAuthorPage() {
             <input
               type="checkbox"
               checked={kioskScreenShare}
+              disabled={!canEditSettings}
               onChange={(e) => {
                 setKioskScreenShare(e.target.checked);
                 if (e.target.checked && proctorLevel === "OFF") setProctorLevel("SCREEN_VIEW");
               }}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
             />
             <span className="font-medium text-slate-800">{t("onlineExams.author.requireScreenShare")}</span>
           </label>
@@ -334,8 +374,9 @@ export default function OnlineExamAuthorPage() {
             <input
               type="checkbox"
               checked={kioskAllowReconnect}
+              disabled={!canEditSettings}
               onChange={(e) => setKioskAllowReconnect(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
             />
             <span className="font-medium text-slate-800">{t("onlineExams.author.allowReconnect")}</span>
           </label>
@@ -372,8 +413,9 @@ export default function OnlineExamAuthorPage() {
               min={0}
               max={50}
               value={kioskWarnAt}
+              disabled={!canEditSettings}
               onChange={(e) => setKioskWarnAt(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono"
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono disabled:opacity-60"
             />
             <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.warnAtHint")}</p>
           </div>
@@ -404,8 +446,9 @@ export default function OnlineExamAuthorPage() {
               min={0}
               max={50}
               value={maxViolations}
+              disabled={!canEditSettings}
               onChange={(e) => setMaxViolations(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono"
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono disabled:opacity-60"
             />
             <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.maxViolationsHint")}</p>
           </div>
@@ -440,12 +483,17 @@ export default function OnlineExamAuthorPage() {
             <input
               type="checkbox"
               checked={retakeEnabled}
+              disabled={!canEditSettings}
               onChange={(e) => setRetakeEnabled(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-60"
             />
             <span className="font-medium text-slate-800">{t("onlineExams.author.enableRetakes")}</span>
           </label>
-          <div></div>
+          <div className="flex items-center">
+            {!canEditSettings && (
+              <p className="text-xs text-slate-500">{t("onlineExams.author.settingsAdminOnly")}</p>
+            )}
+          </div>
           {retakeEnabled && (
             <>
               <div>
@@ -457,8 +505,9 @@ export default function OnlineExamAuthorPage() {
                   min={0}
                   max={10}
                   value={maxRetakes}
+                  disabled={!canEditSettings}
                   onChange={(e) => setMaxRetakes(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono disabled:opacity-60"
                 />
                 <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.maxRetakesHint")}</p>
               </div>
@@ -471,8 +520,9 @@ export default function OnlineExamAuthorPage() {
                   min={0}
                   max={168}
                   value={waitingPeriodHours}
+                  disabled={!canEditSettings}
                   onChange={(e) => setWaitingPeriodHours(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono disabled:opacity-60"
                 />
                 <p className="text-xs text-slate-500 mt-1">{t("onlineExams.author.waitingPeriodHoursHint")}</p>
               </div>
@@ -482,8 +532,9 @@ export default function OnlineExamAuthorPage() {
                 </label>
                 <select
                   value={scoreRetention}
+                  disabled={!canEditSettings}
                   onChange={(e) => setScoreRetention(e.target.value as "best" | "last" | "average")}
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 disabled:opacity-60"
                 >
                   <option value="last">{t("onlineExams.author.scoreRetention.last")}</option>
                   <option value="best">{t("onlineExams.author.scoreRetention.best")}</option>
@@ -509,13 +560,22 @@ export default function OnlineExamAuthorPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
-          >
-            <Plus className="w-4 h-4" /> {t("onlineExams.author.addQuestion")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
+            >
+              <Upload className="w-4 h-4" /> {t("common:import")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
+            >
+              <Plus className="w-4 h-4" /> {t("onlineExams.author.addQuestion")}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">

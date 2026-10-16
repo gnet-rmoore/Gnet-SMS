@@ -45,6 +45,46 @@ export function computeExamEnvelope(
   return { startDate: new Date(start), endDate: new Date(end) };
 }
 
+/** Half-open interval overlap for two [start, end) windows. */
+export function windowsOverlap(
+  aStart: Date | string | number,
+  aEnd: Date | string | number,
+  bStart: Date | string | number,
+  bEnd: Date | string | number
+): boolean {
+  const as = new Date(aStart).getTime();
+  const ae = new Date(aEnd).getTime();
+  const bs = new Date(bStart).getTime();
+  const be = new Date(bEnd).getTime();
+  if ([as, ae, bs, be].some((t) => Number.isNaN(t))) return false;
+  return as < be && bs < ae;
+}
+
+/**
+ * Effective sitting window for one student. Schedules with no classId apply to
+ * everyone; class-scoped schedules apply only to students in that class.
+ * Falls back to the exam window when no schedule matches.
+ */
+export function resolveStudentWindow(
+  schedules: { classId?: string | null; startAt: Date; endAt: Date }[],
+  examWindow: { startDate: Date; endDate: Date },
+  studentClassIds: Set<string> | null | undefined
+): { startAt: Date; endAt: Date } {
+  const matching = schedules.filter(
+    (s) => !s.classId || (studentClassIds ? studentClassIds.has(s.classId) : false)
+  );
+  if (!matching.length) {
+    return { startAt: examWindow.startDate, endAt: examWindow.endDate };
+  }
+  let start = matching[0].startAt.getTime();
+  let end = matching[0].endAt.getTime();
+  for (const s of matching) {
+    start = Math.min(start, s.startAt.getTime());
+    end = Math.max(end, s.endAt.getTime());
+  }
+  return { startAt: new Date(start), endAt: new Date(end) };
+}
+
 /** A synthetic, non-persisted schedule derived from the exam window (legacy fallback). */
 export function synthesizeScheduleFromExam(exam: {
   id: string;

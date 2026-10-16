@@ -14,6 +14,7 @@ import {
   countClassroomsBySubjectId,
   provisionSubjectRoomsForOffering,
 } from "../lib/classroomClient";
+import { resolveActiveCalendarPattern } from "../lib/activeCalendar";
 
 /**
  * Ported from src/server/services/academicService.ts.
@@ -22,32 +23,9 @@ import {
  */
 export const academicService = {
   async getCalendar(schoolId: string) {
-    const include = {
-      periods: {
-        orderBy: { orderIndex: "asc" },
-        include: {
-          examComponents: { orderBy: { orderIndex: "asc" } },
-        },
-      },
-    };
-    // Prefer the calendar linked to the ACTIVE academic year; fall back to the
-    // sole active pattern (legacy schools that were never transitioned).
-    const activeYear = await prisma.academicYear.findFirst({
-      where: { schoolId, status: "ACTIVE" },
-      orderBy: { activatedAt: "desc" },
-      select: { calendarPatternId: true },
-    });
-    if (activeYear?.calendarPatternId) {
-      const linked = await prisma.academicCalendarPattern.findFirst({
-        where: { id: activeYear.calendarPatternId, schoolId },
-        include,
-      });
-      if (linked) return linked;
-    }
-    return prisma.academicCalendarPattern.findFirst({
-      where: { schoolId, isActive: true },
-      include,
-    });
+    // Shared resolver so the Academic Calendar, School Calendar and Exams
+    // always agree on which pattern/periods are active for the school.
+    return resolveActiveCalendarPattern(schoolId);
   },
 
   async createCalendar(schoolId: string, authorId: string, data: any) {

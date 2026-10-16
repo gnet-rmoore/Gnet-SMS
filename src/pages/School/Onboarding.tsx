@@ -33,6 +33,7 @@ import {
   type SetupStepId,
   type SetupStepStatus,
 } from "../../features/onboarding/setupChecklist";
+import { academicCalendarApi } from "../../features/academics-shared/calendar/api";
 
 type ChecklistItem = {
   id: SetupStepId;
@@ -107,7 +108,10 @@ export default function SchoolOnboardingPage() {
         fetch(`/api/schools/${current.id}/subjects`, { headers }),
         fetch(`/api/schools/${current.id}/staff`, { headers }),
         fetch(`/api/schools/${current.id}/classrooms`, { headers }),
-        fetch(`/api/schools/${current.id}/calendar`, { headers }),
+        academicCalendarApi
+          .fetchCalendar(current.id)
+          .then((data) => ({ ok: true, data }))
+          .catch(() => ({ ok: false, data: null })),
         fetch(`/api/schools/${current.id}/fee-templates`, { headers }),
       ]);
 
@@ -116,7 +120,7 @@ export default function SchoolOnboardingPage() {
       const subjectsJson = subjectsRes.ok ? await readJson(subjectsRes) : null;
       const staffJson = staffRes.ok ? await readJson(staffRes) : null;
       const classroomsJson = classroomsRes.ok ? await readJson(classroomsRes) : null;
-      const calendarJson = calendarRes.ok ? await readJson(calendarRes) : null;
+      const calendarJson = calendarRes.ok ? calendarRes.data : null;
       const feesJson = feesRes.ok ? await readJson(feesRes) : null;
 
       const liveSchool =

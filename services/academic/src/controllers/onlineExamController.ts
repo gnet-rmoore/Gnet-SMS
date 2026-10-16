@@ -17,7 +17,8 @@ export const onlineExamController = {
       const exam = await onlineExamService.updateOnlineConfig(
         req.params.id,
         user.schoolId,
-        req.body
+        req.body,
+        { id: user.id, role: user.role }
       );
       res.json(exam);
     } catch (err: any) {
@@ -45,7 +46,8 @@ export const onlineExamController = {
       const data = await onlineExamService.replaceQuestions(
         req.params.id,
         user.schoolId,
-        req.body?.questions ?? req.body
+        req.body?.questions ?? req.body,
+        { id: user.id, role: user.role }
       );
       res.json(data);
     } catch (err: any) {
@@ -83,7 +85,8 @@ export const onlineExamController = {
       const data = await onlineExamService.importQuestions(
         req.params.id,
         user.schoolId,
-        req.body?.rows ?? []
+        req.body?.rows ?? [],
+        { id: user.id, role: user.role }
       );
       res.json(data);
     } catch (err: any) {
@@ -647,9 +650,12 @@ export const onlineExamController = {
       return res.status(403).json({ error: "Unauthorized" });
     }
     try {
-      const exam = await onlineExamService.updateOnlineConfig(req.params.id, user.schoolId, {
-        retakePolicy: req.body,
-      });
+      const exam = await onlineExamService.updateOnlineConfig(
+        req.params.id,
+        user.schoolId,
+        { retakePolicy: req.body },
+        { id: user.id, role: user.role }
+      );
       res.json(exam);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to update retake policy" });

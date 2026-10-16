@@ -137,10 +137,17 @@ services:
       PORT: "3011"
       DATABASE_URL: postgresql://sms_identity:sms_identity@postgres:5432/sms_db?schema=identity
       DATABASE_PROVIDER: postgresql
+      # Admin connection (cluster role `sms`) for full-DB backup + VACUUM across schemas.
+      DATABASE_MAINTENANCE_URL: ${DATABASE_MAINTENANCE_URL:-postgresql://sms:sms@postgres:5432/sms_db}
+      BACKUPS_DIR: /app/backups
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-7}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: local-dev-access-secret-change-me
       SUPER_ADMIN_JWT_SECRET: local-dev-super-admin-secret-change-me
       INTERNAL_SERVICE_TOKEN: local-dev-internal-service-token-change-me
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-}
+      # SystemCredential encryption at rest; falls back to MFA_ENCRYPTION_KEY in code.
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
       ACADEMIC_URL: http://academic:3015
       CLASSROOM_URL: http://classroom:3014
       FINANCE_URL: http://finance:3016
@@ -168,6 +175,12 @@ services:
       MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
       MAILGUN_REGION: ${MAILGUN_REGION:-us}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-smsminio}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-smsminio-secret}
+      S3_BACKUP_BUCKET: ${S3_BACKUP_BUCKET:-sms-backups}
+      S3_FORCE_PATH_STYLE: "true"
+      S3_REGION: ${S3_REGION:-us-east-1}
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
       REQUIRE_REGISTRATION_EMAIL_CONFIRM: ${REQUIRE_REGISTRATION_EMAIL_CONFIRM:-true}
       # Seed runs on every boot; the seed is idempotent and only creates the
@@ -175,6 +188,8 @@ services:
       RUN_SEED: ${RUN_SEED:-true}
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@yoursms.com}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+    volumes:
+      - identity_backups:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
@@ -498,3 +513,4 @@ volumes:
   sms_miniodata:
   sms_caddy_data:
   sms_caddy_config:
+  identity_backups:

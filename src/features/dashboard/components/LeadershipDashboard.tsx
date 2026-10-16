@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { RecentActivityPanel } from "./RecentActivityPanel";
 import { useAuthStore } from "../../../store/authStore";
 import { reportsApi } from "../../reports/api";
+import { academicCalendarApi } from "../../academics-shared/calendar/api";
 import {
   aggregateLogSeverity,
   attendanceByGradeLevelChart,
@@ -125,10 +126,10 @@ export function LeadershipDashboard({
           ok: r.ok,
           data: r.ok ? await r.json() : null,
         })),
-        fetch(`/api/schools/${school.id}/calendar`, { headers }).then(async (r) => ({
-          ok: r.ok,
-          data: r.ok ? await r.json() : null,
-        })),
+        academicCalendarApi
+          .fetchCalendar(school.id)
+          .then((data) => ({ ok: true, data }))
+          .catch(() => ({ ok: false, data: null })),
         fetch(`/api/schools/${school.id}/fee-templates`, { headers }).then(async (r) => ({
           ok: r.ok,
           data: r.ok ? await r.json() : null,

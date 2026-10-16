@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { academicCalendarApi } from "../academics-shared/calendar/api";
 import type { AssessmentStructureColumn } from "../../lib/assessmentStructure";
 
 export type AssessmentGradeCell = {
@@ -58,8 +59,7 @@ export const gradebookApi = {
       entries: Array<{ studentId: string; grade: number | null }>;
     }
   ) => api.post(`/api/exams/${examId}/grades/bulk`, data),
-  fetchCalendar: (schoolId: string) =>
-    api.get(`/api/schools/${schoolId}/calendar`),
+  fetchCalendar: (schoolId: string) => academicCalendarApi.fetchCalendar(schoolId),
   fetchMyClassrooms: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/classrooms`),
   fetchAssessmentGrades: (

@@ -191,7 +191,8 @@ export const emailSettingsService = {
         category: "SETTINGS",
         entityType: "PlatformSettings",
         entityId: "default",
-        meta: { actorId, provider: result.provider, ok: result.ok },
+        userId: actorId,
+        after: { provider: result.provider, ok: result.ok },
         tags: ["email", "test"],
       }
     );

@@ -54,7 +54,16 @@ import {
   sampleQuestions,
 } from "../lib/onlineExamPreviewSample";
 import { getClassroomsByMember } from "../lib/classroomClient";
+import { resolveStudentWindow } from "../lib/examSchedule";
 import { emitLiveExamEvent } from "../lib/liveExamEvents";
+import {
+  assertCanConfigureExamSettings,
+  assertTeacherCanAuthorExam,
+  isQuizComponentType,
+} from "../lib/examAuthorScope";
+import { resolveExamComponentType } from "../lib/examComponentType";
+
+export type ExamAuthorActor = { id: string; role: string };
 
 function httpError(message: string, status: number, code?: string) {
   return Object.assign(new Error(message), { status, code });
@@ -643,9 +652,38 @@ async function recomputeAttemptTotals(attemptId: string) {
 }
 
 export const onlineExamService = {
-  async updateOnlineConfig(examId: string, schoolId: string, data: any) {
+  async updateOnlineConfig(
+    examId: string,
+    schoolId: string,
+    data: any,
+    actor?: ExamAuthorActor
+  ) {
     const exam = await loadExamOrThrow(examId);
     if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
+
+    const componentType = await resolveExamComponentType(exam.examComponentId);
+    const isQuiz = isQuizComponentType(componentType);
+
+    if (actor?.role === "TEACHER") {
+      await assertTeacherCanAuthorExam({
+        userId: actor.id,
+        schoolId,
+        role: actor.role,
+        exam,
+      });
+    }
+    if (actor) {
+      assertCanConfigureExamSettings(actor.role, isQuiz, data);
+    }
+
+    let duration = exam.duration;
+    if (data.duration !== undefined) {
+      const parsed = Math.round(Number(data.duration));
+      if (!Number.isFinite(parsed) || parsed < 1 || parsed > 600) {
+        throw httpError("duration must be between 1 and 600 minutes", 400);
+      }
+      duration = parsed;
+    }
 
     const maxViolations =
       data.maxViolations === undefined || data.maxViolations === null
@@ -703,6 +741,7 @@ export const onlineExamService = {
       where: { id: examId },
       data: {
         isOnline: data.isOnline === undefined ? exam.isOnline : Boolean(data.isOnline),
+        duration,
         maxViolations,
         paperDueAt,
         retakePolicy,
@@ -740,6 +779,7 @@ export const onlineExamService = {
 
   async getQuestions(examId: string, includeKeys: boolean) {
     const exam = await loadExamOrThrow(examId);
+    const componentType = await resolveExamComponentType(exam.examComponentId);
     const questions = await prisma.examQuestion.findMany({
       where: { examId, schoolId: exam.schoolId },
       include: { choices: { orderBy: { orderIndex: "asc" } } },
@@ -750,6 +790,8 @@ export const onlineExamService = {
         id: exam.id,
         title: exam.title,
         isOnline: exam.isOnline,
+        isQuiz: isQuizComponentType(componentType),
+        componentType,
         maxViolations: exam.maxViolations,
         showResultsImmediately: exam.showResultsImmediately,
         instructions: exam.instructions,
@@ -941,8 +983,22 @@ export const onlineExamService = {
     }
   },
 
-  async replaceQuestions(examId: string, schoolId: string, questionsInput: any[]) {
+  async replaceQuestions(
+    examId: string,
+    schoolId: string,
+    questionsInput: any[],
+    actor?: ExamAuthorActor
+  ) {
     const exam = await this.assertQuestionsEditable(examId, schoolId);
+
+    if (actor?.role === "TEACHER") {
+      await assertTeacherCanAuthorExam({
+        userId: actor.id,
+        schoolId,
+        role: actor.role,
+        exam,
+      });
+    }
 
     if (!Array.isArray(questionsInput)) {
       throw httpError("questions must be an array", 400);
@@ -997,8 +1053,23 @@ export const onlineExamService = {
    * Authoritative import: re-validates the rows, enforces the same locks as the
    * manual editor, then atomically replaces the exam's questions.
    */
-  async importQuestions(examId: string, schoolId: string, rows: Record<string, unknown>[]) {
+  async importQuestions(
+    examId: string,
+    schoolId: string,
+    rows: Record<string, unknown>[],
+    actor?: ExamAuthorActor
+  ) {
     const exam = await this.assertQuestionsEditable(examId, schoolId);
+
+    if (actor?.role === "TEACHER") {
+      await assertTeacherCanAuthorExam({
+        userId: actor.id,
+        schoolId,
+        role: actor.role,
+        exam,
+      });
+    }
+
     const validation = validateImportRows(rows);
 
     if (validation.validCount > MAX_QUESTIONS) {
@@ -1039,7 +1110,7 @@ export const onlineExamService = {
       },
       include: {
         _count: { select: { questions: true } },
-        schedules: { select: { classId: true } },
+        schedules: { select: { classId: true, startAt: true, endAt: true } },
         attempts: {
           where: { studentId },
           orderBy: { attemptNumber: "desc" },
@@ -1091,7 +1162,20 @@ export const onlineExamService = {
       if (e._count.questions < 1) continue;
 
       const leg = await examPaperService.getStudentLeg(e.id, schoolId, studentId);
-      const canBeginOnline = leg === "ONLINE";
+
+      // Per-student sitting window: honor class-scoped ExamSchedule rows so a
+      // student only has access while their own sitting is open. The card stays
+      // visible (UPCOMING/LOCKED) before the window opens.
+      const win = resolveStudentWindow(
+        e.schedules,
+        { startDate: fresh.startDate, endDate: fresh.endDate },
+        studentClassIds
+      );
+      const availability: "OPEN" | "UPCOMING" | "ENDED" =
+        now < win.startAt ? "UPCOMING" : now > win.endAt ? "ENDED" : "OPEN";
+      if (availability === "ENDED") continue;
+
+      const canBeginOnline = leg === "ONLINE" && availability === "OPEN";
 
       // Get latest attempt and retake eligibility
       const latestAttempt = e.attempts[0] || null;
@@ -1114,6 +1198,9 @@ export const onlineExamService = {
         classId: e.classId,
         paperDueAt: fresh.paperDueAt,
         sittingLeg: leg,
+        availability,
+        scheduleStartAt: win.startAt,
+        scheduleEndAt: win.endAt,
         canBeginOnline,
         attempt: latestAttempt,
         retakeEligibility: eligibility,
@@ -1704,13 +1791,14 @@ export const onlineExamService = {
     // classes (via Exam.classId and/or its ExamSchedule rows). No target = school-wide.
     const scheduleClasses = await prisma.examSchedule.findMany({
       where: { examId, schoolId },
-      select: { classId: true },
+      select: { classId: true, startAt: true, endAt: true },
     });
     const audienceClassIds = new Set<string>();
     if (exam.classId) audienceClassIds.add(exam.classId);
     for (const s of scheduleClasses) if (s.classId) audienceClassIds.add(s.classId);
+    let studentClasses: Set<string> | null = null;
     if (audienceClassIds.size) {
-      const studentClasses = await resolveStudentClassIds(schoolId, studentId);
+      studentClasses = await resolveStudentClassIds(schoolId, studentId);
       let member = false;
       if (studentClasses) {
         for (const cid of audienceClassIds) {
@@ -1723,6 +1811,16 @@ export const onlineExamService = {
       if (!member) {
         throw httpError("You are not enrolled in this exam's class", 403, "NOT_IN_AUDIENCE");
       }
+    }
+
+    // Per-student sitting window: a class-scoped schedule limits access to that
+    // sitting. Fall back to the exam envelope when no schedule matches.
+    const win = resolveStudentWindow(scheduleClasses, { startDate: exam.startDate, endDate: exam.endDate }, studentClasses);
+    if (now < win.startAt) {
+      throw httpError("Your exam sitting has not started yet", 403, "SITTING_NOT_OPENED");
+    }
+    if (now > win.endAt) {
+      throw httpError("Your exam sitting window has ended", 403, "SITTING_ENDED");
     }
 
     // Check for existing in-progress attempt
@@ -1748,7 +1846,7 @@ export const onlineExamService = {
       throw httpError(this.getRetakeErrorMessage(eligibility.reason), 409, eligibility.reason);
     }
 
-    const endsAt = computeEndsAt(now, exam.duration, exam.endDate);
+    const endsAt = computeEndsAt(now, exam.duration, win.endAt);
     const attempt = await prisma.examAttempt.create({
       data: {
         examId,

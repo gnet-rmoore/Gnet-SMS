@@ -40,7 +40,8 @@ export const examPaperController = {
         req.params.id,
         user.schoolId,
         user.id,
-        req.body || {}
+        req.body || {},
+        { id: user.id, role: user.role }
       );
       res.json(data);
     } catch (err: any) {
@@ -106,7 +107,12 @@ export const examPaperController = {
       return res.status(403).json({ error: "Unauthorized" });
     }
     try {
-      const data = await examPaperService.submit(req.params.id, user.schoolId, user.id);
+      const data = await examPaperService.submit(
+        req.params.id,
+        user.schoolId,
+        user.id,
+        { id: user.id, role: user.role }
+      );
       res.json(data);
     } catch (err: any) {
       res

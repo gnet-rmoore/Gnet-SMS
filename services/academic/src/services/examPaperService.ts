@@ -6,6 +6,14 @@ import {
 import { getIdentityUsersByRoles } from "../lib/identityClient";
 import { notifyInApp, notifyInAppMany } from "../lib/notifyInApp";
 import { evaluatePaperStart } from "../lib/paperApproval";
+import {
+  assertCanConfigureExamSettings,
+  assertTeacherCanAuthorExam,
+  isQuizComponentType,
+} from "../lib/examAuthorScope";
+import { resolveExamComponentType } from "../lib/examComponentType";
+
+export type PaperActor = { id: string; role: string };
 
 const REVIEWER_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
 const DELIVERY_MODES = new Set(["ONLINE", "OFFLINE", "HYBRID"]);
@@ -221,6 +229,8 @@ export const examPaperService = {
       orderBy: { createdAt: "asc" },
     });
 
+    const componentType = await resolveExamComponentType(exam.examComponentId);
+
     return {
       exam: {
         id: exam.id,
@@ -228,6 +238,8 @@ export const examPaperService = {
         deliveryMode: exam.deliveryMode,
         paperStatus: exam.paperStatus,
         isOnline: exam.isOnline,
+        isQuiz: isQuizComponentType(componentType),
+        componentType,
         startDate: exam.startDate,
         endDate: exam.endDate,
         duration: exam.duration,
@@ -246,10 +258,28 @@ export const examPaperService = {
     examId: string,
     schoolId: string,
     authorId: string,
-    data: { deliveryMode?: string; instructions?: string | null; maxViolations?: number }
+    data: { deliveryMode?: string; instructions?: string | null; maxViolations?: number },
+    actor?: PaperActor
   ) {
     const exam = await prisma.exam.findFirst({ where: { id: examId, schoolId } });
     if (!exam) throw httpError("Exam not found", 404);
+
+    if (actor?.role === "TEACHER") {
+      await assertTeacherCanAuthorExam({
+        userId: actor.id,
+        schoolId,
+        role: actor.role,
+        exam,
+      });
+    }
+    if (actor) {
+      const componentType = await resolveExamComponentType(exam.examComponentId);
+      assertCanConfigureExamSettings(
+        actor.role,
+        isQuizComponentType(componentType),
+        data
+      );
+    }
 
     let pkg = await latestPackage(examId);
     if (!pkg) {
@@ -374,7 +404,19 @@ export const examPaperService = {
     return this.getOrCreateDraft(examId, schoolId, authorId);
   },
 
-  async submit(examId: string, schoolId: string, authorId: string) {
+  async submit(examId: string, schoolId: string, authorId: string, actor?: PaperActor) {
+    const examForDeadline = await prisma.exam.findFirst({ where: { id: examId, schoolId } });
+    if (!examForDeadline) throw httpError("Exam not found", 404);
+
+    if (actor?.role === "TEACHER") {
+      await assertTeacherCanAuthorExam({
+        userId: actor.id,
+        schoolId,
+        role: actor.role,
+        exam: examForDeadline,
+      });
+    }
+
     let pkg = await latestPackage(examId);
     if (!pkg || pkg.schoolId !== schoolId) {
       const created = await this.getOrCreateDraft(examId, schoolId, authorId);
@@ -383,7 +425,6 @@ export const examPaperService = {
     await assertEditable(pkg!);
     await validateContentForMode(examId, schoolId, pkg!.deliveryMode, pkg!);
 
-    const examForDeadline = await prisma.exam.findFirst({ where: { id: examId, schoolId } });
     if (examForDeadline?.paperDueAt && new Date() > examForDeadline.paperDueAt) {
       throw Object.assign(new Error("The paper deadline has passed"), {
         status: 409,

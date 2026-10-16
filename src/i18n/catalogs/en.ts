@@ -333,6 +333,44 @@ export const enAuth = {
   mustChangePasswordPolicyMin: "At least {{count}} characters. Must differ from your temporary password.",
   mustChangePasswordPolicyStrong:
     "At least {{count}} characters with a letter and number. Must differ from your temporary password.",
+  loginError: {
+    invalidTitle: "We couldn’t sign you in",
+    invalidMessage: "The email address or password you entered doesn’t match any account.",
+    invalidHint:
+      "Check for typos — passwords are case-sensitive. If you’ve forgotten your password, select “Forgot password?” below.",
+    formTitle: "Please check your details",
+    formMessage: "Some of the information you entered isn’t valid. Review the fields and try again.",
+    accessTitle: "You can’t sign in just yet",
+    notVerifiedHint:
+      "Open the verification link we sent to your inbox, then try again. Don’t see it? Check your spam folder.",
+    inactiveMessage: "This account has been deactivated.",
+    inactiveHint:
+      "Ask your school administrator to restore your access, then try signing in again.",
+    rateTitle: "Too many attempts",
+    rateHint:
+      "Wait a little while and try again — or reset your password if you’re not sure it.",
+    downTitle: "Sign-in is temporarily unavailable",
+    downMessage: "Something went wrong on our side — the problem isn’t with your details.",
+    downHint:
+      "Please try again in a minute or two. If it keeps happening, contact your school administrator.",
+    notFoundMessage: "We couldn’t reach the sign-in service. It may still be starting up.",
+    notFoundHint: "Wait a few seconds, then select “Sign in” again.",
+    maintenanceMessage: "The platform is undergoing scheduled maintenance right now.",
+    maintenanceHint: "Please try again shortly. Your account and data are safe.",
+    offlineTitle: "You appear to be offline",
+    offlineMessage: "We couldn’t reach the server. Check your internet connection and try again.",
+    mfaTitle: "That verification code didn’t work",
+    mfaMessage: "The code is incorrect or has expired.",
+    mfaHint:
+      "Enter the 6-digit code from your authenticator app, or request a new code by SMS. Codes expire quickly — if it keeps failing, start over from your password.",
+    mfaEnrollMessage:
+      "Your account needs two-factor authentication set up before you can sign in.",
+    mfaEnrollHint:
+      "Contact your school administrator to complete the setup, then try again.",
+    genericTitle: "Something went wrong",
+    genericHint:
+      "Please try again in a moment. If the problem continues, contact your school administrator.",
+  },
 } as const;
 
 export const enErrors = {
@@ -2862,6 +2900,7 @@ export const enPages = {
     linkAcademicCalendar: "Academic Calendar",
     linkSchoolCalendar: "School Calendar",
     scheduleExam: "Schedule exam",
+    manageSchedule: "Manage schedule",
     setupCalendarFirst: "Set up Academic Calendar first",
     stats: {
       total: "Total",
@@ -2919,6 +2958,34 @@ export const enPages = {
       deliveryModeHint: "Online exams are taken in the secure browser; offline exams use printed papers.",
       paperDeadline: "Paper deadline (optional)",
       paperDeadlineHint: "Authors must submit the paper pack by this time, before the exam starts.",
+    },
+    schedule: {
+      title: "Exam schedule",
+      eyebrow: "Sittings",
+      class: "Class",
+      classAll: "All classes (school-wide)",
+      room: "Room",
+      roomPlaceholder: "e.g. Hall A",
+      session: "Session",
+      sessionPlaceholder: "e.g. Morning",
+      startAt: "Starts",
+      endAt: "Ends",
+      note: "Note",
+      add: "Add sitting",
+      saving: "Adding…",
+      delete: "Remove",
+      empty: "No sittings yet. Students use the exam's default window until you add one.",
+      syntheticNote:
+        "Showing the exam's default window. Add a sitting to schedule specific classes.",
+      confirmDeleteTitle: "Remove sitting?",
+      confirmDeleteText: "Students will no longer be bound to this sitting window.",
+      created: "Sitting added",
+      deleted: "Sitting removed",
+      loadFailed: "Could not load schedule",
+      createFailed: "Could not add sitting",
+      deleteFailed: "Could not remove sitting",
+      setWindow: "Set a start and end for the sitting",
+      windowInvalid: "End must be after start",
     },
     toast: {
       loadFailed: "Failed to load exams",
@@ -3538,6 +3605,8 @@ export const enPages = {
   examPaper: {
     title: "Exam paper",
     subtitle: "Draft questions and submit the paper for academic review.",
+    settingsAdminOnly:
+      "Only school administration can change this setting. Teachers can configure it for quizzes.",
     reviewTitle: "Exam paper review",
     reviewSubtitle:
       "Approve or return teacher-submitted papers before students can sit the exam.",
@@ -5819,6 +5888,8 @@ export const enPages = {
       warnAtHint: "Must be at or below the auto-submit limit.",
       maxViolations: "Max violations before auto-submit",
       maxViolationsHint: "Use 0 for unlimited (no auto-submit).",
+      settingsAdminOnly:
+        "Only school administration can change these settings. Teachers can configure them for quizzes.",
       studentInstructions: "Student instructions",
       instructionsPlaceholder: "Stay in fullscreen. Leaving the exam counts as a violation.",
       questions: "Questions",
@@ -6874,6 +6945,11 @@ export const enPages = {
       backupHint: "Create a full snapshot of the current database",
       optimizeTables: "Optimize Tables",
       optimizeHint: "Run maintenance scripts to improve performance",
+      backupHistory: "Backup history",
+      noBackups: "No backups yet.",
+      backupRunning: "Creating backup…",
+      optimizeRunning: "Optimizing…",
+      size: "Size",
       systemCredentials: "System Credentials",
       credentialsSubtitle: "Manage API keys and secrets for external integrations",
       addCredential: "Add Credential",

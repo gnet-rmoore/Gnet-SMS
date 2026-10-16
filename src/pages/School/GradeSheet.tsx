@@ -7,6 +7,8 @@ import {
   resolveGradeSheetTemplateKey,
 } from "../../features/gradesheets";
 import { useDocumentOfficialSignatures } from "../../hooks/useDocumentOfficialSignatures";
+import { useAcademicCalendarQuery } from "../../features/academics-shared/calendar/useAcademicCalendar";
+import { academicYearLabel } from "../../features/academics-shared/calendar/selectors";
 import { Download, ArrowLeft, Printer, AlertCircle } from "lucide-react";
 import { motion } from "motion/react";
 import html2canvas from "html2canvas";
@@ -34,6 +36,8 @@ export const GradeSheet = () => {
   const studentId = paramStudentId || user?.id;
   const templateKey = resolveGradeSheetTemplateKey(school?.gradeSheetTemplate);
   const templateDef = getGradeSheetTemplateDef(templateKey);
+  const { calendar } = useAcademicCalendarQuery();
+  const yearLabel = academicYearLabel(calendar);
   const { officialSignatures } = useDocumentOfficialSignatures(
     school?.id,
     school?.documentSignatories,
@@ -248,6 +252,7 @@ export const GradeSheet = () => {
             school={school}
             templateId={templateKey}
             gradeLegends={legends}
+            academicYearLabel={yearLabel || undefined}
             signatures={{
               principal: officialSignatures.principal,
             }}

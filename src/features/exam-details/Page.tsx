@@ -27,6 +27,7 @@ import autoTable from "jspdf-autotable";
 import { useExamDetailsQuery } from "./hooks/useExamDetailsQuery";
 import { ResultsModal } from "./components/ResultsModal";
 import { HistoryModal } from "./components/HistoryModal";
+import { ExamScheduleModal } from "../exams/components/ExamScheduleModal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { cardShell } from "../academics-shared/FeatureModalShell";
 import { alertError, confirmAction } from "../../lib/swal";
@@ -135,9 +136,13 @@ export const ExamDetails = () => {
   const [processing, setProcessing] = React.useState(false);
   const [historyModal, setHistoryModal] = React.useState<GradeEntry | null>(null);
   const [resultsModal, setResultsModal] = React.useState<StudentResult[] | null>(null);
+  const [showSchedule, setShowSchedule] = React.useState(false);
 
   const isAdmin = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
   const isTeacher = user?.role === "TEACHER";
+  const canManageSchedules = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"].includes(
+    user?.role || ""
+  );
   const loading = queryLoading || gradesLoading;
 
   React.useEffect(() => {
@@ -620,6 +625,16 @@ export const ExamDetails = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-3 shrink-0">
+          {canManageSchedules && !selectedClassroom && (
+            <button
+              type="button"
+              onClick={() => setShowSchedule(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors"
+            >
+              <CalendarDays className="w-4 h-4" />
+              {t("pages:exams.manageSchedule")}
+            </button>
+          )}
           {(isAdmin || isTeacher) && !selectedClassroom && (
             <Link
               to={`/${school?.slug}/exams/${examId}/paper`}
@@ -822,6 +837,14 @@ export const ExamDetails = () => {
             generateReportCard={generateReportCard}
             resultsModal={resultsModal}
             setResultsModal={setResultsModal}
+          />
+        )}
+        {showSchedule && exam && (
+          <ExamScheduleModal
+            examId={exam.id}
+            examTitle={exam.title}
+            onClose={() => setShowSchedule(false)}
+            onChanged={fetchData}
           />
         )}
       </AnimatePresence>

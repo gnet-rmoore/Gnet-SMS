@@ -17,6 +17,8 @@ const router = express.Router();
 const EXAM_READ_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"];
 const EXAM_WRITE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"];
 const EXAM_ADMIN_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
+/** Exam sitting schedules are managed by school leadership only — not teachers. */
+const SCHEDULE_WRITE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"];
 
 router.get(
   "/api/students/:studentId/grades",
@@ -92,7 +94,7 @@ router.get(
 router.post(
   "/api/exams/:id/schedule",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(SCHEDULE_WRITE_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   validateBody(examScheduleCreateSchema),
   examController.createExamSchedule
@@ -101,7 +103,7 @@ router.post(
 router.patch(
   "/api/exam-schedules/:scheduleId",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(SCHEDULE_WRITE_ROLES),
   requireResourceTenant(resourceLoaders.examSchedule),
   validateBody(examScheduleUpdateSchema),
   examController.updateExamSchedule
@@ -110,7 +112,7 @@ router.patch(
 router.delete(
   "/api/exam-schedules/:scheduleId",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(SCHEDULE_WRITE_ROLES),
   requireResourceTenant(resourceLoaders.examSchedule),
   examController.deleteExamSchedule
 );

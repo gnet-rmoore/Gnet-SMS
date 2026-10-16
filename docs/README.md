@@ -28,6 +28,12 @@ Comprehensive breakdown of the academic, student, financial, administrative, and
 ### 5. [Academics Architecture: Grade Levels vs. Class Groups](./grade-level-vs-class-group.md)
 Clear definitions, structural rules, and database mapping explaining the key distinction between Grade Levels, Class Groups, and Subject-Specific Classrooms.
 
+### 6. [Super Admin Credentials](./SUPERADMIN_CREDENTIALS.md)
+Platform credential services: capability matrix, AES-256-GCM encryption at rest, email-provider secrets, per-service reference, tests, and production runbook.
+
+### 7. [Super Admin Database Maintenance](./SA_DATABASE_MAINTENANCE.md)
+Backup Database (`pg_dump` + optional off-box copy) and Optimize Tables (`VACUUM ANALYZE`): endpoints, readiness status, configuration, troubleshooting, and runbook.
+
 ---
 
 ## 🚀 Key Features Overview

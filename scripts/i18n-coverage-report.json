@@ -5,9 +5,9 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   },
   "es": {
     "common": 0,
@@ -15,9 +15,9 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   },
   "de": {
     "common": 0,
@@ -25,9 +25,9 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   },
   "ar": {
     "common": 0,
@@ -35,9 +35,9 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   },
   "zh-Hans": {
     "common": 0,
@@ -45,9 +45,9 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   },
   "hi": {
     "common": 0,
@@ -55,8 +55,8 @@
     "auth": 0,
     "errors": 0,
     "roles": 0,
-    "pages": 1150,
+    "pages": 1271,
     "public": 437,
-    "__totalMissing": 1588
+    "__totalMissing": 1709
   }
 }

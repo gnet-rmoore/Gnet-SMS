@@ -14,6 +14,10 @@ import {
   validateImportRows,
   type NormalizedQuestion,
 } from "../services/academic/src/lib/questionImport.ts";
+import {
+  QUESTION_TEMPLATE_EXAMPLES,
+  QUESTION_TEMPLATE_HEADERS,
+} from "../src/features/online-exam/parseQuestionSheet.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -258,6 +262,42 @@ const sample: NormalizedQuestion | undefined = validateImportRows([
   { Type: "Essay", Question: "typing" },
 ]).validQuestions[0];
 assert(Boolean(sample), "validQuestions returns NormalizedQuestion objects");
+
+// ---------------------------------------------------------------------------
+// Client template <-> server validator contract
+// Ensures the workbook the app hands to educators is exactly what the server
+// accepts, so the two can never silently drift apart.
+// ---------------------------------------------------------------------------
+{
+  const unmapped = QUESTION_TEMPLATE_HEADERS.filter((h) => canonicalHeaderKey(h) === null);
+  assert(
+    unmapped.length === 0,
+    `template headers all map to canonical keys${unmapped.length ? ` (unmapped: ${unmapped.join(", ")})` : ""}`
+  );
+
+  const rows = QUESTION_TEMPLATE_EXAMPLES.map((values) => {
+    const row: Record<string, unknown> = {};
+    QUESTION_TEMPLATE_HEADERS.forEach((h, i) => {
+      row[h] = values[i] ?? "";
+    });
+    return row;
+  });
+  const v = validateImportRows(rows);
+  const problem = v.rows
+    .filter((r) => !r.ok)
+    .map((r) => `row ${r.rowNumber}: ${r.errors.join("|")}`)
+    .join(" ; ");
+  assert(v.rowCount === QUESTION_TEMPLATE_EXAMPLES.length, "template examples are all counted");
+  assert(v.errorCount === 0, `template examples all valid${problem ? ` (${problem})` : ""}`);
+  assert(v.validQuestions[0]?.type === "MULTIPLE_CHOICE", "template example 1 is multiple choice");
+  assert(v.validQuestions[1]?.type === "TRUE_FALSE", "template example 2 is true/false");
+  assert(v.validQuestions[2]?.type === "FILL_BLANK", "template example 3 is fill-blank");
+  assert(v.validQuestions[3]?.type === "ESSAY", "template example 4 is essay");
+  assert(
+    v.validQuestions[0]?.choices.find((c) => c.isCorrect)?.text === "Paris",
+    "template example 1 marks Paris correct"
+  );
+}
 
 console.log(`\nQuestion import tests: ${failed === 0 ? "ALL PASSED" : failed + " FAILED"}`);
 if (failed > 0) process.exit(1);

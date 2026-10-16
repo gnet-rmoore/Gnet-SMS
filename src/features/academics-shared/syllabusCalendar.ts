@@ -1,5 +1,12 @@
 /** Academic Calendar helpers for syllabus plans and lesson-plan week scoping. */
 
+import {
+  academicYearLabel as sharedAcademicYearLabel,
+  hasActiveCalendar as sharedHasActiveCalendar,
+  normalizeCalendarPeriods as sharedNormalizeCalendarPeriods,
+  periodContainingDate as sharedPeriodContainingDate,
+} from "./calendar/selectors";
+
 export type CalendarExamComponent = {
   id?: string;
   label: string;
@@ -48,29 +55,13 @@ function toIsoDate(value: string | Date): string {
 
 /** Display label for academic year — calendar name or derived year span. */
 export function academicYearLabel(calendar: ActiveCalendar | null | undefined): string {
-  if (!calendar) return "";
-  if (calendar.name?.trim()) return calendar.name.trim();
-  const periods = normalizeCalendarPeriods(calendar.periods);
-  if (periods.length === 0) return "";
-  const startYear = new Date(`${periods[0].startDate}T12:00:00`).getFullYear();
-  const endYear = new Date(`${periods[periods.length - 1].endDate}T12:00:00`).getFullYear();
-  return startYear === endYear ? String(startYear) : `${startYear}-${endYear}`;
+  return sharedAcademicYearLabel(calendar);
 }
 
 export function normalizeCalendarPeriods(
   periods: CalendarPeriod[] | null | undefined
 ): CalendarPeriod[] {
-  if (!Array.isArray(periods)) return [];
-  return periods.map((p) => ({
-    ...p,
-    startDate: toIsoDate(p.startDate),
-    endDate: toIsoDate(p.endDate),
-    annualWeightPct: Number(p.annualWeightPct) || 0,
-    examComponents: (p.examComponents ?? []).map((c) => ({
-      ...c,
-      weightPct: Number(c.weightPct) || 0,
-    })),
-  }));
+  return sharedNormalizeCalendarPeriods(periods) as CalendarPeriod[];
 }
 
 /** Human-readable time frame for a syllabus unit row. */
@@ -114,7 +105,7 @@ export function gradingCriteriaFromCalendar(
 }
 
 export function hasActiveCalendar(calendar: ActiveCalendar | null | undefined): boolean {
-  return Boolean(calendar?.id && normalizeCalendarPeriods(calendar.periods).length > 0);
+  return sharedHasActiveCalendar(calendar, { requireId: true });
 }
 
 /** Apply calendar defaults to a syllabus form shell. */
@@ -153,11 +144,7 @@ export function periodContainingDate(
   periods: CalendarPeriod[],
   isoDate: string
 ): CalendarPeriod | null {
-  if (!isoDate) return null;
-  const normalized = normalizeCalendarPeriods(periods);
-  return (
-    normalized.find((p) => isoDate >= p.startDate && isoDate <= p.endDate) ?? null
-  );
+  return sharedPeriodContainingDate(periods, isoDate) as CalendarPeriod | null;
 }
 
 export function clampDateToPeriod(isoDate: string, period: CalendarPeriod): string {

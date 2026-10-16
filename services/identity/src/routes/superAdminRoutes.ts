@@ -1,6 +1,9 @@
 import express from "express";
 import { authenticateSuperAdmin } from "../middleware/auth";
+import { validateBody } from "../middleware/validate";
+import { credentialCreateSchema } from "../validation/schemas";
 import { superAdminController } from "../controllers/superAdminController";
+import { databaseMaintenanceController } from "../controllers/databaseMaintenanceController";
 
 const router = express.Router();
 const sa = authenticateSuperAdmin;
@@ -96,11 +99,31 @@ router.get("/api/super-admin/activity", sa, superAdminController.getActivity);
 router.get("/api/super-admin/activity/export", sa, superAdminController.exportActivityCsv);
 
 router.get("/api/super-admin/credentials", sa, superAdminController.getCredentials);
-router.post("/api/super-admin/credentials", sa, superAdminController.createCredential);
+router.post(
+  "/api/super-admin/credentials",
+  sa,
+  validateBody(credentialCreateSchema),
+  superAdminController.createCredential
+);
 router.delete("/api/super-admin/credentials/:id", sa, superAdminController.deleteCredential);
 
 router.get("/api/super-admin/email-settings", sa, superAdminController.getEmailSettings);
 router.patch("/api/super-admin/email-settings", sa, superAdminController.updateEmailSettings);
 router.post("/api/super-admin/email-settings/test", sa, superAdminController.sendTestEmail);
+
+router.get("/api/super-admin/database/status", sa, databaseMaintenanceController.getStatus);
+router.post("/api/super-admin/database/backup", sa, databaseMaintenanceController.createBackup);
+router.get("/api/super-admin/database/backups", sa, databaseMaintenanceController.listBackups);
+router.get(
+  "/api/super-admin/database/backups/:name/download",
+  sa,
+  databaseMaintenanceController.downloadBackup
+);
+router.delete(
+  "/api/super-admin/database/backups/:name",
+  sa,
+  databaseMaintenanceController.deleteBackup
+);
+router.post("/api/super-admin/database/optimize", sa, databaseMaintenanceController.optimize);
 
 export default router;

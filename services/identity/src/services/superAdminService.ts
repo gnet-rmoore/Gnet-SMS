@@ -4,6 +4,10 @@ import { logSystemEvent } from "../utils/logger";
 import { generateTempPassword } from "../lib/mailer";
 import { maskSecret } from "../lib/mailRuntimeConfig";
 import {
+  encryptCredentialSecret,
+  decryptCredentialSecret,
+} from "../lib/credentialCrypto";
+import {
   parseSecurityPolicy,
   validatePasswordAgainstPolicy,
   DEFAULT_SECURITY_POLICY,
@@ -548,10 +552,13 @@ export const superAdminService = {
   async getCredentials() {
     try {
       const rows = await prisma.systemCredential.findMany({ orderBy: { createdAt: "desc" } });
-      return rows.map((row) => ({
-        ...row,
-        secret: row.secret ? maskSecret(row.secret) : null,
-      }));
+      return rows.map((row) => {
+        const plain = decryptCredentialSecret(row.secret);
+        return {
+          ...row,
+          secret: plain ? maskSecret(plain) : null,
+        };
+      });
     } catch (err) {
       console.warn("Prisma error in superAdminService.getCredentials, returning fallback array:", err);
       return [];
@@ -559,10 +566,32 @@ export const superAdminService = {
   },
 
   async createCredential(data: any, req?: any) {
+    const name = String(data?.name ?? "").trim();
+    const key = String(data?.key ?? "").trim();
+    if (!name) {
+      throw Object.assign(new Error("Credential name is required"), {
+        status: 400,
+        code: "CREDENTIAL_NAME_REQUIRED",
+      });
+    }
+    if (!key) {
+      throw Object.assign(new Error("Credential key is required"), {
+        status: 400,
+        code: "CREDENTIAL_KEY_REQUIRED",
+      });
+    }
+    const provider = data?.provider ? String(data.provider).trim().toUpperCase() : null;
+    const rawSecret = typeof data?.secret === "string" ? data.secret : "";
+    const hasSecret = rawSecret.trim() !== "";
     try {
-      const { name, provider, key, secret, metadata } = data;
       const row = await prisma.systemCredential.create({
-        data: { name, provider, key, secret, metadata: metadata || undefined },
+        data: {
+          name,
+          key,
+          provider,
+          secret: hasSecret ? encryptCredentialSecret(rawSecret) : null,
+          metadata: data?.metadata ?? undefined,
+        },
       });
       await logSystemEvent(
         "api_key_added",
@@ -578,33 +607,51 @@ export const superAdminService = {
           tags: ["credential", "create"],
         }
       );
-      return { ...row, secret: row.secret ? maskSecret(row.secret) : null };
-    } catch (err) {
+      return { ...row, secret: hasSecret ? maskSecret(rawSecret) : null };
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        throw Object.assign(new Error("A credential with this key already exists"), {
+          status: 409,
+          code: "CREDENTIAL_KEY_EXISTS",
+        });
+      }
       console.error("Error creating system credential:", err);
       throw err;
     }
   },
 
   async deleteCredential(id: string, req?: any) {
+    const before = await prisma.systemCredential.findUnique({ where: { id } });
+    if (!before) {
+      throw Object.assign(new Error("Credential not found"), {
+        status: 404,
+        code: "CREDENTIAL_NOT_FOUND",
+      });
+    }
     try {
-      const before = await prisma.systemCredential.findUnique({ where: { id } });
       const row = await prisma.systemCredential.delete({ where: { id } });
       await logSystemEvent(
         "api_key_removed",
         "SETTINGS",
-        `Credential removed: ${before?.name || id}`,
+        `Credential removed: ${before.name || id}`,
         "WARNING",
         req,
         {
           category: "SETTINGS",
           entityType: "SystemCredential",
           entityId: id,
-          before: before ? { name: before.name, provider: before.provider, key: before.key } : null,
+          before: { name: before.name, provider: before.provider, key: before.key },
           tags: ["credential", "delete"],
         }
       );
       return row;
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === "P2025") {
+        throw Object.assign(new Error("Credential not found"), {
+          status: 404,
+          code: "CREDENTIAL_NOT_FOUND",
+        });
+      }
       console.error("Error deleting system credential:", err);
       throw err;
     }

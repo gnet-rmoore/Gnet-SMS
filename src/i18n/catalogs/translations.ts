@@ -237,6 +237,48 @@ const fr: any = {
     hidePassword: "Masquer le mot de passe",
     backHome: "Retour à l’accueil",
     forgotPassword: "Mot de passe oublié ?",
+    loginError: {
+      invalidTitle: "Connexion impossible",
+      invalidMessage: "L’adresse e-mail ou le mot de passe saisi ne correspond à aucun compte.",
+      invalidHint:
+        "Vérifiez les fautes de frappe — les mots de passe respectent la casse. Si vous avez oublié votre mot de passe, sélectionnez « Mot de passe oublié ? » ci-dessous.",
+      formTitle: "Veuillez vérifier vos informations",
+      formMessage:
+        "Certaines des informations saisies ne sont pas valides. Revoyez les champs et réessayez.",
+      accessTitle: "Vous ne pouvez pas vous connecter pour le moment",
+      notVerifiedHint:
+        "Ouvrez le lien de vérification envoyé dans votre boîte de réception, puis réessayez. Vous ne le voyez pas ? Vérifiez vos courriers indésirables.",
+      inactiveMessage: "Ce compte a été désactivé.",
+      inactiveHint:
+        "Demandez à l’administrateur de votre école de rétablir votre accès, puis reconnectez-vous.",
+      rateTitle: "Trop de tentatives",
+      rateHint:
+        "Patientez un moment puis réessayez — ou réinitialisez votre mot de passe si vous ne le connaissez plus.",
+      downTitle: "La connexion est momentanément indisponible",
+      downMessage: "Un problème est survenu de notre côté — vos informations ne sont pas en cause.",
+      downHint:
+        "Réessayez dans une minute ou deux. Si le problème persiste, contactez l’administrateur de votre école.",
+      notFoundMessage:
+        "Impossible de joindre le service de connexion. Il est peut-être encore en cours de démarrage.",
+      notFoundHint: "Patientez quelques secondes, puis sélectionnez à nouveau « Se connecter ».",
+      maintenanceMessage: "La plateforme est en cours de maintenance programmée.",
+      maintenanceHint:
+        "Réessayez dans quelques instants. Votre compte et vos données sont en sécurité.",
+      offlineTitle: "Vous semblez hors ligne",
+      offlineMessage:
+        "Impossible de joindre le serveur. Vérifiez votre connexion Internet et réessayez.",
+      mfaTitle: "Ce code de vérification n’a pas fonctionné",
+      mfaMessage: "Le code est incorrect ou a expiré.",
+      mfaHint:
+        "Saisissez le code à 6 chiffres de votre application d’authentification ou demandez un nouveau code par SMS. Les codes expirent rapidement ; si cela continue, recommencez depuis le mot de passe.",
+      mfaEnrollMessage:
+        "Votre compte doit d’abord être configuré avec l’authentification à deux facteurs.",
+      mfaEnrollHint:
+        "Contactez l’administrateur de votre école pour finaliser la configuration, puis réessayez.",
+      genericTitle: "Une erreur s’est produite",
+      genericHint:
+        "Réessayez dans un instant. Si le problème continue, contactez l’administrateur de votre école.",
+    },
   },
   errors: {
     generic: "Une erreur s’est produite. Veuillez réessayer.",
@@ -1681,6 +1723,41 @@ const ar: any = {
     hidePassword: "إخفاء كلمة المرور",
     backHome: "العودة إلى الصفحة الرئيسية",
     forgotPassword: "نسيت كلمة المرور؟",
+    loginError: {
+      invalidTitle: "تعذّر تسجيل الدخول",
+      invalidMessage: "البريد الإلكتروني أو كلمة المرور التي أدخلتها لا تطابق أي حساب.",
+      invalidHint:
+        "تأكد من عدم وجود أخطاء إملائية — كلمات المرور حساسة لحالة الأحرف. إذا نسيت كلمة المرور، اختر «نسيت كلمة المرور؟» بالأسفل.",
+      formTitle: "يرجى مراجعة بياناتك",
+      formMessage: "بعض المعلومات التي أدخلتها غير صالحة. راجع الحقول وحاول مرة أخرى.",
+      accessTitle: "لا يمكنك تسجيل الدخول بعد",
+      notVerifiedHint:
+        "افتح رابط التحقق الذي أرسلناه إلى بريدك ثم حاول مجددًا. لا تراه؟ تحقق من مجلد البريد غير المرغوب فيه.",
+      inactiveMessage: "تم تعطيل هذا الحساب.",
+      inactiveHint:
+        "اطلب من مسؤول المدرسة إعادة تفعيل وصولك، ثم حاول تسجيل الدخول مرة أخرى.",
+      rateTitle: "محاولات كثيرة جدًا",
+      rateHint:
+        "انتظر قليلًا ثم حاول مجددًا — أو أعد تعيين كلمة المرور إذا كنت لست متأكدًا منها.",
+      downTitle: "تسجيل الدخول غير متاح مؤقتًا",
+      downMessage: "حدث خطأ من جانبنا — المشكلة ليست في بياناتك.",
+      downHint:
+        "حاول مرة أخرى بعد دقيقة أو دقيقتين. إذا استمرت المشكلة، تواصل مع مسؤول المدرسة.",
+      notFoundMessage: "تعذّر الوصول إلى خدمة تسجيل الدخول. ربما لا تزال قيد التشغيل.",
+      notFoundHint: "انتظر بضع ثوانٍ ثم اختر «تسجيل الدخول» مجددًا.",
+      maintenanceMessage: "المنصة تخضع حاليًا لصيانة مجدولة.",
+      maintenanceHint: "حاول مرة أخرى بعد قليل. حسابك وبياناتك في أمان.",
+      offlineTitle: "يبدو أنك غير متصل",
+      offlineMessage: "تعذّر الوصول إلى الخادم. تحقق من اتصالك بالإنترنت وحاول مجددًا.",
+      mfaTitle: "رمز التحقق هذا لم يعمل",
+      mfaMessage: "الرمز غير صحيح أو انتهت صلاحيته.",
+      mfaHint:
+        "أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة، أو اطلب رمزًا جديدًا عبر رسالة نصية. تنتهي صلاحية الرموز بسرعة، وإذا استمر الفشل فابدأ من جديد من كلمة المرور.",
+      mfaEnrollMessage: "يلزم إعداد المصادقة الثنائية لحسابك قبل القدرة على تسجيل الدخول.",
+      mfaEnrollHint: "تواصل مع مسؤول المدرسة لإكمال الإعداد ثم حاول مجددًا.",
+      genericTitle: "حدث خطأ ما",
+      genericHint: "حاول مرة أخرى بعد لحظات. إذا استمرت المشكلة، تواصل مع مسؤول المدرسة.",
+    },
   },
   errors: {
     generic: "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
@@ -2067,6 +2144,48 @@ const es: any = {
     hidePassword: "Ocultar contraseña",
     backHome: "Volver al inicio",
     forgotPassword: "¿Olvidaste tu contraseña?",
+    loginError: {
+      invalidTitle: "No hemos podido iniciar sesión",
+      invalidMessage:
+        "El correo electrónico o la contraseña introducidos no coinciden con ninguna cuenta.",
+      invalidHint:
+        "Revisa si hay errores — las contraseñas distinguen mayúsculas y minúsculas. Si olvidaste tu contraseña, selecciona «¿Olvidaste tu contraseña?» abajo.",
+      formTitle: "Revisa tus datos",
+      formMessage:
+        "Algunos de los datos introducidos no son válidos. Revisa los campos e inténtalo de nuevo.",
+      accessTitle: "Aún no puedes iniciar sesión",
+      notVerifiedHint:
+        "Abre el enlace de verificación que te enviamos a tu bandeja de entrada y vuelve a intentarlo. ¿No lo ves? Revisa tu carpeta de correo no deseado.",
+      inactiveMessage: "Esta cuenta ha sido desactivada.",
+      inactiveHint:
+        "Pide a tu administrador del centro que reactive tu acceso e inténtalo de nuevo.",
+      rateTitle: "Demasiados intentos",
+      rateHint:
+        "Espera un momento y vuelve a intentarlo — o restablece tu contraseña si no la recuerdas.",
+      downTitle: "El inicio de sesión no está disponible temporalmente",
+      downMessage: "Algo falló por nuestra parte — el problema no está en tus datos.",
+      downHint:
+        "Inténtalo de nuevo en uno o dos minutos. Si el problema persiste, contacta con tu administrador del centro.",
+      notFoundMessage:
+        "No pudimos conectar con el servicio de inicio de sesión. Puede que aún se esté iniciando.",
+      notFoundHint: "Espera unos segundos y selecciona «Iniciar sesión» de nuevo.",
+      maintenanceMessage: "La plataforma está en mantenimiento programado en este momento.",
+      maintenanceHint: "Inténtalo de nuevo en breve. Tu cuenta y tus datos están a salvo.",
+      offlineTitle: "Parece que estás sin conexión",
+      offlineMessage:
+        "No pudimos conectar con el servidor. Comprueba tu conexión a Internet e inténtalo de nuevo.",
+      mfaTitle: "Ese código de verificación no funcionó",
+      mfaMessage: "El código es incorrecto o ha caducado.",
+      mfaHint:
+        "Introduce el código de 6 dígitos de tu aplicación de autenticación o solicita un nuevo código por SMS. Caducan rápidamente; si sigue fallando, empieza de nuevo desde la contraseña.",
+      mfaEnrollMessage:
+        "Tu cuenta requiere configurar la autenticación de dos factores antes de poder iniciar sesión.",
+      mfaEnrollHint:
+        "Contacta con tu administrador del centro para completar la configuración e inténtalo de nuevo.",
+      genericTitle: "Algo salió mal",
+      genericHint:
+        "Inténtalo de nuevo en un momento. Si el problema continúa, contacta con tu administrador del centro.",
+    },
   },
   errors: {
     generic: "Algo salió mal. Inténtelo de nuevo.",
@@ -2454,6 +2573,48 @@ const de: any = {
     hidePassword: "Passwort verbergen",
     backHome: "Zurück zur Startseite",
     forgotPassword: "Passwort vergessen?",
+    loginError: {
+      invalidTitle: "Anmeldung nicht möglich",
+      invalidMessage:
+        "Die eingegebene E-Mail-Adresse oder das Passwort gehört zu keinem Konto.",
+      invalidHint:
+        "Prüfe auf Tippfehler — Passwörter unterscheiden Groß- und Kleinschreibung. Wenn du dein Passwort vergessen hast, wähle unten „Passwort vergessen?“.",
+      formTitle: "Bitte deine Angaben prüfen",
+      formMessage:
+        "Einige der eingegebenen Angaben sind nicht gültig. Prüfe die Felder und versuche es erneut.",
+      accessTitle: "Du kannst dich noch nicht anmelden",
+      notVerifiedHint:
+        "Öffne den Bestätigungslink, den wir dir per E-Mail geschickt haben, und versuche es erneut. Siehst du ihn nicht? Prüfe deinen Spam-Ordner.",
+      inactiveMessage: "Dieses Konto wurde deaktiviert.",
+      inactiveHint:
+        "Lass dir den Zugang von deiner Schulverwaltung wiederherstellen und melde dich erneut an.",
+      rateTitle: "Zu viele Versuche",
+      rateHint:
+        "Warte einen Moment und versuche es erneut — oder setze dein Passwort zurück, wenn du es nicht mehr weißt.",
+      downTitle: "Die Anmeldung ist vorübergehend nicht verfügbar",
+      downMessage: "Bei uns ist etwas schiefgelaufen — das Problem liegt nicht an deinen Angaben.",
+      downHint:
+        "Versuche es in ein oder zwei Minuten erneut. Wenn das Problem bestehen bleibt, wende dich an deine Schulverwaltung.",
+      notFoundMessage:
+        "Der Anmeldedienst war nicht erreichbar. Möglicherweise startet er noch.",
+      notFoundHint: "Warte einige Sekunden und wähle dann erneut „Anmelden“.",
+      maintenanceMessage: "Die Plattform wird gerade gewartet.",
+      maintenanceHint: "Versuche es gleich erneut. Dein Konto und deine Daten sind sicher.",
+      offlineTitle: "Du scheinst offline zu sein",
+      offlineMessage:
+        "Der Server war nicht erreichbar. Prüfe deine Internetverbindung und versuche es erneut.",
+      mfaTitle: "Der Bestätigungscode hat nicht funktioniert",
+      mfaMessage: "Der Code ist falsch oder abgelaufen.",
+      mfaHint:
+        "Gib den 6-stelligen Code aus deiner Authenticator-App ein oder fordere einen neuen Code per SMS an. Codes laufen schnell ab — wenn es weiterhin fehlschlägt, starte neu mit dem Passwort.",
+      mfaEnrollMessage:
+        "Für dein Konto muss zuerst die Zwei-Faktor-Authentifizierung eingerichtet werden.",
+      mfaEnrollHint:
+        "Wende dich an deine Schulverwaltung, um die Einrichtung abzuschließen, und versuche es erneut.",
+      genericTitle: "Etwas ist schiefgelaufen",
+      genericHint:
+        "Versuche es gleich erneut. Wenn das Problem weiterhin besteht, wende dich an deine Schulverwaltung.",
+    },
   },
   errors: {
     generic: "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
@@ -2840,6 +3001,38 @@ const zhHans: any = {
     hidePassword: "隐藏密码",
     backHome: "返回首页",
     forgotPassword: "忘记密码？",
+    loginError: {
+      invalidTitle: "无法登录",
+      invalidMessage: "您输入的邮箱或密码与任何账户都不匹配。",
+      invalidHint:
+        "请检查是否有拼写错误 — 密码区分大小写。如果忘记了密码，请点击下方的“忘记密码？”。",
+      formTitle: "请检查您的信息",
+      formMessage: "您输入的部分信息无效。请检查各字段后重试。",
+      accessTitle: "暂时无法登录",
+      notVerifiedHint:
+        "请打开我们发送到您收件箱的验证链接，然后重试。没有收到？请检查垃圾邮件文件夹。",
+      inactiveMessage: "该账户已被停用。",
+      inactiveHint: "请联系学校管理员恢复您的访问权限，然后重新尝试登录。",
+      rateTitle: "尝试次数过多",
+      rateHint: "请稍等片刻后重试 — 如果不确定密码，可以重置密码。",
+      downTitle: "登录暂时不可用",
+      downMessage: "我们这边出了点问题 — 不是您的信息有误。",
+      downHint: "请在一两分钟后重试。如果问题持续，请联系学校管理员。",
+      notFoundMessage: "无法连接到登录服务，它可能仍在启动中。",
+      notFoundHint: "请等待几秒钟，然后再次点击“登录”。",
+      maintenanceMessage: "平台正在进行计划维护。",
+      maintenanceHint: "请稍后重试。您的账户和数据是安全的。",
+      offlineTitle: "您似乎已离线",
+      offlineMessage: "无法连接到服务器。请检查网络连接后重试。",
+      mfaTitle: "验证码未通过",
+      mfaMessage: "验证码不正确或已过期。",
+      mfaHint:
+        "请输入身份验证器应用中的 6 位验证码，或通过短信获取新验证码。验证码有效期很短；如果一直失败，请从密码步骤重新开始。",
+      mfaEnrollMessage: "您的账户需要先设置双重身份验证才能登录。",
+      mfaEnrollHint: "请联系学校管理员完成设置，然后重试。",
+      genericTitle: "出了点问题",
+      genericHint: "请稍后重试。如果问题持续，请联系学校管理员。",
+    },
   },
   errors: {
     generic: "出了点问题。请重试。",
@@ -3223,6 +3416,43 @@ const hi: any = {
     hidePassword: "पासवर्ड छिपाएँ",
     backHome: "होम पर वापस जाएँ",
     forgotPassword: "पासवर्ड भूल गए?",
+    loginError: {
+      invalidTitle: "हम साइन इन नहीं कर सके",
+      invalidMessage: "आपने दर्ज किया गया ईमेल या पासवर्ड किसी खाते से मेल नहीं खाता।",
+      invalidHint:
+        "गलतियाँ जाँचें — पासवर्ड केस के प्रति संवेदनशील होते हैं। पासवर्ड भूल गए हैं तो नीचे “पासवर्ड भूल गए?” चुनें।",
+      formTitle: "कृपया अपनी जानकारी जाँचें",
+      formMessage:
+        "आपने दर्ज की गई कुछ जानकारी मान्य नहीं है। फ़ील्ड की समीक्षा करें और फिर प्रयास करें।",
+      accessTitle: "आप अभी साइन इन नहीं कर सकते",
+      notVerifiedHint:
+        "हमने आपके इनबॉक्स में भेजा गया सत्यापन लिंक खोलें, फिर पुनः प्रयास करें। नहीं दिख रहा? अपना स्पैम फ़ोल्डर जाँचें।",
+      inactiveMessage: "यह खाता निष्क्रिय कर दिया गया है।",
+      inactiveHint:
+        "अपने स्कूल व्यवस्थापक से अपनी पहुँच बहाल करने के लिए कहें, फिर साइन इन का पुनः प्रयास करें।",
+      rateTitle: "बहुत अधिक प्रयास",
+      rateHint:
+        "कुछ देर प्रतीक्षा करें और फिर पुनः प्रयास करें — या याद न हो तो पासवर्ड रीसेट करें।",
+      downTitle: "साइन इन अस्थायी रूप से अनुपलब्ध है",
+      downMessage: "हमारी ओर से कुछ गलत हुआ — समस्या आपकी जानकारी में नहीं है।",
+      downHint:
+        "कृपया एक या दो मिनट बाद पुनः प्रयास करें। समस्या बनी रहे तो अपने स्कूल व्यवस्थापक से संपर्क करें।",
+      notFoundMessage: "हम साइन-इन सेवा तक नहीं पहुँच सके। वह अभी भी शुरू हो रही हो सकती है।",
+      notFoundHint: "कुछ क्षण प्रतीक्षा करें, फिर फिर से “साइन इन” चुनें।",
+      maintenanceMessage: "प्लेटफ़ॉर्म अभी निर्धारित रखरखाव से गुज़र रहा है।",
+      maintenanceHint: "कृपया थोड़ी देर में पुनः प्रयास करें। आपका खाता और डेटा सुरक्षित हैं।",
+      offlineTitle: "आप ऑफ़लाइन प्रतीत होते हैं",
+      offlineMessage: "हम सर्वर तक नहीं पहुँच सके। अपना इंटरनेट कनेक्शन जाँचें और पुनः प्रयास करें।",
+      mfaTitle: "वह सत्यापन कोड काम नहीं किया",
+      mfaMessage: "कोड गलत है या समाप्त हो गया है।",
+      mfaHint:
+        "अपने प्रमाणक ऐप का 6-अंकीय कोड दर्ज करें या SMS से नया कोड प्राप्त करें। कोड जल्दी समाप्त होते हैं; बार-बार विफल हो रहा हो तो पासवर्ड से फिर शुरू करें।",
+      mfaEnrollMessage: "साइन इन करने से पहले आपके खाते के लिए दो-चरण प्रमाणीकरण सेट करना आवश्यक है।",
+      mfaEnrollHint: "सेटअप पूरा करने के लिए अपने स्कूल व्यवस्थापक से संपर्क करें, फिर पुनः प्रयास करें।",
+      genericTitle: "कुछ गलत हो गया",
+      genericHint:
+        "कृपया थोड़ी देर में पुनः प्रयास करें। समस्या बनी रहे तो अपने स्कूल व्यवस्थापक से संपर्क करें।",
+    },
   },
   errors: {
     generic: "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",

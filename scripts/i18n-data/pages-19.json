@@ -1,0 +1,7 @@
+[
+  ["Backup history", "Historique des sauvegardes", "Historial de copias de seguridad", "Sicherungsverlauf", "سجل النسخ الاحتياطي", "备份历史", "बैकअप इतिहास"],
+  ["No backups yet.", "Aucune sauvegarde pour le moment.", "Aún no hay copias de seguridad.", "Noch keine Sicherungen.", "لا توجد نسخ احتياطية بعد.", "暂无备份。", "अभी तक कोई बैकअप नहीं।"],
+  ["Creating backup…", "Création de la sauvegarde…", "Creando copia de seguridad…", "Sicherung wird erstellt…", "جارٍ إنشاء نسخة احتياطية…", "正在创建备份…", "बैकअप बनाया जा रहा है…"],
+  ["Optimizing…", "Optimisation…", "Optimizando…", "Optimierung läuft…", "جارٍ التحسين…", "正在优化…", "अनुकूलन हो रहा है…"],
+  ["Size", "Taille", "Tamaño", "Größe", "الحجم", "大小", "आकार"]
+]

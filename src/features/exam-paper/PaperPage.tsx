@@ -12,6 +12,7 @@ import {
   Plus,
   Users,
   Download,
+  Upload,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { examPaperApi } from "./api";
@@ -21,6 +22,7 @@ import {
   type QuestionType,
 } from "../online-exam/types";
 import type { OnlineQuestionInput } from "../online-exam/api";
+import { ImportQuestionsModal } from "../online-exam/ImportQuestionsModal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError, confirmAction } from "../../lib/swal";
 
@@ -100,12 +102,13 @@ function toApiQuestions(drafts: DraftQuestion[]): OnlineQuestionInput[] {
 export default function ExamPaperPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { examId } = useParams();
-  const { school } = useAuthStore();
+  const { school, user } = useAuthStore();
   const { toast, showToast } = usePageToast();
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [title, setTitle] = React.useState("");
   const [canEdit, setCanEdit] = React.useState(true);
+  const [isQuiz, setIsQuiz] = React.useState(false);
   const [status, setStatus] = React.useState("DRAFT");
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = React.useState("ONLINE");
@@ -114,7 +117,13 @@ export default function ExamPaperPage() {
   const [pdfName, setPdfName] = React.useState<string | null>(null);
   const [questions, setQuestions] = React.useState<DraftQuestion[]>([emptyQuestion()]);
   const [rosterText, setRosterText] = React.useState("");
+  const [showImport, setShowImport] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
+
+  // Max violations is a school-administration setting for exams; teachers may
+  // set it for quizzes only.
+  const isSettingsAdmin = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
+  const canEditSettings = isSettingsAdmin || isQuiz;
 
   const load = React.useCallback(async () => {
     if (!examId) return;
@@ -123,6 +132,7 @@ export default function ExamPaperPage() {
       const data = await examPaperApi.get(examId);
       setTitle(data.exam?.title || "Exam paper");
       setCanEdit(Boolean(data.canEdit));
+      setIsQuiz(Boolean(data.exam?.isQuiz));
       setStatus(data.package?.status || data.exam?.paperStatus || "DRAFT");
       setFeedback(data.package?.feedback || null);
       setDeliveryMode(data.package?.deliveryMode || data.exam?.deliveryMode || "ONLINE");
@@ -168,7 +178,7 @@ export default function ExamPaperPage() {
       await examPaperApi.update(examId, {
         deliveryMode,
         instructions: instructions.trim() || null,
-        maxViolations: Number(maxViolations) || 0,
+        ...(canEditSettings ? { maxViolations: Number(maxViolations) || 0 } : {}),
       });
       await examPaperApi.saveQuestions(examId, toApiQuestions(questions));
       if (deliveryMode === "HYBRID" && rosterText.trim()) {
@@ -236,7 +246,7 @@ export default function ExamPaperPage() {
       await examPaperApi.update(examId, {
         deliveryMode,
         instructions: instructions.trim() || null,
-        maxViolations: Number(maxViolations) || 0,
+        ...(canEditSettings ? { maxViolations: Number(maxViolations) || 0 } : {}),
       });
       await examPaperApi.saveQuestions(examId, toApiQuestions(questions));
       if (deliveryMode === "HYBRID" && rosterText.trim()) {
@@ -285,6 +295,15 @@ export default function ExamPaperPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
       <PageToast toast={toast} />
+      {examId ? (
+        <ImportQuestionsModal
+          examId={examId}
+          open={showImport}
+          onClose={() => setShowImport(false)}
+          existingCount={questions.filter((q) => q.prompt.trim()).length}
+          onImported={load}
+        />
+      ) : null}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -383,11 +402,14 @@ export default function ExamPaperPage() {
               type="number"
               min={0}
               max={50}
-              disabled={!canEdit}
+              disabled={!canEdit || !canEditSettings}
               value={maxViolations}
               onChange={(e) => setMaxViolations(e.target.value)}
-              className="mt-2 w-40 rounded-xl border border-slate-200 px-4 py-3 font-mono"
+              className="mt-2 w-40 rounded-xl border border-slate-200 px-4 py-3 font-mono disabled:opacity-60"
             />
+            {!canEditSettings && (
+              <p className="text-xs text-slate-500 mt-1">{t("examPaper.settingsAdminOnly")}</p>
+            )}
           </div>
         )}
         <div>
@@ -476,13 +498,22 @@ export default function ExamPaperPage() {
             </p>
           </div>
           {canEdit && (
-            <button
-              type="button"
-              onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700"
-            >
-              <Plus className="w-4 h-4" /> Add question
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowImport(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700"
+              >
+                <Upload className="w-4 h-4" /> {t("common:import")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700"
+              >
+                <Plus className="w-4 h-4" /> Add question
+              </button>
+            </div>
           )}
         </div>
         <div className="space-y-4">

@@ -1,0 +1,10 @@
+[
+  ["Entrance fee", "Frais d'inscription", "Cuota de inscripción", "Aufnahmegebühr", "رسوم الالتحاق", "入学费", "प्रवेश शुल्क"],
+  ["Balance due: {{amount}}", "Solde dû : {{amount}}", "Saldo pendiente: {{amount}}", "Offener Betrag: {{amount}}", "المبلغ المستحق: {{amount}}", "应付余额：{{amount}}", "देय राशि: {{amount}}"],
+  ["Entrance fee paid — thank you.", "Frais d'inscription payés — merci.", "Cuota de inscripción pagada — gracias.", "Aufnahmegebühr bezahlt — danke.", "تم دفع رسوم الالتحاق — شكرًا.", "入学费已支付 — 谢谢。", "प्रवेश शुल्क भुगतान हो गया — धन्यवाद।"],
+  ["Pay the entrance fee to keep your enrollment moving.", "Payez les frais d'inscription pour poursuivre votre inscription.", "Pague la cuota de inscripción para continuar con su matrícula.", "Zahlen Sie die Aufnahmegebühr, um die Anmeldung fortzusetzen.", "ادفع رسوم الالتحاق لمواصلة تسجيلك.", "支付入学费以继续您的注册。", "नामांकन जारी रखने के लिए प्रवेश शुल्क का भुगतान करें।"],
+  ["Pay entrance fee", "Payer les frais d'inscription", "Pagar la cuota de inscripción", "Aufnahmegebühr bezahlen", "دفع رسوم الالتحاق", "支付入学费", "प्रवेश शुल्क का भुगतान करें"],
+  ["Starting checkout…", "Démarrage du paiement…", "Iniciando el pago…", "Zahlung wird gestartet…", "جارٍ بدء الدفع…", "正在开始结账…", "भुगतान शुरू हो रहा है…"],
+  ["Could not start payment. Please try again.", "Impossible de démarrer le paiement. Veuillez réessayer.", "No se pudo iniciar el pago. Inténtelo de nuevo.", "Zahlung konnte nicht gestartet werden. Bitte erneut versuchen.", "تعذّر بدء الدفع. حاول مرة أخرى.", "无法开始支付。请重试。", "भुगतान शुरू नहीं हो सका। कृपया पुनः प्रयास करें।"],
+  ["View your receipt", "Voir votre reçu", "Ver su recibo", "Beleg ansehen", "عرض إيصالك", "查看您的收据", "अपनी रसीद देखें"]
+]

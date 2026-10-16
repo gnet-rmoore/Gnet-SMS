@@ -113,3 +113,12 @@ export const schoolUpdateSchema = z
     guideRequired: z.boolean(),
   })
   .partial();
+
+/** Super Admin System Credential creation (Settings → Credentials). */
+export const credentialCreateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  key: z.string().trim().min(1).max(200),
+  provider: z.string().trim().min(1).max(40).optional(),
+  secret: z.string().max(2000).optional(),
+  metadata: z.unknown().optional(),
+});

@@ -8,7 +8,6 @@ import {
   Globe, 
   Mail, 
   Lock,
-  Save,
   AlertCircle
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -23,7 +22,6 @@ export const Settings = () => {
   const { t } = useTranslation(["pages", "common"]);
   const s = (key: string) => t(`superAdmin.settingsUi.${key}`);
   const [activeTab, setActiveTab] = React.useState("GENERAL");
-  const [saving, setSaving] = React.useState(false);
   const [defaultCountry, setDefaultCountry] = React.useState(DEFAULT_COUNTRY);
   const [defaultTimezone, setDefaultTimezone] = React.useState(DEFAULT_TIMEZONE);
 
@@ -56,6 +54,16 @@ export const Settings = () => {
   const [broadcastSubject, setBroadcastSubject] = React.useState("");
   const [broadcastMessage, setBroadcastMessage] = React.useState("");
   const [deliveryItems, setDeliveryItems] = React.useState<any[]>([]);
+  const [backups, setBackups] = React.useState<{ name: string; bytes: number; createdAt: string }[]>([]);
+  const [backupsLoading, setBackupsLoading] = React.useState(false);
+  const [dbBackingUp, setDbBackingUp] = React.useState(false);
+  const [dbOptimizing, setDbOptimizing] = React.useState(false);
+  const [dbStatus, setDbStatus] = React.useState<{
+    ready?: boolean;
+    backupReady?: boolean;
+    optimizeReady?: boolean;
+    issues?: string[];
+  } | null>(null);
   const { accessToken } = useAuthStore();
 
   const fetchCredentials = async () => {
@@ -74,6 +82,15 @@ export const Settings = () => {
   React.useEffect(() => {
     if (activeTab === "CREDENTIALS") {
       fetchCredentials();
+    }
+    if (activeTab === "DATABASE" && accessToken) {
+      fetchBackups();
+      void fetch("/api/super-admin/database/status", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+        .then((r) => r.json())
+        .then((d) => setDbStatus(d && !d.error ? d : null))
+        .catch(() => setDbStatus(null));
     }
     if (activeTab === "PLATFORM" && accessToken) {
       void fetch("/api/super-admin/platform-settings", {
@@ -118,13 +135,17 @@ export const Settings = () => {
         },
         body: JSON.stringify(newCred),
       });
-      if (response.ok) {
-        setIsAddingCred(false);
-        setNewCred({ name: "", provider: "CUSTOM", key: "", secret: "" });
-        fetchCredentials();
-      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Failed to add credential");
+      setIsAddingCred(false);
+      setNewCred({ name: "", provider: "CUSTOM", key: "", secret: "" });
+      await toast.fire({ icon: "success", title: s("saveCredential") });
+      fetchCredentials();
     } catch (err) {
-      console.error("Failed to add credential:", err);
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Failed to add credential",
+      });
     }
   };
 
@@ -141,17 +162,135 @@ export const Settings = () => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (response.ok) {
-        fetchCredentials();
-      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Failed to delete credential");
+      await toast.fire({ icon: "success", title: s("deleteCredential") });
+      fetchCredentials();
     } catch (err) {
-      console.error("Failed to delete credential:", err);
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Failed to delete credential",
+      });
     }
   };
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => setSaving(false), 1000);
+  const formatBytes = (bytes: number) => {
+    if (!bytes || bytes < 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let value = bytes;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit += 1;
+    }
+    return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`;
+  };
+
+  const fetchBackups = async () => {
+    if (!accessToken) return;
+    setBackupsLoading(true);
+    try {
+      const response = await fetch("/api/super-admin/database/backups", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await response.json();
+      setBackups(Array.isArray(data?.backups) ? data.backups : []);
+    } catch (err) {
+      console.error("Failed to fetch backups:", err);
+      setBackups([]);
+    } finally {
+      setBackupsLoading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    if (dbBackingUp) return;
+    setDbBackingUp(true);
+    try {
+      const response = await fetch("/api/super-admin/database/backup", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Backup failed");
+      await toast.fire({ icon: "success", title: s("backupDatabase") });
+      await fetchBackups();
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Backup failed",
+      });
+    } finally {
+      setDbBackingUp(false);
+    }
+  };
+
+  const handleOptimize = async () => {
+    if (dbOptimizing) return;
+    setDbOptimizing(true);
+    try {
+      const response = await fetch("/api/super-admin/database/optimize", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Optimize failed");
+      await toast.fire({ icon: "success", title: s("optimizeTables") });
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Optimize failed",
+      });
+    } finally {
+      setDbOptimizing(false);
+    }
+  };
+
+  const handleDownloadBackup = async (name: string) => {
+    try {
+      const response = await fetch(
+        `/api/super-admin/database/backups/${encodeURIComponent(name)}/download`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Download failed",
+      });
+    }
+  };
+
+  const handleDeleteBackup = async (name: string) => {
+    const ok = await confirmAction({
+      title: s("deleteCredentialTitle"),
+      text: name,
+      confirmText: t("common:delete"),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const response = await fetch(
+        `/api/super-admin/database/backups/${encodeURIComponent(name)}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!response.ok) throw new Error("Delete failed");
+      await fetchBackups();
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Delete failed",
+      });
+    }
   };
 
   return (
@@ -159,12 +298,6 @@ export const Settings = () => {
       <PageHeader
         title={t("pages:superAdmin.settings")}
         subtitle={t("pages:superAdmin.settingsSubtitle")}
-        actions={
-          <Button onClick={handleSave} loading={saving}>
-            {!saving && <Save className="w-5 h-5" />}
-            {saving ? t("common:loading") : t("common:saveChanges")}
-          </Button>
-        }
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -529,16 +662,90 @@ export const Settings = () => {
             >
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-slate-900">{s("databaseMaintenance")}</h3>
+                {dbStatus && dbStatus.ready === false && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">
+                        Database maintenance is not ready on this environment
+                      </p>
+                      <ul className="text-sm text-amber-800 mt-1 list-disc list-inside space-y-0.5">
+                        {(dbStatus.issues || []).map((issue) => (
+                          <li key={issue}>{issue}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:bg-slate-100 transition-all group">
-                    <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{s("backupDatabase")}</p>
+                  <button
+                    onClick={handleCreateBackup}
+                    disabled={dbBackingUp || dbStatus?.backupReady === false}
+                    className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:bg-slate-100 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      {dbBackingUp ? s("backupRunning") : s("backupDatabase")}
+                    </p>
                     <p className="text-sm text-slate-500">{s("backupHint")}</p>
                   </button>
-                  <button className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:bg-slate-100 transition-all group">
-                    <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{s("optimizeTables")}</p>
+                  <button
+                    onClick={handleOptimize}
+                    disabled={dbOptimizing || dbStatus?.optimizeReady === false}
+                    className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:bg-slate-100 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      {dbOptimizing ? s("optimizeRunning") : s("optimizeTables")}
+                    </p>
                     <p className="text-sm text-slate-500">{s("optimizeHint")}</p>
                   </button>
                 </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-900">{s("backupHistory")}</h3>
+                {backupsLoading ? (
+                  <p className="text-sm text-slate-500">{t("common:loading")}</p>
+                ) : backups.length === 0 ? (
+                  <p className="text-sm text-slate-500">{s("noBackups")}</p>
+                ) : (
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-500">
+                        <tr>
+                          <th className="text-left font-bold px-4 py-3">{s("name")}</th>
+                          <th className="text-left font-bold px-4 py-3">{s("size")}</th>
+                          <th className="text-left font-bold px-4 py-3">{s("created")}</th>
+                          <th className="text-right font-bold px-4 py-3">{t("common:actions")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {backups.map((b) => (
+                          <tr key={b.name} className="border-t border-slate-100">
+                            <td className="px-4 py-3 font-mono text-xs text-slate-700 break-all">{b.name}</td>
+                            <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatBytes(b.bytes)}</td>
+                            <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                              {new Date(b.createdAt).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => handleDownloadBackup(b.name)}
+                                className="text-indigo-600 hover:text-indigo-800 font-bold mr-4"
+                              >
+                                {t("common:download")}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBackup(b.name)}
+                                className="text-rose-600 hover:text-rose-800 font-bold"
+                              >
+                                {t("common:delete")}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

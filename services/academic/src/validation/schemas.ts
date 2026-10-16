@@ -55,8 +55,27 @@ export const onlineExamKioskConfigSchema = z.object({
   allowReconnect: z.boolean().optional(),
 });
 
+export const onlineExamRetakePolicyBaseSchema = z.object({
+  maxRetakes: z.coerce.number().int().min(0).max(10).optional(),
+  waitingPeriodHours: z.coerce.number().int().min(0).max(168).optional(),
+  scoreRetention: z.enum(["best", "last", "average"]).optional(),
+});
+
+export const onlineExamRetakePolicySchema = onlineExamRetakePolicyBaseSchema.refine((data) => {
+  // If retake policy is provided (any field), maxRetakes must be > 0
+  const hasPolicy = data.maxRetakes != null || data.waitingPeriodHours != null || data.scoreRetention != null;
+  if (hasPolicy && (data.maxRetakes == null || data.maxRetakes <= 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "maxRetakes must be greater than 0 when retake policy is enabled",
+  path: ["maxRetakes"],
+});
+
 export const onlineExamConfigSchema = z.object({
   isOnline: z.boolean().optional(),
+  duration: z.coerce.number().int().min(1).max(600).optional(),
   maxViolations: z.coerce.number().int().min(0).max(50).optional(),
   showResultsImmediately: z.boolean().optional(),
   instructions: z.string().max(5000).nullable().optional(),
@@ -65,6 +84,7 @@ export const onlineExamConfigSchema = z.object({
   paperDueAt: z.coerce.date().nullable().optional(),
   proctorLevel: z.enum(["OFF", "MONITOR", "SCREEN_VIEW"]).optional(),
   kioskConfig: onlineExamKioskConfigSchema.nullable().optional(),
+  retakePolicy: onlineExamRetakePolicyBaseSchema.nullable().optional(),
   autoPostGrades: z.boolean().optional(),
 });
 
@@ -146,22 +166,6 @@ export const onlineExamPreviewScoreSchema = z.object({
 export const onlineExamViolationSchema = z.object({
   type: z.enum(VIOLATION_TYPES),
   detail: z.string().max(500).optional().nullable(),
-});
-
-export const onlineExamRetakePolicySchema = z.object({
-  maxRetakes: z.coerce.number().int().min(0).max(10).optional(),
-  waitingPeriodHours: z.coerce.number().int().min(0).max(168).optional(),
-  scoreRetention: z.enum(["best", "last", "average"]).optional(),
-}).refine((data) => {
-  // If retake policy is provided (any field), maxRetakes must be > 0
-  const hasPolicy = data.maxRetakes != null || data.waitingPeriodHours != null || data.scoreRetention != null;
-  if (hasPolicy && (data.maxRetakes == null || data.maxRetakes <= 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "maxRetakes must be greater than 0 when retake policy is enabled",
-  path: ["maxRetakes"],
 });
 
 export const proctorWarnSchema = z.object({

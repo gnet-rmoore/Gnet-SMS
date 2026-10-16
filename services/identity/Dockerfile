@@ -23,12 +23,15 @@ RUN npx prisma generate \
 # --- Stage 2: Runtime ---
 FROM node:20-alpine
 WORKDIR /app
-RUN apk add --no-cache openssl
+# openssl for Prisma; postgresql-client provides pg_dump/psql for DB maintenance.
+RUN apk add --no-cache openssl postgresql-client
 
 ENV NODE_ENV=production
 ENV PORT=3011
+ENV BACKUPS_DIR=/app/backups
 
-RUN addgroup -S identity && adduser -S identity -G identity
+RUN addgroup -S identity && adduser -S identity -G identity \
+  && mkdir -p /app/backups && chown -R identity:identity /app/backups
 
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev && npm install tsx@4.21.0 --no-save && chown -R identity:identity /app

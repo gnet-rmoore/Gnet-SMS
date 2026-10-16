@@ -1,8 +1,10 @@
 import prisma from "../lib/prisma";
+import { getClassroomById } from "../lib/classroomClient";
 import {
   computeExamEnvelope,
   synthesizeScheduleFromExam,
   validateScheduleWindow,
+  windowsOverlap,
 } from "../lib/examSchedule";
 
 function httpError(message: string, status: number, code?: string) {
@@ -36,6 +38,55 @@ type ScheduleRow = {
   createdAt?: Date;
   updatedAt?: Date;
 };
+
+/**
+ * When a schedule targets a class, confirm the classroom exists and belongs to
+ * the same school. No-op when classId is null/undefined (school-wide sitting).
+ */
+async function assertClassBelongsToSchool(classId: string | null | undefined, schoolId: string) {
+  if (!classId) return;
+  const classroom = await getClassroomById(classId);
+  if (!classroom || classroom.schoolId !== schoolId) {
+    throw httpError("Class not found for this school", 400, "INVALID_CLASS");
+  }
+}
+
+/**
+ * Reject overlapping sittings for the same exam + class (null classId = shared
+ * school-wide sitting). Distinct classes/sessions may run concurrently.
+ */
+async function assertNoScheduleConflict(
+  examId: string,
+  schoolId: string,
+  classId: string | null,
+  startAt: Date,
+  endAt: Date,
+  ignoreId?: string
+) {
+  const rows = await prisma.examSchedule.findMany({
+    where: { examId, schoolId, classId },
+    select: { id: true, room: true, session: true, startAt: true, endAt: true },
+  });
+  const conflicts = rows.filter(
+    (r) =>
+      r.id !== ignoreId && windowsOverlap(startAt, endAt, r.startAt, r.endAt)
+  );
+  if (conflicts.length) {
+    const err: any = httpError(
+      "This exam already has an overlapping sitting for the selected class",
+      409,
+      "SCHEDULE_CONFLICT"
+    );
+    err.conflicts = conflicts.map((c) => ({
+      id: c.id,
+      room: c.room,
+      session: c.session,
+      startAt: c.startAt,
+      endAt: c.endAt,
+    }));
+    throw err;
+  }
+}
 
 function toDto(row: any, synthetic = false) {
   return {
@@ -126,11 +177,15 @@ export const examScheduleService = {
     const win = validateScheduleWindow(input.startAt, input.endAt);
     if (!win.ok) throw httpError(win.error, 400, "INVALID_SCHEDULE_WINDOW");
 
+    const classId = input.classId || null;
+    await assertClassBelongsToSchool(classId, schoolId);
+    await assertNoScheduleConflict(examId, schoolId, classId, win.startAt, win.endAt);
+
     const created = await prisma.examSchedule.create({
       data: {
         examId,
         schoolId,
-        classId: input.classId || null,
+        classId,
         room: input.room?.trim() || null,
         session: input.session?.trim() || null,
         invigilatorId: input.invigilatorId || null,
@@ -168,10 +223,14 @@ export const examScheduleService = {
     const win = validateScheduleWindow(startAt, endAt);
     if (!win.ok) throw httpError(win.error, 400, "INVALID_SCHEDULE_WINDOW");
 
+    const classId = input.classId === undefined ? existing.classId : input.classId || null;
+    await assertClassBelongsToSchool(classId, schoolId);
+    await assertNoScheduleConflict(existing.examId, schoolId, classId, win.startAt, win.endAt, existing.id);
+
     const updated = await prisma.examSchedule.update({
       where: { id: existing.id },
       data: {
-        classId: input.classId === undefined ? existing.classId : input.classId || null,
+        classId,
         room: input.room === undefined ? existing.room : input.room?.trim() || null,
         session: input.session === undefined ? existing.session : input.session?.trim() || null,
         invigilatorId:

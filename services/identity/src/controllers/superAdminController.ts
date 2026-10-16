@@ -80,6 +80,7 @@ export const superAdminController = {
 
   async resetUserPassword(req: Request, res: Response) {
     try {
+      await platformOpsService.assertSaCapability(actorFromReq(req), "users.password_reset");
       const result = await superAdminService.resetUserPassword(
         req.params.id,
         {
@@ -187,31 +188,35 @@ export const superAdminController = {
 
   async getCredentials(req: Request, res: Response) {
     try {
+      await platformOpsService.assertSaCapability(actorFromReq(req), "credentials.manage");
       res.json(await superAdminService.getCredentials());
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch credentials" });
+    } catch (err: any) {
+      sendErr(res, err, "Failed to fetch credentials");
     }
   },
 
   async createCredential(req: Request, res: Response) {
     try {
+      await platformOpsService.assertSaCapability(actorFromReq(req), "credentials.manage");
       res.json(await superAdminService.createCredential(req.body, req));
     } catch (err: any) {
-      res.status(500).json({ error: "Failed to create credential", message: err.message });
+      sendErr(res, err, "Failed to create credential");
     }
   },
 
   async deleteCredential(req: Request, res: Response) {
     try {
+      await platformOpsService.assertSaCapability(actorFromReq(req), "credentials.manage");
       await superAdminService.deleteCredential(req.params.id, req);
       res.json({ success: true });
     } catch (err: any) {
-      res.status(500).json({ error: "Failed to delete credential", message: err.message });
+      sendErr(res, err, "Failed to delete credential");
     }
   },
 
   async getEmailSettings(req: Request, res: Response) {
     try {
+      await platformOpsService.assertSaCapability(actorFromReq(req), "settings.manage");
       res.json(await emailSettingsService.getPublicSettings());
     } catch (err: any) {
       sendErr(res, err, "Failed to load email settings");
@@ -221,6 +226,7 @@ export const superAdminController = {
   async updateEmailSettings(req: Request, res: Response) {
     try {
       const actor = actorFromReq(req);
+      await platformOpsService.assertSaCapability(actor, "settings.manage");
       res.json(
         await emailSettingsService.updateSettings(req.body || {}, actor.id, req)
       );
@@ -232,6 +238,7 @@ export const superAdminController = {
   async sendTestEmail(req: Request, res: Response) {
     try {
       const actor = actorFromReq(req);
+      await platformOpsService.assertSaCapability(actor, "settings.manage");
       const to = String(req.body?.to || "").trim();
       if (!to) {
         return res.status(400).json({ error: "Recipient email (to) is required" });

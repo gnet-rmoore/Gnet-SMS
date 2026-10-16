@@ -1,4 +1,5 @@
 import { APP_BRAND_DEFAULT } from "../../lib/brandPalette";
+import { isCalendarReady as sharedIsCalendarReady } from "../academics-shared/calendar/selectors";
 
 export type SetupStepId =
   | "branding"
@@ -177,9 +178,7 @@ export function hasTeacher(staff: unknown): boolean {
  * (matches gradebook / exams empty-state gates).
  */
 export function isCalendarReady(calendar: unknown): boolean {
-  if (!calendar || typeof calendar !== "object") return false;
-  const periods = (calendar as { periods?: unknown }).periods;
-  return Array.isArray(periods) && periods.length > 0;
+  return sharedIsCalendarReady(calendar);
 }
 
 export function canOpenSetupStep(role: string | undefined, stepId: SetupStepId): boolean {

@@ -529,31 +529,12 @@ export const examService = {
     if (!title) {
       throw Object.assign(new Error("Title is required"), { status: 400 });
     }
-    if (!data.startDate || !data.endDate || !data.gradeSubmissionDeadline) {
-      throw Object.assign(
-        new Error("Start, end, and grade submission deadline are required"),
-        { status: 400 }
-      );
-    }
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
-    const gradeSubmissionDeadline = new Date(data.gradeSubmissionDeadline);
-    if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime()) ||
-      Number.isNaN(gradeSubmissionDeadline.getTime())
-    ) {
-      throw Object.assign(new Error("Invalid date values"), { status: 400 });
-    }
-    if (endDate < startDate) {
-      throw Object.assign(new Error("End must be on or after start"), { status: 400 });
-    }
-
     let examComponentId: string | null = data.examComponentId
       ? String(data.examComponentId)
       : null;
+    let component: any = null;
     if (examComponentId) {
-      const component = await prisma.examComponent.findFirst({
+      component = await prisma.examComponent.findFirst({
         where: { id: examComponentId, schoolId },
         include: { period: true },
       });
@@ -563,6 +544,35 @@ export const examService = {
           { status: 400 }
         );
       }
+    }
+
+    // Prefer explicit values from the request, but fall back to the Academic
+    // Calendar component's window so users never re-enter dates the calendar
+    // already defines. `||` (not `??`) so empty strings from form payloads also
+    // fall through. The component remains the source of truth for bounds.
+    const startDate = new Date(data.startDate || component?.examStartDate || NaN);
+    const endDate = new Date(
+      data.endDate || component?.examEndDate || component?.examStartDate || NaN
+    );
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw Object.assign(
+        new Error(
+          "Exam start and end dates are required — select an Academic Calendar component that has dates, or enter them."
+        ),
+        { status: 400 }
+      );
+    }
+    const gradeSubmissionDeadline = new Date(
+      data.gradeSubmissionDeadline || component?.gradeSubmissionDeadline || endDate
+    );
+    if (Number.isNaN(gradeSubmissionDeadline.getTime())) {
+      throw Object.assign(new Error("Invalid date values"), { status: 400 });
+    }
+    if (endDate < startDate) {
+      throw Object.assign(new Error("End must be on or after start"), { status: 400 });
+    }
+
+    if (component) {
       const periodStart = new Date(component.period.startDate);
       const periodEnd = new Date(component.period.endDate);
       periodEnd.setHours(23, 59, 59, 999);

@@ -21,6 +21,7 @@ import { cardShell } from "../academics-shared/FeatureModalShell";
 import { confirmAction } from "../../lib/swal";
 import { useAcademicCalendarQuery } from "../academic-calendar/hooks/useAcademicCalendarQuery";
 import { ScheduleExamModal } from "./components/ScheduleExamModal";
+import { ExamScheduleModal } from "./components/ExamScheduleModal";
 import { examsApi } from "./api";
 import {
   emptyScheduleForm,
@@ -47,8 +48,12 @@ export const Exams = () => {
   const [showModal, setShowModal] = React.useState(false);
   const [formData, setFormData] = React.useState<ScheduleExamFormData>(emptyScheduleForm());
   const [submitting, setSubmitting] = React.useState(false);
+  const [scheduleExam, setScheduleExam] = React.useState<Exam | null>(null);
 
   const canSchedule = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
+  const canManageSchedules = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"].includes(
+    user?.role || ""
+  );
   const slug = school?.slug || "";
   const periods = Array.isArray(calendar?.periods) ? calendar.periods : [];
 
@@ -131,18 +136,16 @@ export const Exams = () => {
       showToast(t("exams.toast.selectPeriodComponent"), "error");
       return;
     }
-    if (!formData.startDate || !formData.endDate || !formData.gradeSubmissionDeadline) {
-      showToast(t("exams.toast.setDates"), "error");
-      return;
-    }
     setSubmitting(true);
     try {
       await examsApi.create(school.id, {
         title: formData.title.trim(),
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        gradeSubmissionDeadline: formData.gradeSubmissionDeadline,
-        duration: parseInt(formData.duration, 10),
+        // Dates are optional: the server inherits them from the linked
+        // Academic Calendar component when omitted.
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
+        gradeSubmissionDeadline: formData.gradeSubmissionDeadline || undefined,
+        duration: parseInt(formData.duration, 10) || undefined,
         examComponentId: formData.examComponentId,
         deliveryMode: formData.deliveryMode,
         paperDueAt: formData.paperDueAt || null,
@@ -315,6 +318,14 @@ export const Exams = () => {
             submitting={submitting}
           />
         )}
+        {scheduleExam && (
+          <ExamScheduleModal
+            examId={scheduleExam.id}
+            examTitle={scheduleExam.title}
+            onClose={() => setScheduleExam(null)}
+            onChanged={fetchExams}
+          />
+        )}
       </AnimatePresence>
 
       {loading ? (
@@ -352,6 +363,19 @@ export const Exams = () => {
                         <span className="px-2.5 py-1 bg-rose-50 text-rose-600 text-xs font-bold uppercase tracking-wider rounded-lg border border-rose-100">
                           {t("exams.pendingReviewBadge")}
                         </span>
+                      )}
+                      {canManageSchedules && (
+                        <button
+                          type="button"
+                          onClick={() => setScheduleExam(exam)}
+                          className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex items-center gap-2"
+                          title={t("exams.manageSchedule")}
+                        >
+                          <CalendarDays className="w-4 h-4" />
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {t("exams.manageSchedule")}
+                          </span>
+                        </button>
                       )}
                       {canSchedule && (
                         <button

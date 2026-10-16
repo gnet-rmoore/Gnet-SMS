@@ -57,6 +57,25 @@ export type OnlineExamConfig = {
   } | null;
 };
 
+export type QuestionImportRowResult = {
+  index: number;
+  rowNumber: number;
+  ok: boolean;
+  errors: string[];
+  preview: string;
+};
+
+export type QuestionImportPreview = {
+  ok: boolean;
+  canImport: boolean;
+  rowCount: number;
+  validCount: number;
+  errorCount: number;
+  rows: QuestionImportRowResult[];
+  blockers: string[];
+  code: string | null;
+};
+
 export type RetakeEligibility = {
   eligible: boolean;
   reason: string;
@@ -75,6 +94,26 @@ export const onlineExamApi = {
 
   saveQuestions: (examId: string, questions: OnlineQuestionInput[]) =>
     api.put(`/api/exams/${examId}/questions`, { questions }),
+
+  previewQuestionImport: (
+    examId: string,
+    rows: Record<string, unknown>[],
+    sourceFileName: string
+  ) =>
+    api.post(`/api/exams/${examId}/questions/import/preview`, {
+      rows,
+      sourceFileName,
+    }) as Promise<QuestionImportPreview>,
+
+  importQuestions: (
+    examId: string,
+    rows: Record<string, unknown>[],
+    sourceFileName: string
+  ) =>
+    api.post(`/api/exams/${examId}/questions/import`, {
+      rows,
+      sourceFileName,
+    }) as Promise<{ questions: unknown[] }>,
 
   listOnlineExams: (schoolId: string, studentId?: string) =>
     api.get(

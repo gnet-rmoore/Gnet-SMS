@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-10-12T15:35:58.316Z",
-  "total": 519,
-  "publicOrSchool": 465,
-  "internal": 54,
+  "generatedAt": "2026-10-16T01:02:28.421Z",
+  "total": 549,
+  "publicOrSchool": 492,
+  "internal": 57,
   "byService": {
-    "academic": 157,
+    "academic": 177,
     "campus": 28,
     "classroom": 45,
     "comms": 32,
-    "finance": 46,
-    "identity": 142,
-    "lifecycle": 30,
+    "finance": 48,
+    "identity": 149,
+    "lifecycle": 31,
     "ops": 20,
     "staff": 19
   },
@@ -100,8 +100,71 @@
       "internal": false
     },
     {
+      "method": "PATCH",
+      "path": "/api/exam-attempts/:attemptId/answers/:questionId/grade",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/extend",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/flag",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/force-submit",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exam-attempts/:attemptId/frames",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/heartbeat",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/exam-attempts/:attemptId/results",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exam-attempts/:attemptId/screen-config",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/screen-frame",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/screen-frame/:frameId/uploaded",
       "service": "academic",
       "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
@@ -116,6 +179,13 @@
     {
       "method": "POST",
       "path": "/api/exam-attempts/:attemptId/violations",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exam-attempts/:attemptId/warn",
       "service": "academic",
       "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
@@ -139,6 +209,20 @@
       "path": "/api/exam-papers/:packageId/review",
       "service": "academic",
       "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exam-schedules/:scheduleId",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exam-schedules/:scheduleId",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
       "internal": false
     },
     {
@@ -174,6 +258,13 @@
       "path": "/api/exams/:id",
       "service": "academic",
       "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/attempt",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
     },
     {
@@ -214,6 +305,13 @@
     {
       "method": "GET",
       "path": "/api/exams/:id/live-attempts",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/:id/live-stream",
       "service": "academic",
       "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
@@ -289,6 +387,13 @@
       "internal": false
     },
     {
+      "method": "GET",
+      "path": "/api/exams/:id/paper/revisions",
+      "service": "academic",
+      "file": "services/academic/src/routes/examPaperRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PUT",
       "path": "/api/exams/:id/paper/roster",
       "service": "academic",
@@ -331,6 +436,20 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/exams/:id/questions/import",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/questions/import/preview",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PATCH",
       "path": "/api/exams/:id/release-grades",
       "service": "academic",
@@ -360,6 +479,20 @@
     },
     {
       "method": "GET",
+      "path": "/api/exams/:id/schedule",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/:id/schedule",
+      "service": "academic",
+      "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/exams/:id/submissions-summary",
       "service": "academic",
       "file": "services/academic/src/routes/examRoutes.ts",
@@ -382,6 +515,13 @@
     {
       "method": "POST",
       "path": "/api/exams/preview/sample/score",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/sweep-expired",
       "service": "academic",
       "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
@@ -1913,6 +2053,20 @@
       "internal": true
     },
     {
+      "method": "PATCH",
+      "path": "/api/internal/fees/:id/link-student",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/fees/:id/receipt",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
       "method": "POST",
       "path": "/api/internal/receipts/issue",
       "service": "finance",
@@ -2404,6 +2558,13 @@
     },
     {
       "method": "POST",
+      "path": "/api/internal/users/bulk",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
       "path": "/api/internal/users/find-or-create",
       "service": "identity",
       "file": "services/identity/src/routes/userRoutes.ts",
@@ -2753,6 +2914,41 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/super-admin/database/backup",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/database/backups",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/super-admin/database/backups/:name",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/database/backups/:name/download",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/database/optimize",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/super-admin/delete-requests",
       "service": "identity",
@@ -3012,6 +3208,13 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/impersonate",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PATCH",
       "path": "/api/super-admin/schools/:id/notes",
       "service": "identity",
@@ -3224,6 +3427,13 @@
     {
       "method": "POST",
       "path": "/api/applications/:id/enroll",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/applications/:id/next-action",
       "service": "lifecycle",
       "file": "services/lifecycle/src/routes/admissionRoutes.ts",
       "internal": false

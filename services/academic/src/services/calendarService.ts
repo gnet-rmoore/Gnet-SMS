@@ -3,6 +3,7 @@ import { eachYmd, isWeekendYmd, NON_INSTRUCTION_CATEGORIES } from "../lib/school
 import { getSchoolLocality } from "../lib/identityClient";
 import { getHolidaysForRange, type HolidayDay } from "../lib/holidayProvider";
 import { normalizeCountryCode } from "../lib/countryCode";
+import { resolveActiveCalendarPattern } from "../lib/activeCalendar";
 
 type CalendarUser = {
   id: string;
@@ -145,18 +146,41 @@ export const calendarService = {
     });
     custom.forEach((row) => events.push(mapCustom(row)));
 
+    let exams: Array<{
+      id: string;
+      title: string;
+      startDate: Date;
+      endDate: Date;
+      gradeSubmissionDeadline: Date;
+      status: string;
+      examComponentId: string | null;
+    }> = [];
     try {
-      const pattern = await prisma.academicCalendarPattern.findFirst({
-        where: { schoolId, isActive: true },
-        include: {
-          periods: {
-            orderBy: { orderIndex: "asc" },
-            include: {
-              examComponents: { orderBy: { orderIndex: "asc" } },
-            },
-          },
+      exams = await prisma.exam.findMany({
+        where: { schoolId },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          endDate: true,
+          gradeSubmissionDeadline: true,
+          status: true,
+          examComponentId: true,
         },
       });
+    } catch (err) {
+      console.warn("Could not query exams for calendar:", err);
+    }
+    // Components that already have a scheduled Exam: their planned window is
+    // superseded by the exam event, avoiding duplicate "same thing twice".
+    const scheduledComponentIds = new Set(
+      exams
+        .map((e) => e.examComponentId)
+        .filter((id): id is string => Boolean(id))
+    );
+
+    try {
+      const pattern = await resolveActiveCalendarPattern(schoolId);
 
       for (const period of pattern?.periods ?? []) {
         const start = isoDay(period.startDate);
@@ -194,6 +218,8 @@ export const calendarService = {
 
         for (const component of period.examComponents) {
           if (!component.examStartDate) continue;
+          // A scheduled Exam is authoritative for this component.
+          if (scheduledComponentIds.has(component.id)) continue;
           const examDay = isoDay(component.examStartDate);
           if (!examDay) continue;
           const endDay = component.examEndDate ? isoDay(component.examEndDate) : examDay;
@@ -245,10 +271,8 @@ export const calendarService = {
     }
 
     try {
-      const exams = await prisma.exam.findMany({ where: { schoolId } });
       exams.forEach((exam) => {
         const startIso = new Date(exam.startDate).toISOString();
-        const endIso = new Date(exam.endDate).toISOString();
         events.push({
           id: `exam-${exam.id}`,
           title: `Exam: ${exam.title}`,
@@ -261,7 +285,7 @@ export const calendarService = {
             .filter(Boolean)
             .join(" "),
           date: startIso.split("T")[0],
-          time: formatTimeRange(startIso, endIso),
+          time: formatTimeRange(new Date(exam.startDate), new Date(exam.endDate)),
           category: "Academic",
           location: "",
           priority: "high",
@@ -271,7 +295,7 @@ export const calendarService = {
         });
       });
     } catch (err) {
-      console.warn("Could not query exams for calendar:", err);
+      console.warn("Could not map exams for calendar:", err);
     }
 
     try {
