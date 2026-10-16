@@ -179,4 +179,10 @@ router.post(
   admissionController.feePaidInternal
 );
 
+router.get(
+  "/api/internal/schools/:schoolId/admission-stats",
+  authenticateInternal,
+  admissionController.getAdmissionStatsInternal
+);
+
 export default router;

@@ -10,6 +10,13 @@ import { emailAuthService } from "./emailAuthService";
 import { getSchoolCommercialContext } from "../lib/quotaEnforcement";
 import { mfaService } from "./mfaService";
 
+function invalidCredentialsError(message = "Invalid credentials") {
+  return Object.assign(new Error(message), {
+    code: "INVALID_CREDENTIALS",
+    status: 401,
+  });
+}
+
 export const authService = {
   async login(email: string, password: string) {
     console.log(`Attempting login for: ${email}`);
@@ -20,7 +27,7 @@ export const authService = {
       });
 
       if (!user) {
-        throw new Error("Invalid credentials");
+        throw invalidCredentialsError();
       }
       if (user.role === "SUPER_ADMIN") {
         return this.superAdminLogin(email, password);
@@ -29,7 +36,7 @@ export const authService = {
         throw Object.assign(new Error("Account is inactive"), { code: "ACCOUNT_INACTIVE", status: 403 });
       }
       if (!bcrypt.compareSync(password, user.passwordHash)) {
-        throw new Error("Invalid credentials");
+        throw invalidCredentialsError();
       }
 
       if (!(await emailAuthService.isEmailVerified(user))) {
@@ -213,7 +220,7 @@ export const authService = {
     try {
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user || user.role !== "SUPER_ADMIN" || !bcrypt.compareSync(password, user.passwordHash)) {
-        throw new Error("Invalid super admin credentials");
+        throw invalidCredentialsError("Invalid super admin credentials");
       }
       if (!user.isActive) {
         throw Object.assign(new Error("Account is inactive"), { code: "ACCOUNT_INACTIVE", status: 403 });
@@ -247,6 +254,9 @@ export const authService = {
       };
     } catch (err: any) {
       console.error("Prisma error during super admin login:", err);
+      if (err?.code === "INVALID_CREDENTIALS") {
+        throw err;
+      }
       if (err.code || err.clientVersion) {
         throw new Error(`Database connection error: ${err.message}`);
       }

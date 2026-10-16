@@ -1,9 +1,10 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion } from "motion/react";
-import { Clock, ShieldAlert, Send, Loader2, RotateCcw, Play, MonitorUp } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { Clock, ShieldAlert, Send, Loader2, RotateCcw, Play, MonitorUp, ArrowRight } from "lucide-react";
 import { onlineExamApi, type KioskConfig, type ProctorLevel } from "./api";
 import { formatRemaining } from "./types";
+import { RichContent } from "./RichContent";
 import { confirmAction, alertError } from "../../lib/swal";
 import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,23 @@ const DEFAULT_KIOSK: KioskConfig = {
   allowReconnect: true,
 };
 
+function isQuestionAnswered(
+  question: any,
+  answer?: { selectedChoiceId?: string | null; textAnswer?: string | null }
+) {
+  if (!answer) return false;
+  if (question?.type === "MULTIPLE_CHOICE" || question?.type === "TRUE_FALSE") {
+    return Boolean(answer.selectedChoiceId);
+  }
+  return Boolean(answer.textAnswer && answer.textAnswer.trim().length > 0);
+}
+
+function firstUnansweredIndex(questions: any[], answers: AnswerMap) {
+  if (!questions.length) return 0;
+  const idx = questions.findIndex((q) => !isQuestionAnswered(q, answers[q.id]));
+  return idx === -1 ? questions.length - 1 : idx;
+}
+
 export default function TakeOnlineExamPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { examId, attemptId: routeAttemptId } = useParams();
@@ -34,6 +52,7 @@ export default function TakeOnlineExamPage() {
   const [instructions, setInstructions] = React.useState<string | null>(null);
   const [questions, setQuestions] = React.useState<any[]>([]);
   const [answers, setAnswers] = React.useState<AnswerMap>({});
+  const [currentIndex, setCurrentIndex] = React.useState(0);
   const [endsAtMs, setEndsAtMs] = React.useState<number>(0);
   const [clockOffset, setClockOffset] = React.useState(0);
   const [remainingMs, setRemainingMs] = React.useState(0);
@@ -174,6 +193,7 @@ export default function TakeOnlineExamPage() {
         };
       }
       setAnswers(map);
+      setCurrentIndex(firstUnansweredIndex(data.questions || [], map));
     },
     [t]
   );
@@ -517,6 +537,19 @@ export default function TakeOnlineExamPage() {
     }
   };
 
+  const currentQuestion = questions[currentIndex];
+  const currentAnswer = currentQuestion ? answers[currentQuestion.id] || {} : {};
+  const currentAnswered = currentQuestion
+    ? isQuestionAnswered(currentQuestion, currentAnswer)
+    : false;
+  const isLastQuestion = questions.length === 0 || currentIndex >= questions.length - 1;
+  const answeredCount = questions.filter((q) => isQuestionAnswered(q, answers[q.id])).length;
+
+  const goNextQuestion = () => {
+    if (!currentAnswered) return;
+    setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center gap-2">
@@ -694,65 +727,93 @@ export default function TakeOnlineExamPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {questions.map((q, index) => {
-          const ans = answers[q.id] || {};
-          return (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-slate-600">
+            {t("onlineExams.take.questionProgress", {
+              current: questions.length ? currentIndex + 1 : 0,
+              total: questions.length,
+            })}
+          </p>
+          <p className="text-xs text-slate-400">
+            {t("onlineExams.take.answeredCount", {
+              answered: answeredCount,
+              total: questions.length,
+            })}
+          </p>
+        </div>
+        <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-indigo-500 transition-all"
+            style={{
+              width: questions.length
+                ? `${((currentIndex + 1) / questions.length) * 100}%`
+                : "0%",
+            }}
+          />
+        </div>
+
+        <AnimatePresence mode="wait">
+          {currentQuestion && (
             <motion.div
-              key={q.id}
+              key={currentQuestion.id}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.2 }}
               className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <h2 className="font-extrabold tracking-tight text-slate-900">
-                  <span className="font-mono text-slate-400 mr-2">Q{index + 1}</span>
-                  {q.prompt}
+                  <span className="font-mono text-slate-400 mr-2">
+                    Q{currentIndex + 1}
+                  </span>
+                  <RichContent content={currentQuestion.prompt} className="inline" />
                 </h2>
                 <span className="text-xs font-mono text-slate-400 shrink-0">
-                  {t("onlineExams.take.pointsShort", { count: q.points })}
+                  {t("onlineExams.take.pointsShort", { count: currentQuestion.points })}
                 </span>
               </div>
 
-              {(q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE") && (
+              {(currentQuestion.type === "MULTIPLE_CHOICE" ||
+                currentQuestion.type === "TRUE_FALSE") && (
                 <div className="space-y-2">
-                  {(q.choices || []).map((c: any) => (
+                  {(currentQuestion.choices || []).map((c: any) => (
                     <label
                       key={c.id}
                       className={`flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${
-                        ans.selectedChoiceId === c.id
+                        currentAnswer.selectedChoiceId === c.id
                           ? "border-indigo-300 bg-indigo-50"
                           : "border-slate-100 hover:bg-slate-50"
                       }`}
                     >
                       <input
                         type="radio"
-                        name={`q-${q.id}`}
-                        checked={ans.selectedChoiceId === c.id}
+                        name={`q-${currentQuestion.id}`}
+                        checked={currentAnswer.selectedChoiceId === c.id}
                         onChange={() => {
                           setAnswers((prev) => ({
                             ...prev,
-                            [q.id]: { selectedChoiceId: c.id },
+                            [currentQuestion.id]: { selectedChoiceId: c.id },
                           }));
-                          try { dirtyRef.current.add(q.id); } catch {}
+                          try { dirtyRef.current.add(currentQuestion.id); } catch {}
                         }}
                       />
                       <span className="font-mono text-slate-400 text-sm w-6">{c.label}</span>
-                      <span className="text-slate-800">{c.text}</span>
+                      <RichContent content={c.text} className="text-slate-800" />
                     </label>
                   ))}
                 </div>
               )}
 
-              {q.type === "FILL_BLANK" && (
+              {currentQuestion.type === "FILL_BLANK" && (
                 <input
-                  value={ans.textAnswer || ""}
+                  value={currentAnswer.textAnswer || ""}
                   onChange={(e) => {
                     setAnswers((prev) => ({
                       ...prev,
-                      [q.id]: { textAnswer: e.target.value },
+                      [currentQuestion.id]: { textAnswer: e.target.value },
                     }));
-                    try { dirtyRef.current.add(q.id); } catch {}
+                    try { dirtyRef.current.add(currentQuestion.id); } catch {}
                   }}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3"
                   placeholder={t("onlineExams.take.yourAnswer")}
@@ -760,15 +821,15 @@ export default function TakeOnlineExamPage() {
                 />
               )}
 
-              {q.type === "ESSAY" && (
+              {currentQuestion.type === "ESSAY" && (
                 <textarea
-                  value={ans.textAnswer || ""}
+                  value={currentAnswer.textAnswer || ""}
                   onChange={(e) => {
                     setAnswers((prev) => ({
                       ...prev,
-                      [q.id]: { textAnswer: e.target.value },
+                      [currentQuestion.id]: { textAnswer: e.target.value },
                     }));
-                    try { dirtyRef.current.add(q.id); } catch {}
+                    try { dirtyRef.current.add(currentQuestion.id); } catch {}
                   }}
                   rows={6}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3"
@@ -776,8 +837,37 @@ export default function TakeOnlineExamPage() {
                 />
               )}
             </motion.div>
-          );
-        })}
+          )}
+        </AnimatePresence>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <p className="text-sm text-slate-500">
+            {currentAnswered
+              ? t("onlineExams.take.answerRecorded")
+              : t("onlineExams.take.answerToContinue")}
+          </p>
+          {isLastQuestion ? (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || !currentAnswered}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {t("onlineExams.take.finishExam")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={goNextQuestion}
+              disabled={!currentAnswered}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
+            >
+              {t("onlineExams.take.nextQuestion")}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

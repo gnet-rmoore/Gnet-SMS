@@ -69,6 +69,26 @@ export const admissionController = {
     }
   },
 
+  /** Identity dashboard stats — live admission counts for a school. */
+  async getAdmissionStatsInternal(req: Request, res: Response) {
+    const { schoolId } = req.params;
+    try {
+      const rows = await admissionService.getApplicationStatusCounts(schoolId);
+      const byStatus = Object.fromEntries(rows.map((r) => [r.status, r.count]));
+      const totalApplications = rows.reduce((n, r) => n + r.count, 0);
+      // "Pending" = still awaiting staff action (waitlisted/terminal states excluded).
+      const pendingStatuses = ["PENDING", "UNDER_REVIEW", "DOCS_PENDING", "FEE_PENDING"];
+      const pendingApplications = pendingStatuses.reduce(
+        (n, status) => n + (byStatus[status] || 0),
+        0
+      );
+      res.json({ totalApplications, pendingApplications });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to compute admission stats" });
+    }
+  },
+
   async exportCsv(req: Request, res: Response) {
     const { schoolId } = req.params;
     try {

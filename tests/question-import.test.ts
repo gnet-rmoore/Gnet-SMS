@@ -299,5 +299,68 @@ assert(Boolean(sample), "validQuestions returns NormalizedQuestion objects");
   );
 }
 
+// ---------------------------------------------------------------------------
+// Math + image rich content in imported cells
+// ---------------------------------------------------------------------------
+
+{
+  const v = validateImportRows([
+    {
+      Type: "MCQ",
+      Question: "Solve $\\frac{x}{2} = 3$",
+      "Option A": "$x = 6$",
+      "Option B": "$x = 3$",
+      "Correct Answer": "A",
+    },
+  ]);
+  assert(v.errorCount === 0, "math in question and options is accepted");
+  assert(
+    v.validQuestions[0].prompt === "Solve $\\frac{x}{2} = 3$",
+    "inline math is preserved in the prompt"
+  );
+  assert(v.validQuestions[0].choices[0].text === "$x = 6$", "inline math is preserved in a choice");
+}
+
+{
+  const v = validateImportRows([
+    { Type: "Essay", Question: "Label the diagram.", Image: "https://example.com/d.png" },
+  ]);
+  assert(v.errorCount === 0, "a dedicated Image column is accepted");
+  assert(
+    v.validQuestions[0].prompt.includes("![image](https://example.com/d.png)"),
+    "Image column is appended to the prompt as an image token"
+  );
+}
+
+{
+  const v = validateImportRows([
+    { Type: "Essay", Question: '=IMAGE("https://example.com/x.png")' },
+  ]);
+  assert(v.errorCount === 0, '=IMAGE("…") in the question cell is accepted');
+  assert(
+    v.validQuestions[0].prompt.trim() === "![image](https://example.com/x.png)",
+    '=IMAGE("…") becomes an image token'
+  );
+}
+
+{
+  const v = validateImportRows([{ Type: "Essay", Question: "Plain text", Image: "not a url" }]);
+  assert(v.errorCount === 0, "a non-URL Image cell is ignored, not an error");
+  assert(
+    !v.validQuestions[0].prompt.includes("[image]"),
+    "a non-URL Image cell never becomes an image token"
+  );
+}
+
+{
+  const v = validateImportRows([
+    { Type: "Essay", Question: "A ", Image: "![cap](https://example.com/a.png)" },
+  ]);
+  assert(
+    v.validQuestions[0].prompt === "A\n![cap](https://example.com/a.png)",
+    "existing markdown image in the Image column is kept with its alt text"
+  );
+}
+
 console.log(`\nQuestion import tests: ${failed === 0 ? "ALL PASSED" : failed + " FAILED"}`);
 if (failed > 0) process.exit(1);

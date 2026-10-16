@@ -1,6 +1,11 @@
 import prisma from "../lib/prisma";
 import { serializeGradebookConfig, parseGradebookConfig } from "../lib/gradebookConfig";
 import {
+  fetchAdmissionStats,
+  fetchClassroomCount,
+  fetchExamCount,
+} from "../lib/schoolStatsClients";
+import {
   parsePayrollAttendanceRules,
   serializePayrollAttendanceRules,
 } from "../lib/payrollAttendanceRules";
@@ -147,7 +152,14 @@ export const schoolService = {
 
   async getSchoolStats(schoolId: string) {
     try {
-      const [studentCount, teacherCount, recentLogs] = await Promise.all([
+      const [
+        studentCount,
+        teacherCount,
+        recentLogs,
+        classroomCount,
+        examCount,
+        admissionStats,
+      ] = await Promise.all([
         prisma.user.count({ where: { schoolId, role: "STUDENT" } }),
         prisma.user.count({ where: { schoolId, role: "TEACHER" } }),
         prisma.systemLog.findMany({
@@ -156,15 +168,19 @@ export const schoolService = {
           orderBy: { createdAt: "desc" },
           include: { user: { select: { name: true } } },
         }),
+        // Sibling services own these tables — fail soft to null when unreachable.
+        fetchClassroomCount(schoolId).catch(() => null),
+        fetchExamCount(schoolId).catch(() => null),
+        fetchAdmissionStats(schoolId).catch(() => null),
       ]);
 
       return {
         totalStudents: studentCount,
         totalTeachers: teacherCount,
-        totalClassrooms: null,
-        totalExams: null,
-        totalApplications: null,
-        pendingApplications: null,
+        totalClassrooms: classroomCount,
+        totalExams: examCount,
+        totalApplications: admissionStats?.totalApplications ?? null,
+        pendingApplications: admissionStats?.pendingApplications ?? null,
         attendanceToday: null,
         recentLogs,
       };

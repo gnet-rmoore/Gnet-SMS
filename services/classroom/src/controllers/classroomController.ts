@@ -937,9 +937,10 @@ export const classroomController = {
 
   async countClassroomsInternal(req: any, res: Response) {
     try {
-      const { subjectId, gradeLevelId } = req.query as {
+      const { subjectId, gradeLevelId, schoolId } = req.query as {
         subjectId?: string;
         gradeLevelId?: string;
+        schoolId?: string;
       };
       if (subjectId) {
         const count = await classroomService.countBySubjectId(subjectId);
@@ -949,7 +950,13 @@ export const classroomController = {
         const count = await classroomService.countByGradeLevelId(gradeLevelId);
         return res.json({ count });
       }
-      return res.status(400).json({ error: "subjectId or gradeLevelId required" });
+      if (schoolId) {
+        const count = await classroomService.countBySchoolId(schoolId);
+        return res.json({ count });
+      }
+      return res
+        .status(400)
+        .json({ error: "subjectId, gradeLevelId or schoolId required" });
     } catch (err) {
       res.status(500).json({ error: "Failed to count classrooms" });
     }

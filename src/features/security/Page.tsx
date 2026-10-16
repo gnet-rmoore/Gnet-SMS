@@ -115,8 +115,20 @@ export const Security = () => {
   const selectedType = logFilters.values.type || "ALL";
   const selectedSeverity = logFilters.values.severity || "ALL";
 
-  // Command Hub Interactive States
-  const [threatLevel, setThreatLevel] = useState<"GREEN" | "AMBER" | "RED">("GREEN");
+  // Command Hub threat level — derived from live security logs (last 24h),
+  // with a manual override from the perimeter switcher.
+  const [manualThreat, setManualThreat] = useState<"GREEN" | "AMBER" | "RED" | null>(null);
+  const derivedThreat = useMemo<"GREEN" | "AMBER" | "RED">(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const recent = logs.filter((l) => {
+      const ts = l.createdAt ? new Date(l.createdAt).getTime() : Number.NaN;
+      return Number.isFinite(ts) && ts >= cutoff;
+    });
+    if (recent.some((l) => l.severity === "CRITICAL")) return "RED";
+    if (recent.some((l) => l.severity === "HIGH")) return "AMBER";
+    return "GREEN";
+  }, [logs]);
+  const threatLevel = manualThreat ?? derivedThreat;
 
   // Interactive visitor tracking
   const [activeVisitors, setActiveVisitors] = useState<
@@ -239,9 +251,9 @@ export const Security = () => {
 
   };
 
-  // Toggle Threat Lockdown Level
+  // Toggle Threat Lockdown Level (manual override on top of the live-derived level)
   const handleThreatChange = (level: "GREEN" | "AMBER" | "RED") => {
-    setThreatLevel(level);
+    setManualThreat(level);
   };
 
   // Calculations for summary stats
@@ -251,8 +263,8 @@ export const Security = () => {
   const criticalCount = logs.filter((l) => l.severity === "CRITICAL" || l.severity === "HIGH").length + (threatLevel === "RED" ? 1 : 0);
 
   const chartData = [
-    { name: sh("chart.visitorLogins"), value: visitorCount || 42, color: "#10B981" },
-    { name: sh("logs.incidentReports"), value: incidentCount || 4, color: "#EF4444" },
+    { name: sh("chart.visitorLogins"), value: visitorCount, color: "#10B981" },
+    { name: sh("logs.incidentReports"), value: incidentCount, color: "#EF4444" },
     { name: sh("chart.campusPatrols"), value: checkpoints.filter(c => c.status === "VERIFIED").length, color: "#6366F1" },
   ];
 

@@ -54,6 +54,10 @@ export const authController = {
       res.json(result);
     } catch (err: any) {
       console.error("Login Error:", err);
+      const isInvalidCredentials =
+        err.code === "INVALID_CREDENTIALS" ||
+        err.message === "Invalid credentials" ||
+        err.message === "Invalid super admin credentials";
       const status =
         err.status === 403 || err.code === "SCHOOL_SUSPENDED" || err.code === "ACCOUNT_INACTIVE"
           ? 403
@@ -61,7 +65,7 @@ export const authController = {
             ? 400
             : err.code === "MAINTENANCE_MODE" || err.status === 503
               ? 503
-              : err.message === "Invalid credentials"
+              : isInvalidCredentials
                 ? 401
                 : err.message?.includes("Database connection error")
                   ? 503
@@ -70,7 +74,7 @@ export const authController = {
                     : 500;
 
       const action =
-        err.message === "Invalid credentials"
+        isInvalidCredentials
           ? "login_failed"
           : err.code === "ACCOUNT_INACTIVE"
             ? "login_blocked_inactive"
@@ -113,8 +117,8 @@ export const authController = {
       if (err.code === "MAINTENANCE_MODE" || err.status === 503) {
         return res.status(503).json({ error: err.message, code: err.code || "MAINTENANCE_MODE" });
       }
-      if (err.message === "Invalid credentials") {
-        return res.status(401).json({ error: err.message });
+      if (isInvalidCredentials) {
+        return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" });
       }
       if (err.message?.includes("Database connection error")) {
         return res.status(503).json({ error: "Service Unavailable", message: err.message });
@@ -252,8 +256,10 @@ export const authController = {
       );
       res.json(result);
     } catch (err: any) {
+      const invalidCredentials =
+        err.code === "INVALID_CREDENTIALS" || err.message === "Invalid super admin credentials";
       const status =
-        err.message === "Invalid super admin credentials"
+        invalidCredentials
           ? 401
           : err.code === "ACCOUNT_INACTIVE"
             ? 403
@@ -276,8 +282,8 @@ export const authController = {
         }
       );
 
-      if (err.message === "Invalid super admin credentials") {
-        return res.status(401).json({ error: err.message });
+      if (invalidCredentials) {
+        return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" });
       }
       if (err.message?.includes("Database connection error")) {
         return res.status(503).json({ error: "Service Unavailable", message: err.message });

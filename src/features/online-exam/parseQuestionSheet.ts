@@ -22,14 +22,17 @@ export const QUESTION_TEMPLATE_HEADERS = [
   "Correct Answer",
   "Points",
   "Case Sensitive",
+  "Image",
 ] as const;
 
 /** One worked example per question type, so the expected format is obvious. */
 export const QUESTION_TEMPLATE_EXAMPLES: (string | number)[][] = [
-  ["Multiple Choice", "What is the capital of France?", "Paris", "London", "Rome", "Berlin", "A", 1, ""],
-  ["True/False", "The Earth is round.", "", "", "", "", "True", 1, ""],
-  ["Fill in the blank", "Water boils at ___ degrees Celsius.", "", "", "", "", "100", 1, "No"],
-  ["Essay", "Explain the process of photosynthesis.", "", "", "", "", "", 5, ""],
+  ["Multiple Choice", "What is the capital of France?", "Paris", "London", "Rome", "Berlin", "A", 1, "", ""],
+  ["True/False", "The Earth is round.", "", "", "", "", "True", 1, "", ""],
+  ["Fill in the blank", "Water boils at ___ degrees Celsius.", "", "", "", "", "100", 1, "No", ""],
+  ["Essay", "Explain the process of photosynthesis.", "", "", "", "", "", 5, "", ""],
+  ["Multiple Choice", "Solve $\\frac{x}{2} = 3$.", "$x = 3$", "$x = 6$", "$x = 1.5$", "$x = 9$", "B", 1, "", ""],
+  ["Multiple Choice", "Which shape is shown?", "Triangle", "Circle", "Square", "Rectangle", "A", 1, "", "https://example.com/diagram.png"],
 ];
 
 const TEMPLATE_GUIDE: (string | number)[][] = [
@@ -44,6 +47,9 @@ const TEMPLATE_GUIDE: (string | number)[][] = [
   ["7. Essay: no Correct Answer needed (marked by a teacher)."],
   ["8. Points is optional; leave blank to default to 1."],
   [""],
+  ["Math formulas: wrap LaTeX in dollar signs, e.g. $\\frac{1}{2}$ or $x^{2}$."],
+  ["Images / diagrams: paste an image URL in the Image column, or use =IMAGE(\"url\") in a cell."],
+  ["You can also embed images directly in the Question or Option cells with =IMAGE(\"url\")."],
   [`Import of the "${QUESTION_SHEET_NAME}" sheet is limited to 100 questions per exam.`],
 ];
 
@@ -70,6 +76,7 @@ export async function downloadQuestionTemplate(fileName = "exam-questions-templa
     { wch: 18 },
     { wch: 8 },
     { wch: 14 },
+    { wch: 28 },
   ];
 
   const guide = XLSX.utils.aoa_to_sheet(TEMPLATE_GUIDE);

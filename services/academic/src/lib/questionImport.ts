@@ -20,8 +20,13 @@ export type QuestionType = (typeof QUESTION_TYPES)[number];
 export const MAX_QUESTIONS = 100;
 /** Upper bound on raw spreadsheet rows accepted before per-row validation. */
 export const MAX_IMPORT_ROWS = 500;
-export const MAX_PROMPT_LENGTH = 5000;
-export const MAX_CHOICE_LENGTH = 2000;
+/**
+ * Prompts/choices are stored as plain text that may embed inline LaTeX
+ * (`$...$`) and image tokens (`![alt](url)`), so a hand-drawn diagram encoded
+ * as a `data:image/png;base64,...` URL can push a prompt well past plain text.
+ */
+export const MAX_PROMPT_LENGTH = 120000;
+export const MAX_CHOICE_LENGTH = 40000;
 export const MAX_ANSWER_LENGTH = 2000;
 
 const QUESTION_TYPE_SET = new Set<string>(QUESTION_TYPES);
@@ -81,6 +86,7 @@ export const QUESTION_IMPORT_HEADERS = {
   correct: "Correct Answer",
   points: "Points",
   caseSensitive: "Case Sensitive",
+  image: "Image", // optional image URL / =IMAGE("…") appended to the prompt
 } as const;
 
 export const MAX_OPTIONS = 8;
@@ -140,6 +146,11 @@ const HEADER_ALIASES: Record<string, string> = {
   "case sensitive": "caseSensitive",
   casesensitive: "caseSensitive",
   "case-sensitive": "caseSensitive",
+  image: "image",
+  "image url": "image",
+  imageurl: "image",
+  picture: "image",
+  diagram: "image",
 };
 
 export function canonicalHeaderKey(raw: string): string | null {
@@ -159,6 +170,33 @@ export function canonicalHeaderKey(raw: string): string | null {
 function asString(value: unknown): string {
   if (value === null || value === undefined) return "";
   return String(value);
+}
+
+const EXCEL_IMAGE_RE = /^=?\s*IMAGE\(\s*["']([^"']+)["']\s*\)$/i;
+const MD_IMAGE_RE = /^!\[[^\]]*\]\(([^)]+)\)$/;
+const BARE_URL_RE = /^https?:\/\/\S+$/i;
+
+/**
+ * Normalize a spreadsheet cell into question text that may contain image
+ * tokens. `=IMAGE("url")` and existing markdown images always become tokens;
+ * bare URLs only when `allowBareUrl` is true (dedicated Image column).
+ */
+function cellToRich(raw: unknown, allowBareUrl: boolean): string {
+  const text = asString(raw).trim();
+  if (!text) return "";
+  const token = imageTokenFromCell(text, allowBareUrl);
+  return token || text;
+}
+
+/** Return an image token for a cell, or "" when it is not an image. */
+function imageTokenFromCell(raw: unknown, allowBareUrl: boolean): string {
+  const text = asString(raw).trim();
+  if (!text) return "";
+  const excel = text.match(EXCEL_IMAGE_RE);
+  if (excel) return `![image](${excel[1].trim()})`;
+  if (MD_IMAGE_RE.test(text)) return text;
+  if (allowBareUrl && BARE_URL_RE.test(text)) return `![image](${text})`;
+  return "";
 }
 
 /**
@@ -248,6 +286,15 @@ export function normalizeQuestion(raw: any, index: number): NormalizeResult {
 // Spreadsheet row -> question mapping
 // ---------------------------------------------------------------------------
 
+/** Compact, readable preview for the import review table. */
+function toPreview(text: string, len = 80): string {
+  const stripped = text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "[image]")
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped.slice(0, len);
+}
+
 function normalizeRowKeys(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row || {})) {
@@ -294,13 +341,19 @@ export function mapRowToQuestion(
     errors.push('Type must be one of "Multiple Choice", "True/False", "Fill in the blank" or "Essay".');
   }
 
-  const prompt = asString(keys.question).trim();
+  const prompt = cellToRich(keys.question, false);
+  const imageCell = imageTokenFromCell(keys.image, true);
+  const promptWithImage = imageCell
+    ? prompt
+      ? `${prompt}\n${imageCell}`
+      : imageCell
+    : prompt;
   const rawPoints = keys.points;
   const points = rawPoints === undefined || asString(rawPoints).trim() === "" ? 1 : Number(rawPoints);
 
   const raw: any = {
     type,
-    prompt,
+    prompt: promptWithImage,
     points,
     caseSensitive: resolveBoolean(keys.caseSensitive) === true,
   };
@@ -308,7 +361,7 @@ export function mapRowToQuestion(
   if (type === "MULTIPLE_CHOICE") {
     const choices: { label: string; text: string; isCorrect: boolean }[] = [];
     for (const letter of OPTION_LETTERS) {
-      const text = asString(keys[`option${letter}`]).trim();
+      const text = cellToRich(keys[`option${letter}`], false);
       if (text) choices.push({ label: letter, text, isCorrect: false });
     }
 
@@ -342,7 +395,7 @@ export function mapRowToQuestion(
     raw.correctAnswer = asString(keys.correct).trim();
   }
 
-  const preview = prompt ? prompt.slice(0, 80) : asString(keys.question).slice(0, 80);
+  const preview = toPreview(prompt || asString(keys.question));
 
   if (errors.length) {
     return { index, rowNumber, ok: false, errors, preview };

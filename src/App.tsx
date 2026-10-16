@@ -62,6 +62,9 @@ const Classrooms = lazy(() => import("./pages/School/Classrooms").then((m) => ({
 const Exams = lazy(() => import("./pages/School/Exams").then((m) => ({ default: m.Exams })));
 const ExamDetails = lazy(() => import("./pages/School/ExamDetails").then((m) => ({ default: m.ExamDetails })));
 const OnlineExams = lazy(() => import("./pages/School/OnlineExams").then((m) => ({ default: m.OnlineExams })));
+const QuestionBank = lazy(() =>
+  import("./pages/School/QuestionBank").then((m) => ({ default: m.QuestionBank }))
+);
 const OnlineExamAuthor = lazy(() =>
   import("./pages/School/OnlineExamAuthor").then((m) => ({ default: m.OnlineExamAuthor }))
 );
@@ -464,6 +467,14 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"]}>
                         <OnlineExams />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="question-bank"
+                    element={
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
+                        <QuestionBank />
                       </ProtectedRoute>
                     }
                   />

@@ -86,6 +86,53 @@ export type RetakeEligibility = {
   attemptId?: string;
 };
 
+export type BankVisibility = "PRIVATE" | "SHARED";
+
+export type BankChoice = {
+  id: string;
+  label: string;
+  text: string;
+  isCorrect: boolean;
+};
+
+export type BankItem = {
+  id: string;
+  type: QuestionType;
+  prompt: string;
+  points: number;
+  correctAnswer: string | null;
+  caseSensitive: boolean;
+  subjectId: string | null;
+  gradeLevelId: string | null;
+  topic: string | null;
+  tags: string[];
+  visibility: BankVisibility;
+  createdBy: string;
+  updatedBy: string | null;
+  sourceExamId: string | null;
+  sourceQuestionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  choices: BankChoice[];
+};
+
+export type BankTaxonomy = {
+  subjectId?: string | null;
+  gradeLevelId?: string | null;
+  topic?: string | null;
+  tags?: string[] | string;
+  visibility?: BankVisibility;
+};
+
+export type BankListFilters = {
+  type?: string;
+  subjectId?: string;
+  gradeLevelId?: string;
+  visibility?: BankVisibility;
+  mine?: boolean;
+  search?: string;
+};
+
 export const onlineExamApi = {
   updateConfig: (examId: string, data: OnlineExamConfig) =>
     api.patch(`/api/exams/${examId}/online-config`, data),
@@ -220,4 +267,45 @@ export const onlineExamApi = {
     waitingPeriodHours?: number;
     scoreRetention?: "best" | "last" | "average";
   }) => api.patch(`/api/exams/${examId}/retake-policy`, policy),
+};
+
+/** School question bank (reusable authored questions). */
+export const questionBankApi = {
+  list: (schoolId: string, filters: BankListFilters = {}) =>
+    api.get(`/api/schools/${schoolId}/question-bank`, {
+      params: {
+        type: filters.type,
+        subjectId: filters.subjectId,
+        gradeLevelId: filters.gradeLevelId,
+        visibility: filters.visibility,
+        mine: filters.mine ? "true" : undefined,
+        search: filters.search,
+      },
+    }) as Promise<{ items: BankItem[]; total: number }>,
+
+  get: (schoolId: string, itemId: string) =>
+    api.get(`/api/schools/${schoolId}/question-bank/${itemId}`) as Promise<{ item: BankItem }>,
+
+  create: (schoolId: string, questions: OnlineQuestionInput[], taxonomy: BankTaxonomy = {}) =>
+    api.post(`/api/schools/${schoolId}/question-bank`, { questions, ...taxonomy }) as Promise<{
+      items: BankItem[];
+      created: number;
+    }>,
+
+  update: (schoolId: string, itemId: string, question: OnlineQuestionInput, taxonomy: BankTaxonomy = {}) =>
+    api.put(`/api/schools/${schoolId}/question-bank/${itemId}`, { question, ...taxonomy }) as Promise<{
+      item: BankItem;
+    }>,
+
+  remove: (schoolId: string, itemId: string) =>
+    api.delete(`/api/schools/${schoolId}/question-bank/${itemId}`) as Promise<{ deleted: boolean }>,
+
+  saveFromExam: (
+    examId: string,
+    options: BankTaxonomy & { questionIds?: string[] } = {}
+  ) =>
+    api.post(`/api/exams/${examId}/questions/save-to-bank`, options) as Promise<{
+      items: BankItem[];
+      created: number;
+    }>,
 };

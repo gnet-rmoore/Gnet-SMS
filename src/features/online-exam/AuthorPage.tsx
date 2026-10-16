@@ -13,13 +13,21 @@ import {
   Eye,
   RotateCcw,
   Upload,
+  Library,
+  BookmarkPlus,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { onlineExamApi, type OnlineQuestionInput, type OnlineExamConfig } from "./api";
+import { onlineExamApi, type OnlineExamConfig } from "./api";
 import { emptyQuestion, type DraftQuestion, type QuestionType } from "./types";
+import { fromApiQuestions, toApiQuestions } from "./mappers";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError } from "../../lib/swal";
 import { ImportQuestionsModal } from "./ImportQuestionsModal";
+import { QuestionBankPickerModal } from "./QuestionBankPickerModal";
+import { SaveToBankModal } from "./SaveToBankModal";
+import { MathEditor } from "./MathEditor";
+import { RichContent } from "./RichContent";
+import { hasRichContent } from "./richText";
 import { useTranslation } from "react-i18next";
 
 const TYPE_LABELS: Record<QuestionType, string> = {
@@ -28,76 +36,6 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   FILL_BLANK: "onlineExams.author.questionTypes.FILL_BLANK",
   ESSAY: "onlineExams.author.questionTypes.ESSAY",
 };
-
-function fromApiQuestions(rows: any[]): DraftQuestion[] {
-  return (rows || []).map((q) => {
-    const base = emptyQuestion(q.type as QuestionType);
-    return {
-      ...base,
-      key: q.id || crypto.randomUUID(),
-      type: q.type,
-      prompt: q.prompt || "",
-      points: String(q.points ?? 1),
-      correctAnswer: q.correctAnswer || "",
-      correctBoolean:
-        q.type === "TRUE_FALSE"
-          ? q.choices?.find((c: any) => c.isCorrect)?.text === "True"
-            ? "true"
-            : "false"
-          : "",
-      caseSensitive: Boolean(q.caseSensitive),
-      choices:
-        q.type === "MULTIPLE_CHOICE"
-          ? (q.choices || []).map((c: any, i: number) => ({
-              key: c.id || crypto.randomUUID(),
-              label: c.label || String.fromCharCode(65 + i),
-              text: c.text || "",
-              isCorrect: Boolean(c.isCorrect),
-            }))
-          : [],
-    };
-  });
-}
-
-function toApiQuestions(drafts: DraftQuestion[]): OnlineQuestionInput[] {
-  return drafts.map((q) => {
-    const points = Number(q.points);
-    if (q.type === "MULTIPLE_CHOICE") {
-      return {
-        type: q.type,
-        prompt: q.prompt.trim(),
-        points,
-        choices: q.choices.map((c) => ({
-          label: c.label,
-          text: c.text.trim(),
-          isCorrect: c.isCorrect,
-        })),
-      };
-    }
-    if (q.type === "TRUE_FALSE") {
-      return {
-        type: q.type,
-        prompt: q.prompt.trim(),
-        points,
-        correctBoolean: q.correctBoolean === "true",
-      };
-    }
-    if (q.type === "FILL_BLANK") {
-      return {
-        type: q.type,
-        prompt: q.prompt.trim(),
-        points,
-        correctAnswer: q.correctAnswer.trim(),
-        caseSensitive: q.caseSensitive,
-      };
-    }
-    return {
-      type: "ESSAY",
-      prompt: q.prompt.trim(),
-      points,
-    };
-  });
-}
 
 export default function OnlineExamAuthorPage() {
   const { t } = useTranslation(["pages", "common"]);
@@ -122,6 +60,9 @@ export default function OnlineExamAuthorPage() {
   const [questions, setQuestions] = React.useState<DraftQuestion[]>([emptyQuestion()]);
   const [classId, setClassId] = React.useState("");
   const [showImport, setShowImport] = React.useState(false);
+  const [showBankPicker, setShowBankPicker] = React.useState(false);
+  const [showSaveToBank, setShowSaveToBank] = React.useState(false);
+  const [examSubjectId, setExamSubjectId] = React.useState<string | null>(null);
   const [classrooms, setClassrooms] = React.useState<Array<{ id: string; name: string; grade?: string; subject?: string }>>([]);
   // Retake policy state
   const [retakeEnabled, setRetakeEnabled] = React.useState(false);
@@ -149,6 +90,7 @@ export default function OnlineExamAuthorPage() {
         setShowResultsImmediately(data.exam?.showResultsImmediately !== false);
         setInstructions(data.exam?.instructions || "");
         setClassId(data.exam?.classId || "");
+        setExamSubjectId(data.exam?.subjectId || null);
         setProctorLevel(data.exam?.proctorLevel ?? "MONITOR");
         setAutoPostGrades(data.exam?.autoPostGrades !== false);
         const kiosk = data.exam?.kioskConfig;
@@ -273,6 +215,24 @@ export default function OnlineExamAuthorPage() {
           onClose={() => setShowImport(false)}
           existingCount={questions.filter((q) => q.prompt.trim()).length}
           onImported={refreshQuestions}
+        />
+      ) : null}
+      {school?.id ? (
+        <QuestionBankPickerModal
+          schoolId={school.id}
+          open={showBankPicker}
+          onClose={() => setShowBankPicker(false)}
+          onInsert={(drafts) => setQuestions((prev) => [...prev, ...drafts])}
+        />
+      ) : null}
+      {school?.id ? (
+        <SaveToBankModal
+          schoolId={school.id}
+          open={showSaveToBank}
+          onClose={() => setShowSaveToBank(false)}
+          questions={questions}
+          defaultSubjectId={examSubjectId}
+          onSaved={() => showToast(t("onlineExams.questionBank.savedToBank"))}
         />
       ) : null}
       <motion.div
@@ -563,6 +523,20 @@ export default function OnlineExamAuthorPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setShowBankPicker(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
+            >
+              <Library className="w-4 h-4" /> {t("onlineExams.questionBank.insertFromBank")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSaveToBank(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
+            >
+              <BookmarkPlus className="w-4 h-4" /> {t("onlineExams.questionBank.saveToBank")}
+            </button>
+            <button
+              type="button"
               onClick={() => setShowImport(true)}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
             >
@@ -614,44 +588,50 @@ export default function OnlineExamAuthorPage() {
                   </button>
                 </div>
               </div>
-              <textarea
+              <MathEditor
                 value={q.prompt}
-                onChange={(e) => updateQuestion(q.key, { prompt: e.target.value })}
-                rows={2}
+                onChange={(next) => updateQuestion(q.key, { prompt: next })}
+                rows={3}
                 placeholder={t("onlineExams.author.questionPrompt")}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 bg-white"
               />
 
               {q.type === "MULTIPLE_CHOICE" && (
                 <div className="space-y-2">
                   {q.choices.map((c, ci) => (
-                    <div key={c.key} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={`correct-${q.key}`}
-                        checked={c.isCorrect}
-                        onChange={() =>
-                          updateQuestion(q.key, {
-                            choices: q.choices.map((x, i) => ({
-                              ...x,
-                              isCorrect: i === ci,
-                            })),
-                          })
-                        }
-                      />
-                      <span className="font-mono text-sm text-slate-500 w-6">{c.label}</span>
-                      <input
-                        value={c.text}
-                        onChange={(e) =>
-                          updateQuestion(q.key, {
-                            choices: q.choices.map((x, i) =>
-                              i === ci ? { ...x, text: e.target.value } : x
-                            ),
-                          })
-                        }
-                        className="flex-1 rounded-xl border border-slate-200 px-3 py-2 bg-white"
-                        placeholder={t("onlineExams.author.choiceText")}
-                      />
+                    <div key={c.key} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={`correct-${q.key}`}
+                          checked={c.isCorrect}
+                          onChange={() =>
+                            updateQuestion(q.key, {
+                              choices: q.choices.map((x, i) => ({
+                                ...x,
+                                isCorrect: i === ci,
+                              })),
+                            })
+                          }
+                        />
+                        <span className="font-mono text-sm text-slate-500 w-6">{c.label}</span>
+                        <input
+                          value={c.text}
+                          onChange={(e) =>
+                            updateQuestion(q.key, {
+                              choices: q.choices.map((x, i) =>
+                                i === ci ? { ...x, text: e.target.value } : x
+                              ),
+                            })
+                          }
+                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 bg-white"
+                          placeholder={t("onlineExams.author.choiceText")}
+                        />
+                      </div>
+                      {hasRichContent(c.text) ? (
+                        <div className="pl-9">
+                          <RichContent content={c.text} className="text-sm text-slate-600" />
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

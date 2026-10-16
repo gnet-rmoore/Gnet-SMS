@@ -320,6 +320,12 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
     "lockedForSchoolAdmin": false
   },
   {
+    "key": "nav.question-bank",
+    "label": "Question bank",
+    "category": "Navigation",
+    "lockedForSchoolAdmin": false
+  },
+  {
     "key": "nav.reports",
     "label": "Reports",
     "category": "Navigation",
@@ -451,6 +457,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.procurement",
     "nav.promotion-statement",
     "nav.pta",
+    "nav.question-bank",
     "nav.reports",
     "nav.roles",
     "nav.schedules",
@@ -507,6 +514,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.online-exams",
     "nav.procurement",
     "nav.pta",
+    "nav.question-bank",
     "nav.reports",
     "nav.schedules",
     "nav.security",
@@ -560,6 +568,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.my-schedule",
     "nav.notifications",
     "nav.online-exams",
+    "nav.question-bank",
     "nav.reports",
     "nav.schedules",
     "nav.staff-portal",
@@ -601,6 +610,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.my-schedule",
     "nav.notifications",
     "nav.online-exams",
+    "nav.question-bank",
     "nav.staff-portal",
     "nav.students"
   ],

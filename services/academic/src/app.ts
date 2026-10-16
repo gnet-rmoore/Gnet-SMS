@@ -5,6 +5,7 @@ import { ACADEMIC_ENTITLEMENT_RULES } from "./lib/entitlementRules";
 import academicRoutes from "./routes/academicRoutes";
 import examRoutes from "./routes/examRoutes";
 import onlineExamRoutes from "./routes/onlineExamRoutes";
+import questionBankRoutes from "./routes/questionBankRoutes";
 import examPaperRoutes from "./routes/examPaperRoutes";
 import calendarRoutes from "./routes/calendarRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes";
@@ -35,6 +36,7 @@ app.get("/health/ready", async (_req, res) => {
 app.use(academicRoutes);
 app.use(examRoutes);
 app.use(onlineExamRoutes);
+app.use(questionBankRoutes);
 app.use(examPaperRoutes);
 app.use(calendarRoutes);
 app.use(scheduleRoutes);

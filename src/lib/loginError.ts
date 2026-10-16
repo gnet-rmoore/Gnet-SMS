@@ -34,9 +34,14 @@ export type LoginErrorSignal = {
 export type LoginErrorInput = {
   status?: number | null;
   code?: string | null;
+  /** Raw backend error text, used as a last-resort hint when no code is sent. */
+  message?: string | null;
   kind?: "network" | "warming" | "bad-response" | "no-school";
   mfa?: boolean;
 };
+
+/** Backend error text that clearly means "wrong email or password". */
+const INVALID_CREDENTIALS_TEXT = /invalid (super admin )?credentials/i;
 
 /** Backend codes that map to a dedicated, tailored screen. */
 const KNOWN_CODE_CASES: Record<string, LoginErrorCase> = {
@@ -52,7 +57,7 @@ const KNOWN_CODE_CASES: Record<string, LoginErrorCase> = {
 };
 
 export function classifyLoginError(input: LoginErrorInput): LoginErrorSignal {
-  const { status = null, code = null, kind, mfa = false } = input;
+  const { status = null, code = null, message = null, kind, mfa = false } = input;
 
   if (kind === "network") return { case: "offline" };
   if (kind === "warming") return { case: "warming" };
@@ -63,6 +68,8 @@ export function classifyLoginError(input: LoginErrorInput): LoginErrorSignal {
     const mapped = KNOWN_CODE_CASES[code];
     if (mapped) return { case: mapped, code };
   }
+
+  if (message && INVALID_CREDENTIALS_TEXT.test(message)) return { case: "invalid" };
 
   if (status === 429) return { case: "rateLimited" };
   if (status !== null && status >= 500) return { case: "down" };
@@ -102,10 +109,11 @@ export function extractLoginErrorSignal(
     const carried = (err as { loginError?: unknown }).loginError;
     if (isSignal(carried)) return carried;
 
-    const e = err as { status?: unknown; code?: unknown; kind?: unknown };
+    const e = err as { status?: unknown; code?: unknown; kind?: unknown; message?: unknown };
     if (
       typeof e.status === "number" ||
       typeof e.code === "string" ||
+      typeof e.message === "string" ||
       e.kind === "network" ||
       e.kind === "warming" ||
       e.kind === "bad-response" ||
@@ -114,6 +122,7 @@ export function extractLoginErrorSignal(
       return classifyLoginError({
         status: typeof e.status === "number" ? e.status : null,
         code: typeof e.code === "string" ? e.code : null,
+        message: typeof e.message === "string" ? e.message : null,
         kind: e.kind as LoginErrorInput["kind"],
         mfa: opts.mfa,
       });

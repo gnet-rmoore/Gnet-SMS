@@ -148,6 +148,12 @@ router.get(
 );
 
 router.get(
+  "/api/internal/schools/:schoolId/stats",
+  authenticateInternal,
+  academicController.getSchoolStatsInternal
+);
+
+router.get(
   "/api/internal/schools/:schoolId/grade-levels/:id",
   authenticateInternal,
   academicController.getGradeLevelInternal

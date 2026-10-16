@@ -274,6 +274,57 @@ model ExamChoice {
   @@schema("academic")
 }
 
+/// Reusable question in the school question bank. Inserting into an exam COPIES
+/// (snapshots) the item, so later bank edits never change a live exam. The
+/// `subjectId`/`gradeLevelId` taxonomy drives subject/grade-scoped sharing.
+model QuestionBankItem {
+  id               String               @id @default(uuid())
+  schoolId         String // Identity.School.id (no FK)
+  type             String
+  prompt           String
+  points           Float                @default(1)
+  /// FILL_BLANK expected answer (never sent to students)
+  correctAnswer    String?
+  caseSensitive    Boolean              @default(false)
+  subjectId        String?
+  gradeLevelId     String?
+  topic            String?
+  /// Comma-separated free-text tags for search
+  tags             String?
+  /// PRIVATE | SHARED
+  visibility       String               @default("SHARED")
+  createdBy        String // Identity.User.id (no FK)
+  updatedBy        String?
+  /// Provenance when saved from an exam (copy-on-insert source)
+  sourceExamId     String?
+  sourceQuestionId String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  choices          QuestionBankChoice[]
+
+  @@index([schoolId])
+  @@index([schoolId, subjectId])
+  @@index([schoolId, gradeLevelId])
+  @@index([schoolId, createdBy])
+  @@index([schoolId, visibility])
+  @@schema("academic")
+}
+
+model QuestionBankChoice {
+  id         String           @id @default(uuid())
+  itemId     String
+  schoolId   String
+  label      String
+  text       String
+  isCorrect  Boolean          @default(false)
+  orderIndex Int              @default(0)
+  item       QuestionBankItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([schoolId])
+  @@schema("academic")
+}
+
 /// Attempt status: IN_PROGRESS | SUBMITTED | AUTO_SUBMITTED | EXPIRED
 model ExamAttempt {
   id                    String          @id @default(uuid())

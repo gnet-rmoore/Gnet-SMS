@@ -132,7 +132,11 @@ export const Login = () => {
           return;
         }
         throw loginErrorSignal(
-          classifyLoginError({ status: response.status, code: data?.code })
+          classifyLoginError({
+            status: response.status,
+            code: data?.code,
+            message: [data?.error, data?.details].filter(Boolean).join(" "),
+          })
         );
       }
 

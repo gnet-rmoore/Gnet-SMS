@@ -151,6 +151,7 @@ services:
       CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
       ACADEMIC_URL: http://academic:3015
       CLASSROOM_URL: http://classroom:3014
+      LIFECYCLE_URL: http://lifecycle:3010
       FINANCE_URL: http://finance:3016
       STAFF_URL: http://staff:3013
       OPS_URL: http://ops:3012

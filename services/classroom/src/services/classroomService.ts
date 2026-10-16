@@ -1197,4 +1197,8 @@ export const classroomService = {
   async countByGradeLevelId(gradeLevelId: string) {
     return prisma.classroom.count({ where: { gradeLevelId } });
   },
+
+  async countBySchoolId(schoolId: string) {
+    return prisma.classroom.count({ where: { schoolId } });
+  },
 };

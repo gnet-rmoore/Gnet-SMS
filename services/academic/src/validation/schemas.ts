@@ -88,9 +88,9 @@ export const onlineExamConfigSchema = z.object({
   autoPostGrades: z.boolean().optional(),
 });
 
-const onlineQuestionSchema = z.object({
+export const onlineQuestionSchema = z.object({
   type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "FILL_BLANK", "ESSAY"]),
-  prompt: z.string().min(1).max(5000),
+  prompt: z.string().min(1).max(120000),
   points: z.coerce.number().positive().max(100),
   correctAnswer: z.string().max(2000).optional().nullable(),
   correctBoolean: z.boolean().optional(),
@@ -99,7 +99,7 @@ const onlineQuestionSchema = z.object({
     .array(
       z.object({
         label: z.string().max(4).optional(),
-        text: z.string().min(1).max(2000),
+        text: z.string().min(1).max(40000),
         isCorrect: z.boolean(),
       })
     )
@@ -246,4 +246,30 @@ export const securityPolicySchema = z.object({
   mfaMode: z.enum(["OFF", "OPTIONAL", "REQUIRED"]),
   mfaRequiredRoles: z.array(z.string()).optional(),
   allowSmsMfa: z.boolean(),
+});
+
+// ---------------------------------------------------------------------------
+// Question bank (reusable school questions)
+// ---------------------------------------------------------------------------
+
+/** Subject/grade tagging + sharing visibility shared by all bank writes. */
+const questionBankTaxonomySchema = z.object({
+  subjectId: z.string().nullable().optional(),
+  gradeLevelId: z.string().nullable().optional(),
+  topic: z.string().max(200).nullable().optional(),
+  tags: z.union([z.string().max(2000), z.array(z.string().max(40)).max(20)]).optional(),
+  visibility: z.enum(["PRIVATE", "SHARED"]).optional(),
+});
+
+export const questionBankCreateSchema = questionBankTaxonomySchema.extend({
+  questions: z.array(onlineQuestionSchema).min(1).max(100),
+});
+
+export const questionBankUpdateSchema = questionBankTaxonomySchema.extend({
+  question: onlineQuestionSchema,
+});
+
+/** Copy questions from an exam into the bank (copy-on-insert source). */
+export const questionBankSaveFromExamSchema = questionBankTaxonomySchema.extend({
+  questionIds: z.array(z.string().min(1)).max(200).optional(),
 });

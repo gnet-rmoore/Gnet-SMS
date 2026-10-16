@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { onlineExamApi } from "./api";
+import { RichContent } from "./RichContent";
 import { alertError } from "../../lib/swal";
 import { useTranslation } from "react-i18next";
 
@@ -176,7 +177,7 @@ export default function OnlineExamResultsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-medium text-slate-900">
                     <span className="font-mono text-slate-400 mr-2">Q{index + 1}</span>
-                    {q.prompt}
+                    <RichContent content={q.prompt} className="inline" />
                   </p>
                   <span className="text-xs font-mono text-slate-500 shrink-0">
                     {pending
@@ -188,18 +189,24 @@ export default function OnlineExamResultsPage() {
                 </div>
                 {q.answer?.textAnswer != null && q.answer.textAnswer !== "" && (
                   <p className="mt-2 text-sm text-slate-600">
-                    {t("onlineExams.results.yourAnswer", { text: q.answer.textAnswer })}
+                    <span>{t("onlineExams.results.yourAnswer", { text: "" }).trim()}{" "}</span>
+                    <RichContent content={q.answer.textAnswer} className="text-slate-800" />
                   </p>
                 )}
                 {q.answer?.selectedChoiceId && (
                   <p className="mt-2 text-sm text-slate-600">
-                    {t("onlineExams.results.yourChoice")}:{" "}
-                    {q.choices?.find((c: any) => c.id === q.answer.selectedChoiceId)?.text || "—"}
+                    <span>{t("onlineExams.results.yourChoice")}:{" "}</span>
+                    <RichContent
+                      content={
+                        q.choices?.find((c: any) => c.id === q.answer.selectedChoiceId)?.text || "—"
+                      }
+                      className="text-slate-800"
+                    />
                   </p>
                 )}
                 {!pending && !ok && q.type === "FILL_BLANK" && q.correctAnswer && (
                   <p className="mt-1 text-sm text-emerald-700">
-                    {t("onlineExams.results.expected", { text: q.correctAnswer })}
+                    <RichContent content={q.correctAnswer} className="text-emerald-800" />
                   </p>
                 )}
               </div>

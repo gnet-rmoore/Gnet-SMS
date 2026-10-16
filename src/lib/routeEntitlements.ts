@@ -33,6 +33,7 @@ export const ROUTE_ENTITLEMENTS: Record<string, string> = {
   // Assessment
   exams: "exams",
   "online-exams": "online_exams",
+  "question-bank": "online_exams",
   gradebook: "gradebook",
   "grade-review": "grade_review",
   "grade-access": "grade_review",

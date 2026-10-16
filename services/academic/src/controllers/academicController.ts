@@ -380,6 +380,17 @@ export const academicController = {
     }
   },
 
+  /** Identity dashboard stats — live academic counts for a school. */
+  async getSchoolStatsInternal(req: any, res: Response) {
+    const { schoolId } = req.params;
+    try {
+      const totalExams = await prisma.exam.count({ where: { schoolId } });
+      res.json({ totalExams });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to compute academic stats" });
+    }
+  },
+
   async listSubjectOfferingsInternal(req: any, res: Response) {
     try {
       const offerings = await academicService.getSubjectOfferings(req.params.schoolId, {
