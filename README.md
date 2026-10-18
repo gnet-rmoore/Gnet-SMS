@@ -4,17 +4,19 @@ A comprehensive, full-stack enterprise-grade School Management System designed t
 
 ## Run on another computer (Docker)
 
-**Recommended:** build and run the full stack with Docker Compose. You do not need Node.js on the host for this path.
+**Recommended:** build and run the full stack with Docker Compose. You do not need Node.js on the host for this path. Development layers `docker-compose.dev.yml` on top of the base file (it publishes Postgres/Redis on localhost and uses localhost origins); production uses `docker-compose.prod.yml` instead.
 
 ```bash
 git clone <YOUR_REPO_URL> Gnet-SMS-2026
 cd Gnet-SMS-2026
-docker compose up --build -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
+
+If you have Node.js installed, the shorthand is `npm run docker:dev`.
 
 Then open **http://localhost:8080** and sign in with a demo account (password `admin123`), e.g. `schooladmin@yoursms.com`.
 
-Full guide (prerequisites, ports, logs, rebuilds, troubleshooting): **[`docs/DOCKER_SETUP.md`](./docs/DOCKER_SETUP.md)**.
+Full guide (prerequisites, ports, logs, rebuilds, troubleshooting): **[`docs/DOCKER_SETUP.md`](./docs/DOCKER_SETUP.md)**. Dev vs. production run model: **[`docs/RUN_DEV_AND_PROD_PLAN.md`](./docs/RUN_DEV_AND_PROD_PLAN.md)**.
 
 ## 🚀 Overview
 

@@ -1,6 +1,8 @@
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import { receiptChrome, resolveReceiptLocale } from "../i18n/receiptChrome";
+import { amountToWords } from "./amountInWords";
+import { formatReceiptDateTime, methodChromeKey, statusChromeKey, titleCase } from "./receiptFormat";
 
 export type ReceiptPdfInput = {
   title: string;
@@ -26,6 +28,30 @@ export type ReceiptPdfInput = {
   authorizedSignatureUrl?: string | null;
   authorizedSignerName?: string | null;
   authorizedSignerTitle?: string | null;
+  /** IANA timezone of the school, used to render dates in local wall-clock time. */
+  schoolTimezone?: string | null;
+  /** Payment method code: CASH | CHECK | TRANSFER | CARD | OTHER | CHECKOUT */
+  paymentMethod?: string | null;
+  /** Actual payment date (may differ from the receipt issue date). */
+  paidAt?: Date | null;
+  /** Student the payment relates to (fee receipts). */
+  studentName?: string | null;
+  /** Fee/payroll/expense category surfaced under details. */
+  categoryLabel?: string | null;
+  /** School year or billing month/period label. */
+  periodLabel?: string | null;
+  /** Balance owed before this payment (fee receipts). */
+  balanceBefore?: number | null;
+  /** Balance owed after this payment (fee receipts). */
+  balanceAfter?: number | null;
+  /** Place the receipt was issued from. */
+  placeOfIssue?: string | null;
+  /** Free-text note shown above the statement. */
+  note?: string | null;
+  /** Staff member who received/recorded the payment. */
+  cashierName?: string | null;
+  /** Copy designation, e.g. "Original" / "School Copy". */
+  copyLabel?: string | null;
 };
 
 /** Normalize to #RRGGBB (PDFKit needs hex or 0–1 RGB — never raw 0–255). */
@@ -104,8 +130,24 @@ async function fetchLogoBuffer(url?: string | null): Promise<Buffer | null> {
 }
 
 export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> {
-  const { t } = receiptChrome(resolveReceiptLocale(input.locale));
-  const issuedWhen = input.issuedAt.toISOString().replace("T", " ").slice(0, 19);
+  const locale = resolveReceiptLocale(input.locale);
+  const { t } = receiptChrome(locale);
+  const issuedWhen = formatReceiptDateTime(input.issuedAt, locale, input.schoolTimezone);
+  const paidAtDisplay = input.paidAt
+    ? formatReceiptDateTime(input.paidAt, locale, input.schoolTimezone)
+    : "";
+  const rawMethod = (input.paymentMethod || "").trim();
+  const mKey = rawMethod ? methodChromeKey(rawMethod) : null;
+  const methodLabel = mKey ? t(mKey) : rawMethod ? titleCase(rawMethod) : "";
+  const sKey = statusChromeKey(input.status);
+  const statusLabel = sKey ? t(sKey) : titleCase(input.status);
+  const categoryLabel = (input.categoryLabel || "").trim();
+  const periodLabel = (input.periodLabel || "").trim();
+  const studentName = (input.studentName || "").trim();
+  const placeOfIssue = (input.placeOfIssue || "").trim();
+  const note = (input.note || "").trim();
+  const cashierName = (input.cashierName || "").trim();
+  const copyLabel = (input.copyLabel || "").trim();
 
   const [qrDataUrl, logoBuf] = await Promise.all([
     QRCode.toDataURL(input.verifyUrl, {
@@ -217,10 +259,20 @@ export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> 
     doc
       .fillColor(brand)
       .font("Helvetica-Bold")
-      .text(t("status", { status: input.status }), metaX, bodyY + 24, {
+      .text(t("status", { status: statusLabel }), metaX, bodyY + 24, {
         width: contentW * 0.48,
         align: "right",
       });
+    if (copyLabel) {
+      doc
+        .fillColor("#94a3b8")
+        .font("Helvetica-Bold")
+        .fontSize(8)
+        .text(copyLabel.toUpperCase(), metaX, bodyY + 38, {
+          width: contentW * 0.48,
+          align: "right",
+        });
+    }
 
     doc.y = Math.max(doc.y, bodyY + 52);
     doc
@@ -238,6 +290,50 @@ export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> 
     doc.text(t("payer", { name: input.payerName }));
     doc.text(t("payee", { name: input.payeeName }));
     doc.text(t("reference", { ref: input.sourceRef }));
+
+    // —— Payment details (two-column) ——
+    const detailStrings: string[] = [];
+    if (methodLabel) detailStrings.push(t("method", { value: methodLabel }));
+    if (paidAtDisplay) detailStrings.push(t("paymentDate", { when: paidAtDisplay }));
+    if (categoryLabel) detailStrings.push(t("category", { value: categoryLabel }));
+    if (periodLabel) detailStrings.push(t("period", { value: periodLabel }));
+    if (studentName) detailStrings.push(t("student", { name: studentName }));
+    if (placeOfIssue) detailStrings.push(t("placeOfIssue", { value: placeOfIssue }));
+    if (typeof input.balanceBefore === "number") {
+      detailStrings.push(
+        t("balanceBefore", {
+          currency: input.currency,
+          amount: Number(input.balanceBefore).toFixed(2),
+        })
+      );
+    }
+    if (typeof input.balanceAfter === "number") {
+      detailStrings.push(
+        t("balanceAfter", {
+          currency: input.currency,
+          amount: Number(input.balanceAfter).toFixed(2),
+        })
+      );
+    }
+    if (cashierName) detailStrings.push(t("receivedBy", { name: cashierName }));
+
+    if (detailStrings.length) {
+      doc.moveDown(0.8);
+      doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(11).text(t("details"));
+      doc.moveDown(0.3);
+      doc.font("Helvetica").fontSize(9.5).fillColor("#334155");
+      const colW = contentW / 2;
+      const rowH = 15;
+      let rowY = doc.y;
+      for (let i = 0; i < detailStrings.length; i += 2) {
+        doc.text(detailStrings[i], left, rowY, { width: colW - 10, lineBreak: false });
+        if (detailStrings[i + 1]) {
+          doc.text(detailStrings[i + 1], left + colW, rowY, { width: colW - 10, lineBreak: false });
+        }
+        rowY += rowH;
+      }
+      doc.y = rowY + 4;
+    }
 
     doc.moveDown(1);
     doc.fillColor("#0f172a").font("Helvetica-Bold").fontSize(11).text(t("lineItems"));
@@ -278,6 +374,42 @@ export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> 
       });
     doc.y = totalY + 20;
 
+    // —— Amount in words + note + statement ——
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text(t("amountInWords"), left, doc.y, {
+      width: contentW,
+    });
+    doc.moveDown(0.15);
+    doc.font("Helvetica").fontSize(10).fillColor("#0f172a").text(
+      amountToWords(input.amount, input.currency),
+      left,
+      doc.y,
+      { width: contentW }
+    );
+    if (note) {
+      doc.moveDown(0.5);
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text(t("note"), left, doc.y, {
+        width: contentW,
+      });
+      doc.moveDown(0.15);
+      doc.font("Helvetica").fontSize(10).fillColor("#0f172a").text(note, left, doc.y, {
+        width: contentW,
+      });
+    }
+    doc.moveDown(0.7);
+    doc
+      .moveTo(left, doc.y)
+      .lineTo(right, doc.y)
+      .lineWidth(1)
+      .strokeColor(brandSoft)
+      .stroke();
+    doc.moveDown(0.4);
+    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text(
+      t("receivedWithThanks"),
+      left,
+      doc.y,
+      { width: contentW, lineGap: 1 }
+    );
+
     if (input.status === "VOIDED") {
       doc.save();
       doc.rotate(-30, { origin: [300, 400] });
@@ -290,7 +422,7 @@ export async function renderReceiptPdf(input: ReceiptPdfInput): Promise<Buffer> 
     const footerY = 700;
 
     // —— Authorized signature (handwritten from Profile) ——
-    const sigY = footerY - 110;
+    const sigY = Math.min(Math.max(doc.y + 26, footerY - 110), 600);
     const sigDataUrl = input.authorizedSignatureUrl?.trim();
     if (sigDataUrl?.startsWith("data:image/")) {
       try {

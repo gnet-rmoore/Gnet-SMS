@@ -39,6 +39,14 @@ export type AuditModule = (typeof AUDIT_MODULES)[number];
 export const AUDIT_LEVELS = ["INFO", "WARNING", "ERROR", "CRITICAL"] as const;
 export type AuditLevel = (typeof AUDIT_LEVELS)[number];
 
+/** Clear result of the performed action. */
+export const AUDIT_OUTCOMES = ["SUCCESS", "FAILURE", "PENDING", "DENIED"] as const;
+export type AuditOutcome = (typeof AUDIT_OUTCOMES)[number];
+
+/** Data-sensitivity marker driving retention, review, and export policies. */
+export const DATA_SENSITIVITY_LEVELS = ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "PII", "SECRET"] as const;
+export type DataSensitivity = (typeof DATA_SENSITIVITY_LEVELS)[number];
+
 /** Normalize legacy WARN → WARNING for storage and filters. */
 export function normalizeAuditLevel(level: string | null | undefined): AuditLevel {
   const raw = String(level || "INFO").toUpperCase();
@@ -47,6 +55,36 @@ export function normalizeAuditLevel(level: string | null | undefined): AuditLeve
     return raw;
   }
   return "INFO";
+}
+
+/** Normalize caller-provided outcome; fall back to inference from status code. */
+export function normalizeAuditOutcome(
+  outcome: string | null | undefined,
+  statusCode?: number | null
+): AuditOutcome {
+  const raw = String(outcome || "").toUpperCase();
+  if (raw === "SUCCESS" || raw === "FAILURE" || raw === "PENDING" || raw === "DENIED") {
+    return raw;
+  }
+  return inferOutcomeFromStatus(statusCode);
+}
+
+/** Derive outcome from an HTTP status code when the caller did not set one. */
+export function inferOutcomeFromStatus(statusCode?: number | null): AuditOutcome {
+  if (statusCode == null) return "SUCCESS";
+  if (statusCode === 401 || statusCode === 403) return "DENIED";
+  if (statusCode === 202) return "PENDING";
+  if (statusCode >= 400) return "FAILURE";
+  return "SUCCESS";
+}
+
+export function normalizeDataSensitivity(
+  value: string | null | undefined
+): DataSensitivity | null {
+  const raw = String(value || "").toUpperCase();
+  return (DATA_SENSITIVITY_LEVELS as readonly string[]).includes(raw)
+    ? (raw as DataSensitivity)
+    : null;
 }
 
 export function inferAuditCategory(module: string, action: string): AuditCategory {

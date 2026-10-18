@@ -114,6 +114,30 @@ router.post(
 );
 
 router.get(
+  "/api/schools/:schoolId/timetable/availability",
+  authenticate,
+  requireTenant,
+  requireRoles([...WRITE_ROLES]),
+  scheduleController.slotAvailability
+);
+
+router.get(
+  "/api/schools/:schoolId/timetable/health",
+  authenticate,
+  requireTenant,
+  requireRoles([...WRITE_ROLES]),
+  scheduleController.scheduleHealth
+);
+
+router.post(
+  "/api/schools/:schoolId/timetable/suggest",
+  authenticate,
+  requireTenant,
+  requireRoles([...WRITE_ROLES]),
+  scheduleController.suggestTimetable
+);
+
+router.get(
   "/api/schools/:schoolId/timetable/expand",
   authenticate,
   requireTenant,

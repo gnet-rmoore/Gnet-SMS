@@ -7,6 +7,7 @@ import {
   AlertCircle,
   XCircle,
   Info,
+  ShieldAlert,
   ChevronDown,
   SlidersHorizontal,
   Plus,
@@ -14,9 +15,8 @@ import {
   Monitor,
   Smartphone,
   Tablet,
-  MapPin,
-  Clock,
-  Shield,
+  RefreshCw,
+  Download,
 } from "lucide-react";
 import {
   PageShell,
@@ -33,6 +33,16 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
 import { ActivityFeedPanel } from "./components/ActivityFeedPanel";
+import { LogDetailDrawer } from "./components/LogDetailDrawer";
+import {
+  actorLabel,
+  csvEscape,
+  levelStyle,
+  outcomeStyle,
+  relativeTime,
+  targetLabel,
+  type LogEntry,
+} from "./logTypes";
 import {
   useListFilters,
   parseFilterLogic,
@@ -41,43 +51,6 @@ import {
   type FilterFieldDef,
   type FilterLogicGroup,
 } from "../../features/list-filters";
-
-interface LogEntry {
-  id: string;
-  action: string;
-  module: string;
-  category?: string;
-  details: string;
-  userId?: string | null;
-  userName?: string | null;
-  userEmail?: string | null;
-  userRole?: string | null;
-  schoolId?: string | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  browser?: string | null;
-  os?: string | null;
-  deviceType?: string | null;
-  country?: string | null;
-  city?: string | null;
-  sessionId?: string | null;
-  requestId?: string | null;
-  entityType?: string | null;
-  entityId?: string | null;
-  beforeValue?: string | null;
-  afterValue?: string | null;
-  httpMethod?: string | null;
-  endpoint?: string | null;
-  statusCode?: number | null;
-  durationMs?: number | null;
-  source?: string | null;
-  errorMessage?: string | null;
-  tags?: string | null;
-  user?: { name: string; role: string; email?: string } | null;
-  school?: { name: string; slug?: string } | null;
-  createdAt: string;
-  level: "INFO" | "WARNING" | "ERROR" | "CRITICAL" | string;
-}
 
 type ClauseRow = { field: string; op: "eq" | "contains"; value: string };
 const MAX_CLAUSES = 3;
@@ -88,12 +61,6 @@ function DeviceIcon({ type }: { type?: string | null }) {
   return <Monitor className="h-3.5 w-3.5" aria-hidden />;
 }
 
-function csvEscape(v: unknown): string {
-  const s = v == null ? "" : String(v);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
 export const Logs = () => {
   const { t } = useTranslation(["pages", "common"]);
   const [logs, setLogs] = React.useState<LogEntry[]>([]);
@@ -102,11 +69,14 @@ export const Logs = () => {
     total: number;
     byCategory: Record<string, number>;
     byLevel: Record<string, number>;
-  }>({ total: 0, byCategory: {}, byLevel: {} });
+    byOutcome: Record<string, number>;
+  }>({ total: 0, byCategory: {}, byLevel: {}, byOutcome: {} });
   const [loading, setLoading] = React.useState(true);
   const [selected, setSelected] = React.useState<LogEntry | null>(null);
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
+  const [autoRefresh, setAutoRefresh] = React.useState(false);
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const fields: FilterFieldDef[] = useMemo(
@@ -125,10 +95,22 @@ export const Logs = () => {
         ],
       },
       {
+        key: "outcome",
+        label: t("superAdmin.logsUi.outcome"),
+        type: "enum",
+        primary: true,
+        allLabel: t("superAdmin.logsUi.allOutcomes"),
+        options: [
+          { value: "SUCCESS", label: t("superAdmin.logsUi.outcomeSuccess") },
+          { value: "FAILURE", label: t("superAdmin.logsUi.outcomeFailure") },
+          { value: "DENIED", label: t("superAdmin.logsUi.outcomeDenied") },
+          { value: "PENDING", label: t("superAdmin.logsUi.outcomePending") },
+        ],
+      },
+      {
         key: "category",
         label: t("superAdmin.logsUi.category"),
         type: "enum",
-        primary: true,
         allLabel: t("superAdmin.logsUi.allCategories"),
         options: [
           { value: "AUTH", label: t("superAdmin.logsUi.catAuth") },
@@ -149,7 +131,6 @@ export const Logs = () => {
         key: "module",
         label: t("superAdmin.logsUi.module"),
         type: "enum",
-        primary: true,
         allLabel: t("superAdmin.logsUi.allModules"),
         options: [
           { value: "AUTH", label: t("superAdmin.logsUi.moduleAuth") },
@@ -161,6 +142,33 @@ export const Logs = () => {
           { value: "SETTINGS", label: t("superAdmin.logsUi.moduleSettings") },
           { value: "BILLING", label: t("superAdmin.logsUi.moduleBilling") },
           { value: "SYSTEM", label: t("superAdmin.logsUi.moduleSystem") },
+        ],
+      },
+      {
+        key: "authMethod",
+        label: t("superAdmin.logsUi.authMethod"),
+        type: "enum",
+        allLabel: t("superAdmin.logsUi.allAuthMethods"),
+        options: [
+          { value: "PASSWORD", label: t("superAdmin.logsUi.authPassword") },
+          { value: "MFA", label: t("superAdmin.logsUi.authMfa") },
+          { value: "TOTP", label: t("superAdmin.logsUi.authTotp") },
+          { value: "SMS", label: t("superAdmin.logsUi.authSms") },
+          { value: "SSO", label: t("superAdmin.logsUi.authSso") },
+          { value: "API_KEY", label: t("superAdmin.logsUi.authApiKey") },
+        ],
+      },
+      {
+        key: "dataSensitivity",
+        label: t("superAdmin.logsUi.sensitivity"),
+        type: "enum",
+        allLabel: t("superAdmin.logsUi.allSensitivity"),
+        options: [
+          { value: "PUBLIC", label: t("superAdmin.logsUi.sensPublic") },
+          { value: "INTERNAL", label: t("superAdmin.logsUi.sensInternal") },
+          { value: "CONFIDENTIAL", label: t("superAdmin.logsUi.sensConfidential") },
+          { value: "PII", label: t("superAdmin.logsUi.sensPii") },
+          { value: "SECRET", label: t("superAdmin.logsUi.sensSecret") },
         ],
       },
     ],
@@ -178,6 +186,8 @@ export const Logs = () => {
       { value: "details", label: t("superAdmin.logsUi.details") },
       { value: "userEmail", label: t("superAdmin.logsUi.email") },
       { value: "ipAddress", label: t("superAdmin.logsUi.ip") },
+      { value: "targetUserEmail", label: t("superAdmin.logsUi.targetEmail") },
+      { value: "correlationId", label: t("superAdmin.logsUi.correlationId") },
     ],
     [t]
   );
@@ -299,8 +309,10 @@ export const Logs = () => {
           total: Number(s?.total || 0),
           byCategory: s?.byCategory || {},
           byLevel: s?.byLevel || {},
+          byOutcome: s?.byOutcome || {},
         });
       }
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Failed to fetch logs:", err);
       setLogs([]);
@@ -317,18 +329,60 @@ export const Logs = () => {
     return () => clearTimeout(timer);
   }, [fetchLogs]);
 
+  React.useEffect(() => {
+    if (!autoRefresh || logView !== "platform") return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void fetchLogs();
+    }, 30000);
+    return () => window.clearInterval(id);
+  }, [autoRefresh, logView, fetchLogs]);
+
+  const applyRange = (days: number | null) => {
+    if (days == null) {
+      setFromDate("");
+      setToDate("");
+      return;
+    }
+    const to = new Date();
+    const from = new Date(Date.now() - days * 86400000);
+    setFromDate(from.toISOString().slice(0, 10));
+    setToDate(to.toISOString().slice(0, 10));
+  };
+
+  const activeRange = (() => {
+    if (!fromDate && !toDate) return "all";
+    const from = fromDate ? new Date(fromDate).getTime() : 0;
+    const to = toDate ? new Date(toDate).getTime() : 0;
+    const now = new Date();
+    const dayStart = new Date(now);
+    dayStart.setHours(0, 0, 0, 0);
+    if (to && Math.abs(to - dayStart.getTime()) > 86400000) return "custom";
+    const span = (now.getTime() - from) / 86400000;
+    if (Math.abs(span - 1) < 0.75) return "1d";
+    if (Math.abs(span - 7) < 0.75) return "7d";
+    if (Math.abs(span - 30) < 0.75) return "30d";
+    return "custom";
+  })();
+
   const exportCsv = () => {
     const headers = [
       "id",
       "createdAt",
       "level",
+      "outcome",
       "category",
       "module",
       "action",
       "details",
+      "changesSummary",
       "userName",
       "userEmail",
       "userRole",
+      "targetUserName",
+      "targetUserEmail",
+      "targetUserRole",
+      "authMethod",
+      "dataSensitivity",
       "school",
       "ipAddress",
       "browser",
@@ -338,25 +392,36 @@ export const Logs = () => {
       "city",
       "entityType",
       "entityId",
+      "correlationId",
+      "requestId",
       "beforeValue",
       "afterValue",
       "endpoint",
       "statusCode",
       "durationMs",
       "source",
+      "errorMessage",
+      "tags",
     ];
     const rows = visibleLogs.map((l) =>
       [
         l.id,
         l.createdAt,
         l.level,
+        l.outcome,
         l.category,
         l.module,
         l.action,
         l.details,
+        l.changesSummary,
         l.userName || l.user?.name,
         l.userEmail || l.user?.email,
         l.userRole || l.user?.role,
+        l.targetUserName,
+        l.targetUserEmail,
+        l.targetUserRole,
+        l.authMethod,
+        l.dataSensitivity,
         l.school?.name,
         l.ipAddress,
         l.browser,
@@ -366,12 +431,16 @@ export const Logs = () => {
         l.city,
         l.entityType,
         l.entityId,
+        l.correlationId,
+        l.requestId,
         l.beforeValue,
         l.afterValue,
         l.endpoint,
         l.statusCode,
         l.durationMs,
         l.source,
+        l.errorMessage,
+        l.tags,
       ]
         .map(csvEscape)
         .join(",")
@@ -387,19 +456,6 @@ export const Logs = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getLevelStyle = (level: string) => {
-    switch (level) {
-      case "CRITICAL":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "ERROR":
-        return "bg-orange-100 text-orange-700 border-orange-200";
-      case "WARNING":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      default:
-        return "bg-blue-100 text-blue-700 border-blue-200";
-    }
-  };
-
   const getLevelIcon = (level: string) => {
     switch (level) {
       case "CRITICAL":
@@ -412,8 +468,15 @@ export const Logs = () => {
     }
   };
 
-  const actorLabel = (log: LogEntry) =>
-    log.userName || log.user?.name || log.userEmail || log.user?.email || t("superAdmin.logsUi.systemUser");
+  const rangeChips: { key: string; label: string; days: number | null }[] = [
+    { key: "1d", label: t("superAdmin.logsUi.quick24h"), days: 1 },
+    { key: "7d", label: t("superAdmin.logsUi.quick7d"), days: 7 },
+    { key: "30d", label: t("superAdmin.logsUi.quick30d"), days: 30 },
+    { key: "all", label: t("superAdmin.logsUi.quickAll"), days: null },
+  ];
+
+  const criticalCount = (summary.byLevel.CRITICAL || 0) + (summary.byLevel.ERROR || 0);
+  const failedCount = (summary.byOutcome.FAILURE || 0) + (summary.byOutcome.DENIED || 0);
 
   return (
     <PageShell width="wide">
@@ -421,435 +484,379 @@ export const Logs = () => {
         title={t("pages:superAdmin.logs")}
         subtitle={t("pages:superAdmin.logsSubtitle")}
         actions={
-          <Button variant="secondary" type="button" onClick={exportCsv} disabled={!visibleLogs.length}>
-            <FileText className="w-4 h-4" />
-            {t("common:export")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {logView === "platform" ? (
+              <>
+                <Button
+                  variant={autoRefresh ? "primary" : "secondary"}
+                  type="button"
+                  onClick={() => setAutoRefresh((v) => !v)}
+                  aria-pressed={autoRefresh}
+                >
+                  <RefreshCw className={cn("w-4 h-4", autoRefresh && "animate-spin")} />
+                  {autoRefresh ? t("superAdmin.logsUi.autoRefreshOn") : t("superAdmin.logsUi.autoRefresh")}
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => void fetchLogs()}>
+                  <RefreshCw className="w-4 h-4" />
+                  {t("superAdmin.logsUi.refreshNow")}
+                </Button>
+                <Button variant="secondary" type="button" onClick={exportCsv} disabled={!visibleLogs.length}>
+                  <Download className="w-4 h-4" />
+                  {t("common:export")}
+                </Button>
+              </>
+            ) : null}
+          </div>
         }
       />
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setSearchParams({})}
-          className={cn(
-            "px-4 py-2 rounded-xl text-sm font-bold transition-colors",
-            logView === "platform"
-              ? "bg-indigo-600 text-white"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-          )}
-        >
-          Platform log
-        </button>
-        <button
-          type="button"
-          onClick={() => setSearchParams({ view: "activity" })}
-          className={cn(
-            "px-4 py-2 rounded-xl text-sm font-bold transition-colors",
-            logView === "activity"
-              ? "bg-indigo-600 text-white"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-          )}
-        >
-          Cross-service activity
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className={cn(
+              "rounded-lg px-4 py-2 text-sm font-bold transition-colors",
+              logView === "platform" ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-50"
+            )}
+          >
+            {t("superAdmin.logsUi.tabPlatform")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSearchParams({ view: "activity" })}
+            className={cn(
+              "rounded-lg px-4 py-2 text-sm font-bold transition-colors",
+              logView === "activity" ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-50"
+            )}
+          >
+            {t("superAdmin.logsUi.tabActivity")}
+          </button>
+        </div>
+        {lastUpdated && logView === "platform" ? (
+          <p className="text-xs font-medium text-slate-400" aria-live="polite">
+            {t("superAdmin.logsUi.lastUpdated", { time: lastUpdated.toLocaleTimeString() })}
+          </p>
+        ) : null}
       </div>
 
       {logView === "activity" ? (
         <ActivityFeedPanel />
       ) : (
         <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label={t("superAdmin.logsUi.statTotal")} value={summary.total || total} />
-        <StatTile
-          label={t("superAdmin.logsUi.statWarnings")}
-          value={(summary.byLevel.WARNING || 0) + (summary.byLevel.WARN || 0)}
-        />
-        <StatTile label={t("superAdmin.logsUi.statErrors")} value={summary.byLevel.ERROR || 0} />
-        <StatTile label={t("superAdmin.logsUi.statAuth")} value={summary.byCategory.AUTH || 0} />
-      </div>
-
-      <Surface variant="primary" className="overflow-hidden p-0">
-        <div className="space-y-4 border-b border-slate-100 p-6">
-          <ListFilterBar
-            fields={fields}
-            q={filters.q}
-            onSearchChange={filters.setQ}
-            values={filters.values}
-            onValueChange={filters.setValue}
-            onClear={() => {
-              filters.clear();
-              setFromDate("");
-              setToDate("");
-            }}
-            searchPlaceholder={t("superAdmin.logsUi.searchPlaceholder")}
-            shownCount={visibleLogs.length}
-            totalCount={total}
-          />
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-              {t("superAdmin.logsUi.from")}
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className={cn(fieldControlClass.compact, "bg-white")}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-              {t("superAdmin.logsUi.to")}
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className={cn(fieldControlClass.compact, "bg-white")}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="border-b border-slate-100">
-          <button
-            type="button"
-            onClick={() => setLogicOpen((o) => !o)}
-            aria-expanded={logicOpen}
-            aria-controls="logs-advanced-logic"
-            className="flex w-full items-center justify-between px-6 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
-          >
-            <span className="inline-flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-indigo-600" aria-hidden />
-              {t("pages:listFilters.advancedLogic")}
-              {effectiveLogicGroup.clauses.length > 0 ? (
-                <span className="font-mono text-xs text-indigo-600">{effectiveLogicGroup.clauses.length}</span>
-              ) : null}
-            </span>
-            <ChevronDown
-              className={cn("h-4 w-4 text-slate-400 transition-transform", logicOpen && "rotate-180")}
-              aria-hidden
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile
+              label={t("superAdmin.logsUi.statTotal")}
+              value={summary.total || total}
+              icon={<FileText className="h-5 w-5" />}
             />
-          </button>
+            <StatTile
+              label={t("superAdmin.logsUi.statWarnings")}
+              value={(summary.byLevel.WARNING || 0) + (summary.byLevel.WARN || 0)}
+              icon={<AlertCircle className="h-5 w-5" />}
+            />
+            <StatTile
+              label={t("superAdmin.logsUi.statProblems")}
+              value={criticalCount}
+              hint={failedCount ? t("superAdmin.logsUi.statFailuresHint", { count: failedCount }) : undefined}
+              icon={<ShieldAlert className="h-5 w-5" />}
+            />
+            <StatTile
+              label={t("superAdmin.logsUi.statAuth")}
+              value={summary.byCategory.AUTH || 0}
+              icon={<User className="h-5 w-5" />}
+            />
+          </div>
 
-          {logicOpen ? (
-            <div id="logs-advanced-logic" className="space-y-3 bg-slate-50/70 px-6 py-4">
-              {clauses.length > 0 ? (
-                <div className="flex items-center gap-2">
+          <Surface variant="primary" className="overflow-hidden p-0">
+            <div className="space-y-4 border-b border-slate-100 p-6">
+              <ListFilterBar
+                fields={fields}
+                q={filters.q}
+                onSearchChange={filters.setQ}
+                values={filters.values}
+                onValueChange={filters.setValue}
+                onClear={() => {
+                  filters.clear();
+                  setFromDate("");
+                  setToDate("");
+                }}
+                searchPlaceholder={t("superAdmin.logsUi.searchPlaceholder")}
+                shownCount={visibleLogs.length}
+                totalCount={total}
+                savedViewsScope="sa-system-logs"
+              />
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-col gap-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    {t("pages:listFilters.matchLabel")}
+                    {t("superAdmin.logsUi.quickRange")}
                   </span>
-                  <select
-                    value={logic}
-                    onChange={(e) => setLogic(e.target.value === "OR" ? "OR" : "AND")}
-                    className={cn(fieldControlClass.compact, "w-auto bg-white")}
-                  >
-                    <option value="AND">{t("pages:listFilters.logicAnd")}</option>
-                    <option value="OR">{t("pages:listFilters.logicOr")}</option>
-                  </select>
-                </div>
-              ) : null}
-              {clauses.map((clause, i) => (
-                <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <select
-                    value={clause.field}
-                    onChange={(e) => updateClause(i, { field: e.target.value })}
-                    className={cn(fieldControlClass.compact, "bg-white sm:w-40")}
-                  >
-                    {clauseFieldOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={clause.op}
-                    onChange={(e) => updateClause(i, { op: e.target.value === "contains" ? "contains" : "eq" })}
-                    className={cn(fieldControlClass.compact, "bg-white sm:w-32")}
-                  >
-                    <option value="eq">{t("pages:listFilters.opEq")}</option>
-                    <option value="contains">{t("pages:listFilters.opContains")}</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={clause.value}
-                    onChange={(e) => updateClause(i, { value: e.target.value })}
-                    placeholder={t("pages:listFilters.valuePlaceholder")}
-                    className={cn(fieldControlClass.compact, "flex-1 bg-white")}
-                  />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeClause(i)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <div className="flex items-center gap-2">
-                {clauses.length < MAX_CLAUSES ? (
-                  <Button type="button" variant="secondary" size="compact" onClick={addClause}>
-                    <Plus className="h-4 w-4" />
-                    {t("pages:listFilters.addClause")}
-                  </Button>
-                ) : null}
-                {clauses.length > 0 ? (
-                  <Button type="button" variant="ghost" size="compact" onClick={clearLogic}>
-                    {t("pages:listFilters.clearAll")}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <DataTable>
-          <table className={dataTableClass.table}>
-            <thead className={dataTableClass.thead}>
-              <tr>
-                <th className={`${dataTableClass.th} w-[14%]`}>{t("superAdmin.logsUi.timestamp")}</th>
-                <th className={`${dataTableClass.th} w-[14%]`}>{t("superAdmin.logsUi.level")}</th>
-                <th className={`${dataTableClass.th} w-[22%]`}>{t("superAdmin.logsUi.actionModule")}</th>
-                <th className={`${dataTableClass.th} w-[20%]`}>{t("superAdmin.logsUi.user")}</th>
-                <th className={`${dataTableClass.th} w-[14%]`}>{t("superAdmin.logsUi.context")}</th>
-                <th className={`${dataTableClass.th} w-[16%]`}>{t("superAdmin.logsUi.details")}</th>
-              </tr>
-            </thead>
-            <tbody className={dataTableClass.tbody}>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className={dataTableClass.tdEmpty}>
-                    {t("superAdmin.logsUi.loading")}
-                  </td>
-                </tr>
-              ) : visibleLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className={dataTableClass.tdEmpty}>
-                    {t("superAdmin.noRecentLogs")}
-                  </td>
-                </tr>
-              ) : (
-                visibleLogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="cursor-pointer transition-colors hover:bg-slate-50/80"
-                    onClick={() => setSelected(log)}
-                  >
-                    <td className={`${dataTableClass.td} font-mono text-xs text-slate-500 whitespace-nowrap`}>
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td className={dataTableClass.td}>
-                      <span
+                  <div className="flex flex-wrap gap-1.5">
+                    {rangeChips.map((chip) => (
+                      <button
+                        key={chip.key}
+                        type="button"
+                        onClick={() => applyRange(chip.days)}
                         className={cn(
-                          "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
-                          getLevelStyle(log.level)
+                          "rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors",
+                          activeRange === chip.key
+                            ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                         )}
                       >
-                        {getLevelIcon(log.level)}
-                        <span className="truncate">{log.level}</span>
-                      </span>
-                      <div className="mt-1 truncate font-mono text-[11px] font-semibold text-slate-400">
-                        {log.category || "SYSTEM"}
-                      </div>
-                    </td>
-                    <td className={dataTableClass.td}>
-                      <div className="min-w-0 font-semibold tracking-tight text-slate-900 truncate">{log.action}</div>
-                      <div className="mt-0.5 truncate font-mono text-[11px] text-slate-400">{log.module}</div>
-                    </td>
-                    <td className={dataTableClass.td}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                          <User className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-slate-800">{actorLabel(log)}</div>
-                          <div className="truncate font-mono text-[11px] text-slate-400">
-                            {log.userRole || log.user?.role || "—"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={`${dataTableClass.td} text-xs text-slate-500`}>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <DeviceIcon type={log.deviceType} />
-                        <span className="truncate">{log.browser || log.os || "—"}</span>
-                      </div>
-                      <div className="mt-1 truncate font-mono text-[11px] text-slate-400">{log.ipAddress || "—"}</div>
-                    </td>
-                    <td className={`${dataTableClass.td} text-sm text-slate-600`}>
-                      <span className="block truncate">{log.details}</span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </DataTable>
-
-        <ListPagination
-          total={total}
-          page={filters.page}
-          pageSize={filters.pageSize}
-          onPageChange={filters.setPage}
-          onPageSizeChange={filters.setPageSize}
-        />
-      </Surface>
-
-      {selected ? (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40" role="dialog" aria-modal>
-          <button type="button" className="flex-1 cursor-default" aria-label="Close" onClick={() => setSelected(null)} />
-          <aside className="flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-slate-100 bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-100 p-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
-                  {selected.category || "SYSTEM"}
-                </p>
-                <h3 className="mt-1 text-xl font-extrabold tracking-tight text-slate-900">{selected.action}</h3>
-                <p className="mt-1 font-mono text-xs text-slate-400">{selected.id}</p>
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {t("superAdmin.logsUi.from")}
+                  <input
+                    type="date"
+                    value={fromDate}
+                    max={toDate || undefined}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className={cn(fieldControlClass.compact, "bg-white")}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {t("superAdmin.logsUi.to")}
+                  <input
+                    type="date"
+                    value={toDate}
+                    min={fromDate || undefined}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className={cn(fieldControlClass.compact, "bg-white")}
+                  />
+                </label>
               </div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => setSelected(null)}>
-                <X className="h-5 w-5" />
-              </Button>
             </div>
-            <div className="space-y-6 p-6">
-              <p className="text-sm leading-relaxed text-slate-600">{selected.details}</p>
 
-              <dl className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.timestamp")}
-                  </dt>
-                  <dd className="mt-1 flex items-center gap-1.5 font-mono text-slate-800">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                    {new Date(selected.createdAt).toLocaleString()}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.level")}
-                  </dt>
-                  <dd className="mt-1">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold",
-                        getLevelStyle(selected.level)
-                      )}
-                    >
-                      {selected.level}
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.user")}
-                  </dt>
-                  <dd className="mt-1 font-semibold text-slate-800">{actorLabel(selected)}</dd>
-                  <dd className="font-mono text-xs text-slate-400">
-                    {selected.userEmail || selected.user?.email || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.role")}
-                  </dt>
-                  <dd className="mt-1 font-mono text-slate-800">
-                    {selected.userRole || selected.user?.role || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.school")}
-                  </dt>
-                  <dd className="mt-1 text-slate-800">{selected.school?.name || "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.entity")}
-                  </dt>
-                  <dd className="mt-1 font-mono text-xs text-slate-800">
-                    {selected.entityType || "—"}
-                    {selected.entityId ? ` · ${selected.entityId}` : ""}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.ip")}
-                  </dt>
-                  <dd className="mt-1 font-mono text-slate-800">{selected.ipAddress || "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.location")}
-                  </dt>
-                  <dd className="mt-1 flex items-center gap-1 text-slate-800">
-                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                    {[selected.city, selected.country].filter(Boolean).join(", ") || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.device")}
-                  </dt>
-                  <dd className="mt-1 text-slate-800">
-                    {[selected.deviceType, selected.browser, selected.os].filter(Boolean).join(" · ") || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.source")}
-                  </dt>
-                  <dd className="mt-1 flex items-center gap-1 text-slate-800">
-                    <Shield className="h-3.5 w-3.5 text-slate-400" />
-                    {selected.source || "WEB"}
-                    {selected.statusCode != null ? ` · HTTP ${selected.statusCode}` : ""}
-                  </dd>
-                </div>
-              </dl>
+            <div className="border-b border-slate-100">
+              <button
+                type="button"
+                onClick={() => setLogicOpen((o) => !o)}
+                aria-expanded={logicOpen}
+                aria-controls="logs-advanced-logic"
+                className="flex w-full items-center justify-between px-6 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-indigo-600" aria-hidden />
+                  {t("pages:listFilters.advancedLogic")}
+                  {effectiveLogicGroup.clauses.length > 0 ? (
+                    <span className="font-mono text-xs text-indigo-600">{effectiveLogicGroup.clauses.length}</span>
+                  ) : null}
+                </span>
+                <ChevronDown
+                  className={cn("h-4 w-4 text-slate-400 transition-transform", logicOpen && "rotate-180")}
+                  aria-hidden
+                />
+              </button>
 
-              {selected.endpoint ? (
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.endpoint")}
-                  </p>
-                  <p className="mt-1 break-all font-mono text-xs text-slate-700">
-                    {selected.httpMethod || ""} {selected.endpoint}
-                    {selected.durationMs != null ? ` (${selected.durationMs}ms)` : ""}
-                  </p>
-                </div>
-              ) : null}
-
-              {selected.errorMessage ? (
-                <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-800">
-                  {selected.errorMessage}
-                </div>
-              ) : null}
-
-              {(selected.beforeValue || selected.afterValue) && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {t("superAdmin.logsUi.before")}
-                    </p>
-                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate-700">
-                      {selected.beforeValue || "—"}
-                    </pre>
+              {logicOpen ? (
+                <div id="logs-advanced-logic" className="space-y-3 bg-slate-50/70 px-6 py-4">
+                  {clauses.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        {t("pages:listFilters.matchLabel")}
+                      </span>
+                      <select
+                        value={logic}
+                        onChange={(e) => setLogic(e.target.value === "OR" ? "OR" : "AND")}
+                        className={cn(fieldControlClass.compact, "w-auto bg-white")}
+                      >
+                        <option value="AND">{t("pages:listFilters.logicAnd")}</option>
+                        <option value="OR">{t("pages:listFilters.logicOr")}</option>
+                      </select>
+                    </div>
+                  ) : null}
+                  {clauses.map((clause, i) => (
+                    <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <select
+                        value={clause.field}
+                        onChange={(e) => updateClause(i, { field: e.target.value })}
+                        className={cn(fieldControlClass.compact, "bg-white sm:w-48")}
+                      >
+                        {clauseFieldOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={clause.op}
+                        onChange={(e) => updateClause(i, { op: e.target.value === "contains" ? "contains" : "eq" })}
+                        className={cn(fieldControlClass.compact, "bg-white sm:w-32")}
+                      >
+                        <option value="eq">{t("pages:listFilters.opEq")}</option>
+                        <option value="contains">{t("pages:listFilters.opContains")}</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={clause.value}
+                        onChange={(e) => updateClause(i, { value: e.target.value })}
+                        placeholder={t("pages:listFilters.valuePlaceholder")}
+                        className={cn(fieldControlClass.compact, "flex-1 bg-white")}
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeClause(i)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    {clauses.length < MAX_CLAUSES ? (
+                      <Button type="button" variant="secondary" size="compact" onClick={addClause}>
+                        <Plus className="h-4 w-4" />
+                        {t("pages:listFilters.addClause")}
+                      </Button>
+                    ) : null}
+                    {clauses.length > 0 ? (
+                      <Button type="button" variant="ghost" size="compact" onClick={clearLogic}>
+                        {t("pages:listFilters.clearAll")}
+                      </Button>
+                    ) : null}
                   </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {t("superAdmin.logsUi.after")}
-                    </p>
-                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate-700">
-                      {selected.afterValue || "—"}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {selected.userAgent ? (
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t("superAdmin.logsUi.userAgent")}
-                  </p>
-                  <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{selected.userAgent}</p>
                 </div>
               ) : null}
             </div>
-          </aside>
-        </div>
-      ) : null}
+
+            <DataTable>
+              <table className={dataTableClass.table}>
+                <thead className={dataTableClass.thead}>
+                  <tr>
+                    <th className={`${dataTableClass.th} w-[11%]`}>{t("superAdmin.logsUi.timestamp")}</th>
+                    <th className={`${dataTableClass.th} w-[13%]`}>{t("superAdmin.logsUi.level")}</th>
+                    <th className={`${dataTableClass.th} w-[18%]`}>{t("superAdmin.logsUi.actionModule")}</th>
+                    <th className={`${dataTableClass.th} w-[16%]`}>{t("superAdmin.logsUi.user")}</th>
+                    <th className={`${dataTableClass.th} w-[13%]`}>{t("superAdmin.logsUi.target")}</th>
+                    <th className={`${dataTableClass.th} w-[19%]`}>{t("superAdmin.logsUi.details")}</th>
+                    <th className={`${dataTableClass.th} w-[10%]`}>{t("superAdmin.logsUi.context")}</th>
+                  </tr>
+                </thead>
+                <tbody className={dataTableClass.tbody}>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className={dataTableClass.tdEmpty}>
+                        {t("superAdmin.logsUi.loading")}
+                      </td>
+                    </tr>
+                  ) : visibleLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className={dataTableClass.tdEmpty}>
+                        {t("superAdmin.noRecentLogs")}
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleLogs.map((log) => {
+                      const target = targetLabel(log);
+                      return (
+                        <tr
+                          key={log.id}
+                          tabIndex={0}
+                          role="button"
+                          className="cursor-pointer transition-colors hover:bg-slate-50/80 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-600/40"
+                          onClick={() => setSelected(log)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setSelected(log);
+                            }
+                          }}
+                        >
+                          <td className={`${dataTableClass.td} whitespace-nowrap`}>
+                            <div className="font-mono text-xs text-slate-700" title={new Date(log.createdAt).toLocaleString()}>
+                              {relativeTime(log.createdAt)}
+                            </div>
+                            <div className="truncate font-mono text-[11px] text-slate-400">
+                              {new Date(log.createdAt).toLocaleString()}
+                            </div>
+                          </td>
+                          <td className={dataTableClass.td}>
+                            <span
+                              className={cn(
+                                "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
+                                levelStyle(log.level)
+                              )}
+                            >
+                              {getLevelIcon(log.level)}
+                              <span className="truncate">{log.level}</span>
+                            </span>
+                            <div className="mt-1 truncate">
+                              <span
+                                className={cn(
+                                  "inline-flex max-w-full items-center rounded-md border px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase",
+                                  outcomeStyle(log.outcome)
+                                )}
+                              >
+                                {log.outcome || "SUCCESS"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className={dataTableClass.td}>
+                            <div className="min-w-0 truncate font-semibold tracking-tight text-slate-900">{log.action}</div>
+                            <div className="mt-0.5 truncate font-mono text-[11px] text-slate-400">
+                              {log.category || "SYSTEM"} · {log.module}
+                            </div>
+                          </td>
+                          <td className={dataTableClass.td}>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                                <User className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold text-slate-800">
+                                  {actorLabel(log, t("superAdmin.logsUi.systemUser"))}
+                                </div>
+                                <div className="truncate font-mono text-[11px] text-slate-400">
+                                  {log.userRole || log.user?.role || "—"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={dataTableClass.td}>
+                            {target ? (
+                              <>
+                                <div className="truncate text-sm font-medium text-slate-800">{target}</div>
+                                <div className="truncate font-mono text-[11px] text-slate-400">
+                                  {log.targetUserRole || "—"}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="font-mono text-[11px] text-slate-400">
+                                {log.entityType ? `${log.entityType}` : "—"}
+                              </span>
+                            )}
+                          </td>
+                          <td className={`${dataTableClass.td} text-sm text-slate-600`}>
+                            <span className="block truncate" title={log.changesSummary || log.details}>
+                              {log.changesSummary || log.details}
+                            </span>
+                          </td>
+                          <td className={`${dataTableClass.td} text-xs text-slate-500`}>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <DeviceIcon type={log.deviceType} />
+                              <span className="truncate">{log.browser || log.os || "—"}</span>
+                            </div>
+                            <div className="mt-1 truncate font-mono text-[11px] text-slate-400">{log.ipAddress || "—"}</div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </DataTable>
+
+            <ListPagination
+              total={total}
+              page={filters.page}
+              pageSize={filters.pageSize}
+              onPageChange={filters.setPage}
+              onPageSizeChange={filters.setPageSize}
+            />
+          </Surface>
+
+          <LogDetailDrawer log={selected} onClose={() => setSelected(null)} />
         </>
       )}
     </PageShell>

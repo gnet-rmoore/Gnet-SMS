@@ -39,11 +39,11 @@ function PublicPortalBackground({
   );
 }
 
-export function PublicApplyBackground(props: Omit<PublicPortalBackgroundProps, "imageSrc">) {
+export function PublicApplyBackground(props: Omit<PublicPortalBackgroundProps, "imageSrc"> & { imageSrc?: string }) {
   return (
     <PublicPortalBackground
       {...props}
-      imageSrc={STUDENT_REGISTRATION_BG}
+      imageSrc={props.imageSrc || STUDENT_REGISTRATION_BG}
       imageWidth={1920}
       imageHeight={1280}
     />

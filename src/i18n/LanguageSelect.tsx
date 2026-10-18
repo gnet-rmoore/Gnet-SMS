@@ -67,7 +67,12 @@ export function LanguageSelect({
           }}
         >
           {SUPPORTED_LOCALES.map((loc) => (
-            <option key={loc.code} value={loc.code}>
+            <option
+              key={loc.code}
+              value={loc.code}
+              className="bg-white text-slate-900"
+              style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+            >
               {compactOptions
                 ? `${loc.nativeLabel}${loc.complete ? "" : " (beta)"}`
                 : `${loc.nativeLabel} — ${loc.englishLabel}${loc.complete ? "" : " (beta)"}`}

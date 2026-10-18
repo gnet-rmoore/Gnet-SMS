@@ -258,6 +258,27 @@ export const enPagesGaps = {
       publicUrl: "Public URL",
       copyLink: "Copy link",
       shareHint: "Share this link with families to apply online.",
+      background: {
+        title: "Page background",
+        hint: "Shown behind the public registration form at /apply/{{slug}}. Recommended 1920×1080, max 5 MB.",
+        default: "No custom background — the default image is used.",
+        choose: "Upload image",
+        replace: "Replace image",
+        uploading: "Uploading…",
+        badType: "Choose a JPG, PNG, WebP, or GIF image.",
+        tooLarge: "Image must be 5 MB or smaller.",
+        uploadFailed: "Could not upload the background image",
+        storageUnavailable:
+          "File storage is not configured for uploads — ask your administrator to enable S3/MinIO.",
+      },
+      qr: {
+        title: "Registration QR code",
+        hint: "Print or share this code — students and parents can scan it to open your registration page.",
+        scanHint: "Scan to open the registration form.",
+        download: "Download QR code",
+        downloaded: "QR code downloaded",
+        generateFailed: "Could not generate the QR code",
+      },
       toast: {
         loadFailed: "Could not load online registration settings",
         saved: "Online registration settings saved",

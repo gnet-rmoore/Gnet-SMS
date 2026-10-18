@@ -3,7 +3,7 @@
 > **Status:** Phases 1–4 complete including remaining polish (2026-07-24)  
 > **Scope:** Admin builds weekly class schedules for Teacher classrooms; schedules appear on School Calendar for teachers, students, parents, and selected staff  
 > **Non-goals (this plan):** Replacing Academic Calendar terms (`AcademicPeriod`); ad-hoc `ClassroomMeeting`; facilities room booking; auto roll-call from timetable  
-> **Companion:** `docs/CURRICULUM_CLASSROOMS_PLAN.md`, `docs/CLASSROOM_MANAGEMENT_PLAN.md`, `docs/CLASS_ORGANIZATION_MODELS_PLAN.md`, `docs/LESSON_PLANS_PLAN.md`, `docs/ACADEMIC_GRADING_PLAN.md`, `docs/ATTENDANCE_INTEGRATION_PLAN.md`, `IMPLEMENTATION_STATUS.md`  
+> **Companion:** `docs/CURRICULUM_CLASSROOMS_PLAN.md`, `docs/CLASSROOM_MANAGEMENT_PLAN.md`, `docs/CLASS_ORGANIZATION_MODELS_PLAN.md`, `docs/LESSON_PLANS_PLAN.md`, `docs/ACADEMIC_GRADING_PLAN.md`, `docs/ATTENDANCE_INTEGRATION_PLAN.md`, `docs/CLASS_SCHEDULE_SLOT_AVAILABILITY_PLAN.md`, `IMPLEMENTATION_STATUS.md`  
 > **UI:** `/{slug}/schedules` (admin) · `/{slug}/my-schedule` (read-only) · Calendar overlays on `/{slug}/calendar`
 
 ### Related: class organization models

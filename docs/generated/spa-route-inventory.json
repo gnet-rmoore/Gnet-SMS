@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-15T17:57:25.070Z",
+  "generatedAt": "2026-10-17T12:48:45.444Z",
   "roles": 21,
-  "protectedRouteCount": 75,
-  "navEntryCount": 227,
+  "protectedRouteCount": 76,
+  "navEntryCount": 231,
   "protectedRoles": [
     "SUPER_ADMIN",
     "SCHOOL_ADMIN",
@@ -250,6 +250,16 @@
         "TEACHER",
         "STUDENT",
         "PARENT"
+      ]
+    },
+    {
+      "segment": "question-bank",
+      "pathPattern": "question-bank",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
       ]
     },
     {
@@ -969,6 +979,11 @@
     },
     {
       "role": "SCHOOL_ADMIN",
+      "segment": "question-bank",
+      "to": "/demo-school/question-bank"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
       "segment": "gradebook",
       "to": "/demo-school/gradebook"
     },
@@ -1144,6 +1159,11 @@
     },
     {
       "role": "PRINCIPAL",
+      "segment": "question-bank",
+      "to": "/demo-school/question-bank"
+    },
+    {
+      "role": "PRINCIPAL",
       "segment": "gradebook",
       "to": "/demo-school/gradebook"
     },
@@ -1291,6 +1311,11 @@
       "role": "VPI",
       "segment": "online-exams",
       "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "VPI",
+      "segment": "question-bank",
+      "to": "/demo-school/question-bank"
     },
     {
       "role": "VPI",
@@ -1511,6 +1536,11 @@
       "role": "TEACHER",
       "segment": "online-exams",
       "to": "/demo-school/online-exams"
+    },
+    {
+      "role": "TEACHER",
+      "segment": "question-bank",
+      "to": "/demo-school/question-bank"
     },
     {
       "role": "TEACHER",

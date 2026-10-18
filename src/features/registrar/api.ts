@@ -7,6 +7,8 @@ export type AdmissionPolicyPayload = {
   requiredDocTypes: string[];
   requireClassroomOnEnroll: boolean;
   entranceFeeAmount: number;
+  /** Custom background image for the public registration page. */
+  applyBackgroundUrl?: string;
 };
 
 /** Thin API wrappers for the registrar feature. */
@@ -68,5 +70,10 @@ export const registrarApi = {
       slug: string;
       name: string;
       admissionPolicy: AdmissionPolicyPayload;
+    }>,
+  presignAdmissionBackground: (schoolId: string, data: { fileName: string; mimeType: string }) =>
+    api.post(`/api/schools/${schoolId}/admission-background/presign`, data) as Promise<{
+      uploadUrl: string;
+      fileUrl: string;
     }>,
 };

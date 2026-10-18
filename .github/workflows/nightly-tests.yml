@@ -25,7 +25,7 @@ jobs:
       - run: npm run test:unit
       - run: npm run test:spa
       - name: Start compose stack
-        run: docker compose up -d --build db redis identity lifecycle ops staff classroom academic finance comms api-gateway frontend-spa
+        run: docker compose up -d --build postgres redis identity lifecycle ops staff classroom academic finance comms api-gateway frontend-spa
       - name: Wait for gateway
         run: |
           for i in $(seq 1 60); do

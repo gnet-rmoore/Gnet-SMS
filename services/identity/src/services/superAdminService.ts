@@ -335,13 +335,38 @@ export const superAdminService = {
     });
 
     const billingRows = await prisma.school.findMany({
-      select: { planCode: true, billingStatus: true },
+      select: { planCode: true, billingStatus: true, status: true },
     });
-    const { computeLedgerMrrUsd } = await import("../domain/platformPlans");
+    const { computeLedgerMrrUsd, resolvePlan } = await import("../domain/platformPlans");
     const { platformStripeEnabled } = await import("../lib/platformBillingCheckout");
     const mrr = computeLedgerMrrUsd(billingRows);
     const paidSchoolCount = billingRows.filter((s) => s.billingStatus === "ACTIVE_PAID").length;
     const checkoutMode = platformStripeEnabled() ? "stripe" : "console";
+
+    const isActiveTenant = (s: { status: string }) => s.status === "ACTIVE" || s.status === "TRIAL";
+    const billingMix = {
+      paid: billingRows.filter((s) => isActiveTenant(s) && s.billingStatus === "ACTIVE_PAID").length,
+      unpaid: billingRows.filter((s) => isActiveTenant(s) && s.billingStatus !== "ACTIVE_PAID").length,
+    };
+
+    const billingStatusCounts: Record<string, number> = {};
+    const planMixMap = new Map<string, { planCode: string; schools: number; paidSchools: number; mrrUsd: number }>();
+    for (const s of billingRows) {
+      const statusKey = s.billingStatus || "UNSET";
+      billingStatusCounts[statusKey] = (billingStatusCounts[statusKey] || 0) + 1;
+
+      const planKey = s.planCode || "UNSET";
+      const entry = planMixMap.get(planKey) || { planCode: planKey, schools: 0, paidSchools: 0, mrrUsd: 0 };
+      entry.schools += 1;
+      if (s.billingStatus === "ACTIVE_PAID") {
+        entry.paidSchools += 1;
+        entry.mrrUsd += resolvePlan(s.planCode).monthlyPriceUsd;
+      }
+      planMixMap.set(planKey, entry);
+    }
+    const planMix = Array.from(planMixMap.values())
+      .map((e) => ({ ...e, mrrUsd: Math.round(e.mrrUsd * 100) / 100 }))
+      .sort((a, b) => b.schools - a.schools);
 
     return {
       totalSchools,
@@ -358,6 +383,9 @@ export const superAdminService = {
       billingConnected: true,
       checkoutMode,
       paidSchoolCount,
+      billingMix,
+      billingStatusCounts,
+      planMix,
       billingNote: platformStripeEnabled()
         ? "Ledger MRR from ACTIVE_PAID list prices; Stripe checkout enabled"
         : "Ledger MRR; Stripe checkout optional (STRIPE_SECRET_KEY unset — console checkout)",
@@ -431,6 +459,11 @@ export const superAdminService = {
     to?: string;
     userId?: string;
     schoolId?: string;
+    outcome?: string;
+    authMethod?: string;
+    targetUserEmail?: string;
+    dataSensitivity?: string;
+    correlationId?: string;
     action?: string;
     page?: number | string;
     pageSize?: number | string;
@@ -444,6 +477,11 @@ export const superAdminService = {
       const category = query.category ? String(query.category).toUpperCase() : "";
       const q = (query.q || query.search || "").trim();
       const action = query.action ? String(query.action).trim() : "";
+      const outcome = query.outcome ? String(query.outcome).toUpperCase() : "";
+      const authMethod = query.authMethod ? String(query.authMethod).toUpperCase() : "";
+      const targetUserEmail = query.targetUserEmail ? String(query.targetUserEmail).trim() : "";
+      const dataSensitivity = query.dataSensitivity ? String(query.dataSensitivity).toUpperCase() : "";
+      const correlationId = query.correlationId ? String(query.correlationId).trim() : "";
 
       if (level) {
         // Accept both WARN and WARNING in historical rows
@@ -454,6 +492,11 @@ export const superAdminService = {
       if (query.userId) where.userId = String(query.userId);
       if (query.schoolId) where.schoolId = String(query.schoolId);
       if (action) where.action = { contains: action, mode: "insensitive" };
+      if (outcome) where.outcome = String(outcome).toUpperCase();
+      if (authMethod) where.authMethod = String(authMethod).toUpperCase();
+      if (targetUserEmail) where.targetUserEmail = String(targetUserEmail);
+      if (dataSensitivity) where.dataSensitivity = String(dataSensitivity);
+      if (correlationId) where.correlationId = String(correlationId);
 
       if (query.from || query.to) {
         where.createdAt = {};
@@ -478,6 +521,9 @@ export const superAdminService = {
           { entityType: { contains: q, mode: "insensitive" } },
           { entityId: { contains: q, mode: "insensitive" } },
           { ipAddress: { contains: q, mode: "insensitive" } },
+          { targetUserEmail: { contains: q, mode: "insensitive" } },
+          { correlationId: { contains: q, mode: "insensitive" } },
+          { changesSummary: { contains: q, mode: "insensitive" } },
         ];
       }
 
@@ -526,9 +572,10 @@ export const superAdminService = {
           if (!Number.isNaN(to.getTime())) where.createdAt.lte = to;
         }
       }
-      const [byCategory, byLevel, total] = await Promise.all([
+      const [byCategory, byLevel, byOutcome, total] = await Promise.all([
         prisma.systemLog.groupBy({ by: ["category"], where, _count: { _all: true } }),
         prisma.systemLog.groupBy({ by: ["level"], where, _count: { _all: true } }),
+        prisma.systemLog.groupBy({ by: ["outcome"], where, _count: { _all: true } }),
         prisma.systemLog.count({ where }),
       ]);
       return {
@@ -541,6 +588,9 @@ export const superAdminService = {
             r.level === "WARN" ? "WARNING" : r.level || "INFO",
             r._count._all,
           ])
+        ),
+        byOutcome: Object.fromEntries(
+          byOutcome.map((r) => [r.outcome || "SUCCESS", r._count._all])
         ),
       };
     } catch (err) {

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
 import { GraduationCap, ArrowRight, ArrowLeft, UserPlus, RefreshCw, Ban, FileQuestion, Info, Copy } from "lucide-react";
 import {
-  AdmissionApplicationFields,
+  AdmissionFormWizard,
   buildAdmissionApiPayload,
   emptyAdmissionApplicationForm,
   type AdmissionApplicationForm,
@@ -107,7 +107,7 @@ export default function PublicApplyPage() {
     }
   };
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!school) return;
     if (captchaRequired && !captchaToken) {
@@ -177,7 +177,7 @@ export default function PublicApplyPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen overflow-hidden">
-        <PublicApplyBackground className="pointer-events-none absolute inset-0" />
+        <PublicApplyBackground className="pointer-events-none absolute inset-0" imageSrc={school?.backgroundImageUrl} />
         <div className="relative z-10 flex min-h-screen items-center justify-center text-sm font-semibold text-white drop-shadow-sm">
           <div className="absolute top-6 start-6 z-20">{backHomeLink}</div>
           <div className="absolute top-6 end-6 z-20">{langSelect}</div>
@@ -233,7 +233,7 @@ export default function PublicApplyPage() {
         : "";
     return (
       <div className="relative min-h-screen overflow-hidden">
-        <PublicApplyBackground className="pointer-events-none absolute inset-0" />
+        <PublicApplyBackground className="pointer-events-none absolute inset-0" imageSrc={school?.backgroundImageUrl} />
         <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-16">
           <div className="absolute top-6 end-6 z-20">{langSelect}</div>
           <motion.div
@@ -321,7 +321,7 @@ export default function PublicApplyPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <PublicApplyBackground className="pointer-events-none absolute inset-0" />
+      <PublicApplyBackground className="pointer-events-none absolute inset-0" imageSrc={school?.backgroundImageUrl} />
       <div className={PUBLIC_PORTAL_PAGE}>
         <div className={PUBLIC_PORTAL_COLUMN}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -401,18 +401,8 @@ export default function PublicApplyPage() {
             </Link>
           </p>
 
-          <form onSubmit={submit} className={`${PUBLIC_PORTAL_FORM_CARD} space-y-8`}>
-          <label className="absolute -left-[9999px] opacity-0 h-0 w-0 overflow-hidden" aria-hidden="true">
-            Website
-            <input
-              tabIndex={-1}
-              autoComplete="off"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-            />
-          </label>
-
-          <AdmissionApplicationFields
+          <AdmissionFormWizard
+            key={applicantType}
             form={form}
             onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
             gradeLevels={grades}
@@ -420,32 +410,42 @@ export default function PublicApplyPage() {
             inputClassName={publicInput}
             labelClassName="text-sm font-medium text-slate-700"
             sectionTitleClassName="text-xs font-black uppercase tracking-widest text-slate-500"
-          />
-
-          {captchaRequired ? (
-            <TurnstileWidget
-              siteKey={turnstileSiteKey()}
-              onToken={setCaptchaToken}
-              onExpire={() => setCaptchaToken("")}
-              className="flex justify-center"
-            />
-          ) : null}
-
-          {error ? <p className="text-sm text-rose-600 font-medium">{error}</p> : null}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 font-semibold disabled:opacity-40"
-            >
-              {submitting
+            onSubmit={submit}
+            submitting={submitting}
+            submitLabel={
+              submitting
                 ? t("public:apply.submitting")
                 : applicantType === "RETURNING"
                   ? t("public:apply.submitReturning")
-                  : t("public:apply.submit")}
-            </button>
-          </div>
-        </form>
+                  : t("public:apply.submit")
+            }
+            className={`${PUBLIC_PORTAL_FORM_CARD} space-y-8`}
+            hiddenSlot={
+              <label
+                className="absolute -left-[9999px] opacity-0 h-0 w-0 overflow-hidden"
+                aria-hidden="true"
+              >
+                Website
+                <input
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </label>
+            }
+            finalStepExtra={
+              captchaRequired ? (
+                <TurnstileWidget
+                  siteKey={turnstileSiteKey()}
+                  onToken={setCaptchaToken}
+                  onExpire={() => setCaptchaToken("")}
+                  className="flex justify-center"
+                />
+              ) : null
+            }
+            error={error ? error : null}
+          />
         </div>
       </div>
     </div>

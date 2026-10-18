@@ -1,4 +1,38 @@
 [
-  ["My applications", "Mes candidatures", "Mis solicitudes", "Meine Bewerbungen", "طلباتي", "我的申请", "मेरे आवेदन"],
-  ["Receipt templates", "Modèles de reçus", "Plantillas de recibos", "Belegvorlagen", "قوالب الإيصالات", "收据模板", "रसीद टेम्पलेट"]
+  [
+    "My applications",
+    "Mes candidatures",
+    "Mis solicitudes",
+    "Meine Bewerbungen",
+    "طلباتي",
+    "我的申请",
+    "मेरे आवेदन"
+  ],
+  [
+    "Receipt templates",
+    "Modèles de reçus",
+    "Plantillas de recibos",
+    "Belegvorlagen",
+    "قوالب الإيصالات",
+    "收据模板",
+    "रसीद टेम्पलेट"
+  ],
+  [
+    "Question bank",
+    "Banque de questions",
+    "Banco de preguntas",
+    "Fragenbank",
+    "بنك الأسئلة",
+    "题库",
+    "प्रश्न बैंक"
+  ],
+  [
+    "Certificates",
+    "Certificates",
+    "Certificates",
+    "Certificates",
+    "Certificates",
+    "Certificates",
+    "Certificates"
+  ]
 ]

@@ -88,7 +88,9 @@ export const Schools = () => {
         reason: data.reason,
         expiresAt: data.expiresAt,
       });
-      window.location.href = `/${data.school.slug}/dashboard`;
+      window.location.href = typeof window !== "undefined"
+        ? window.location.origin + "/super-admin/dashboard"
+        : "/super-admin/dashboard";
     } catch (e: any) {
       toast.fire({ icon: "error", title: "Impersonation failed", text: e.message });
     } finally {

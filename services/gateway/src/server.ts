@@ -89,6 +89,7 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   timetable: "academic",
   exams: "academic",
   "online-exams": "academic",
+  "question-bank": "academic",
   "exam-papers": "academic",
   grades: "academic",
   gradebook: "academic",

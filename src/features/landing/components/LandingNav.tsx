@@ -136,7 +136,12 @@ export function LandingNav({ activeRoute }: LandingNavProps) {
         aria-label={t("landing.language")}
       >
         {SUPPORTED_LOCALES.map((loc) => (
-          <option key={loc.code} value={loc.code} className="bg-white text-slate-900">
+          <option
+            key={loc.code}
+            value={loc.code}
+            className="bg-white text-slate-900"
+            style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+          >
             {loc.nativeLabel}
           </option>
         ))}

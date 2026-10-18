@@ -255,6 +255,24 @@ export const SchoolDetail = () => {
     await reloadSchool();
   };
 
+  const setBackgroundImageUrl = async (url: string) => {
+    const res = await fetch(`/api/super-admin/schools/${schoolId}/background-image`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ backgroundImageUrl: url }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      await toast.fire({ icon: "error", title: data.error || "Background image update failed" });
+      return;
+    }
+    await toast.fire({ icon: "success", title: "Background image updated" });
+    await reloadSchool();
+  };
+
   const startCheckout = async () => {
     const res = await fetch(`/api/super-admin/schools/${schoolId}/billing/checkout`, {
       method: "POST",
@@ -399,7 +417,7 @@ export const SchoolDetail = () => {
       expiresAt: data.expiresAt,
     });
     setImpersonateTarget(null);
-    navigate(`/${data.school.slug}/dashboard`);
+    navigate(typeof window !== "undefined" ? window.location.origin + "/super-admin/dashboard" : "/super-admin/dashboard");
   };
 
   const tabs: { id: Tab; label: string; count?: number; icon: React.ReactNode }[] = [

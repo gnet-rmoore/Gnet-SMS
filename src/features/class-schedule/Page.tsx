@@ -1,6 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { CalendarClock, Copy, FileDown, Loader2, Plus, Save, Settings2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Copy,
+  FileDown,
+  Loader2,
+  Plus,
+  Save,
+  Settings2,
+  Wand2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageShell, PageHeader, Surface, Button, SelectField, TextField, MatrixScrollHint } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
@@ -16,7 +26,10 @@ import {
   type BellScheduleDto,
   type ClassroomOption,
   type DraftCell,
+  type ScheduleHealthDto,
   type SchedulePeriodDto,
+  type SlotAvailabilityDto,
+  type TeacherSlotAvailabilityDto,
   type TimetableEntryDto,
 } from "./types";
 
@@ -65,10 +78,27 @@ export function ClassSchedulePage() {
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [effectiveTo, setEffectiveTo] = useState("");
   const [yearBounds, setYearBounds] = useState<{ start: string; end: string } | null>(null);
+  const [slotInfo, setSlotInfo] = useState<SlotAvailabilityDto | null>(null);
+  const [loadingSlot, setLoadingSlot] = useState(false);
+  const [health, setHealth] = useState<ScheduleHealthDto | null>(null);
+  const [autoFilling, setAutoFilling] = useState(false);
+  const slotReqRef = useRef(0);
 
   const selectedClassroom = useMemo(
     () => classrooms.find((c) => c.id === classroomId) || null,
     [classrooms, classroomId]
+  );
+
+  const loadHealth = useCallback(
+    async (bellId: string) => {
+      if (!schoolId || !bellId) return;
+      try {
+        setHealth(await classScheduleApi.getScheduleHealth(schoolId, { bellScheduleId: bellId }));
+      } catch {
+        setHealth(null);
+      }
+    },
+    [schoolId]
   );
 
   useEffect(() => {
@@ -88,6 +118,7 @@ export function ClassSchedulePage() {
         ]);
         setBell(bellRow);
         setYearBounds(extractYearBounds(calendarRaw));
+        void loadHealth(bellRow.id);
         const rooms = asArray<ClassroomOption>(roomsRaw);
         setClassrooms(rooms);
         setTeachers(asArray<StaffRow>(staffRaw).filter((s) => !s.role || s.role === "TEACHER"));
@@ -110,7 +141,7 @@ export function ClassSchedulePage() {
         setLoading(false);
       }
     })();
-  }, [schoolId, showToast]);
+  }, [schoolId, showToast, loadHealth]);
 
   const loadClassroomTimetable = useCallback(
     async (bellId: string, roomId: string) => {
@@ -140,7 +171,7 @@ export function ClassSchedulePage() {
   };
 
   const openCell = (day: number, periodId: string) => {
-    if (!canEdit) return;
+    if (!canEdit || !bell || !schoolId) return;
     const key = cellKey(day, periodId);
     const existing = draft[key];
     const defaultTeacher =
@@ -155,6 +186,37 @@ export function ClassSchedulePage() {
       "";
     setCellForm({ teacherId: defaultTeacher, subjectId: defaultSubject || "" });
     setCellModal({ day, periodId });
+    setSlotInfo(null);
+    setLoadingSlot(true);
+    const reqId = ++slotReqRef.current;
+    void (async () => {
+      try {
+        const info = await classScheduleApi.getSlotAvailability(schoolId, {
+          bellScheduleId: bell.id,
+          dayOfWeek: day,
+          schedulePeriodId: periodId,
+          classroomId: classroomId || undefined,
+          subjectId: defaultSubject || undefined,
+        });
+        if (slotReqRef.current === reqId) setSlotInfo(info);
+      } catch {
+        if (slotReqRef.current === reqId) setSlotInfo(null);
+      } finally {
+        if (slotReqRef.current === reqId) setLoadingSlot(false);
+      }
+    })();
+  };
+
+  const pickBestTeacher = () => {
+    if (!slotInfo) return;
+    const best = slotInfo.teachers.find((x) => x.status === "AVAILABLE");
+    if (!best) return;
+    const preferredSubject =
+      cellForm.subjectId ||
+      slotInfo.classroom?.subjectId ||
+      slotInfo.subjectsForClass[0]?.id ||
+      "";
+    setCellForm({ teacherId: best.teacherId, subjectId: preferredSubject });
   };
 
   const applyCell = () => {
@@ -228,6 +290,7 @@ export function ClassSchedulePage() {
       applyEffectiveFromEntries(saved, setEffectiveFrom, setEffectiveTo);
       setDirty(false);
       showToast(t("classSchedule.toast.timetableSaved"), "success");
+      void loadHealth(bell.id);
     } catch (err: any) {
       const conflicts = err?.conflicts;
       if (Array.isArray(conflicts) && conflicts.length) {
@@ -237,6 +300,51 @@ export function ClassSchedulePage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const autoFill = async () => {
+    if (!canEdit || !bell || !classroomId || !schoolId) return;
+    setAutoFilling(true);
+    try {
+      const res = await classScheduleApi.suggestClassSchedule(schoolId, {
+        bellScheduleId: bell.id,
+        classroomId,
+      });
+      const fresh = res.suggestions.filter(
+        (s) => !draft[cellKey(s.dayOfWeek, s.schedulePeriodId)]
+      );
+      if (fresh.length === 0) {
+        showToast(
+          res.suggestions.length === 0
+            ? "No open slots to fill — every period already has a lesson, or no free teacher was found."
+            : "All suggested slots already have a lesson.",
+          "info"
+        );
+        return;
+      }
+      setDraft((prev) => {
+        const next = { ...prev };
+        for (const s of fresh) {
+          const key = cellKey(s.dayOfWeek, s.schedulePeriodId);
+          next[key] = {
+            classroomId,
+            teacherId: s.teacherId,
+            teacherName: s.teacherName,
+            subjectId: s.subjectId,
+            subjectName: s.subjectName,
+            dayOfWeek: s.dayOfWeek,
+            schedulePeriodId: s.schedulePeriodId,
+          };
+        }
+        return next;
+      });
+      setDirty(true);
+      showToast(`Added ${fresh.length} suggested lessons. Review, then Save.`, "success");
+    } catch (err: any) {
+      showToast(err?.message || "Failed to build schedule suggestions", "error");
+    } finally {
+      setAutoFilling(false);
     }
   };
 
@@ -282,6 +390,7 @@ export function ClassSchedulePage() {
       setBellModal(false);
       showToast(t("classSchedule.toast.bellUpdated"), "success");
       if (classroomId) await loadClassroomTimetable(updated.id, classroomId);
+      void loadHealth(updated.id);
     } catch (err: any) {
       showToast(err?.message || t("classSchedule.toast.bellFailed"), "error");
     } finally {
@@ -362,6 +471,16 @@ export function ClassSchedulePage() {
                   >
                     <Copy className="w-4 h-4" />
                     Copy to…
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => void autoFill()}
+                    disabled={!classroomId || autoFilling}
+                  >
+                    {autoFilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                    Auto-fill
                   </Button>
                 </>
               ) : null}
@@ -455,6 +574,23 @@ export function ClassSchedulePage() {
             . Leave effective dates empty for an open-ended timetable.
           </p>
         )}
+
+        {canEdit && selectedClassroom && health && (() => {
+          const occ = health.classroomOccupancy.find((o) => o.classroomId === selectedClassroom.id);
+          if (!occ) return null;
+          return (
+            <p className="text-xs text-slate-500 font-medium print:hidden">
+              Class occupancy this week:{" "}
+              <span className="font-mono">
+                {occ.lessons}/{occ.totalSlots}
+              </span>{" "}
+              slots ({occ.fillRate}%).{" "}
+              {occ.fillRate < 100
+                ? "Use Auto-fill to suggest lessons for the open periods."
+                : "Every period is occupied."}
+            </p>
+          );
+        })()}
 
         <div className="hidden print:block mb-4">
           <h2 className="text-xl font-extrabold tracking-tight">
@@ -556,6 +692,33 @@ export function ClassSchedulePage() {
               : t("classSchedule.emptyNoEntries")}
           </p>
         )}
+
+        {canEdit && health && health.warnings.length > 0 && (
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 print:hidden">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
+              <AlertTriangle className="w-4 h-4" />
+              Workload & rest check · {health.warnings.length} warning
+              {health.warnings.length === 1 ? "" : "s"}
+            </div>
+            <ul className="mt-2 space-y-1 text-sm text-amber-900/90 font-medium">
+              {health.warnings.slice(0, 8).map((w, i) => (
+                <li key={`${w.teacherId}-${w.dayOfWeek}-${w.code}-${i}`} className="flex gap-2">
+                  <span aria-hidden>•</span>
+                  <span>{w.message}</span>
+                </li>
+              ))}
+              {health.warnings.length > 8 && (
+                <li className="text-amber-800/80">…and {health.warnings.length - 8} more</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {canEdit && health && health.warnings.length === 0 && classrooms.length > 0 && periods.length > 0 && (
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm font-medium text-emerald-800 print:hidden">
+            Workload & rest check · no back-to-back or overload warnings. Teachers have rest gaps.
+          </div>
+        )}
       </Surface>
 
       {cellModal && (
@@ -567,10 +730,26 @@ export function ClassSchedulePage() {
           eyebrow={t("classSchedule.modals.timetable")}
           onClose={() => setCellModal(null)}
           footer={
-            <div className="flex justify-between gap-2">
-              <Button type="button" variant="ghost" onClick={clearCell} className="text-rose-600 hover:bg-rose-50">
-                Clear
-              </Button>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={clearCell}
+                  className="text-rose-600 hover:bg-rose-50"
+                >
+                  Clear
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={pickBestTeacher}
+                  disabled={loadingSlot || !slotInfo || !slotInfo.teachers.some((x) => x.status === "AVAILABLE")}
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Suggest best
+                </Button>
+              </div>
               <div className="flex gap-2">
                 <Button type="button" variant="secondary" onClick={() => setCellModal(null)}>
                   Cancel
@@ -583,6 +762,35 @@ export function ClassSchedulePage() {
           }
         >
           <div className="space-y-4">
+            {loadingSlot && (
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Checking teacher availability…
+              </div>
+            )}
+
+            {slotInfo?.freePeriodIds && slotInfo.freePeriodIds.length > 0 && (
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 px-3 py-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">
+                  {DAY_LABELS[cellModal.day]} free periods for this class
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {slotInfo.freePeriodIds.map((pid) => {
+                    const p = periods.find((x) => x.id === pid);
+                    return (
+                      <span
+                        key={pid}
+                        className="rounded-lg bg-white px-2 py-0.5 text-xs font-mono font-bold text-indigo-700 border border-indigo-100"
+                        title={p ? `${p.startTime}–${p.endTime}` : undefined}
+                      >
+                        {p?.shortCode || p?.label || pid}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Teacher
@@ -593,13 +801,23 @@ export function ClassSchedulePage() {
                 className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
               >
                 <option value="">Select teacher</option>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                {(slotInfo?.teachers?.length
+                  ? slotInfo.teachers
+                  : teachers.map((t) => fallbackAvailability(t.id, t.name))
+                ).map((a) => (
+                  <option key={a.teacherId} value={a.teacherId}>
+                    {teacherOptionLabel(a)}
                   </option>
                 ))}
               </select>
+              {selectedTeacherAvailability(slotInfo, cellForm.teacherId)?.status === "BUSY" && (
+                <p className="mt-1.5 flex items-center gap-1.5 text-xs font-bold text-amber-700">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {busyTeacherMessage(selectedTeacherAvailability(slotInfo, cellForm.teacherId))}
+                </p>
+              )}
             </div>
+
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Subject
@@ -610,12 +828,17 @@ export function ClassSchedulePage() {
                 className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
               >
                 <option value="">Optional</option>
-                {subjects.map((s) => (
+                {(slotInfo?.subjectsForClass?.length ? slotInfo.subjectsForClass : subjects).map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
+              {slotInfo?.subjectsForClass && slotInfo.subjectsForClass.length > 0 && (
+                <p className="mt-1.5 text-xs font-medium text-slate-500">
+                  Suggested for this class subject / grade.
+                </p>
+              )}
             </div>
           </div>
         </FeatureModalShell>
@@ -767,6 +990,69 @@ export function ClassSchedulePage() {
       )}
     </PageShell>
   );
+}
+
+function fallbackAvailability(id: string, name: string): TeacherSlotAvailabilityDto {
+  return {
+    teacherId: id,
+    teacherName: name,
+    status: "AVAILABLE",
+    busyWith: null,
+    lessonsThatDay: 0,
+    longestStreak: 0,
+    gapBeforeMin: null,
+    gapAfterMin: null,
+    restBefore: false,
+    restAfter: false,
+    subjectFit: "NONE",
+    subjectMismatch: false,
+    ownsThisClassroom: false,
+    score: 0,
+  };
+}
+
+function teacherOptionLabel(a: TeacherSlotAvailabilityDto): string {
+  const bits: string[] = [];
+  if (a.status === "BUSY") {
+    const where = a.busyWith
+      ? `${a.busyWith.classroomName}${a.busyWith.subjectName ? ` · ${a.busyWith.subjectName}` : ""}`
+      : "teaching";
+    bits.push(`Busy (${where})`);
+  } else {
+    bits.push("Free");
+  }
+  if (a.lessonsThatDay > 0) {
+    bits.push(`${a.lessonsThatDay} lesson${a.lessonsThatDay === 1 ? "" : "s"} today`);
+  }
+  if (a.subjectFit === "OWN_CLASS") bits.push("class teacher");
+  else if (a.subjectFit === "TEACHES_SUBJECT") bits.push("teaches this subject");
+  else if (a.subjectMismatch) bits.push("no subject match");
+  if (a.status === "AVAILABLE" && (a.restBefore || a.restAfter)) {
+    const gaps = [
+      a.restBefore ? a.gapBeforeMin : null,
+      a.restAfter ? a.gapAfterMin : null,
+    ].filter((n): n is number => n != null);
+    if (gaps.length) bits.push(`rest ${gaps.join("/")} min`);
+  }
+  return `${a.status === "AVAILABLE" ? "✓" : "✕"} ${a.teacherName} — ${bits.join(" · ")}`;
+}
+
+function selectedTeacherAvailability(
+  info: SlotAvailabilityDto | null,
+  teacherId: string
+): TeacherSlotAvailabilityDto | null {
+  if (!info || !teacherId) return null;
+  return info.teachers.find((x) => x.teacherId === teacherId) || null;
+}
+
+function busyTeacherMessage(a: TeacherSlotAvailabilityDto | null): string {
+  if (!a) return "";
+  if (a.busyWith) {
+    return `Already teaching ${a.busyWith.classroomName}${
+      a.busyWith.subjectName ? ` (${a.busyWith.subjectName})` : ""
+    } ${a.busyWith.startTime}–${a.busyWith.endTime}. Pick another teacher or period.`;
+  }
+  return "Already booked in this period. Pick another teacher or period.";
 }
 
 function entriesToDraft(rows: TimetableEntryDto[]): Record<string, DraftCell> {

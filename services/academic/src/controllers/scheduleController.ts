@@ -137,6 +137,47 @@ export const scheduleController = {
     }
   },
 
+  async slotAvailability(req: any, res: Response) {
+    try {
+      const user = userFromReq(req);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const result = await scheduleService.getSlotAvailability(user, {
+        bellScheduleId: String(req.query.bellScheduleId || ""),
+        dayOfWeek: req.query.dayOfWeek as string,
+        schedulePeriodId: String(req.query.schedulePeriodId || ""),
+        classroomId: req.query.classroomId ? String(req.query.classroomId) : undefined,
+        subjectId: req.query.subjectId ? String(req.query.subjectId) : undefined,
+      });
+      return res.json(result);
+    } catch (error: any) {
+      return sendError(res, error, "Failed to load slot availability");
+    }
+  },
+
+  async scheduleHealth(req: any, res: Response) {
+    try {
+      const user = userFromReq(req);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const result = await scheduleService.getScheduleHealth(user, {
+        bellScheduleId: String(req.query.bellScheduleId || ""),
+      });
+      return res.json(result);
+    } catch (error: any) {
+      return sendError(res, error, "Failed to load schedule health");
+    }
+  },
+
+  async suggestTimetable(req: any, res: Response) {
+    try {
+      const user = userFromReq(req);
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const result = await scheduleService.suggestClassSchedule(user, req.body || {});
+      return res.json(result);
+    } catch (error: any) {
+      return sendError(res, error, "Failed to build schedule suggestions");
+    }
+  },
+
   async putTimetable(req: any, res: Response) {
     try {
       const user = userFromReq(req);

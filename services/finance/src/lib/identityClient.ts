@@ -38,6 +38,10 @@ export type IdentitySchoolRef = {
   receiptTemplates?: unknown;
   receiptTemplatesByRole?: unknown;
   documentSignatories?: unknown;
+  country?: string | null;
+  region?: string | null;
+  city?: string | null;
+  timezone?: string | null;
 };
 
 export async function getIdentityUser(id: string): Promise<IdentityUserRef | null> {

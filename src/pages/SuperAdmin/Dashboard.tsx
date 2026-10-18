@@ -4,7 +4,6 @@ import {
   Users,
   School as SchoolIcon,
   TrendingUp,
-  Activity,
   Clock,
   HelpCircle,
   Sparkles,
@@ -12,6 +11,8 @@ import {
   Shield,
   ClipboardList,
   Download,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -98,6 +99,20 @@ export const SuperAdminDashboard = () => {
       icon: <ClipboardList className="w-5 h-5" />,
     },
   ];
+
+  const bs = (key: string, opts?: Record<string, string | number>) =>
+    t(`pages:superAdmin.billingSnapshot.${key}`, opts);
+  const billing = statsData?.billingMix ?? null;
+  const paidTenants = Number(billing?.paid ?? 0);
+  const unpaidTenants = Number(billing?.unpaid ?? 0);
+  const activeTenants = paidTenants + unpaidTenants;
+  const coveragePct = activeTenants > 0 ? Math.round((paidTenants / activeTenants) * 100) : 0;
+  const pastDueCount = Number(statsData?.billingStatusCounts?.PAST_DUE ?? 0);
+  const mrr = Number(statsData?.mrr ?? 0);
+  const planRows: Array<{ planCode: string; schools: number; paidSchools: number; mrrUsd: number }> =
+    Array.isArray(statsData?.planMix) ? statsData.planMix : [];
+  const planLabel = (code: string) =>
+    t(`pages:superAdmin.billingSnapshot.planLabels.${code}`, { defaultValue: code });
 
   return (
     <PageShell width="wide">
@@ -306,62 +321,93 @@ export const SuperAdminDashboard = () => {
           </DataTable>
         </Surface>
 
-        <Surface variant="primary" className="p-6 space-y-6">
-          <h3 className="text-lg font-bold text-slate-900">
-            {t("pages:superAdmin.systemLogs")}
-          </h3>
-          <div className="space-y-4">
-            {loading ? (
-              <div className="py-8 text-center text-slate-400 italic">
-                {t("pages:superAdmin.loadingLogs")}
+        <Surface variant="primary" className="p-6 space-y-5">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">{bs("title")}</h3>
+            <p className="mt-0.5 text-sm text-slate-500">{bs("hint")}</p>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-50/80 to-slate-50 p-4 ring-1 ring-indigo-100/60">
+            <p className="text-xs font-black uppercase tracking-wider text-indigo-600">
+              {bs("mrr")}
+            </p>
+            <p className="mt-1 font-mono text-3xl font-extrabold tracking-tight text-slate-900">
+              ${loading ? "—" : mrr.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-slate-700">{bs("paidCoverage")}</span>
+              <span className="font-mono text-sm font-extrabold text-slate-900">
+                {bs("coverageValue", { paid: paidTenants, total: activeTenants })}
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all"
+                style={{ width: `${coveragePct}%` }}
+              />
+            </div>
+            <p className="text-xs font-medium text-slate-400">{coveragePct}%</p>
+          </div>
+
+          {pastDueCount > 0 ? (
+            <div className="flex items-start gap-3 rounded-2xl bg-rose-50 p-3.5 ring-1 ring-rose-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+              <div>
+                <p className="text-sm font-bold text-rose-700">
+                  {bs("pastDueTitle")} — {pastDueCount}
+                </p>
+                <p className="text-xs font-medium text-rose-500">{bs("pastDueHint")}</p>
               </div>
-            ) : statsData?.recentLogs?.length > 0 ? (
-              statsData.recentLogs.map((log: any) => (
-                <div key={log.id} className="flex gap-4">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      log.level === "CRITICAL" || log.level === "ERROR"
-                        ? "text-rose-500 bg-rose-50"
-                        : log.level === "WARNING"
-                          ? "text-amber-500 bg-amber-50"
-                          : "text-blue-500 bg-blue-50"
-                    }`}
-                  >
-                    {log.level === "CRITICAL" || log.level === "ERROR" ? (
-                      <Activity className="w-4 h-4" />
-                    ) : log.module === "SCHOOLS" ? (
-                      <SchoolIcon className="w-4 h-4" />
-                    ) : log.module === "AUTH" ? (
-                      <Users className="w-4 h-4" />
-                    ) : (
-                      <Activity className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-900">{log.action}</p>
-                    <p className="text-xs text-slate-500 truncate max-w-[180px]">
-                      {log.details}
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+              {bs("schoolsByPlan")}
+            </p>
+            {loading ? (
+              <p className="py-4 text-center text-sm text-slate-400 italic">{t("common:loading")}</p>
+            ) : planRows.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-400 italic">{bs("noPlanData")}</p>
+            ) : (
+              planRows.map((plan) => (
+                <div
+                  key={plan.planCode}
+                  className="flex items-center justify-between gap-2 rounded-xl bg-slate-50/80 px-3 py-2 ring-1 ring-slate-100"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-slate-700">
+                      {planLabel(plan.planCode)}
                     </p>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      {new Date(log.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
+                    <p className="text-[11px] font-medium text-slate-400">
+                      {t("pages:superAdmin.billingSnapshot.paidSchoolsCount", {
+                        count: plan.paidSchools,
                       })}
                     </p>
                   </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-mono text-sm font-extrabold text-slate-900">
+                      {plan.schools}
+                    </p>
+                    {plan.mrrUsd > 0 ? (
+                      <p className="font-mono text-[11px] font-bold text-emerald-600">
+                        ${plan.mrrUsd.toLocaleString()}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               ))
-            ) : (
-              <div className="py-8 text-center text-slate-400 italic">
-                {t("pages:superAdmin.noRecentLogs")}
-              </div>
             )}
           </div>
+
           <Link
-            to="/super-admin/logs"
+            to="/super-admin/plans"
             className="w-full py-3 bg-slate-50 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-100 transition-all text-center block"
           >
-            {t("pages:superAdmin.viewFullAuditLog")}
+            {bs("managePlans")}
           </Link>
         </Surface>
       </div>

@@ -125,6 +125,19 @@ export const receiptController = {
           sourceRef: String(req.body?.sourceRef || sourceId.slice(0, 8).toUpperCase()),
           issuedBy: user?.id || null,
           title: "Transaction Receipt",
+          paymentMethod: req.body?.paymentMethod ? String(req.body.paymentMethod) : null,
+          paidAt: req.body?.paidAt ? new Date(req.body.paidAt) : null,
+          studentName: req.body?.studentName ? String(req.body.studentName) : null,
+          categoryLabel: req.body?.categoryLabel ? String(req.body.categoryLabel) : null,
+          periodLabel: req.body?.periodLabel ? String(req.body.periodLabel) : null,
+          balanceBefore: Number.isFinite(Number(req.body?.balanceBefore))
+            ? Number(req.body.balanceBefore)
+            : null,
+          balanceAfter: Number.isFinite(Number(req.body?.balanceAfter))
+            ? Number(req.body.balanceAfter)
+            : null,
+          placeOfIssue: req.body?.placeOfIssue ? String(req.body.placeOfIssue) : null,
+          note: req.body?.note ? String(req.body.note) : null,
         });
       } else if (type === "PAYSLIP") {
         const receipt = await receiptService.issueForPayslip({

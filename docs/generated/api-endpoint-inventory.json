@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-10-16T01:02:28.421Z",
-  "total": 549,
-  "publicOrSchool": 492,
-  "internal": 57,
+  "generatedAt": "2026-10-17T14:48:03.506Z",
+  "total": 561,
+  "publicOrSchool": 502,
+  "internal": 59,
   "byService": {
-    "academic": 177,
+    "academic": 187,
     "campus": 28,
     "classroom": 45,
     "comms": 32,
     "finance": 48,
-    "identity": 149,
-    "lifecycle": 31,
+    "identity": 150,
+    "lifecycle": 32,
     "ops": 20,
     "staff": 19
   },
@@ -450,6 +450,13 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/exams/:id/questions/save-to-bank",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PATCH",
       "path": "/api/exams/:id/release-grades",
       "service": "academic",
@@ -627,6 +634,13 @@
     {
       "method": "GET",
       "path": "/api/internal/schools/:schoolId/promotion/students/:studentUserId/next-grade",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/stats",
       "service": "academic",
       "file": "services/academic/src/routes/academicRoutes.ts",
       "internal": true
@@ -1102,6 +1116,41 @@
     },
     {
       "method": "GET",
+      "path": "/api/schools/:schoolId/question-bank",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/question-bank",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/schools/:schoolId/question-bank/:itemId",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/question-bank/:itemId",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/schools/:schoolId/question-bank/:itemId",
+      "service": "academic",
+      "file": "services/academic/src/routes/questionBankRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/schools/:schoolId/subject-offerings",
       "service": "academic",
       "file": "services/academic/src/routes/academicRoutes.ts",
@@ -1171,6 +1220,13 @@
       "internal": false
     },
     {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/timetable/availability",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "POST",
       "path": "/api/schools/:schoolId/timetable/copy",
       "service": "academic",
@@ -1180,6 +1236,20 @@
     {
       "method": "GET",
       "path": "/api/schools/:schoolId/timetable/expand",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/timetable/health",
+      "service": "academic",
+      "file": "services/academic/src/routes/scheduleRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/timetable/suggest",
       "service": "academic",
       "file": "services/academic/src/routes/scheduleRoutes.ts",
       "internal": false
@@ -2950,6 +3020,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/super-admin/database/status",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/super-admin/delete-requests",
       "service": "identity",
       "file": "services/identity/src/routes/superAdminRoutes.ts",
@@ -3455,6 +3532,13 @@
     {
       "method": "POST",
       "path": "/api/internal/applications/fee-paid",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/admission-stats",
       "service": "lifecycle",
       "file": "services/lifecycle/src/routes/admissionRoutes.ts",
       "internal": true

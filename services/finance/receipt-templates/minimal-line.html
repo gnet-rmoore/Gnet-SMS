@@ -29,8 +29,14 @@
   .doc-meta{ font-size:10.5px; color:var(--muted); line-height:1.6; }
   .status-row{ margin-top:4px; font-size:9.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
   .status-row .status-dot{ width:5px;height:5px;border-radius:50%; background:var(--brand); display:inline-block; margin-inline-end:5px; }
+  .copy-label{ margin-top:4px; font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint); }
 
   .rule{ height:1px; background:var(--line); margin:20px 0; }
+
+  .details{ display:flex; flex-wrap:wrap; gap:6px 36px; }
+  .detail{ font-size:11.5px; line-height:1.5; }
+  .detail .k{ color:var(--muted); margin-inline-end:6px; }
+  .detail .v{ color:var(--ink); font-weight:600; }
 
   .row{ display:flex; justify-content:space-between; gap:30px; font-size:11.5px; }
   .row .k{ color:var(--faint); font-size:9px; letter-spacing:0.14em; text-transform:uppercase; display:block; margin-bottom:5px; }
@@ -44,6 +50,12 @@
 
   .total-row{ display:flex; justify-content:flex-end; align-items:baseline; margin-top:6px; padding-top:16px; border-top:1px solid var(--ink); }
   .total{ font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+
+  .amount-words{ margin-top:14px; font-size:11.5px; color:var(--ink); }
+  .amount-words .k{ display:block; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint); margin-bottom:3px; }
+  .note-block{ margin-top:14px; font-size:11.5px; }
+  .note-block .k{ display:block; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint); margin-bottom:3px; }
+  .statement{ margin-top:18px; padding-top:12px; border-top:1px solid var(--line); font-size:10.5px; color:var(--muted); line-height:1.6; }
 
   .foot{ display:flex; justify-content:space-between; align-items:flex-end; gap:30px; margin-top:60px; }
   .sig{ flex:1; }
@@ -83,12 +95,19 @@
       <div class="doc-title">{{title}}</div>
       <div class="doc-meta">{{t.receiptNumber}}<br>{{t.issuedAt}}</div>
       <div class="status-row"><span class="status-dot"></span>{{t.status}}</div>
+      {{#hasCopyLabel}}<div class="copy-label">{{copyLabel}}</div>{{/hasCopyLabel}}
     </div>
   </div>
 
   <div class="rule"></div>
 
-  <div class="row">
+  {{#hasDetails}}
+  <div class="details">
+    {{#detailItems}}<div class="detail"><span class="k">{{label}}</span><span class="v">{{value}}</span></div>{{/detailItems}}
+  </div>
+  {{/hasDetails}}
+
+  <div class="row" style="margin-top:20px;">
     <div class="party"><span class="k">{{t.parties}}</span>{{t.payer}}</div>
     <div class="party"><span class="k">&nbsp;</span>{{t.payee}}</div>
   </div>
@@ -103,6 +122,10 @@
     </tbody>
   </table>
   <div class="total-row"><div class="total">{{t.total}}</div></div>
+
+  <div class="amount-words"><span class="k">{{t.amountInWords}}</span>{{amountInWords}}</div>
+  {{#hasNote}}<div class="note-block"><span class="k">{{t.note}}</span>{{note}}</div>{{/hasNote}}
+  <div class="statement">{{t.receivedWithThanks}}</div>
 
   <div class="foot">
     <div class="sig">

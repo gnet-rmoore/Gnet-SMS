@@ -1,7 +1,23 @@
 import prisma from "../lib/prisma";
-import { getClassroomById, getClassroomsByMember } from "../lib/classroomClient";
-import { assertParentLinked, getIdentityUser, getIdentityUsersByIds, getParentChildren } from "../lib/identityClient";
+import { getClassroomById, getClassroomsByMember, listClassroomsBySchool } from "../lib/classroomClient";
+import {
+  assertParentLinked,
+  getIdentityUser,
+  getIdentityUsersByIds,
+  getIdentityUsersByRoles,
+  getParentChildren,
+} from "../lib/identityClient";
 import { eachYmd, isWeekendYmd, NON_INSTRUCTION_CATEGORIES } from "../lib/schoolDay";
+import {
+  computeClassroomOccupancy,
+  computeTeacherSlotAvailability,
+  computeWorkloadWarnings,
+  freePeriodIdsForClassroom,
+  suggestAssignments,
+  type PeriodWindow,
+  type ScheduledItem,
+  type TeacherCandidate,
+} from "../lib/availabilityHelpers";
 import {
   DEFAULT_BELL_PERIODS,
   findBellPeriodOverlaps,
@@ -92,6 +108,79 @@ function mapEntry(row: any) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+function mapPeriodWindow(p: {
+  id: string;
+  label: string;
+  shortCode: string;
+  startTime: string;
+  endTime: string;
+  orderIndex: number;
+}): PeriodWindow {
+  return {
+    id: p.id,
+    label: p.label,
+    shortCode: p.shortCode,
+    startTime: p.startTime,
+    endTime: p.endTime,
+    orderIndex: p.orderIndex,
+  };
+}
+
+/** Staff list ∪ teachers referenced by existing entries (denormalized names). */
+function mergeTeacherCandidates(
+  staff: Array<{ id: string; name?: string | null }>,
+  entries: ScheduledItem[]
+): TeacherCandidate[] {
+  const map = new Map<string, TeacherCandidate>();
+  for (const s of staff) map.set(s.id, { id: s.id, name: s.name || "" });
+  for (const e of entries) {
+    if (e.teacherId && !map.has(e.teacherId)) {
+      map.set(e.teacherId, { id: e.teacherId, name: e.teacherName || "" });
+    }
+  }
+  return [...map.values()];
+}
+
+/** Subjects a classroom may schedule: its own subject, grade offerings, or all. */
+async function subjectsForClassroom(
+  schoolId: string,
+  room: { subjectId?: string | null; gradeLevelId?: string | null }
+): Promise<Array<{ id: string; name: string }>> {
+  if (room.subjectId) {
+    const own = await prisma.subject.findFirst({
+      where: { id: room.subjectId, schoolId },
+      select: { id: true, name: true },
+    });
+    return own ? [own] : [];
+  }
+  if (room.gradeLevelId) {
+    const offerings = await prisma.subjectOffering.findMany({
+      where: { schoolId, gradeLevelId: room.gradeLevelId },
+      include: { subject: { select: { id: true, name: true } } },
+    });
+    return offerings.map((o) => ({ id: o.subject.id, name: o.subject.name }));
+  }
+  const all = await prisma.subject.findMany({ where: { schoolId }, select: { id: true, name: true } });
+  return all;
+}
+
+/** Allowed subject ids for suggestions (null = any). */
+async function allowedSubjectIdsForClassroom(
+  schoolId: string,
+  room: { subjectId?: string | null; gradeLevelId?: string | null }
+): Promise<string[] | null> {
+  if (room.subjectId) return [room.subjectId];
+  if (room.gradeLevelId) {
+    const offerings = await prisma.subjectOffering.findMany({
+      where: { schoolId, gradeLevelId: room.gradeLevelId },
+      select: { subjectId: true },
+    });
+    const ids = offerings.map((o) => o.subjectId);
+    return ids.length ? ids : null;
+  }
+  return null;
 }
 
 async function resolveVisibilityClassroomIds(
@@ -661,6 +750,213 @@ export const scheduleService = {
         locationOverride: e.locationOverride,
       })),
     });
+  },
+
+  /**
+   * Availability of every teacher for one slot (day + bell period):
+   * free/busy (vs existing entries), day load, rest before/after, subject fit.
+   * Also returns the classroom's free periods that day and applicable subjects.
+   */
+  async getSlotAvailability(
+    user: ScheduleUser,
+    query: {
+      bellScheduleId: string;
+      dayOfWeek: number | string;
+      schedulePeriodId: string;
+      classroomId?: string;
+      subjectId?: string;
+    }
+  ) {
+    if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
+    const dayOfWeek = Number(query.dayOfWeek);
+    if (!isValidIsoWeekday(dayOfWeek)) throw httpError("dayOfWeek must be 1 (Mon) … 7 (Sun)", 400);
+    if (!query.bellScheduleId || !query.schedulePeriodId) {
+      throw httpError("bellScheduleId and schedulePeriodId are required", 400);
+    }
+
+    const bell = await prisma.bellSchedule.findFirst({
+      where: { id: query.bellScheduleId, schoolId: user.schoolId },
+      include: { periods: { orderBy: { orderIndex: "asc" } } },
+    });
+    if (!bell) throw httpError("Bell schedule not found", 404);
+    const period = bell.periods.find((p) => p.id === query.schedulePeriodId);
+    if (!period) throw httpError("schedulePeriodId does not belong to this bell schedule", 400);
+
+    const entries = await prisma.timetableEntry.findMany({
+      where: { schoolId: user.schoolId, bellScheduleId: query.bellScheduleId },
+      include: { schedulePeriod: true },
+    });
+    const scheduled: ScheduledItem[] = entries.map((e) => ({
+      classroomId: e.classroomId,
+      classroomName: e.classroomName,
+      teacherId: e.teacherId,
+      teacherName: e.teacherName,
+      subjectId: e.subjectId,
+      subjectName: e.subjectName,
+      dayOfWeek: e.dayOfWeek,
+      schedulePeriodId: e.schedulePeriodId,
+    }));
+
+    const [staff, classrooms] = await Promise.all([
+      getIdentityUsersByRoles(user.schoolId, ["TEACHER"]),
+      listClassroomsBySchool(user.schoolId),
+    ]);
+    const room = query.classroomId ? classrooms.find((c) => c.id === query.classroomId) || null : null;
+
+    const teachers = mergeTeacherCandidates(staff, scheduled);
+    const subjectIdsTaught = new Set(
+      scheduled
+        .filter((e) => e.subjectId)
+        .map((e) => `${e.teacherId}|${e.subjectId}`)
+    );
+
+    // When editing an existing cell, don't let the class's own entry at this
+    // exact slot mark its current teacher as busy — they are reassignable.
+    const availabilityEntries = query.classroomId
+      ? scheduled.filter(
+          (e) =>
+            !(
+              e.classroomId === query.classroomId &&
+              e.dayOfWeek === dayOfWeek &&
+              e.schedulePeriodId === query.schedulePeriodId
+            )
+        )
+      : scheduled;
+
+    const teachersAvailability = computeTeacherSlotAvailability({
+      periods: bell.periods.map(mapPeriodWindow),
+      entries: availabilityEntries,
+      dayOfWeek,
+      schedulePeriodId: query.schedulePeriodId,
+      teachers,
+      subjectIdsTaught,
+      subjectId: query.subjectId || room?.subjectId || null,
+      classroom: room,
+      classrooms,
+    });
+
+    let freePeriodIds: string[] = [];
+    let subjectsForClass: Array<{ id: string; name: string }> = [];
+    if (room) {
+      freePeriodIds = freePeriodIdsForClassroom(
+        bell.periods.map(mapPeriodWindow),
+        scheduled,
+        room.id,
+        dayOfWeek
+      );
+      subjectsForClass = await subjectsForClassroom(user.schoolId, room);
+    }
+
+    return {
+      dayOfWeek,
+      schedulePeriodId: period.id,
+      period: mapPeriod(period),
+      classroom: room,
+      freePeriodIds,
+      subjectsForClass,
+      teachers: teachersAvailability,
+    };
+  },
+
+  /**
+   * School-wide timetable health for organizers:
+   * teacher workload warnings (back-to-back streaks, overloaded days)
+   * and per-classroom fill rates (occupied vs free slots, Mon–Fri).
+   */
+  async getScheduleHealth(user: ScheduleUser, query: { bellScheduleId: string }) {
+    if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
+    if (!query.bellScheduleId) throw httpError("bellScheduleId is required", 400);
+    const bell = await prisma.bellSchedule.findFirst({
+      where: { id: query.bellScheduleId, schoolId: user.schoolId },
+      include: { periods: { orderBy: { orderIndex: "asc" } } },
+    });
+    if (!bell) throw httpError("Bell schedule not found", 404);
+
+    const [entries, classrooms] = await Promise.all([
+      prisma.timetableEntry.findMany({
+        where: { schoolId: user.schoolId, bellScheduleId: query.bellScheduleId },
+      }),
+      listClassroomsBySchool(user.schoolId),
+    ]);
+    const scheduled: ScheduledItem[] = entries.map((e) => ({
+      classroomId: e.classroomId,
+      classroomName: e.classroomName,
+      teacherId: e.teacherId,
+      teacherName: e.teacherName,
+      subjectId: e.subjectId,
+      subjectName: e.subjectName,
+      dayOfWeek: e.dayOfWeek,
+      schedulePeriodId: e.schedulePeriodId,
+    }));
+    const periods = bell.periods.map(mapPeriodWindow);
+    const gridDays = [1, 2, 3, 4, 5];
+
+    return {
+      bellScheduleId: bell.id,
+      warnings: computeWorkloadWarnings(scheduled, periods),
+      classroomOccupancy: computeClassroomOccupancy(scheduled, periods, classrooms, gridDays),
+    };
+  },
+
+  /**
+   * Suggest teacher+subject for every empty cell of one classroom.
+   * Respects existing school-wide bookings, the class subject (or grade
+   * offerings), teacher rest gaps and workload balance. Suggestions are
+   * advisory — the organizer still reviews and saves.
+   */
+  async suggestClassSchedule(
+    user: ScheduleUser,
+    input: { bellScheduleId: string; classroomId: string }
+  ) {
+    if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
+    if (!input.bellScheduleId || !input.classroomId) {
+      throw httpError("bellScheduleId and classroomId are required", 400);
+    }
+    const bell = await prisma.bellSchedule.findFirst({
+      where: { id: input.bellScheduleId, schoolId: user.schoolId },
+      include: { periods: { orderBy: { orderIndex: "asc" } } },
+    });
+    if (!bell) throw httpError("Bell schedule not found", 404);
+
+    const room = await getClassroomById(input.classroomId);
+    if (!room || room.schoolId !== user.schoolId) throw httpError("Classroom not found", 404);
+
+    const [entries, staff, subjects] = await Promise.all([
+      prisma.timetableEntry.findMany({
+        where: { schoolId: user.schoolId, bellScheduleId: input.bellScheduleId },
+      }),
+      getIdentityUsersByRoles(user.schoolId, ["TEACHER"]),
+      prisma.subject.findMany({ where: { schoolId: user.schoolId } }),
+    ]);
+    const scheduled: ScheduledItem[] = entries.map((e) => ({
+      classroomId: e.classroomId,
+      classroomName: e.classroomName,
+      teacherId: e.teacherId,
+      teacherName: e.teacherName,
+      subjectId: e.subjectId,
+      subjectName: e.subjectName,
+      dayOfWeek: e.dayOfWeek,
+      schedulePeriodId: e.schedulePeriodId,
+    }));
+
+    const allowedSubjectIds = await allowedSubjectIdsForClassroom(user.schoolId, room);
+    const suggestions = suggestAssignments({
+      periods: bell.periods.map(mapPeriodWindow),
+      entries: scheduled,
+      classroom: room,
+      teachers: mergeTeacherCandidates(staff, scheduled),
+      subjects: subjects.map((s) => ({ id: s.id, name: s.name })),
+      allowedSubjectIds,
+      gridDays: [1, 2, 3, 4, 5],
+    });
+
+    return {
+      bellScheduleId: bell.id,
+      classroomId: room.id,
+      classroomName: room.name,
+      count: suggestions.length,
+      suggestions,
+    };
   },
 
   /**

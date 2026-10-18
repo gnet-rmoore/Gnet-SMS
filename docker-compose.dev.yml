@@ -1,0 +1,102 @@
+# Development overrides — layer ON TOP of the base stack. NEVER used in production.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Why this file exists
+# --------------------
+# docker-compose.yml is already production-shaped on purpose:
+#   * data stores are NOT published to the host (postgres/redis `ports: []`)
+#   * origins/secrets are driven by .env
+#   * api-gateway/frontend-spa end up loopback-only once docker-compose.prod.yml
+#     is layered (only Caddy is exposed).
+#
+# Production keeps using docker-compose.prod.yml and must NOT include this file.
+# This override only makes the same stack ergonomic on a laptop:
+#   * publish Postgres + Redis on 127.0.0.1 for local tooling (psql, Prisma Studio)
+#   * force localhost origins so a production .env cannot leak into a dev run
+#   * allow loose MinIO CORS for browser presigned uploads from dev ports
+#   * supply local-dev fallback secrets so a fresh clone runs without a full .env
+#
+# Do NOT combine with docker-compose.prod.yml.
+
+x-local-dev-env: &local-dev-env
+  # Fall back to throwaway dev secrets only when .env does not define them, so a
+  # real .env (e.g. a shared dev token) still wins.
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-dev-access-secret-change-me}
+  SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:-local-dev-super-admin-secret-change-me}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-service-token-change-me}
+  # Hardcoded localhost origins: the whole point of a dev run.
+  APP_URL: http://localhost:3000,http://localhost:8080,http://localhost:8081
+
+services:
+  # ---------- data stores: publish to the host for local tooling ----------
+  # Base declares `ports: []`, so these merge in as a single loopback mapping.
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  minio:
+    environment:
+      # Local SPA/browser uploads come from many dev origins; prod pins APP_URL.
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+
+  # ---------- app services: localhost origins + dev fallback secrets ----------
+  identity:
+    environment:
+      <<: *local-dev-env
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-rltxmhnvCiqImjA2W9WYRgP+b8RnPXC3wHGPQ1DL+Qg=}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-rltxmhnvCiqImjA2W9WYRgP+b8RnPXC3wHGPQ1DL+Qg=}
+      PLATFORM_EDGE_HOSTNAME: ${PLATFORM_EDGE_HOSTNAME:-localhost}
+      PLATFORM_CNAME_TARGET: ${PLATFORM_CNAME_TARGET:-localhost}
+      PLATFORM_HOSTS: ${PLATFORM_HOSTS:-localhost,127.0.0.1}
+
+  lifecycle:
+    environment:
+      <<: *local-dev-env
+      S3_PUBLIC_URL: http://localhost:9000
+
+  ops:
+    environment:
+      <<: *local-dev-env
+
+  staff:
+    environment:
+      <<: *local-dev-env
+
+  classroom:
+    environment:
+      <<: *local-dev-env
+      S3_PUBLIC_URL: http://localhost:9000
+
+  academic:
+    environment:
+      <<: *local-dev-env
+      S3_PUBLIC_URL: http://localhost:9000
+
+  finance:
+    environment:
+      <<: *local-dev-env
+      RECEIPT_HMAC_SECRET: ${RECEIPT_HMAC_SECRET:-local-dev-receipt-hmac-secret-change-me}
+      S3_PUBLIC_URL: http://localhost:9000
+
+  comms:
+    environment:
+      <<: *local-dev-env
+
+  campus:
+    environment:
+      <<: *local-dev-env
+
+  api-gateway:
+    environment:
+      <<: *local-dev-env
+
+  # Optional emergency monolith: `--profile monolith`
+  sms-api:
+    environment:
+      <<: *local-dev-env
+      RECEIPT_HMAC_SECRET: ${RECEIPT_HMAC_SECRET:-local-dev-receipt-hmac-secret-change-me}

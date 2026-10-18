@@ -22,6 +22,7 @@ model School {
   slug               String    @unique
   schoolCode         String    @unique
   logoUrl            String?
+  backgroundImageUrl String?   // URL for public registration page background
   address            String?
   country            String
   /// State / province / region (residence locality for calendar holidays)
@@ -301,10 +302,25 @@ model SystemLog {
   /// AUTH | SESSION | USER_MGMT | ROLE | SECURITY | SCHOOLS | BILLING | SUPER_ADMIN | SETTINGS | COMMUNICATION | FILE | EXPORT | SYSTEM
   category     String   @default("SYSTEM")
   details      String
+  /// SUCCESS | FAILURE | PENDING | DENIED — clear result of the performed action.
+  outcome      String?
+  /// Human-readable change list ("email: a → b; role: TEACHER → ADMIN").
+  changesSummary String?
   userId       String?
   userName     String?
   userEmail    String?
   userRole     String?
+  /// The account/object the action was performed ON (actor ≠ target for admin ops).
+  targetUserId   String?
+  targetUserEmail String?
+  targetUserName String?
+  targetUserRole String?
+  /// PASSWORD | TOTP | SMS | SSO | API_KEY | IMPLICIT — how authentication was proven.
+  authMethod   String?
+  /// Links related events across a single user journey (login → MFA → session).
+  correlationId String?
+  /// PUBLIC | INTERNAL | CONFIDENTIAL | PII | SECRET — data-sensitivity marker for retention/review.
+  dataSensitivity String?
   schoolId     String?
   level        String   @default("INFO")
   ipAddress    String?
@@ -336,8 +352,12 @@ model SystemLog {
   @@index([category, createdAt])
   @@index([module, createdAt])
   @@index([level, createdAt])
+  @@index([outcome, createdAt])
   @@index([userId, createdAt])
+  @@index([targetUserEmail, createdAt])
   @@index([schoolId, createdAt])
+  @@index([correlationId])
+  @@index([dataSensitivity, createdAt])
   @@index([action])
   @@schema("identity")
 }

@@ -1,7 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  aggregateLogSeverity,
   platformHeadcountChart,
   platformSchoolStatusChart,
   type ChartDatum,
@@ -40,18 +39,18 @@ export function SuperAdminDashboardCharts({ statsData, loading }: SuperAdminDash
 
   const schoolStatus = localize(platformSchoolStatusChart(statsData || {}));
   const headcount = localize(platformHeadcountChart(statsData || {}));
-  const paid = Number(statsData?.paidSchoolCount ?? 0);
-  const active = Number(statsData?.activeSchools ?? 0);
+  const paid = Number(statsData?.billingMix?.paid ?? 0);
+  const unpaid = Number(statsData?.billingMix?.unpaid ?? 0);
   const billing = localize(
     [
       { name: "paidPlans", value: paid, fill: "#10b981" },
-      { name: "unpaid", value: Math.max(0, active - paid), fill: "#94a3b8" },
+      { name: "unpaid", value: unpaid, fill: "#94a3b8" },
     ].filter((d) => d.value > 0)
   );
-  const logs = localize(aggregateLogSeverity(statsData?.recentLogs || []));
 
   const schoolStatusTotal = schoolStatus.reduce((sum, d) => sum + d.value, 0);
   const billingTotal = billing.reduce((sum, d) => sum + d.value, 0);
+  const billingPaidPct = billingTotal > 0 ? Math.round((paid / billingTotal) * 100) : 0;
 
   return (
     <DashboardChartsGrid>
@@ -66,17 +65,21 @@ export function SuperAdminDashboardCharts({ statsData, loading }: SuperAdminDash
       <DashboardChartCard title={c("platformHeadcount")} hint={c("platformHeadcountHint")}>
         <PremiumHorizontalBarChart data={headcount} emptyMessage={c("noData")} />
       </DashboardChartCard>
-      <DashboardChartCard title={c("billingMix")} hint={c("billingMixHint")}>
-        {billing.length > 0 ? (
-          <PremiumDonutChart
-            data={billing}
-            emptyMessage={c("noData")}
-            centerLabel={t("dashboard.accountant.total")}
-            centerValue={billingTotal > 0 ? String(billingTotal) : undefined}
-          />
-        ) : (
-          <PremiumHorizontalBarChart data={logs} emptyMessage={c("noData")} />
-        )}
+      <DashboardChartCard
+        title={c("billingMix")}
+        hint={c("billingMixHint")}
+        badge={
+          billingTotal > 0
+            ? t("dashboard.charts.billingPaidBadge", { pct: billingPaidPct })
+            : undefined
+        }
+      >
+        <PremiumDonutChart
+          data={billing}
+          emptyMessage={c("noData")}
+          centerLabel={t("dashboard.accountant.total")}
+          centerValue={billingTotal > 0 ? String(billingTotal) : undefined}
+        />
       </DashboardChartCard>
     </DashboardChartsGrid>
   );

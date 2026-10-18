@@ -56,6 +56,8 @@ export const schoolService = {
       logoUrl: school.logoUrl,
       status: school.status,
       admissionPolicy: policy,
+      // Registrar-set public-apply background wins over the platform default.
+      backgroundImageUrl: (policy.applyBackgroundUrl || school.backgroundImageUrl || "").trim() || null,
     };
   },
 

@@ -201,7 +201,7 @@ export const Login = () => {
         data.quotas ?? null
       );
       if (data.user?.role === "SUPER_ADMIN") {
-        navigate("/super-admin/dashboard");
+        navigate(typeof window !== "undefined" ? window.location.origin + "/super-admin/dashboard" : "/super-admin/dashboard");
         return;
       }
       await changeAppLocale(

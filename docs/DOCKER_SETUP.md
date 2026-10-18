@@ -2,6 +2,10 @@
 
 This is the **recommended** way to build and run the full microservices stack on a fresh machine (macOS, Windows, or Linux). You do **not** need Node.js installed on the host for the default path — only Docker.
 
+> **Dev vs. base compose.** `docker-compose.yml` is production-shaped (data stores unpublished, secrets/origins from `.env`). For local development always include the dev override before the subcommand:
+> `docker compose -f docker-compose.yml -f docker-compose.dev.yml <subcommand>`
+> With Node.js installed you can use `npm run docker:dev` (up+build) and `npm run docker:dev:down` instead. Starting/managing commands below include the two `-f` flags; for any bare `docker compose …` shown for quick diagnostics, add the same two flags.
+
 ## Prerequisites
 
 | Requirement | Notes |
@@ -52,10 +56,10 @@ You usually **do not** need to set per-service `DATABASE_URL`s; compose injects 
 
 ## 3. Build images and start the stack
 
-From the repo root:
+From the repo root (the `-f` chain layers the dev override on the base file):
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 ### Option B — Pull pre-built images from Docker Hub (faster for teammates)
@@ -64,8 +68,8 @@ Images are published under **`gnetllc/gnet-sms-*`** on Docker Hub. After cloning
 
 ```bash
 export DOCKERHUB_USER=gnetllc
-docker compose -f docker-compose.yml -f docker-compose.hub.yml pull
-docker compose -f docker-compose.yml -f docker-compose.hub.yml up -d --no-build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.hub.yml pull
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.hub.yml up -d --no-build
 ```
 
 To publish updated images from your machine (after `docker compose build`):
@@ -80,7 +84,7 @@ docker login -u gnetllc
 - Leave the terminal open to follow logs, **or** run detached:
 
 ```bash
-docker compose up --build -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
 What starts by default:
@@ -134,33 +138,33 @@ curl -sS http://localhost:8081/health/ready
 
 ```bash
 # Status
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
 
 # Logs (follow)
-docker compose logs -f --tail=100 frontend-spa api-gateway identity
+docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f --tail=100 frontend-spa api-gateway identity
 
 # Stop containers (keep data volumes)
-docker compose stop
+docker compose -f docker-compose.yml -f docker-compose.dev.yml stop
 
 # Start again without rebuild
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Rebuild only what you changed (examples)
-docker compose up --build -d frontend-spa
-docker compose up --build -d identity api-gateway frontend-spa
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d frontend-spa
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d identity api-gateway frontend-spa
 
 # Stop and remove containers (volumes kept)
-docker compose down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 # Full reset — DESTROYS DB / Redis / MinIO data
-docker compose down -v
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
 After a code pull on another machine:
 
 ```bash
 git pull
-docker compose up --build -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
 ## 6. Hardware / OS tips
@@ -175,7 +179,7 @@ docker compose up --build -d
 **Emergency monolith** (not needed for normal use):
 
 ```bash
-docker compose --profile monolith up -d sms-api
+docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile monolith up -d sms-api
 ```
 
 **Custom-domain edge (Caddy / TLS)** — see [`CUSTOM_DOMAIN_EDGE.md`](./CUSTOM_DOMAIN_EDGE.md):
@@ -183,6 +187,8 @@ docker compose --profile monolith up -d sms-api
 ```bash
 ACME_EMAIL=you@example.com docker compose --profile edge up -d edge
 ```
+
+> The edge profile runs against the **base file only** (no dev override): it needs real domains, whereas `docker-compose.dev.yml` forces localhost origins.
 
 ## 8. Architecture (short)
 
@@ -200,4 +206,4 @@ One **Postgres** database (`sms_db`) with **schema-per-service** roles; one **Re
 
 ---
 
-**Summary for a new computer:** install Docker → clone repo → `docker compose up --build -d` → open **http://localhost:8080** → sign in with `schooladmin@yoursms.com` / `admin123`.
+**Summary for a new computer:** install Docker → clone repo → `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d` (or `npm run docker:dev`) → open **http://localhost:8080** → sign in with `schooladmin@yoursms.com` / `admin123`.

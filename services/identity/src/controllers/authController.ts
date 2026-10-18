@@ -25,6 +25,8 @@ export const authController = {
       if ((result as any).mfaRequired) {
         await auditAuth(req, "login_mfa_pending", `MFA challenge issued for ${email}`, "INFO", {
           userEmail: email,
+          outcome: "PENDING",
+          authMethod: "MFA",
           statusCode: 200,
           durationMs: Date.now() - started,
           tags: ["auth", "mfa"],
@@ -43,6 +45,12 @@ export const authController = {
           userName: result.user.name,
           userEmail: result.user.email,
           userRole: result.user.role,
+          outcome: "SUCCESS",
+          authMethod: "PASSWORD",
+          targetUserId: result.user.id,
+          targetUserEmail: result.user.email,
+          targetUserName: result.user.name,
+          targetUserRole: result.user.role,
           schoolId: result.school?.id ?? null,
           entityType: "User",
           entityId: result.user.id,
@@ -92,6 +100,10 @@ export const authController = {
         {
           category: status === 401 ? "SECURITY" : "AUTH",
           userEmail: email ? String(email).toLowerCase() : null,
+          outcome: status === 401 || status === 403 ? "DENIED" : "FAILURE",
+          authMethod: "PASSWORD",
+          targetUserEmail: email ? String(email).toLowerCase() : null,
+          dataSensitivity: "PII",
           statusCode: status,
           durationMs: Date.now() - started,
           errorMessage: err.message,
@@ -209,6 +221,10 @@ export const authController = {
           userId: req.user?.id,
           userEmail: req.user?.email,
           userRole: req.user?.role,
+          outcome: "SUCCESS",
+          targetUserId: req.user?.id,
+          targetUserEmail: req.user?.email,
+          targetUserRole: req.user?.role,
           schoolId: req.user?.schoolId ?? null,
           entityType: "User",
           entityId: req.user?.id,
@@ -227,28 +243,39 @@ export const authController = {
     const started = Date.now();
     try {
       const result = await authService.superAdminLogin(email, password);
-      if ((result as any).mfaRequired) {
+      if ("mfaRequired" in result && result.mfaRequired) {
         await auditAuth(req, "sa_login_mfa_pending", `SA MFA challenge for ${email}`, "INFO", {
           userEmail: email,
+          outcome: "PENDING",
+          authMethod: "MFA",
           statusCode: 200,
           durationMs: Date.now() - started,
           tags: ["auth", "mfa", "super_admin"],
         });
         return res.json(result);
       }
+      const success = result as {
+        user: { id: string; email: string; name: string; role: string };
+      };
       await auditAuth(
         req,
         "sa_login_success",
-        `Super Admin login: ${result.user.email}`,
+        `Super Admin login: ${success.user.email}`,
         "INFO",
         {
           category: "SUPER_ADMIN",
-          userId: result.user.id,
-          userName: result.user.name,
-          userEmail: result.user.email,
+          userId: success.user.id,
+          userName: success.user.name,
+          userEmail: success.user.email,
           userRole: "SUPER_ADMIN",
+          outcome: "SUCCESS",
+          authMethod: "PASSWORD",
+          targetUserId: success.user.id,
+          targetUserEmail: success.user.email,
+          targetUserName: success.user.name,
+          targetUserRole: "SUPER_ADMIN",
           entityType: "User",
-          entityId: result.user.id,
+          entityId: success.user.id,
           statusCode: 200,
           durationMs: Date.now() - started,
           tags: ["auth", "super_admin"],
@@ -275,6 +302,10 @@ export const authController = {
         {
           category: "SECURITY",
           userEmail: email ? String(email).toLowerCase() : null,
+          outcome: status === 401 || status === 403 ? "DENIED" : "FAILURE",
+          authMethod: "PASSWORD",
+          targetUserEmail: email ? String(email).toLowerCase() : null,
+          dataSensitivity: "PII",
           statusCode: status,
           durationMs: Date.now() - started,
           errorMessage: err.message,

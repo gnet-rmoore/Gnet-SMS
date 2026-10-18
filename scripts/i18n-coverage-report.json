@@ -1,62 +1,62 @@
 {
   "fr": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   },
   "es": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   },
   "de": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   },
   "ar": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   },
   "zh-Hans": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   },
   "hi": {
     "common": 0,
-    "nav": 1,
-    "auth": 0,
+    "nav": 0,
+    "auth": 27,
     "errors": 0,
     "roles": 0,
-    "pages": 1271,
+    "pages": 1352,
     "public": 437,
-    "__totalMissing": 1709
+    "__totalMissing": 1816
   }
 }

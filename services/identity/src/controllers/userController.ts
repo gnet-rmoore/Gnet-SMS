@@ -65,6 +65,12 @@ export const userController = {
           entityType: "User",
           entityId: student.id,
           schoolId,
+          outcome: "SUCCESS",
+          targetUserId: student.id,
+          targetUserEmail: student.email,
+          targetUserName: student.name,
+          targetUserRole: "STUDENT",
+          dataSensitivity: "PII",
           after: { id: student.id, email: student.email, role: "STUDENT", name: student.name },
           tags: ["user", "student", "create"],
         }
@@ -142,6 +148,12 @@ export const userController = {
           entityType: "User",
           entityId: staff.id,
           schoolId,
+          outcome: "SUCCESS",
+          targetUserId: staff.id,
+          targetUserEmail: staff.email,
+          targetUserName: staff.name,
+          targetUserRole: staff.role,
+          dataSensitivity: "PII",
           after: { id: staff.id, email: staff.email, role: staff.role, name: staff.name },
           tags: ["user", "staff", "create"],
         }
@@ -240,17 +252,24 @@ export const userController = {
               ? "user_activated"
               : "user_deactivated"
             : "user_updated";
+      const isPasswordChange = bodyKeys.includes("password");
       await logSystemEvent(
         action,
         "USERS",
         `User ${action.replace(/_/g, " ")}: ${user.email || userId}`,
-        bodyKeys.includes("password") ? "WARNING" : "INFO",
+        isPasswordChange ? "WARNING" : "INFO",
         req,
         {
-          category: bodyKeys.includes("password") ? "AUTH" : "USER_MGMT",
+          category: isPasswordChange ? "AUTH" : "USER_MGMT",
           entityType: "User",
           entityId: userId,
           schoolId: user.schoolId ?? before?.schoolId ?? null,
+          outcome: "SUCCESS",
+          targetUserId: userId,
+          targetUserEmail: user.email ?? before?.email,
+          targetUserName: user.name ?? before?.name,
+          targetUserRole: user.role ?? before?.role,
+          dataSensitivity: isPasswordChange ? "SECRET" : "PII",
           before: before
             ? {
                 name: before.name,
@@ -325,6 +344,13 @@ export const userController = {
           entityType: "User",
           entityId: userId,
           schoolId: updated.schoolId ?? before?.schoolId ?? null,
+          outcome: "SUCCESS",
+          targetUserId: userId,
+          targetUserEmail: updated.email ?? before?.email,
+          targetUserName: updated.name ?? before?.name,
+          targetUserRole: nextRole,
+          changesSummary: `role: ${before?.role || "?"} → ${nextRole}`,
+          dataSensitivity: "PII",
           before: { role: before?.role },
           after: { role: nextRole },
           tags: ["role", "assign"],
@@ -368,6 +394,13 @@ export const userController = {
           entityType: "User",
           entityId: userId,
           schoolId: before?.schoolId ?? null,
+          outcome: "SUCCESS",
+          targetUserId: userId,
+          targetUserEmail: before?.email,
+          targetUserName: before?.name,
+          targetUserRole: before?.role,
+          changesSummary: `deleted user ${before?.email || "unknown"}`,
+          dataSensitivity: "PII",
           before: before
             ? { name: before.name, email: before.email, role: before.role, isActive: before.isActive }
             : null,

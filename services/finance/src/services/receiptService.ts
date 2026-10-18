@@ -34,6 +34,17 @@ export type IssueReceiptInput = {
   issuedBy?: string | null;
   title?: string;
   supersedesId?: string | null;
+  paymentMethod?: string | null;
+  paidAt?: Date | null;
+  studentName?: string | null;
+  categoryLabel?: string | null;
+  periodLabel?: string | null;
+  balanceBefore?: number | null;
+  balanceAfter?: number | null;
+  placeOfIssue?: string | null;
+  note?: string | null;
+  cashierName?: string | null;
+  copyLabel?: string | null;
 };
 
 let warnedMissingHmacSecret = false;
@@ -226,8 +237,23 @@ export const receiptService = {
       slug: school?.slug || null,
       locale,
       receiptTemplate,
+      schoolTimezone: school?.timezone || null,
       authorizedSignerName: signer.name,
       authorizedSignerTitle: signer.title,
+      meta: {
+        paymentMethod: input.paymentMethod || null,
+        paidAt: input.paidAt ? input.paidAt.toISOString() : null,
+        studentName: input.studentName || null,
+        categoryLabel: input.categoryLabel || null,
+        periodLabel: input.periodLabel || null,
+        balanceBefore: typeof input.balanceBefore === "number" ? input.balanceBefore : null,
+        balanceAfter: typeof input.balanceAfter === "number" ? input.balanceAfter : null,
+        placeOfIssue: input.placeOfIssue || null,
+        note: input.note || null,
+        cashierName: input.cashierName || null,
+        copyLabel: input.copyLabel || null,
+        sourceRef: input.sourceRef,
+      },
     };
 
     const verifyCode = crypto.randomBytes(16).toString("hex");
@@ -278,6 +304,18 @@ export const receiptService = {
       authorizedSignatureUrl: signer.signatureUrl,
       authorizedSignerName: signer.name,
       authorizedSignerTitle: signer.title,
+      schoolTimezone: school?.timezone || null,
+      paymentMethod: input.paymentMethod || null,
+      paidAt: input.paidAt || null,
+      studentName: input.studentName || null,
+      categoryLabel: input.categoryLabel || null,
+      periodLabel: input.periodLabel || null,
+      balanceBefore: typeof input.balanceBefore === "number" ? input.balanceBefore : null,
+      balanceAfter: typeof input.balanceAfter === "number" ? input.balanceAfter : null,
+      placeOfIssue: input.placeOfIssue || null,
+      note: input.note || null,
+      cashierName: input.cashierName || null,
+      copyLabel: input.copyLabel || null,
     });
 
     const receiptId = crypto.randomUUID();
@@ -402,6 +440,21 @@ export const receiptService = {
       slug?: string | null;
       locale?: string | null;
       receiptTemplate?: ReceiptTemplateId | string | null;
+      schoolTimezone?: string | null;
+      meta?: {
+        paymentMethod?: string | null;
+        paidAt?: string | null;
+        studentName?: string | null;
+        categoryLabel?: string | null;
+        periodLabel?: string | null;
+        balanceBefore?: number | null;
+        balanceAfter?: number | null;
+        placeOfIssue?: string | null;
+        note?: string | null;
+        cashierName?: string | null;
+        copyLabel?: string | null;
+        sourceRef?: string | null;
+      } | null;
     } = {};
     try {
       branding = receipt.branding ? JSON.parse(receipt.branding) : {};
@@ -425,6 +478,9 @@ export const receiptService = {
       brandColor: branding.brandColor || school?.brandColor || "#2563EB",
       slug: branding.slug || school?.slug || null,
       locale: branding.locale || locale,
+      schoolTimezone: branding.schoolTimezone || school?.timezone || null,
+      meta: branding.meta ?? null,
+      receiptTemplate: branding.receiptTemplate,
     };
 
     // Prefer live brand assets for header presentation (name/logo/address/contact/color)
@@ -439,6 +495,7 @@ export const receiptService = {
         brandColor: school.brandColor || branding.brandColor || "#2563EB",
         slug: school.slug || branding.slug,
         locale: branding.locale || resolveReceiptLocale(school.defaultLocale),
+        schoolTimezone: school.timezone || branding.schoolTimezone || null,
       };
     }
 
@@ -465,6 +522,7 @@ export const receiptService = {
     );
 
     const verifyUrl = `${appBaseUrl()}/verify/receipt/${receipt.verifyCode}`;
+    const meta = branding.meta || {};
     const pdf = await renderReceiptDocument(receiptTemplate, {
       title: titleForType(receipt.type as ReceiptType, locale),
       receiptNumber: receipt.receiptNumber,
@@ -480,7 +538,9 @@ export const receiptService = {
       currency: receipt.currency,
       amount: receipt.amount,
       lineItems,
-      sourceRef: `${receipt.sourceType} ${receipt.sourceId.slice(0, 8).toUpperCase()}`,
+      sourceRef:
+        meta.sourceRef ||
+        `${receipt.sourceType} ${receipt.sourceId.slice(0, 8).toUpperCase()}`,
       payloadHash: receipt.payloadHash,
       verifyUrl,
       status: receipt.status,
@@ -488,6 +548,18 @@ export const receiptService = {
       authorizedSignatureUrl: signer.signatureUrl,
       authorizedSignerName: signer.name,
       authorizedSignerTitle: signer.title,
+      schoolTimezone: branding.schoolTimezone || school?.timezone || null,
+      paymentMethod: meta.paymentMethod,
+      paidAt: meta.paidAt ? new Date(meta.paidAt) : null,
+      studentName: meta.studentName,
+      categoryLabel: meta.categoryLabel,
+      periodLabel: meta.periodLabel,
+      balanceBefore: typeof meta.balanceBefore === "number" ? meta.balanceBefore : null,
+      balanceAfter: typeof meta.balanceAfter === "number" ? meta.balanceAfter : null,
+      placeOfIssue: meta.placeOfIssue,
+      note: meta.note,
+      cashierName: meta.cashierName,
+      copyLabel: meta.copyLabel,
     });
 
     const stored = await putReceiptPdf({
@@ -564,6 +636,7 @@ export const receiptService = {
       "Student";
     const school = await getIdentitySchool(fee.schoolId);
     const payer = txn.payerNameSnapshot || student;
+    const cashier = txn.recordedBy ? (await getIdentityUser(txn.recordedBy))?.name || null : null;
     return this.issue({
       schoolId: fee.schoolId,
       type: "FEE_PAYMENT",
@@ -582,6 +655,13 @@ export const receiptService = {
       sourceRef: `Pay ${txn.id.slice(0, 8).toUpperCase()} · Inv ${fee.id.slice(0, 8).toUpperCase()}`,
       issuedBy: issuedBy || null,
       supersedesId: supersedesId || null,
+      paymentMethod: txn.method || null,
+      paidAt: txn.paidAt || null,
+      studentName: student,
+      categoryLabel: txn.feeTypeSnapshot || fee.templateNameSnapshot || fee.type || null,
+      periodLabel: fee.schoolYearKey || null,
+      note: txn.notes || null,
+      cashierName: cashier,
     });
   },
 
@@ -594,6 +674,7 @@ export const receiptService = {
       });
     }
     const school = await getIdentitySchool(expense.schoolId);
+    const cashier = issuedBy ? (await getIdentityUser(issuedBy))?.name || null : null;
     return this.issue({
       schoolId: expense.schoolId,
       type: "EXPENSE",
@@ -607,6 +688,10 @@ export const receiptService = {
       sourceRef: `Expense ${expense.id.slice(0, 8).toUpperCase()}`,
       issuedBy: issuedBy || null,
       supersedesId: supersedesId || null,
+      paidAt: expense.date || null,
+      categoryLabel: expense.category || null,
+      note: expense.notes || null,
+      cashierName: cashier,
     });
   },
 
@@ -627,6 +712,7 @@ export const receiptService = {
     const monthName = new Date(data.year, data.month - 1, 1).toLocaleString("default", {
       month: "long",
     });
+    const cashier = data.issuedBy ? (await getIdentityUser(data.issuedBy))?.name || null : null;
     return this.issue({
       schoolId: data.schoolId,
       type: "PAYSLIP",
@@ -644,6 +730,9 @@ export const receiptService = {
       ],
       sourceRef: `Payroll ${monthName} ${data.year}`,
       issuedBy: data.issuedBy || null,
+      categoryLabel: "Payroll",
+      periodLabel: `${monthName} ${data.year}`,
+      cashierName: cashier,
     });
   },
 
@@ -687,5 +776,6 @@ async function buildPreviewSample(schoolId: string, opts?: PreviewSampleOpts) {
     schoolLogoUrl: opts?.logoUrl ?? school?.logoUrl ?? "",
     brandColor: opts?.brandColor ?? school?.brandColor ?? "#2563EB",
     locale: opts?.locale ?? school?.defaultLocale ?? "en",
+    schoolTimezone: school?.timezone ?? "UTC",
   });
 }
