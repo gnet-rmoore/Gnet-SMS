@@ -53,8 +53,8 @@ model School {
   reportCardTemplate String    @default("TEMPLATE_1")
   /// Graduation / completion certificate print template id
   certificateTemplate String   @default("CERT_CLASSIC_BROWN")
-  /// Official receipt PDF template id (PDFKIT_DEFAULT | CLASSIC_LEDGER | …) — legacy default for all types
-  receiptTemplate    String    @default("PDFKIT_DEFAULT")
+  /// Official receipt PDF template id (COMPACT_GRID | MINIMAL_LINE) — legacy default for all types
+  receiptTemplate    String    @default("MINIMAL_LINE")
   /// JSON: { FEE_PAYMENT, PAYSLIP, EXPENSE, TRANSACTION } → template id (legacy flat map)
   receiptTemplates   String?
   /// JSON: { REGISTRAR: { FEE_PAYMENT: … }, ACCOUNTANT: { PAYSLIP: … }, … } — per-role private buckets

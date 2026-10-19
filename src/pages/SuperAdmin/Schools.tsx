@@ -89,8 +89,8 @@ export const Schools = () => {
         expiresAt: data.expiresAt,
       });
       window.location.href = typeof window !== "undefined"
-        ? window.location.origin + "/super-admin/dashboard"
-        : "/super-admin/dashboard";
+        ? window.location.origin + "/" + (data.school?.slug || "") + "/dashboard"
+        : "/" + (data.school?.slug || "") + "/dashboard";
     } catch (e: any) {
       toast.fire({ icon: "error", title: "Impersonation failed", text: e.message });
     } finally {

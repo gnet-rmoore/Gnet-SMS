@@ -37,7 +37,8 @@ export const promotionController = {
       const run = await promotionService.createRun(
         req.params.schoolId,
         req.body?.schoolYearKey,
-        req.user.id
+        req.user.id,
+        { autoOutcome: req.body?.autoOutcome === true }
       );
       res.status(201).json(run);
     } catch (err: any) {
@@ -98,11 +99,34 @@ export const promotionController = {
       const statement = await promotionService.getStatement(
         req.params.schoolId,
         String(req.query.schoolYearKey || ""),
-        req.query.runId ? String(req.query.runId) : undefined
+        {
+          runId: req.query.runId ? String(req.query.runId) : undefined,
+          scope: req.query.scope ? String(req.query.scope) : undefined,
+          periodId: req.query.periodId ? String(req.query.periodId) : undefined,
+        }
       );
       res.json(statement);
     } catch (err: any) {
       res.status(statusOf(err, 400)).json({ error: err.message || "Failed to assemble statement" });
+    }
+  },
+
+  async transitionYear(req: any, res: Response) {
+    try {
+      const body = req.body || {};
+      const result = await promotionService.transitionYear(req.params.schoolId, req.user.id, {
+        fromYearKey: body.fromYearKey || body.sourceYearKey,
+        toYearKey: body.toYearKey || body.targetYearKey,
+        toYearLabel: body.toYearLabel || body.label || null,
+        startsAt: body.startsAt || null,
+        endsAt: body.endsAt || null,
+        autoOutcome: body.autoOutcome !== false,
+        commit: body.commit === undefined ? true : Boolean(body.commit),
+        runId: body.runId,
+      });
+      res.status(201).json(result);
+    } catch (err: any) {
+      res.status(statusOf(err, 400)).json({ error: err.message || "Year transition failed" });
     }
   },
 

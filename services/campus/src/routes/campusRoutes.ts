@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticate, requireTenant, requireRoles, requireResourceTenant } from "../middleware/auth";
+import { authenticate, requireTenant, requireRoles, requireResourceTenant, authenticateInternal } from "../middleware/auth";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { campusController } from "../controllers/campusController";
 import { myCampusController } from "../controllers/myCampusController";
@@ -237,6 +237,39 @@ router.put(
   requireRoles([...ADMIN, "CAFETERIA_MANAGER"]),
   requireFeature("cafeteria"),
   campusController.upsertCafeteriaMealCount
+);
+
+// --- Discipline (Registrar / Admin) ---
+router.get(
+  "/api/schools/:schoolId/discipline",
+  authenticate,
+  requireTenant,
+  requireRoles([...ADMIN, "REGISTRAR"]),
+  campusController.listDisciplineRecords
+);
+router.post(
+  "/api/schools/:schoolId/discipline",
+  authenticate,
+  requireTenant,
+  requireRoles([...ADMIN, "REGISTRAR"]),
+  campusController.createDisciplineRecord
+);
+router.patch(
+  "/api/discipline/:id",
+  authenticate,
+  requireRoles([...ADMIN, "REGISTRAR"]),
+  campusController.updateDisciplineRecord
+);
+router.delete(
+  "/api/discipline/:id",
+  authenticate,
+  requireRoles([...ADMIN, "REGISTRAR"]),
+  campusController.deleteDisciplineRecord
+);
+router.get(
+  "/api/internal/schools/:schoolId/discipline/summary",
+  authenticateInternal,
+  campusController.getDisciplineSummaryInternal
 );
 
 export default router;

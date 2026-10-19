@@ -17,6 +17,9 @@ import { AdmissionsTab } from "./components/AdmissionsTab";
 import { ClassroomsTab } from "./components/ClassroomsTab";
 import { ManualAdmissionTab } from "./components/ManualAdmissionTab";
 import { OnlineRegistrationCard } from "./components/OnlineRegistrationCard";
+import { PromotionStatementReport, type ReportPeriod } from "../promotion-statement/components/PromotionStatementReport";
+import { academicCalendarApi } from "../academics-shared/calendar/api";
+import { periodsOf } from "../academics-shared/calendar/selectors";
 import type { TabType } from "./types";
 import { RegistrarChrome } from "./components/RegistrarChrome";
 import { usePageActions } from "./hooks/usePageActions";
@@ -35,6 +38,30 @@ export const Registrar = () => {
   } = useRegistrarQuery();
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
+
+  React.useEffect(() => {
+    if (activeTab !== "promotion_statement" || !school?.id) return;
+    let cancelled = false;
+    academicCalendarApi
+      .fetchCalendar(school.id)
+      .then((res) => {
+        if (cancelled) return;
+        setReportPeriods(
+          periodsOf(res)
+            .filter((p) => p.id)
+            .map((p) => ({
+              id: p.id as string,
+              label: p.label || p.shortCode || "Period",
+              shortCode: p.shortCode || p.label || "P",
+            }))
+        );
+      })
+      .catch(() => setReportPeriods([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, school?.id]);
 
   // Search & Filters
   const directoryFilterFields: FilterFieldDef[] = useMemo(
@@ -396,6 +423,14 @@ export const Registrar = () => {
               rosterLoading={rosterLoading}
               selectedClassroom={selectedClassroom}
               students={students}
+            />
+          )}
+
+          {activeTab === "promotion_statement" && (
+            <PromotionStatementReport
+              schoolId={school?.id || ""}
+              schoolName={school?.name}
+              periods={reportPeriods}
             />
           )}
 

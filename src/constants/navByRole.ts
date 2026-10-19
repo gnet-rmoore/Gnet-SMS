@@ -107,6 +107,7 @@ export const ROUTE_ROLES: Record<string, string[]> = {
   "year-transition": ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "REGISTRAR"],
   "promotion-statement": ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "REGISTRAR"],
   certificates: ["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "VPI"],
+  transcripts: ["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "VPI", "VPA"],
   "my-campus": ["PARENT", "STUDENT"],
 };
 
@@ -161,6 +162,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
         ]),
         section("people", "People", [
           { to: `/${slug}/students`, icon: Users, labelKey: "items.students" },
+          { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.schoolStaff" },
           { to: `/${slug}/roles`, icon: ShieldCheck, labelKey: "items.rolesAccess" },
           { to: `/${slug}/admissions`, icon: FileSignature, labelKey: "items.admissions" },
@@ -215,6 +217,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
         ]),
         section("people", "People", [
           { to: `/${slug}/students`, icon: Users, labelKey: "items.students" },
+          { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.staffDirectory" },
           { to: `/${slug}/admissions`, icon: FileSignature, labelKey: "items.admissions" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
@@ -286,6 +289,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/promotion-statement`, icon: FileBarChart, labelKey: "items.promotionStatement" },
         ]),
         section("people", "People", [
+          { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
           { to: `/${slug}/staff-tasks`, icon: ClipboardList, labelKey: "items.staffTasks" },
         ]),
@@ -299,6 +303,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/my-schedule`, icon: CalendarClock, labelKey: "items.classSchedule" },
         ]),
         section("people", "People", [
+          { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.hrManagement" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
           { to: `/${slug}/leave-approval`, icon: CalendarCheck, labelKey: "items.leaveApprovals" },

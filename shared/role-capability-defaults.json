@@ -31,6 +31,18 @@
       "lockedForSchoolAdmin": true
     },
     {
+      "key": "action.transcripts.approve",
+      "label": "Approve student transcripts",
+      "category": "Actions \u00b7 Academics",
+      "lockedForSchoolAdmin": false
+    },
+    {
+      "key": "action.transcripts.prepare",
+      "label": "Prepare and submit student transcripts",
+      "category": "Actions \u00b7 Academics",
+      "lockedForSchoolAdmin": false
+    },
+    {
       "key": "nav.admissions",
       "label": "Admissions",
       "category": "Navigation",
@@ -344,6 +356,8 @@
       "action.lesson_plans.approve",
       "action.roles.assign",
       "action.roles.customize",
+      "action.transcripts.approve",
+      "action.transcripts.prepare",
       "nav.admissions",
       "nav.api-docs",
       "nav.announcements",
@@ -377,12 +391,14 @@
       "nav.staff",
       "nav.staff-portal",
       "nav.students",
+      "nav.transcripts",
       "nav.work-orders"
     ],
     "PRINCIPAL": [
       "action.admissions.manage",
       "action.leave.approve",
       "action.lesson_plans.approve",
+      "action.transcripts.approve",
       "nav.admissions",
       "nav.api-docs",
       "nav.announcements",
@@ -407,11 +423,13 @@
       "nav.staff",
       "nav.staff-portal",
       "nav.students",
+      "nav.transcripts",
       "nav.work-orders",
       "nav.year-transition"
     ],
     "REGISTRAR": [
       "action.admissions.manage",
+      "action.transcripts.prepare",
       "nav.admissions",
       "nav.calendar",
       "nav.dashboard",
@@ -425,6 +443,7 @@
     ],
     "VPI": [
       "action.lesson_plans.approve",
+      "action.transcripts.approve",
       "nav.attendance",
       "nav.calendar",
       "nav.classrooms",
@@ -440,10 +459,12 @@
       "nav.reports",
       "nav.schedules",
       "nav.staff-portal",
+      "nav.transcripts",
       "nav.year-transition"
     ],
     "VPA": [
       "action.leave.approve",
+      "action.transcripts.approve",
       "nav.attendance",
       "nav.calendar",
       "nav.dashboard",
@@ -453,6 +474,7 @@
       "nav.security",
       "nav.staff",
       "nav.staff-portal",
+      "nav.transcripts",
       "nav.work-orders",
       "nav.year-transition",
       "nav.promotion-statement"

@@ -1,16 +1,30 @@
 import prisma from "../lib/prisma";
-import { listIdentityStudents, patchIdentityUserPlacement } from "../lib/identityClient";
+import {
+  getIdentitySchool,
+  getIdentityUsersByIds,
+  listIdentityStudents,
+  patchIdentityUserPlacement,
+} from "../lib/identityClient";
 import {
   addClassroomMember,
+  bulkAssignStudents,
+  ensureYearClassGroups,
   getClassroomMembers,
   listClassroomsBySchool,
   removeClassroomMember,
 } from "../lib/classroomClient";
 import { PROMOTION_OUTCOMES, type PromotionOutcome } from "../domain/yearTransition";
 import { assemblePromotionStatementMatrix } from "../lib/promotionStatementMath";
+import { resultsService } from "./resultsService";
+import { getAttendanceSummary, getDisciplineSummary } from "../lib/summaryClients";
+import { rankBestAttendance, rankTopPerformers, summarizeAttendance } from "../lib/resultsSummaryMath";
 
 function httpError(message: string, status = 400) {
   return Object.assign(new Error(message), { status });
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 function normalizeYearKey(raw: string) {
@@ -105,7 +119,12 @@ export const promotionService = {
     return snap;
   },
 
-  async createRun(schoolId: string, schoolYearKey: string, actorUserId: string) {
+  async createRun(
+    schoolId: string,
+    schoolYearKey: string,
+    actorUserId: string,
+    opts: { autoOutcome?: boolean } = {}
+  ) {
     const yearKey = normalizeYearKey(schoolYearKey);
     const census = await prisma.yearCensusSnapshot.findUnique({
       where: { schoolId_schoolYearKey: { schoolId, schoolYearKey: yearKey } },
@@ -125,6 +144,12 @@ export const promotionService = {
       nextById.set(g.id, explicit || byOrder);
     }
 
+    let summaries: Map<string, { passed: boolean }> | null = null;
+    if (opts.autoOutcome) {
+      const result = await resultsService.getStudentSummaries(schoolId, yearKey);
+      summaries = result.summaries;
+    }
+
     const run = await prisma.promotionRun.create({
       data: {
         schoolId,
@@ -133,16 +158,35 @@ export const promotionService = {
         censusSnapshotId: census.id,
         createdByUserId: actorUserId,
         decisions: {
-          create: census.rows.map((row) => ({
-            studentUserId: row.studentUserId,
-            outcome: "PROMOTED",
-            fromGradeLevelId: row.gradeLevelId,
-            toGradeLevelId: row.gradeLevelId
+          create: census.rows.map((row) => {
+            const nextGrade = row.gradeLevelId
               ? nextById.get(row.gradeLevelId) || null
-              : null,
-            fromClassroomId: row.classroomId,
-            toClassroomId: null,
-          })),
+              : null;
+            let outcome: PromotionOutcome = "PROMOTED";
+            let toGradeLevelId = nextGrade;
+
+            if (opts.autoOutcome) {
+              if (!nextGrade) {
+                outcome = "GRADUATED";
+                toGradeLevelId = null;
+              } else {
+                const summary = summaries?.get(row.studentUserId);
+                if (summary && !summary.passed) {
+                  outcome = "REPEAT";
+                  toGradeLevelId = row.gradeLevelId;
+                }
+              }
+            }
+
+            return {
+              studentUserId: row.studentUserId,
+              outcome,
+              fromGradeLevelId: row.gradeLevelId,
+              toGradeLevelId,
+              fromClassroomId: row.classroomId,
+              toClassroomId: null,
+            };
+          }),
         },
       },
       include: { decisions: true, censusSnapshot: { include: { _count: { select: { rows: true } } } } },
@@ -197,7 +241,9 @@ export const promotionService = {
       let toGrade =
         d.toGradeLevelId !== undefined ? d.toGradeLevelId : existing?.toGradeLevelId ?? null;
       if (outcome === "REPEAT") toGrade = fromGrade;
-      if (outcome === "GRADUATED" || outcome === "DO_NOT_RETURN") toGrade = null;
+      if (outcome === "GRADUATED" || outcome === "DO_NOT_RETURN" || outcome === "DROPPED_OUT") {
+        toGrade = null;
+      }
       return prisma.promotionDecision.upsert({
         where: {
           runId_studentUserId: { runId, studentUserId: d.studentUserId },
@@ -290,8 +336,249 @@ export const promotionService = {
     };
   },
 
-  async getStatement(schoolId: string, schoolYearKey: string, runId?: string) {
+  /**
+   * One-click year transition:
+   *  1. resolve (or create) the target AcademicYear,
+   *  2. create/refresh the promotion run with automatic pass/fail outcomes,
+   *  3. clone the outgoing year's homeroom section structure into the target
+   *     year as unassigned class groups (ownerTeacherId = null),
+   *  4. distribute continuing students across those sections,
+   *  5. optionally commit (moves Identity placement + classroom membership).
+   *
+   * Teachers/staff are school-level Identity users and are implicitly carried
+   * over; they are intentionally not attached to any new class/subject.
+   */
+  async transitionYear(
+    schoolId: string,
+    actorUserId: string,
+    input: {
+      fromYearKey?: string;
+      toYearKey?: string;
+      targetYearKey?: string;
+      toYearLabel?: string | null;
+      startsAt?: string | null;
+      endsAt?: string | null;
+      autoOutcome?: boolean;
+      commit?: boolean;
+      runId?: string;
+    }
+  ) {
+    const active = await prisma.academicYear.findFirst({
+      where: { schoolId, status: "ACTIVE" },
+      orderBy: { startsAt: "desc" },
+    });
+    const latestCensus = !input.fromYearKey && !active
+      ? await prisma.yearCensusSnapshot.findFirst({
+          where: { schoolId },
+          orderBy: { capturedAt: "desc" },
+        })
+      : null;
+    const fromKey = normalizeYearKey(
+      input.fromYearKey || active?.yearKey || latestCensus?.schoolYearKey || ""
+    );
+    const toKey = normalizeYearKey(input.toYearKey || input.targetYearKey || "");
+    if (fromKey === toKey) throw httpError("Target year must differ from the current year");
+
+    const census = await prisma.yearCensusSnapshot.findUnique({
+      where: { schoolId_schoolYearKey: { schoolId, schoolYearKey: fromKey } },
+      include: { rows: true },
+    });
+    if (!census) throw httpError(`No opening census for ${fromKey}`, 404);
+
+    let targetYear = await prisma.academicYear.findFirst({
+      where: { schoolId, yearKey: toKey },
+    });
+    if (!targetYear) {
+      targetYear = await prisma.academicYear.create({
+        data: {
+          schoolId,
+          yearKey: toKey,
+          label: input.toYearLabel || toKey,
+          startsAt: input.startsAt ? new Date(input.startsAt) : null,
+          endsAt: input.endsAt ? new Date(input.endsAt) : null,
+          status: "DRAFT",
+        },
+      });
+    }
+    const targetYearId = targetYear.id;
+
+    let run = input.runId
+      ? await prisma.promotionRun.findFirst({
+          where: { id: input.runId, schoolId, schoolYearKey: fromKey },
+          include: { decisions: true },
+        })
+      : await prisma.promotionRun.findFirst({
+          where: { schoolId, schoolYearKey: fromKey, status: "DRAFT" },
+          orderBy: { createdAt: "desc" },
+          include: { decisions: true },
+        });
+    if (!run) {
+      run = await this.createRun(schoolId, fromKey, actorUserId, {
+        autoOutcome: input.autoOutcome !== false,
+      });
+    } else if (run.status !== "DRAFT") {
+      throw httpError("Promotion run is already committed", 409);
+    }
+
+    const [grades, classrooms, students] = await Promise.all([
+      prisma.gradeLevel.findMany({
+        where: { schoolId },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
+      listClassroomsBySchool(schoolId),
+      listIdentityStudents(schoolId),
+    ]);
+    const gradeName = new Map(grades.map((g) => [g.id, g.name]));
+    const studentName = new Map(students.map((s) => [s.id, s.name || s.id]));
+    const roomName = new Map(classrooms.map((c) => [c.id, c.name]));
+
+    const sectionsByGrade = new Map<string, Set<string>>();
+    for (const row of census.rows) {
+      if (!row.gradeLevelId || !row.classroomId) continue;
+      const name = roomName.get(row.classroomId);
+      if (!name) continue;
+      let set = sectionsByGrade.get(row.gradeLevelId);
+      if (!set) {
+        set = new Set();
+        sectionsByGrade.set(row.gradeLevelId, set);
+      }
+      set.add(name);
+    }
+
+    type Placement = { studentUserId: string; gradeLevelId: string };
+    const placements: Placement[] = [];
+    for (const d of run.decisions) {
+      if (d.outcome === "PROMOTED" && d.toGradeLevelId) {
+        placements.push({ studentUserId: d.studentUserId, gradeLevelId: d.toGradeLevelId });
+      } else if (d.outcome === "REPEAT" && d.fromGradeLevelId) {
+        placements.push({ studentUserId: d.studentUserId, gradeLevelId: d.fromGradeLevelId });
+      }
+    }
+
+    const byGrade = new Map<string, Placement[]>();
+    for (const p of placements) {
+      const list = byGrade.get(p.gradeLevelId) || [];
+      list.push(p);
+      byGrade.set(p.gradeLevelId, list);
+    }
+
+    const groups: Array<{ gradeLevelId: string; name: string }> = [];
+    const sectionNamesByGrade = new Map<string, string[]>();
+    for (const gid of byGrade.keys()) {
+      const cloned = [...(sectionsByGrade.get(gid) || [])].sort();
+      const names = cloned.length ? cloned : [`${gradeName.get(gid) || "Grade"} A`];
+      sectionNamesByGrade.set(gid, names);
+      for (const name of names) groups.push({ gradeLevelId: gid, name });
+    }
+
+    const ensured = groups.length
+      ? await ensureYearClassGroups(schoolId, targetYearId, groups)
+      : { created: [], existing: [] };
+
+    const allRooms = [...ensured.created, ...ensured.existing];
+    const roomByKey = new Map(
+      allRooms.map((r) => [`${r.gradeLevelId || "_"}|${r.name}`, r.id])
+    );
+
+    const buckets = groups.map((g) => ({
+      gradeLevelId: g.gradeLevelId,
+      name: g.name,
+      classroomId: roomByKey.get(`${g.gradeLevelId}|${g.name}`) || null,
+      count: 0,
+    }));
+    const assignments: Array<{ classroomId: string; studentUserId: string; role?: string }> = [];
+    const decisionUpdates: Array<{ studentUserId: string; classroomId: string }> = [];
+    const unassignedStudentIds: string[] = [];
+
+    for (const [gid, list] of byGrade) {
+      const gradeBuckets = buckets.filter((b) => b.gradeLevelId === gid && b.classroomId);
+      if (!gradeBuckets.length) {
+        unassignedStudentIds.push(...list.map((p) => p.studentUserId));
+        continue;
+      }
+      const sorted = [...list].sort((a, b) =>
+        String(studentName.get(a.studentUserId) || a.studentUserId).localeCompare(
+          String(studentName.get(b.studentUserId) || b.studentUserId)
+        )
+      );
+      for (const p of sorted) {
+        const target = gradeBuckets.reduce((min, b) => (b.count < min.count ? b : min), gradeBuckets[0]);
+        target.count += 1;
+        assignments.push({ classroomId: target.classroomId!, studentUserId: p.studentUserId });
+        decisionUpdates.push({
+          studentUserId: p.studentUserId,
+          classroomId: target.classroomId!,
+        });
+      }
+    }
+
+    if (assignments.length) {
+      await bulkAssignStudents(schoolId, assignments);
+      const runId = run.id;
+      await prisma.$transaction(
+        decisionUpdates.map((u) =>
+          prisma.promotionDecision.update({
+            where: {
+              runId_studentUserId: { runId, studentUserId: u.studentUserId },
+            },
+            data: { toClassroomId: u.classroomId },
+          })
+        )
+      );
+    }
+
+    const counts = run.decisions.reduce(
+      (acc, d) => {
+        const key = String(d.outcome || "").toLowerCase();
+        if (key in acc) (acc as any)[key] += 1;
+        return acc;
+      },
+      {
+        promoted: 0,
+        repeat: 0,
+        graduated: 0,
+        dropped_out: 0,
+        do_not_return: 0,
+      }
+    );
+
+    let committed: any = null;
+    if (input.commit) {
+      committed = await this.commitRun(schoolId, run.id, actorUserId);
+    }
+
+    return {
+      fromYearKey: fromKey,
+      toYearKey: toKey,
+      targetYear: { id: targetYearId, yearKey: toKey, status: targetYear.status },
+      run: {
+        id: run.id,
+        status: committed ? "COMMITTED" : run.status,
+        decisions: run.decisions.length,
+      },
+      counts,
+      homerooms: {
+        created: ensured.created.length,
+        existing: ensured.existing.length,
+        total: allRooms.length,
+      },
+      assignedStudents: assignments.length,
+      unassignedStudentIds,
+      staff: {
+        note: "Teachers and staff keep their school membership; new homerooms are created unassigned (no teacher, no subject rooms).",
+      },
+      committed,
+    };
+  },
+
+  async getStatement(
+    schoolId: string,
+    schoolYearKey: string,
+    opts: string | { runId?: string; scope?: string; periodId?: string } = {}
+  ) {
+    const options = typeof opts === "string" ? { runId: opts } : opts;
     const yearKey = normalizeYearKey(schoolYearKey);
+    const scope = String(options.scope || "YEAR").toUpperCase() === "TERM" ? "TERM" : "YEAR";
     const census = await prisma.yearCensusSnapshot.findUnique({
       where: { schoolId_schoolYearKey: { schoolId, schoolYearKey: yearKey } },
       include: { rows: true },
@@ -299,9 +586,9 @@ export const promotionService = {
     if (!census) throw httpError("No opening census for this school year", 404);
 
     let run =
-      runId
+      options.runId
         ? await prisma.promotionRun.findFirst({
-            where: { id: runId, schoolId, schoolYearKey: yearKey },
+            where: { id: options.runId, schoolId, schoolYearKey: yearKey },
             include: { decisions: true },
           })
         : await prisma.promotionRun.findFirst({
@@ -318,11 +605,47 @@ export const promotionService = {
       });
     }
 
-    const [grades, divisions, classrooms] = await Promise.all([
-      prisma.gradeLevel.findMany({ where: { schoolId } }),
-      prisma.division.findMany({ where: { schoolId } }),
-      listClassroomsBySchool(schoolId),
+    const [year, period] = await Promise.all([
+      prisma.academicYear.findFirst({ where: { schoolId, yearKey } }),
+      options.periodId
+        ? prisma.academicPeriod.findFirst({
+            where: { id: options.periodId, schoolId },
+            select: {
+              id: true,
+              label: true,
+              shortCode: true,
+              startDate: true,
+              endDate: true,
+            },
+          })
+        : Promise.resolve(null),
     ]);
+
+    const usePeriod = scope === "TERM" && period;
+    const windowFrom = usePeriod ? period.startDate : year?.startsAt ?? null;
+    const windowTo = usePeriod ? period.endDate : year?.endsAt ?? null;
+    const attendanceTo = windowTo
+      ? new Date(windowTo.getTime() + 24 * 60 * 60 * 1000)
+      : null;
+
+    const [grades, divisions, classrooms, result, attendanceRows, discipline, schoolInfo] =
+      await Promise.all([
+        prisma.gradeLevel.findMany({ where: { schoolId } }),
+        prisma.division.findMany({ where: { schoolId } }),
+        listClassroomsBySchool(schoolId),
+        resultsService.getStudentSummaries(schoolId, yearKey, {
+          periodId: usePeriod ? period.id : null,
+        }),
+        getAttendanceSummary(schoolId, {
+          from: windowFrom ? windowFrom.toISOString() : null,
+          to: attendanceTo ? attendanceTo.toISOString() : null,
+        }),
+        getDisciplineSummary(schoolId, {
+          from: windowFrom ? windowFrom.toISOString() : null,
+          to: windowTo ? windowTo.toISOString() : null,
+        }),
+        getIdentitySchool(schoolId),
+      ]);
 
     const labels = {
       gradeName: Object.fromEntries(grades.map((g) => [g.id, g.name])),
@@ -330,6 +653,11 @@ export const promotionService = {
       classroomName: Object.fromEntries(classrooms.map((c) => [c.id, c.name])),
       divisionByGrade: Object.fromEntries(grades.map((g) => [g.id, g.divisionId])),
     };
+
+    const passFailByStudent = new Map<string, "PASS" | "FAIL">();
+    for (const [id, s] of result.summaries) {
+      passFailByStudent.set(id, s.passed ? "PASS" : "FAIL");
+    }
 
     const matrix = assemblePromotionStatementMatrix(
       census.rows.map((r) => ({
@@ -343,11 +671,51 @@ export const promotionService = {
         studentUserId: d.studentUserId,
         outcome: d.outcome,
       })),
-      labels
+      labels,
+      {
+        suspendedStudentIds: discipline.suspendedStudentIds,
+        passFailByStudent,
+      }
     );
+
+    const topAcademic = rankTopPerformers(result.summaries.values(), 10);
+    const topAttendance = rankBestAttendance(attendanceRows, { topN: 10, minRecords: 1 });
+    const featuredIds = [
+      ...new Set([
+        ...topAcademic.map((t) => t.studentUserId),
+        ...topAttendance.map((t) => t.studentUserId),
+      ]),
+    ];
+    const users = await getIdentityUsersByIds(featuredIds);
+    const censusByStudent = new Map(census.rows.map((r) => [r.studentUserId, r]));
+    const nameFor = (id: string) => users.get(id)?.name || "Student";
+    const gradeFor = (id: string) => {
+      const row = censusByStudent.get(id);
+      return row?.gradeLevelId ? labels.gradeName[row.gradeLevelId] || "Grade" : "No grade";
+    };
+
+    const attendanceTotals = attendanceRows.reduce(
+      (acc, r) => {
+        acc.present += r.present;
+        acc.absent += r.absent;
+        acc.late += r.late;
+        acc.excused += r.excused;
+        acc.total += r.total;
+        return acc;
+      },
+      { present: 0, absent: 0, late: 0, excused: 0, total: 0 }
+    );
+    const averageAttendance = attendanceTotals.total
+      ? round2(((attendanceTotals.present + attendanceTotals.late) / attendanceTotals.total) * 100)
+      : 0;
+    const scored = [...result.summaries.values()];
+    const averageScore = scored.length
+      ? round2(scored.reduce((a, s) => a + s.overallAverage, 0) / scored.length)
+      : 0;
 
     return {
       schoolYearKey: yearKey,
+      scope,
       draft: !run || run.status !== "COMMITTED",
       run: run
         ? {
@@ -356,12 +724,71 @@ export const promotionService = {
             committedAt: run.committedAt,
           }
         : null,
+      period: period
+        ? {
+            id: period.id,
+            label: period.label,
+            shortCode: period.shortCode,
+            startDate: period.startDate,
+            endDate: period.endDate,
+          }
+        : null,
+      window: { from: windowFrom, to: windowTo },
+      schoolInfo,
       census: {
         id: census.id,
         capturedAt: census.capturedAt,
         lockedAt: census.lockedAt,
         rowCount: census.rows.length,
       },
+      totals: {
+        totalStudentsBeginning: matrix.school.opening,
+        maleStudents: matrix.school.male,
+        femaleStudents: matrix.school.female,
+        otherStudents: matrix.school.other,
+        unknownGender: matrix.school.unknown,
+        promoted: matrix.school.promoted,
+        repeat: matrix.school.repeat,
+        graduated: matrix.school.graduated,
+        droppedOut: matrix.school.droppedOut,
+        doNotReturn: matrix.school.doNotReturn,
+        suspended: matrix.school.suspended,
+        passed: matrix.school.passed,
+        failed: matrix.school.failed,
+      },
+      academic: {
+        passThreshold: result.threshold,
+        averageScore,
+        studentsWithResults: scored.length,
+      },
+      attendance: {
+        present: attendanceTotals.present,
+        absent: attendanceTotals.absent,
+        late: attendanceTotals.late,
+        excused: attendanceTotals.excused,
+        records: attendanceTotals.total,
+        averageRate: averageAttendance,
+      },
+      discipline: {
+        suspendedCount: discipline.suspendedCount,
+        totalSuspensionDays: discipline.totalSuspensionDays,
+        students: discipline.suspendedStudents.slice(0, 25),
+      },
+      bestAcademicPerformers: topAcademic.map((t) => ({
+        studentUserId: t.studentUserId,
+        name: nameFor(t.studentUserId),
+        gradeName: gradeFor(t.studentUserId),
+        overallAverage: t.overallAverage,
+        position: t.position,
+      })),
+      bestAttendance: topAttendance.map((t) => ({
+        studentUserId: t.studentUserId,
+        name: nameFor(t.studentUserId),
+        gradeName: gradeFor(t.studentUserId),
+        attendanceRate: t.attendanceRate,
+        present: t.present,
+        total: t.total,
+      })),
       school: matrix.school,
       divisions: matrix.divisions,
       promotedUserIds:
@@ -409,6 +836,9 @@ export const promotionService = {
       }
       if (decision.outcome === "DO_NOT_RETURN") {
         return { gradeLevelId: null, locked: false, outcome: "DO_NOT_RETURN", allowReturn: false };
+      }
+      if (decision.outcome === "DROPPED_OUT") {
+        return { gradeLevelId: null, locked: false, outcome: "DROPPED_OUT", allowReturn: false };
       }
     }
     return { gradeLevelId: currentGradeLevelId || null, locked: false, outcome: "UNKNOWN" };

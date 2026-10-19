@@ -29,6 +29,7 @@ export type IdentityUserRef = {
   email: string;
   role?: string;
   photoUrl?: string | null;
+  signatureUrl?: string | null;
 };
 
 export async function getIdentityUser(id: string): Promise<IdentityUserRef | null> {
@@ -238,5 +239,49 @@ export async function patchIdentityUserPlacement(
   });
   if (!res.ok) {
     throw new Error(`Identity patch user failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+export type IdentitySchoolRef = {
+  id: string;
+  name: string;
+  slug?: string;
+  logoUrl?: string | null;
+  address?: string | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  brandColor?: string | null;
+  documentSignatories?: string | Record<string, unknown> | null;
+};
+
+/** School identity/letterhead fields for official documents. */
+export async function getIdentitySchool(schoolId: string): Promise<IdentitySchoolRef | null> {
+  try {
+    const res = await fetch(
+      `${IDENTITY_URL}/api/internal/schools/${encodeURIComponent(schoolId)}`,
+      { headers: internalHeaders() }
+    );
+    if (!res.ok) return null;
+    const school: any = await res.json();
+    if (!school?.id) return null;
+    return {
+      id: school.id,
+      name: school.name || "School",
+      slug: school.slug,
+      logoUrl: school.logoUrl ?? null,
+      address: school.address ?? null,
+      city: school.city ?? null,
+      region: school.region ?? null,
+      country: school.country ?? null,
+      contactEmail: school.contactEmail ?? null,
+      contactPhone: school.contactPhone ?? null,
+      brandColor: school.brandColor ?? null,
+      documentSignatories: school.documentSignatories ?? null,
+    };
+  } catch {
+    return null;
   }
 }

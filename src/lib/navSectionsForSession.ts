@@ -18,7 +18,7 @@ export function getNavSectionsForSession(
     ...s,
     items: [...s.items],
   }));
-  if (!slug || role === "SUPER_ADMIN") return sections;
+  if (!slug) return sections;
 
   const filterByCaps = Array.isArray(capabilities);
   const filterByEntitlements = Array.isArray(entitlements);

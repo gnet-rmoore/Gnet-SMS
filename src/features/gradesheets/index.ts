@@ -27,5 +27,4 @@ export {
 } from "./density";
 export { LedgerReport } from "./components/LedgerReport";
 export { MasteryBarsReport } from "./components/MasteryBarsReport";
-export { OfficialRecordReport } from "./components/OfficialRecordReport";
 export { GradeSheetView } from "./components/GradeSheetView";

@@ -33,6 +33,7 @@ export function RegistrarChrome({
     { id: "directory", label: t("admissions.tabs.directory") },
     { id: "admissions", label: t("admissions.tabs.admissions"), badge: true },
     { id: "classrooms", label: t("admissions.tabs.classrooms") },
+    { id: "promotion_statement", label: t("admissions.tabs.promotionStatement") },
     { id: "new_admission", label: t("admissions.tabs.directAdmission"), icon: true },
   ] as const;
 

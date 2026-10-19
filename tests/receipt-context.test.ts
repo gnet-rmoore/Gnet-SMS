@@ -36,36 +36,38 @@ console.log("=========================================");
 console.log(" RECEIPT TEMPLATE CONTEXT TESTS");
 console.log("=========================================\n");
 
-assert(resolveReceiptTemplateId("classic-ledger") === "CLASSIC_LEDGER", "kebab id resolves");
-assert(resolveReceiptTemplateId(null) === "PDFKIT_DEFAULT", "default template");
-assert(RECEIPT_TEMPLATE_IDS.length === 6, "six templates registered");
+assert(resolveReceiptTemplateId("minimal-line") === "MINIMAL_LINE", "kebab id resolves");
+assert(resolveReceiptTemplateId(null) === "MINIMAL_LINE", "default template");
+assert(resolveReceiptTemplateId("BORDERED_FORMAL") === "MINIMAL_LINE", "removed id falls back");
+assert(resolveReceiptTemplateId("PDFKIT_DEFAULT") === "MINIMAL_LINE", "legacy PDFKIT_DEFAULT falls back");
+assert(RECEIPT_TEMPLATE_IDS.length === 2, "two templates registered");
 assert(previewLogoQueryParam("data:image/png;base64,abc") === undefined, "data URL omitted from preview query");
 assert(previewLogoQueryParam("https://cdn.example/logo.png") === "https://cdn.example/logo.png", "http logo kept");
 assert(
-  resolveReceiptTemplateForType("PAYSLIP", { PAYSLIP: "COMPACT_GRID", FEE_PAYMENT: "BORDERED_FORMAL" }, "PDFKIT_DEFAULT") === "COMPACT_GRID",
+  resolveReceiptTemplateForType("PAYSLIP", { PAYSLIP: "COMPACT_GRID", FEE_PAYMENT: "MINIMAL_LINE" }, "MINIMAL_LINE") === "COMPACT_GRID",
   "payslip uses per-type template"
 );
 assert(
   resolveReceiptTemplateForType("FEE_PAYMENT", { PAYSLIP: "COMPACT_GRID" }, "MINIMAL_LINE") === "MINIMAL_LINE",
   "fee falls back to legacy single template"
 );
-const perType = mergeIdentity({ FEE_PAYMENT: "BORDERED_FORMAL", EXPENSE: "MINIMAL_LINE" }, "PDFKIT_DEFAULT");
-assert(perType.FEE_PAYMENT === "BORDERED_FORMAL" && perType.PAYSLIP === "PDFKIT_DEFAULT", "merge keeps unset types on legacy default");
-assert(mergeReceiptTemplates({ PAYSLIP: "SIDEBAR_RAIL" }, "PDFKIT_DEFAULT").PAYSLIP === "SIDEBAR_RAIL", "finance merge partial type");
+const perType = mergeIdentity({ FEE_PAYMENT: "MINIMAL_LINE", EXPENSE: "COMPACT_GRID" }, "MINIMAL_LINE");
+assert(perType.FEE_PAYMENT === "MINIMAL_LINE" && perType.PAYSLIP === "MINIMAL_LINE", "merge keeps unset types on legacy default");
+assert(mergeReceiptTemplates({ PAYSLIP: "COMPACT_GRID" }, "MINIMAL_LINE").PAYSLIP === "COMPACT_GRID", "finance merge partial type");
 
-const registrarBucket = mergeRoleReceiptTemplates({}, "REGISTRAR", { FEE_PAYMENT: "BORDERED_FORMAL" });
+const registrarBucket = mergeRoleReceiptTemplates({}, "REGISTRAR", { FEE_PAYMENT: "MINIMAL_LINE" });
 const accountantBucket = mergeRoleReceiptTemplates(registrarBucket, "ACCOUNTANT", {
   PAYSLIP: "COMPACT_GRID",
 });
 assert(
-  resolveReceiptTemplateForIssue("FEE_PAYMENT", accountantBucket, null, "PDFKIT_DEFAULT") === "BORDERED_FORMAL",
+  resolveReceiptTemplateForIssue("FEE_PAYMENT", accountantBucket, null, "MINIMAL_LINE") === "MINIMAL_LINE",
   "fee receipt uses registrar bucket"
 );
 assert(
-  resolveReceiptTemplateForIssue("PAYSLIP", accountantBucket, null, "PDFKIT_DEFAULT") === "COMPACT_GRID",
+  resolveReceiptTemplateForIssue("PAYSLIP", accountantBucket, null, "MINIMAL_LINE") === "COMPACT_GRID",
   "payslip uses accountant bucket"
 );
-const migrated = parseIdentityByRole(null, { FEE_PAYMENT: "MINIMAL_LINE" }, "PDFKIT_DEFAULT");
+const migrated = parseIdentityByRole(null, { FEE_PAYMENT: "MINIMAL_LINE" }, "MINIMAL_LINE");
 assert(migrated.SCHOOL_ADMIN?.FEE_PAYMENT === "MINIMAL_LINE", "legacy flat map migrates to school admin bucket");
 
 (async () => {
@@ -80,7 +82,6 @@ assert(migrated.SCHOOL_ADMIN?.FEE_PAYMENT === "MINIMAL_LINE", "legacy flat map m
   assert(voided.pageClass === "page is-voided", "voided page class");
 
   for (const id of RECEIPT_TEMPLATE_IDS) {
-    if (id === "PDFKIT_DEFAULT") continue;
     const rendered = await renderReceiptHtml(id, input);
     assert(!rendered.includes("{{schoolName}}"), `${id} renders schoolName`);
     assert(rendered.includes("Monrovia Academy"), `${id} includes school name`);

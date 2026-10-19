@@ -4,7 +4,6 @@ import { assembleGradeSheetData, type AssembleGradeEntry } from "../assembleGrad
 import { resolveGradeSheetTemplateKey } from "../registry";
 import { LedgerReport } from "./LedgerReport";
 import { MasteryBarsReport } from "./MasteryBarsReport";
-import { OfficialRecordReport } from "./OfficialRecordReport";
 
 export type GradeSheetViewProps = {
   studentName: string;
@@ -70,9 +69,6 @@ export function GradeSheetView(props: GradeSheetViewProps) {
 
   if (key === "TEMPLATE_2") {
     return <MasteryBarsReport data={data} compact={props.compact} />;
-  }
-  if (key === "TEMPLATE_3") {
-    return <OfficialRecordReport data={data} />;
   }
   return <LedgerReport data={data} compact={props.compact} />;
 }

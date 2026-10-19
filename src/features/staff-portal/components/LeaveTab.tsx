@@ -65,7 +65,7 @@ export function LeaveTab({ leaves, leaveBalances, onOpenLeaveModal }: LeaveTabPr
             {leaveBalances.map((balance) => (
               <div
                 key={balance.id}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3"
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-indigo-500 hover:bg-slate-100 transition-colors space-y-3"
               >
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {formatLeaveType(balance.type)}

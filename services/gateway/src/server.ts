@@ -92,6 +92,7 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   "question-bank": "academic",
   "exam-papers": "academic",
   grades: "academic",
+  transcripts: "academic",
   gradebook: "academic",
   promotion: "academic",
   "academic-years": "academic",
@@ -124,6 +125,7 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   athletics: "campus",
   hostel: "campus",
   cafeteria: "campus",
+  discipline: "campus",
   "my-campus": "campus",
   announcements: "comms",
   documents: "comms",
@@ -202,6 +204,7 @@ export function resolveUpstream(method: string, path: string): string | null {
       "/api/exam-attempts",
       "/api/exam-papers",
       "/api/grade-entries",
+      "/api/transcripts",
       "/api/students",
     ])
   ) {
@@ -240,6 +243,7 @@ export function resolveUpstream(method: string, path: string): string | null {
       "/api/library",
       "/api/hostel",
       "/api/athletics",
+      "/api/discipline",
     ])
   ) {
     return urlFor("campus");

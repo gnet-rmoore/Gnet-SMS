@@ -69,19 +69,24 @@ export function TasksTab({
                       <div className="flex items-center gap-2.5 w-full md:w-auto overflow-x-auto">
                         <Filter className="w-4 h-4 text-slate-400 shrink-0" />
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">{t("staffPortal.tasks.priority")}:</span>
-                        {["ALL", "URGENT", "HIGH", "NORMAL"].map((priority) => (
-                          <button
-                            key={priority}
-                            onClick={() => setTaskPriorityFilter(priority)}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                              taskPriorityFilter === priority 
-                                ? "bg-slate-900 text-white shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]" 
-                                : "text-slate-500 hover:text-slate-700 bg-slate-50 border border-slate-100"
-                            }`}
-                          >
-                            {t(`staffPortal.tasks.${PRIORITY_KEYS[priority]}`)}
-                          </button>
-                        ))}
+                        {["ALL", "URGENT", "HIGH", "NORMAL"].map((priority) => {
+                          const isActive = taskPriorityFilter === priority;
+                          const baseClasses = "px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap";
+                          const activeClasses = "bg-slate-900 text-white shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]";
+                          const inactiveClasses = "text-slate-500 hover:text-slate-700 bg-slate-50 border border-slate-100";
+                          return (
+                            <button
+                              key={priority}
+                              onClick={() => setTaskPriorityFilter(priority)}
+                              className={[
+                                baseClasses,
+                                isActive ? activeClasses : inactiveClasses,
+                              ].join(" ")}
+                            >
+                              {t(`staffPortal.tasks.${PRIORITY_KEYS[priority]}`)}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 

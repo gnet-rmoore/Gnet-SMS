@@ -29,9 +29,9 @@ import { fetchSubjectOfferings } from "../lib/academicClient";
  *   Identity's internal API via identityClient.
  */
 export const classroomService = {
-  async getClassroomsBySchool(schoolId: string) {
+  async getClassroomsBySchool(schoolId: string, schoolYearId?: string) {
     return prisma.classroom.findMany({
-      where: { schoolId },
+      where: { schoolId, ...(schoolYearId ? { schoolYearId } : {}) },
       include: {
         members: {
           where: { role: { in: [...CLASSROOM_STAFF_ROLES] } },
@@ -1201,4 +1201,101 @@ export const classroomService = {
   async countBySchoolId(schoolId: string) {
     return prisma.classroom.count({ where: { schoolId } });
   },
+
+  /**
+   * Idempotently create/reuse homeroom class groups (subjectId null) for a
+   * school year. Used by the Year Transition to mirror the previous year's
+   * section structure without assigning teachers (ownerTeacherId stays null).
+   */
+  async ensureYearGroups(
+    schoolId: string,
+    schoolYearId: string,
+    groups: Array<{ gradeLevelId: string | null; name: string; organizationType?: string | null }>
+  ) {
+    if (!schoolId) throw new Error("schoolId required");
+    if (!schoolYearId) throw new Error("schoolYearId required");
+    const created: any[] = [];
+    const existing: any[] = [];
+
+    for (const group of groups) {
+      const name = String(group.name || "").trim();
+      if (!name) continue;
+      const found = await prisma.classroom.findFirst({
+        where: {
+          schoolId,
+          schoolYearId,
+          subjectId: null,
+          name,
+          gradeLevelId: group.gradeLevelId || null,
+        },
+      });
+      if (found) {
+        existing.push(found);
+        continue;
+      }
+      const room = await prisma.classroom.create({
+        data: {
+          name,
+          classCode: await generateClassCode(),
+          schoolId,
+          schoolYearId,
+          subjectId: null,
+          gradeLevelId: group.gradeLevelId || null,
+          ownerTeacherId: null,
+          organizationType: normalizeOrganizationType(
+            group.organizationType,
+            "SELF_CONTAINED"
+          ),
+        },
+      });
+      created.push(room);
+    }
+    return { created, existing };
+  },
+
+  /** Internal — bulk assign students to classrooms (idempotent upsert). */
+  async bulkAssignStudents(
+    schoolId: string,
+    assignments: Array<{ classroomId: string; studentUserId: string; role?: string }>
+  ) {
+    const results: Array<{ classroomId: string; studentUserId: string; ok: boolean; error?: string }> = [];
+    for (const a of assignments) {
+      try {
+        const room = await prisma.classroom.findFirst({
+          where: { id: a.classroomId, schoolId, subjectId: null },
+          select: { id: true },
+        });
+        if (!room) throw new Error("Homeroom not found in school");
+        await prisma.classroomMember.upsert({
+          where: {
+            classroomId_userId: { classroomId: a.classroomId, userId: a.studentUserId },
+          },
+          update: { role: a.role || "STUDENT" },
+          create: {
+            classroomId: a.classroomId,
+            userId: a.studentUserId,
+            role: a.role || "STUDENT",
+          },
+        });
+        results.push({ classroomId: a.classroomId, studentUserId: a.studentUserId, ok: true });
+      } catch (err: any) {
+        results.push({
+          classroomId: a.classroomId,
+          studentUserId: a.studentUserId,
+          ok: false,
+          error: err?.message || "Failed to assign",
+        });
+      }
+    }
+    return results;
+  },
 };
+
+async function generateClassCode(): Promise<string> {
+  for (let i = 0; i < 5; i++) {
+    const code = Math.random().toString(36).substring(2, 9).toUpperCase();
+    const clash = await prisma.classroom.findUnique({ where: { classCode: code } });
+    if (!clash) return code;
+  }
+  return `C${Date.now().toString(36).toUpperCase().slice(-6)}`;
+}

@@ -855,10 +855,44 @@ export const classroomController = {
 
   async listClassroomsBySchoolInternal(req: any, res: Response) {
     try {
-      const classrooms = await classroomService.getClassroomsBySchool(req.params.schoolId);
+      const schoolYearId =
+        typeof req.query.schoolYearId === "string" ? req.query.schoolYearId : undefined;
+      const classrooms = await classroomService.getClassroomsBySchool(
+        req.params.schoolId,
+        schoolYearId
+      );
       res.json(classrooms);
     } catch (err) {
       res.status(500).json({ error: "Failed to list classrooms" });
+    }
+  },
+
+  async ensureYearGroupsInternal(req: any, res: Response) {
+    try {
+      const { schoolYearId, groups } = req.body || {};
+      if (!schoolYearId) return res.status(400).json({ error: "schoolYearId required" });
+      if (!Array.isArray(groups)) return res.status(400).json({ error: "groups[] required" });
+      const result = await classroomService.ensureYearGroups(
+        req.params.schoolId,
+        schoolYearId,
+        groups
+      );
+      res.status(201).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "Failed to ensure year groups" });
+    }
+  },
+
+  async bulkAssignStudentsInternal(req: any, res: Response) {
+    try {
+      const { assignments } = req.body || {};
+      if (!Array.isArray(assignments)) {
+        return res.status(400).json({ error: "assignments[] required" });
+      }
+      const result = await classroomService.bulkAssignStudents(req.params.schoolId, assignments);
+      res.json({ results: result });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "Failed to assign students" });
     }
   },
 

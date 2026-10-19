@@ -1,12 +1,12 @@
 import React from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowRightLeft, FileBarChart, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { PageShell, PageHeader, Surface, Button, TextField, DataTable, dataTableClass } from "../../components/ui";
 import { confirmAction } from "../../lib/swal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
-import { yearTransitionApi, type PromotionDecision, type PromotionRun } from "./api";
+import { yearTransitionApi, type PromotionDecision, type PromotionRun, type YearTransitionResult } from "./api";
 import { api } from "../../services/api";
 
 function defaultYearKey() {
@@ -15,6 +15,13 @@ function defaultYearKey() {
   // Academic years often start mid-calendar; Jul+ → y/(y+1)
   if (m >= 6) return `${y}-${y + 1}`;
   return `${y - 1}-${y}`;
+}
+
+function nextYearKey(from: string) {
+  const match = /^(\d{4})-(\d{4})$/.exec(from.trim());
+  if (match) return `${Number(match[1]) + 1}-${Number(match[2]) + 1}`;
+  const y = new Date().getFullYear();
+  return `${y + 1}-${y + 2}`;
 }
 
 export function YearTransitionPage() {
@@ -38,6 +45,13 @@ export function YearTransitionPage() {
   >([]);
   const [gradeLevels, setGradeLevels] = React.useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = React.useState(false);
+  const [targetYearKey, setTargetYearKey] = React.useState(() => nextYearKey(defaultYearKey()));
+  const [transitioning, setTransitioning] = React.useState(false);
+  const [transitionResult, setTransitionResult] = React.useState<YearTransitionResult | null>(null);
+
+  React.useEffect(() => {
+    setTargetYearKey(nextYearKey(yearKey));
+  }, [yearKey]);
 
   const refreshMeta = React.useCallback(async () => {
     if (!schoolId || !yearKey) return;
@@ -46,22 +60,22 @@ export function YearTransitionPage() {
       const [censusRes, runsRes, studentsRes, classRes, gradeRes] = await Promise.all([
         yearTransitionApi.getCensus(schoolId, yearKey).catch(() => null),
         yearTransitionApi.listRuns(schoolId, yearKey),
-        api.get(`/schools/${schoolId}/students`),
-        api.get(`/schools/${schoolId}/classrooms`),
-        api.get(`/schools/${schoolId}/grade-levels`),
+        api.get(`/api/schools/${schoolId}/students`),
+        api.get(`/api/schools/${schoolId}/classrooms`),
+        api.get(`/api/schools/${schoolId}/grade-levels`),
       ]);
-      const census = censusRes?.data;
+      const census = censusRes;
       setCensusCount(census?._count?.rows ?? census?.rows?.length ?? null);
       setCensusLocked(Boolean(census?.lockedAt));
-      setRuns(Array.isArray(runsRes.data) ? runsRes.data : []);
+      setRuns(Array.isArray(runsRes) ? runsRes : []);
       const studMap: Record<string, { name?: string; email?: string }> = {};
-      for (const s of Array.isArray(studentsRes.data) ? studentsRes.data : []) {
+      for (const s of Array.isArray(studentsRes) ? studentsRes : []) {
         studMap[s.id] = { name: s.name, email: s.email };
       }
       setStudents(studMap);
-      const rooms = Array.isArray(classRes.data) ? classRes.data : [];
+      const rooms = Array.isArray(classRes) ? classRes : [];
       setClassrooms(rooms.filter((c: any) => !c.subjectId));
-      setGradeLevels(Array.isArray(gradeRes.data) ? gradeRes.data : []);
+      setGradeLevels(Array.isArray(gradeRes) ? gradeRes : []);
     } catch (err: any) {
       showToast(err?.response?.data?.error || t("yearTransition.toast.loadFailed"), "error");
     } finally {
@@ -78,7 +92,7 @@ export function YearTransitionPage() {
     setSaving(true);
     try {
       const res = await yearTransitionApi.captureCensus(schoolId, yearKey);
-      setCensusCount(res.data?._count?.rows ?? null);
+      setCensusCount(res?._count?.rows ?? null);
       showToast(t("yearTransition.toast.censusCaptured"), "success");
       await refreshMeta();
     } catch (err: any) {
@@ -93,7 +107,7 @@ export function YearTransitionPage() {
     setSaving(true);
     try {
       const res = await yearTransitionApi.createRun(schoolId, yearKey);
-      setActiveRun(res.data);
+      setActiveRun(res);
       showToast(t("yearTransition.toast.runCreated"), "success");
       await refreshMeta();
     } catch (err: any) {
@@ -108,7 +122,7 @@ export function YearTransitionPage() {
     setLoading(true);
     try {
       const res = await yearTransitionApi.getRun(schoolId, runId);
-      setActiveRun(res.data);
+      setActiveRun(res);
     } catch (err: any) {
       showToast(err?.response?.data?.error || t("yearTransition.toast.loadFailed"), "error");
     } finally {
@@ -147,7 +161,7 @@ export function YearTransitionPage() {
         activeRun.id,
         activeRun.decisions || []
       );
-      setActiveRun(res.data);
+      setActiveRun(res);
       showToast(t("yearTransition.toast.saved"), "success");
     } catch (err: any) {
       showToast(err?.response?.data?.error || t("yearTransition.toast.saveFailed"), "error");
@@ -167,13 +181,33 @@ export function YearTransitionPage() {
     try {
       await yearTransitionApi.saveDecisions(schoolId, activeRun.id, activeRun.decisions || []);
       const res = await yearTransitionApi.commitRun(schoolId, activeRun.id);
-      setActiveRun(res.data);
+      setActiveRun(res);
       showToast(t("yearTransition.toast.committed"), "success");
       await refreshMeta();
     } catch (err: any) {
       showToast(err?.response?.data?.error || t("yearTransition.toast.commitFailed"), "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runTransition = async () => {
+    if (!schoolId || !targetYearKey.trim()) return;
+    const ok = await confirmAction({
+      title: t("yearTransition.wizard.confirmTitle"),
+      text: t("yearTransition.wizard.confirmBody", { target: targetYearKey }),
+    });
+    if (!ok) return;
+    setTransitioning(true);
+    try {
+      const res = await yearTransitionApi.transitionYear(schoolId, targetYearKey.trim());
+      setTransitionResult(res as YearTransitionResult);
+      showToast(t("yearTransition.wizard.done", { target: targetYearKey }), "success");
+      await refreshMeta();
+    } catch (err: any) {
+      showToast(err?.response?.data?.error || t("yearTransition.wizard.failed"), "error");
+    } finally {
+      setTransitioning(false);
     }
   };
 
@@ -258,6 +292,88 @@ export function YearTransitionPage() {
         </div>
       </Surface>
 
+      <Surface className="space-y-4 p-6 sm:p-8">
+        <div>
+          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+            {t("yearTransition.wizard.title")}
+          </h2>
+          <p className="text-sm text-slate-500">{t("yearTransition.wizard.subtitle")}</p>
+        </div>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[12rem] flex-1">
+            <TextField
+              id="transition-target-year"
+              label={t("yearTransition.wizard.targetYear")}
+              value={targetYearKey}
+              onChange={(e) => setTargetYearKey(e.target.value)}
+              placeholder="2026-2027"
+            />
+          </div>
+          <Button
+            type="button"
+            disabled={transitioning || !censusCount || targetYearKey.trim() === yearKey.trim()}
+            onClick={() => void runTransition()}
+          >
+            {transitioning ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
+            {t("yearTransition.wizard.run")}
+          </Button>
+        </div>
+        <p className="text-xs text-slate-500">{t("yearTransition.wizard.hint")}</p>
+
+        {transitionResult && (
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+            <p className="text-sm font-bold text-indigo-900">
+              {t("yearTransition.wizard.resultTitle", {
+                from: transitionResult.fromYearKey,
+                to: transitionResult.toYearKey,
+                status: transitionResult.run.status,
+              })}
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+              {[
+                { key: "promoted", label: t("yearTransition.wizard.countPromoted") },
+                { key: "repeat", label: t("yearTransition.wizard.countRepeat") },
+                { key: "graduated", label: t("yearTransition.wizard.countGraduated") },
+                { key: "dropped_out", label: t("yearTransition.wizard.countDroppedOut") },
+              ].map((c) => (
+                <div key={c.key} className="rounded-xl border border-white bg-white/80 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{c.label}</p>
+                  <p className="font-mono text-xl font-extrabold text-slate-900">
+                    {(transitionResult.counts as Record<string, number>)[c.key] ?? 0}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-2 text-sm text-indigo-900 sm:grid-cols-3">
+              <p>
+                {t("yearTransition.wizard.homerooms")}:{" "}
+                <span className="font-semibold">{transitionResult.homerooms.total}</span> (
+                {transitionResult.homerooms.created} {t("yearTransition.wizard.created")})
+              </p>
+              <p>
+                {t("yearTransition.wizard.assigned")}:{" "}
+                <span className="font-semibold">{transitionResult.assignedStudents}</span>
+              </p>
+              <p>
+                {t("yearTransition.wizard.unassigned")}:{" "}
+                <span className="font-semibold">{transitionResult.unassignedStudentIds.length}</span>
+              </p>
+            </div>
+            <p className="mt-2 text-xs text-indigo-800/90">{transitionResult.staff.note}</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                to={`/${slug}/promotion-statement?schoolYearKey=${encodeURIComponent(
+                  transitionResult.fromYearKey
+                )}&runId=${transitionResult.run.id}`}
+                className="text-sm font-semibold text-indigo-700 hover:underline"
+              >
+                {t("yearTransition.openStatement")}
+              </Link>
+            </div>
+          </div>
+        )}
+      </Surface>
+
       {activeRun?.decisions && (
         <Surface className="space-y-4 p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -321,6 +437,7 @@ export function YearTransitionPage() {
                         <option value="PROMOTED">Promoted</option>
                         <option value="REPEAT">Repeat</option>
                         <option value="GRADUATED">Graduated</option>
+                        <option value="DROPPED_OUT">Dropped out</option>
                         <option value="DO_NOT_RETURN">Do not return</option>
                       </select>
                     </td>

@@ -1,11 +1,7 @@
 /** Receipt HTML/PDF template registry — shared IDs with frontend `src/features/receipts/registry.ts`. */
 
 export const RECEIPT_TEMPLATE_IDS = [
-  "PDFKIT_DEFAULT",
-  "CLASSIC_LEDGER",
-  "SIDEBAR_RAIL",
   "COMPACT_GRID",
-  "BORDERED_FORMAL",
   "MINIMAL_LINE",
 ] as const;
 
@@ -25,32 +21,6 @@ export type ReceiptTemplateDef = {
 
 export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
   {
-    id: "PDFKIT_DEFAULT",
-    name: "Classic PDF (built-in)",
-    description: "Original server PDF layout — reliable fallback when HTML rendering is unavailable.",
-    accent: "#2563EB",
-    engine: "pdfkit",
-    recommendedFor: ["FEE_PAYMENT", "PAYSLIP", "EXPENSE", "TRANSACTION"],
-  },
-  {
-    id: "CLASSIC_LEDGER",
-    name: "Classic Ledger",
-    description: "Serif ledger with clean totals and signature line.",
-    accent: "#1a1a1a",
-    slug: "classic-ledger",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
-  },
-  {
-    id: "SIDEBAR_RAIL",
-    name: "Sidebar Rail",
-    description: "Brand-color sidebar accent without a heavy header band.",
-    accent: "#2563EB",
-    slug: "sidebar-rail",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
-  },
-  {
     id: "COMPACT_GRID",
     name: "Compact Grid",
     description: "Dense grid for payslips and expense receipts with many line items.",
@@ -58,15 +28,6 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
     slug: "compact-grid",
     engine: "html",
     recommendedFor: ["PAYSLIP", "EXPENSE"],
-  },
-  {
-    id: "BORDERED_FORMAL",
-    name: "Bordered Formal",
-    description: "Formal bordered layout for official fee receipts.",
-    accent: "#0f172a",
-    slug: "bordered-formal",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT"],
   },
   {
     id: "MINIMAL_LINE",
@@ -81,10 +42,9 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
 
 export function resolveReceiptTemplateId(value: unknown): ReceiptTemplateId {
   const id = String(value || "").trim().toUpperCase().replace(/-/g, "_");
-  if (id === "CLASSIC_LEDGER") return "CLASSIC_LEDGER";
   return RECEIPT_TEMPLATE_IDS.includes(id as ReceiptTemplateId)
     ? (id as ReceiptTemplateId)
-    : "PDFKIT_DEFAULT";
+    : "MINIMAL_LINE";
 }
 
 export function getReceiptTemplateDef(id: ReceiptTemplateId): ReceiptTemplateDef {

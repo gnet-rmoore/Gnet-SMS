@@ -15,7 +15,6 @@ import {
 } from "../src/features/report-cards/components/international/quarterlyHelpers.ts";
 import {
   getReportCardTemplateDef,
-  resolveReportCardTemplateKey,
 } from "../src/features/report-cards/registry.ts";
 
 let failed = 0;
@@ -39,8 +38,6 @@ assert(inferQuarterFromTitle("2nd Grading Period") === "Q2", "title → Q2");
 assert(inferQuarterFromTitle("End of Term Exam") === "Q1", "unknown title defaults Q1");
 
 assert(getReportCardTemplateDef("INTL_WISTERIA_GREEN").label.includes("Green"), "green def");
-assert(getReportCardTemplateDef("INTL_WISTERIA_NAVY").region === "INTL", "navy is INTL");
-assert(resolveReportCardTemplateKey("INTL_WISTERIA_NAVY") === "INTL_WISTERIA_NAVY", "resolve navy");
 
 const rows = buildQuarterlySubjectRows(
   [

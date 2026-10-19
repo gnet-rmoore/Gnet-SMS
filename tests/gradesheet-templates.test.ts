@@ -31,15 +31,13 @@ console.log("=========================================");
 console.log(" GRADESHEET TEMPLATES TESTS");
 console.log("=========================================\n");
 
-assert(GRADE_SHEET_TEMPLATES.length === 3, "exactly 3 templates");
+assert(GRADE_SHEET_TEMPLATES.length === 2, "exactly 2 templates");
 assert(getGradeSheetTemplateDef("TEMPLATE_1").pageSize === "a4", "classic is A4");
 assert(getGradeSheetTemplateDef("TEMPLATE_2").pageSize === "a4", "modern is A4");
-assert(getGradeSheetTemplateDef("TEMPLATE_3").pageSize === "legal", "official is Legal");
-assert(getGradeSheetTemplateDef("TEMPLATE_3").pdfFormat === "legal", "official pdfFormat legal");
 
 assert(resolveGradeSheetTemplateKey("TEMPLATE_1") === "TEMPLATE_1", "keep TEMPLATE_1");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_2") === "TEMPLATE_2", "keep TEMPLATE_2");
-assert(resolveGradeSheetTemplateKey("TEMPLATE_3") === "TEMPLATE_3", "keep TEMPLATE_3");
+assert(resolveGradeSheetTemplateKey("TEMPLATE_3") === "TEMPLATE_1", "removed TEMPLATE_3 → classic");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_5") === "TEMPLATE_1", "legacy TEMPLATE_5 → classic");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_10") === "TEMPLATE_1", "legacy TEMPLATE_10 → classic");
 assert(resolveGradeSheetTemplateKey(null) === "TEMPLATE_1", "null → classic");

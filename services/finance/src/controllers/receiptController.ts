@@ -336,7 +336,7 @@ export const receiptController = {
   async preview(req: Request, res: Response) {
     try {
       const schoolId = String(req.params.schoolId || "");
-      const templateId = String(req.query.templateId || req.query.template || "CLASSIC_LEDGER");
+      const templateId = String(req.query.templateId || req.query.template || "MINIMAL_LINE");
       const rawLogo = req.query.logoUrl ? String(req.query.logoUrl) : undefined;
       const logoUrl =
         rawLogo && !rawLogo.startsWith("data:") && rawLogo.length <= 2048 ? rawLogo : undefined;

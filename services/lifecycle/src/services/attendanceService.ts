@@ -313,6 +313,66 @@ export const attendanceService = {
     return enriched;
   },
 
+  /**
+   * Per-student attendance counts within [from, to) — consumed by the
+   * Promotion Statement's "best attendance" section.
+   */
+  async getAttendanceSummaryByStudent(
+    schoolId: string,
+    opts: { from?: string | Date | null; to?: string | Date | null } = {}
+  ) {
+    const dateFilter: { gte?: Date; lt?: Date } = {};
+    if (opts.from) {
+      const d = new Date(opts.from);
+      if (!Number.isNaN(d.getTime())) dateFilter.gte = d;
+    }
+    if (opts.to) {
+      const d = new Date(opts.to);
+      if (!Number.isNaN(d.getTime())) dateFilter.lt = d;
+    }
+
+    const sessions = await prisma.attendance.findMany({
+      where: {
+        schoolId,
+        ...(Object.keys(dateFilter).length ? { date: dateFilter } : {}),
+      },
+      select: { records: { select: { studentId: true, status: true } } },
+    });
+
+    const map = new Map<
+      string,
+      { studentUserId: string; present: number; late: number; absent: number; excused: number; total: number }
+    >();
+    for (const session of sessions) {
+      for (const rec of session.records) {
+        let row = map.get(rec.studentId);
+        if (!row) {
+          row = {
+            studentUserId: rec.studentId,
+            present: 0,
+            late: 0,
+            absent: 0,
+            excused: 0,
+            total: 0,
+          };
+          map.set(rec.studentId, row);
+        }
+        const status = String(rec.status || "").toUpperCase();
+        if (status === "PRESENT") row.present += 1;
+        else if (status === "LATE") row.late += 1;
+        else if (status === "ABSENT") row.absent += 1;
+        else if (status === "EXCUSED") row.excused += 1;
+        else continue;
+        row.total += 1;
+      }
+    }
+
+    return [...map.values()].map((r) => ({
+      ...r,
+      attendanceRate: r.total ? Math.round(((r.present + r.late) / r.total) * 10000) / 100 : 0,
+    }));
+  },
+
   async getAttendanceStats(schoolId: string) {
     const school = await getIdentitySchool(schoolId);
     const timeZone = school?.timezone || "UTC";

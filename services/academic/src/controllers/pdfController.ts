@@ -6,7 +6,6 @@ import prisma from "../lib/prisma";
 const GRADE_SHEET_TEMPLATES = {
   TEMPLATE_1: "LedgerReport",
   TEMPLATE_2: "MasteryBarsReport",
-  TEMPLATE_3: "OfficialRecordReport",
 } as const;
 
 function getGradeSheetHTML(

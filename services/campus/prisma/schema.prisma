@@ -224,3 +224,29 @@ model CafeteriaMealCount {
   @@index([schoolId])
   @@schema("campus")
 }
+
+/// Student disciplinary / behaviour record. Drives the "suspended" column on
+/// the Promotion Statement (and, more broadly, student welfare reporting).
+model StudentDisciplineRecord {
+  id            String   @id @default(uuid())
+  schoolId      String
+  studentUserId String
+  /// SUSPENSION | EXPULSION | WARNING | DETENTION | OTHER
+  type          String   @default("SUSPENSION")
+  startDate     DateTime
+  endDate       DateTime?
+  /// Number of days lost to this sanction (auto-derived when omitted).
+  days          Int      @default(0)
+  reason        String
+  actionTaken   String?
+  /// ACADEMIC year key this sanction belongs to, e.g. "2025-2026".
+  schoolYearKey String?
+  recordedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([schoolId, startDate])
+  @@index([schoolId, studentUserId])
+  @@index([schoolId, type])
+  @@schema("campus")
+}

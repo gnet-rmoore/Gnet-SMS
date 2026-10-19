@@ -159,6 +159,15 @@ export function AnnouncementsTab({
                   className="text-slate-600 leading-relaxed text-sm pl-0 md:pl-16 font-medium prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: announcement.content }}
                 />
+                <div className="mt-3 pt-3 border-t border-slate-100/40 flex items-center gap-2 text-xs font-medium text-slate-500">
+                  {announcement.author?.name && (
+                    <>
+                      <span>{t("staffPortal.announcements.postedBy")}</span>
+                      <span className="font-bold text-slate-800">{announcement.author.name}</span>
+                    </>
+                  )}
+                  {formatSafe(announcement.createdAt, "MMM dd, yyyy")}
+                </div>
               </div>
             );
           })}

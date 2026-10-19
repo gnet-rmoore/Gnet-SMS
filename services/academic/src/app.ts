@@ -10,6 +10,7 @@ import examPaperRoutes from "./routes/examPaperRoutes";
 import calendarRoutes from "./routes/calendarRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes";
 import pdfRoutes from "./routes/pdfRoutes";
+import transcriptRoutes from "./routes/transcriptRoutes";
 import prisma from "./lib/prisma";
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(examPaperRoutes);
 app.use(calendarRoutes);
 app.use(scheduleRoutes);
 app.use(pdfRoutes);
+app.use(transcriptRoutes);
 
 app.all("/api/*", (req, res) => {
   res.status(404).json({ error: `API route ${req.method} ${req.url} not found` });

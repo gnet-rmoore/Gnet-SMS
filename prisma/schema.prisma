@@ -25,7 +25,7 @@ model School {
   gradeSheetTemplate String                    @default("TEMPLATE_1")
   reportCardTemplate String                    @default("TEMPLATE_1")
   certificateTemplate String                   @default("CERT_CLASSIC_BROWN")
-  receiptTemplate    String                    @default("PDFKIT_DEFAULT")
+  receiptTemplate    String                    @default("MINIMAL_LINE")
   receiptTemplates   String?
   receiptTemplatesByRole String?
   certificateDefaults String?

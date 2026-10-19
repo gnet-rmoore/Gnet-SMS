@@ -273,3 +273,18 @@ export const questionBankUpdateSchema = questionBankTaxonomySchema.extend({
 export const questionBankSaveFromExamSchema = questionBankTaxonomySchema.extend({
   questionIds: z.array(z.string().min(1)).max(200).optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Transcripts (registrar prepares ? principal/VPI/VPA approves)
+// ---------------------------------------------------------------------------
+
+export const transcriptPrepareSchema = z.object({
+  studentId: z.string().min(1),
+  templateKey: z.enum(["classic", "modern", "executive"]).optional().nullable(),
+  academicYear: z.string().max(20).optional().nullable(),
+  gradeLevel: z.string().max(100).optional().nullable(),
+});
+
+export const transcriptReviewSchema = z.object({
+  comment: z.string().max(2000).optional().nullable(),
+});

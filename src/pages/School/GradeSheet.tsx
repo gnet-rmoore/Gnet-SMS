@@ -270,7 +270,7 @@ export const GradeSheet = () => {
           .max-w-6xl { max-width: none !important; margin: 0 !important; padding: 0 !important; }
           #grade-sheet { box-shadow: none !important; }
           .gs-ledger .stage, .gs-mastery .stage { padding: 0 !important; }
-          .gs-ledger .sheet, .gs-mastery .sheet, .gs-official .sheet {
+          .gs-ledger .sheet, .gs-mastery .sheet {
             box-shadow: none !important;
             margin: 0 !important;
           }

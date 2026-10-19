@@ -80,6 +80,18 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
     "lockedForSchoolAdmin": false
   },
   {
+    "key": "action.transcripts.approve",
+    "label": "Approve student transcripts",
+    "category": "Actions \u00b7 Academics",
+    "lockedForSchoolAdmin": false
+  },
+  {
+    "key": "action.transcripts.prepare",
+    "label": "Prepare and submit student transcripts",
+    "category": "Actions \u00b7 Academics",
+    "lockedForSchoolAdmin": false
+  },
+  {
     "key": "nav.admissions",
     "label": "Admissions",
     "category": "Navigation",
@@ -419,6 +431,8 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.roles.customize",
     "action.schedules.manage",
     "action.settings.templates",
+    "action.transcripts.approve",
+    "action.transcripts.prepare",
     "nav.admissions",
     "nav.api-docs",
     "nav.announcements",
@@ -482,6 +496,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.lesson_plans.approve",
     "action.schedules.manage",
     "action.settings.templates",
+    "action.transcripts.approve",
     "nav.admissions",
     "nav.api-docs",
     "nav.announcements",
@@ -534,6 +549,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.admissions.manage",
     "action.bulk_import.roster",
     "action.settings.templates",
+    "action.transcripts.prepare",
     "nav.admissions",
     "nav.calendar",
     "nav.dashboard",
@@ -553,6 +569,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.grade_review.decide",
     "action.lesson_plans.approve",
     "action.schedules.manage",
+    "action.transcripts.approve",
     "nav.attendance",
     "nav.calendar",
     "nav.classroom",
@@ -572,12 +589,14 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.reports",
     "nav.schedules",
     "nav.staff-portal",
+    "nav.transcripts",
     "nav.year-transition",
     "nav.promotion-statement"
   ],
   "VPA": [
     "action.bulk_import.roster",
     "action.leave.approve",
+    "action.transcripts.approve",
     "nav.attendance",
     "nav.bus-routes",
     "nav.calendar",
@@ -594,6 +613,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.staff-portal",
     "nav.vehicle-maintenance",
     "nav.work-orders",
+    "nav.transcripts",
     "nav.year-transition",
     "nav.promotion-statement"
   ],

@@ -5,7 +5,6 @@ export type GradeSheetTemplateDefinition = {
 const TEMPLATE_DEFINITIONS: Record<string, GradeSheetTemplateDefinition> = {
   TEMPLATE_1: { pageSize: "a4" },
   TEMPLATE_2: { pageSize: "a4" },
-  TEMPLATE_3: { pageSize: "legal" },
 };
 
 export function resolveGradeSheetTemplateKey(value: unknown): string {

@@ -1,1 +1,7 @@
-export type TabType = "overview" | "directory" | "admissions" | "classrooms" | "new_admission";
+export type TabType =
+  | "overview"
+  | "directory"
+  | "admissions"
+  | "classrooms"
+  | "promotion_statement"
+  | "new_admission";

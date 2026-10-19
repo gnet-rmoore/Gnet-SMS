@@ -63,7 +63,7 @@ export type GradeSheetData = {
   };
 };
 
-export type GradeSheetTemplateId = "TEMPLATE_1" | "TEMPLATE_2" | "TEMPLATE_3";
+export type GradeSheetTemplateId = "TEMPLATE_1" | "TEMPLATE_2";
 
 export type GradeSheetTemplateDef = {
   id: GradeSheetTemplateId;

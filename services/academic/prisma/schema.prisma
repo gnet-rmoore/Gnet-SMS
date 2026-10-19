@@ -966,3 +966,39 @@ model TimetableEntry {
   @@index([bellScheduleId])
   @@schema("academic")
 }
+
+/// Official student transcript and its approval workflow.
+/// status: DRAFT (Registrar preparing) | SUBMITTED (awaiting Principal/VP) | APPROVED (releasable) | REJECTED (returned)
+model TranscriptRecord {
+  id              String    @id @default(uuid())
+  schoolId        String
+  studentId       String
+  studentName     String
+  studentEmail    String?
+  gradeLevel      String?
+  academicYear    String?
+  templateKey     String    @default("classic")
+  status          String    @default("DRAFT")
+  /// JSON snapshot of course records + summary, frozen at preparation time.
+  snapshot        String?
+  gpa             Float?
+  average         Float?
+  honors          String?
+  credits         Int?
+  courseCount     Int?
+  preparedBy      String
+  preparedByName  String?
+  submittedAt     DateTime?
+  reviewedBy      String?
+  reviewedByName  String?
+  reviewedByRole  String?
+  reviewedAt      DateTime?
+  reviewComment   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([schoolId, status])
+  @@index([schoolId, studentId])
+  @@index([schoolId, studentId, academicYear])
+  @@schema("academic")
+}

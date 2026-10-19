@@ -342,6 +342,8 @@ services:
       CLASSROOM_URL: http://classroom:3014
       IDENTITY_URL: http://identity:3011
       COMMS_URL: http://comms:3017
+      LIFECYCLE_URL: http://lifecycle:3010
+      CAMPUS_URL: http://campus:3018
       # ONLINE_EXAM_PROCTOR_EMAIL: "1"
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_URL: http://localhost:9000

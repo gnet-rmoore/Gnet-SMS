@@ -417,7 +417,7 @@ export const SchoolDetail = () => {
       expiresAt: data.expiresAt,
     });
     setImpersonateTarget(null);
-    navigate(typeof window !== "undefined" ? window.location.origin + "/super-admin/dashboard" : "/super-admin/dashboard");
+    navigate(typeof window !== "undefined" ? window.location.origin + "/" + (data.school?.slug || "") + "/dashboard" : "/" + (data.school?.slug || "") + "/dashboard");
   };
 
   const tabs: { id: Tab; label: string; count?: number; icon: React.ReactNode }[] = [

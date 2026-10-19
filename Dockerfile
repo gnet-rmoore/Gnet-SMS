@@ -16,7 +16,7 @@ RUN npx tsx prisma/setup-provider.ts \
   && npx prisma generate \
   && mkdir -p dist \
   && printf '%s\n' '<!doctype html><html><body><p>API container — use frontend-spa for UI</p></body></html>' > dist/index.html \
-  && npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
+  && npx esbuild ./server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
 
 # --- Stage 2: Runtime ---
 FROM node:20-alpine

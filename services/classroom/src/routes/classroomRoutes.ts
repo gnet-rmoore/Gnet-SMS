@@ -329,5 +329,15 @@ router.post(
   authenticateInternal,
   classroomController.createPostInternal
 );
+router.post(
+  "/api/internal/schools/:schoolId/classrooms/ensure-year-groups",
+  authenticateInternal,
+  classroomController.ensureYearGroupsInternal
+);
+router.post(
+  "/api/internal/schools/:schoolId/classrooms/bulk-assign",
+  authenticateInternal,
+  classroomController.bulkAssignStudentsInternal
+);
 
 export default router;

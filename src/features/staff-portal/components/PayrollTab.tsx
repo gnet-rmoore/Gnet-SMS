@@ -171,7 +171,7 @@ export function PayrollTab({
                         </td>
                         <td className={dataTableClass.td}>
                           <span
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                               payroll.status === "PAID"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                                 : "bg-amber-50 text-amber-700 border border-amber-100"

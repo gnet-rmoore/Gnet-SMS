@@ -764,16 +764,45 @@ export const superAdminService = {
   },
 
   async deleteSchool(id: string) {
-    try {
-      await prisma.destructiveActionRequest.deleteMany({ where: { schoolId: id } });
-      // Only identity-owned rows are cleaned up here now. Classroom/Academic/
-      // Lifecycle/Staff/Finance/Ops/Comms services own the rest and should react
-      // to a school.deleted event once the event bus lands (roadmap §5).
-      await prisma.user.deleteMany({ where: { schoolId: id } });
-      return await prisma.school.delete({ where: { id } });
-    } catch (err) {
-      console.warn("Cascade delete failed, attempting direct delete:", err);
-      return await prisma.school.delete({ where: { id } });
-    }
+    // Only identity-owned rows are cleaned up here. Classroom/Academic/
+    // Lifecycle/Staff/Finance/Ops/Comms services own the rest and should react
+    // to a school.deleted event once the event bus lands (roadmap §5).
+    //
+    // Order matters: required FKs without onDelete: Cascade (InviteToken,
+    // StudentIdCounter, ParentStudent, DestructiveActionRequest) will block
+    // deletion with P2003 if not removed first. Optional FKs (SystemLog,
+    // SchoolRegistration, MailDeliveryLog) are set-null by Prisma but we
+    // explicitly clean or null them for hygiene. Everything runs in one
+    // transaction so a partial delete never leaves the school half-removed.
+    return await prisma.$transaction(async (tx) => {
+      const userIds = (
+        await tx.user.findMany({ where: { schoolId: id }, select: { id: true } })
+      ).map((u) => u.id);
+
+      if (userIds.length > 0) {
+        await tx.parentStudent.deleteMany({
+          where: {
+            OR: [{ studentId: { in: userIds } }, { parentId: { in: userIds } }],
+          },
+        });
+        await tx.mfaSmsChallenge.deleteMany({ where: { userId: { in: userIds } } });
+        await tx.systemLog.deleteMany({ where: { userId: { in: userIds } } });
+      }
+
+      await tx.inviteToken.deleteMany({ where: { schoolId: id } });
+      await tx.studentIdCounter.deleteMany({ where: { schoolId: id } });
+      await tx.destructiveActionRequest.deleteMany({ where: { schoolId: id } });
+      await tx.roleChangeAudit.deleteMany({ where: { schoolId: id } });
+      await tx.schoolRoleCapabilityOverride.deleteMany({ where: { schoolId: id } });
+      await tx.mailDeliveryLog.deleteMany({ where: { schoolId: id } });
+      await tx.systemLog.deleteMany({ where: { schoolId: id } });
+      await tx.schoolRegistration.updateMany({
+        where: { schoolId: id },
+        data: { schoolId: null },
+      });
+
+      await tx.user.deleteMany({ where: { schoolId: id } });
+      return await tx.school.delete({ where: { id } });
+    });
   },
 };

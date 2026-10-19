@@ -378,4 +378,112 @@ export const campusService = {
       update: { planned, served, notes: data.notes !== undefined ? (data.notes ? String(data.notes).trim() : null) : undefined },
     });
   },
+
+  // —— Discipline ——
+  async listDisciplineRecords(
+    schoolId: string,
+    opts: { studentId?: string; type?: string; from?: string; to?: string } = {}
+  ) {
+    const where: any = { schoolId };
+    if (opts.studentId) where.studentUserId = opts.studentId;
+    if (opts.type) where.type = String(opts.type).toUpperCase();
+    if (opts.from || opts.to) {
+      where.startDate = {};
+      if (opts.from) where.startDate.gte = new Date(opts.from);
+      if (opts.to) where.startDate.lte = new Date(opts.to);
+    }
+    return prisma.studentDisciplineRecord.findMany({
+      where,
+      orderBy: { startDate: "desc" },
+    });
+  },
+
+  async createDisciplineRecord(schoolId: string, data: any, actorUserId?: string) {
+    const studentUserId = String(data.studentUserId || data.studentId || "").trim();
+    if (!studentUserId) throw new Error("studentUserId is required");
+    const type = String(data.type || "SUSPENSION").toUpperCase();
+    const startDate = data.startDate ? new Date(data.startDate) : new Date();
+    if (Number.isNaN(startDate.getTime())) throw new Error("Invalid startDate");
+    const endDate = data.endDate ? new Date(data.endDate) : null;
+    const days =
+      data.days != null
+        ? Math.max(0, parseInt(String(data.days), 10) || 0)
+        : computeDays(startDate, endDate);
+    return prisma.studentDisciplineRecord.create({
+      data: {
+        schoolId,
+        studentUserId,
+        type,
+        startDate,
+        endDate,
+        days,
+        reason: String(data.reason || "").trim() || "Not specified",
+        actionTaken: data.actionTaken ? String(data.actionTaken).trim() : null,
+        schoolYearKey: data.schoolYearKey ? String(data.schoolYearKey).trim() : null,
+        recordedBy: actorUserId || (data.recordedBy ? String(data.recordedBy) : null),
+      },
+    });
+  },
+
+  async updateDisciplineRecord(id: string, data: any) {
+    const existing = await prisma.studentDisciplineRecord.findUnique({ where: { id } });
+    if (!existing) throw new Error("Record not found");
+    const patch: Record<string, unknown> = {};
+    if (data.type !== undefined) patch.type = String(data.type).toUpperCase();
+    if (data.reason !== undefined) patch.reason = String(data.reason).trim() || "Not specified";
+    if (data.actionTaken !== undefined)
+      patch.actionTaken = data.actionTaken ? String(data.actionTaken).trim() : null;
+    if (data.schoolYearKey !== undefined)
+      patch.schoolYearKey = data.schoolYearKey ? String(data.schoolYearKey).trim() : null;
+    if (data.startDate !== undefined) patch.startDate = new Date(data.startDate);
+    if (data.endDate !== undefined) patch.endDate = data.endDate ? new Date(data.endDate) : null;
+    if (data.days !== undefined) patch.days = Math.max(0, parseInt(String(data.days), 10) || 0);
+    return prisma.studentDisciplineRecord.update({ where: { id }, data: patch });
+  },
+
+  async deleteDisciplineRecord(id: string) {
+    await prisma.studentDisciplineRecord.delete({ where: { id } });
+    return { ok: true };
+  },
+
+  /** Distinct suspended students + total suspension days in [from, to). */
+  async getDisciplineSummary(schoolId: string, opts: { from?: string; to?: string } = {}) {
+    const where: any = { schoolId, type: "SUSPENSION" };
+    if (opts.from || opts.to) {
+      where.AND = [];
+      if (opts.to) where.AND.push({ startDate: { lt: new Date(opts.to) } });
+      if (opts.from) {
+        where.AND.push({
+          OR: [{ endDate: null }, { endDate: { gte: new Date(opts.from) } }],
+        });
+      }
+    }
+    const records = await prisma.studentDisciplineRecord.findMany({ where });
+    const byStudent = new Map<string, { studentUserId: string; count: number; days: number }>();
+    let totalDays = 0;
+    for (const r of records) {
+      totalDays += r.days;
+      const row = byStudent.get(r.studentUserId) || {
+        studentUserId: r.studentUserId,
+        count: 0,
+        days: 0,
+      };
+      row.count += 1;
+      row.days += r.days;
+      byStudent.set(r.studentUserId, row);
+    }
+    return {
+      suspendedStudentIds: [...byStudent.keys()],
+      suspendedStudents: [...byStudent.values()],
+      suspendedCount: byStudent.size,
+      totalSuspensionDays: totalDays,
+    };
+  },
 };
+
+function computeDays(start: Date, end: Date | null): number {
+  if (!end) return 1;
+  const ms = end.getTime() - start.getTime();
+  if (ms < 0) return 0;
+  return Math.max(1, Math.round(ms / 86_400_000) + 1);
+}

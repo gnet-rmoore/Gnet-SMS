@@ -326,6 +326,19 @@ export const StaffPortal = () => {
   const handleCreateLeave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!school?.id) return;
+    // Validate date range
+    if (leaveForm.startDate && leaveForm.endDate) {
+      const start = new Date(leaveForm.startDate);
+      const end = new Date(leaveForm.endDate);
+      if (start > end) {
+        await alertError(t("staffPortal.errors.leaveStartAfterEnd"), t("staffPortal.errors.leaveDateRangeHint"));
+        return;
+      }
+      if (start.getTime() === end.getTime()) {
+        await alertError(t("staffPortal.errors.leaveSameDay"), t("staffPortal.errors.leaveSameDayHint"));
+        return;
+      }
+    }
     try {
       await staffPortalApi.createLeaveRequest(school.id, leaveForm);
       setShowLeaveModal(false);

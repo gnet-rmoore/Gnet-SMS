@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-10-17T14:48:03.506Z",
-  "total": 561,
-  "publicOrSchool": 502,
-  "internal": 59,
+  "generatedAt": "2026-10-18T17:30:51.672Z",
+  "total": 577,
+  "publicOrSchool": 514,
+  "internal": 63,
   "byService": {
-    "academic": 187,
-    "campus": 28,
-    "classroom": 45,
+    "academic": 195,
+    "campus": 33,
+    "classroom": 47,
     "comms": 32,
     "finance": 48,
     "identity": 150,
-    "lifecycle": 32,
+    "lifecycle": 33,
     "ops": 20,
     "staff": 19
   },
@@ -1115,6 +1115,13 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/promotion/transition",
+      "service": "academic",
+      "file": "services/academic/src/routes/academicRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/schools/:schoolId/question-bank",
       "service": "academic",
@@ -1262,6 +1269,20 @@
       "internal": false
     },
     {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/transcripts",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/transcripts/prepare",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "POST",
       "path": "/api/schools/:schoolId/year-transition/start",
       "service": "academic",
@@ -1325,6 +1346,41 @@
       "internal": false
     },
     {
+      "method": "GET",
+      "path": "/api/transcripts/:id",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transcripts/:id/approve",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/transcripts/:id/pdf",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transcripts/:id/reject",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transcripts/:id/submit",
+      "service": "academic",
+      "file": "services/academic/src/routes/transcriptRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "POST",
       "path": "/api/athletics/teams/:teamId/events",
       "service": "campus",
@@ -1346,6 +1402,20 @@
       "internal": false
     },
     {
+      "method": "DELETE",
+      "path": "/api/discipline/:id",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/discipline/:id",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PATCH",
       "path": "/api/hostel/assignments/:id/checkout",
       "service": "campus",
@@ -1358,6 +1428,13 @@
       "service": "campus",
       "file": "services/campus/src/routes/campusRoutes.ts",
       "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/discipline/summary",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": true
     },
     {
       "method": "PATCH",
@@ -1453,6 +1530,20 @@
     {
       "method": "POST",
       "path": "/api/schools/:schoolId/counseling/sessions",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/discipline",
+      "service": "campus",
+      "file": "services/campus/src/routes/campusRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/discipline",
       "service": "campus",
       "file": "services/campus/src/routes/campusRoutes.ts",
       "internal": false
@@ -1684,6 +1775,20 @@
     {
       "method": "GET",
       "path": "/api/internal/schools/:schoolId/classrooms",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/classrooms/bulk-assign",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/schools/:schoolId/classrooms/ensure-year-groups",
       "service": "classroom",
       "file": "services/classroom/src/routes/classroomRoutes.ts",
       "internal": true
@@ -3541,6 +3646,13 @@
       "path": "/api/internal/schools/:schoolId/admission-stats",
       "service": "lifecycle",
       "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/attendance/summary",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/attendanceRoutes.ts",
       "internal": true
     },
     {

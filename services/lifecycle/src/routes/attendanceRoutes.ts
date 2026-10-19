@@ -4,6 +4,7 @@ import {
   requireTenant,
   requireRoles,
   requireResourceTenant,
+  authenticateInternal,
 } from "../middleware/auth";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { attendanceController } from "../controllers/attendanceController";
@@ -59,6 +60,12 @@ router.post(
   requireTenant,
   requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "TEACHER"]),
   attendanceController.createAttendance
+);
+
+router.get(
+  "/api/internal/schools/:schoolId/attendance/summary",
+  authenticateInternal,
+  attendanceController.getAttendanceSummaryInternal
 );
 
 export default router;

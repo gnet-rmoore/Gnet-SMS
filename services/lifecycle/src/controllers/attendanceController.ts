@@ -65,6 +65,23 @@ export const attendanceController = {
     }
   },
 
+  async getAttendanceSummaryInternal(req: any, res: Response) {
+    const { schoolId } = req.params;
+    try {
+      const summary = await attendanceService.getAttendanceSummaryByStudent(schoolId, {
+        from: req.query.from as string | undefined,
+        to: req.query.to as string | undefined,
+      });
+      res.json(summary);
+    } catch (err) {
+      console.error("getAttendanceSummaryInternal error:", err);
+      res.status(500).json({
+        error: "Failed to fetch attendance summary",
+        message: (err as any).message,
+      });
+    }
+  },
+
   async getAttendanceDetails(req: any, res: Response) {
     const { id } = req.params;
     try {

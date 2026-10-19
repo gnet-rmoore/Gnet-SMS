@@ -500,6 +500,13 @@ router.get(
   requireRoles(YEAR_TRANSITION),
   promotionController.getStatement
 );
+router.post(
+  "/api/schools/:schoolId/promotion/transition",
+  authenticate,
+  requireTenant,
+  requireRoles(YEAR_TRANSITION),
+  promotionController.transitionYear
+);
 
 // --- Academic Year lifecycle (switch the tenant to a new school year) ---
 router.get(

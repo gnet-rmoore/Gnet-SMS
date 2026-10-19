@@ -73,7 +73,7 @@ export function LeaveRequestModal({
           </div>
         </div>
 
-        {leaveForm.startDate && leaveForm.endDate && (
+        {leaveForm.startDate && leaveForm.endDate ? (
           <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center">
             <span className="text-xs font-bold text-indigo-700">
               {t("staffPortal.leave.totalDaysSelected")}{" "}
@@ -81,6 +81,10 @@ export function LeaveRequestModal({
                 {calculateDaysBetween(leaveForm.startDate, leaveForm.endDate)}
               </span>
             </span>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center text-slate-500">
+            <span>{t("staffPortal.leave.selectDateRange")}</span>
           </div>
         )}
 

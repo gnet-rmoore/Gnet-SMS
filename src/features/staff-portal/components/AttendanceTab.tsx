@@ -152,7 +152,7 @@ export function AttendanceTab(props: AttendanceTabProps) {
                     {!todayAttendance?.checkIn
                       ? t("staffPortal.attendance.outOfOffice")
                       : breakState.isOnBreak
-                        ? t("staffPortal.attendance.onBreak")
+                        ? <span className="font-medium text-amber-700">{t("staffPortal.attendance.onBreak")}</span>
                         : todayAttendance.checkOut
                           ? t("staffPortal.attendance.shiftCompleted")
                           : t("staffPortal.attendance.onDuty")}
@@ -360,8 +360,8 @@ export function AttendanceTab(props: AttendanceTabProps) {
                     const checkOutTime = new Date(record.checkOut).getTime();
 
                     let breakMins = 0;
-                    if (record.notes && record.notes.includes("Total Break Taken:")) {
-                      const match = record.notes.match(/Total Break Taken:\s*(\d+)\s*mins/);
+                    if (record.notes && /Total Break Taken:\s*\d+\s*mins/m.test(record.notes)) {
+                      const match = record.notes.match(/Total Break Taken:\s*(\d+)\s*mins?\.?/);
                       if (match) {
                         breakMins = parseInt(match[1]);
                       }

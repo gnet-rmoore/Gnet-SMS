@@ -21,7 +21,8 @@ export type ClassroomRef = {
   schoolId: string;
   subjectId: string | null;
   gradeLevelId: string | null;
-  ownerTeacherId: string;
+  schoolYearId?: string | null;
+  ownerTeacherId: string | null;
   _count?: { members: number };
 };
 
@@ -73,9 +74,13 @@ export async function countClassroomsByGradeLevelId(gradeLevelId: string): Promi
   return Number(data.count) || 0;
 }
 
-export async function listClassroomsBySchool(schoolId: string): Promise<ClassroomRef[]> {
+export async function listClassroomsBySchool(
+  schoolId: string,
+  schoolYearId?: string
+): Promise<ClassroomRef[]> {
+  const qs = schoolYearId ? `?schoolYearId=${encodeURIComponent(schoolYearId)}` : "";
   const res = await fetch(
-    `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms`,
+    `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms${qs}`,
     { headers: internalHeaders() }
   );
   if (!res.ok) throw new Error(`Classroom listBySchool failed: ${res.status} ${await res.text()}`);
@@ -125,6 +130,44 @@ export async function removeClassroomMember(classroomId: string, userId: string)
   if (!res.ok) {
     throw new Error(`Classroom removeMember failed: ${res.status} ${await res.text()}`);
   }
+}
+
+export async function ensureYearClassGroups(
+  schoolId: string,
+  schoolYearId: string,
+  groups: Array<{ gradeLevelId: string | null; name: string; organizationType?: string | null }>
+): Promise<{ created: ClassroomRef[]; existing: ClassroomRef[] }> {
+  const res = await fetch(
+    `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms/ensure-year-groups`,
+    {
+      method: "POST",
+      headers: internalHeaders(),
+      body: JSON.stringify({ schoolYearId, groups }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Classroom ensureYearGroups failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function bulkAssignStudents(
+  schoolId: string,
+  assignments: Array<{ classroomId: string; studentUserId: string; role?: string }>
+): Promise<Array<{ classroomId: string; studentUserId: string; ok: boolean; error?: string }>> {
+  const res = await fetch(
+    `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms/bulk-assign`,
+    {
+      method: "POST",
+      headers: internalHeaders(),
+      body: JSON.stringify({ assignments }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Classroom bulkAssignStudents failed: ${res.status} ${await res.text()}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data?.results) ? data.results : [];
 }
 
 export async function provisionSubjectRoomsForOffering(

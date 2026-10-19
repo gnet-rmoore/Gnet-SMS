@@ -121,4 +121,12 @@ export const resourceLoaders = {
     });
     return row?.schoolId;
   },
+  transcript: async (req: any) => {
+    const row = await prisma.transcriptRecord.findUnique({
+      where: { id: req.params.id },
+      select: { schoolId: true },
+    });
+    return row?.schoolId;
+  },
 };
+

@@ -87,6 +87,7 @@ export function DocumentsTab({
             <div
               key={doc.id}
               className="bg-white rounded-[32px] p-6 border border-slate-100 hover:border-indigo-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] transition-colors space-y-5 flex flex-col justify-between group"
+              style={{ cursor: "pointer" }}
             >
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
@@ -144,6 +145,7 @@ export function DocumentsTab({
             <p className="text-sm font-medium text-slate-500">
               {t("staffPortal.documents.empty")}
             </p>
+            <p className="text-xs text-slate-400 mt-1">{t("staffPortal.documents.noFilesHint")}</p>
           </div>
         )}
       </div>

@@ -33,7 +33,19 @@ export type StatementCell = {
   promoted: number;
   repeat: number;
   graduated: number;
+  droppedOut: number;
   doNotReturn: number;
+  suspended: number;
+  passed: number;
+  failed: number;
+};
+
+/** Optional cross-service inputs (discipline / academic results), keyed by student id. */
+export type StatementExtras = {
+  /** Student ids with at least one suspension overlapping the report scope. */
+  suspendedStudentIds?: Iterable<string>;
+  /** Academic pass/fail verdict per student id. */
+  passFailByStudent?: Map<string, "PASS" | "FAIL"> | Record<string, "PASS" | "FAIL">;
 };
 
 export type StatementClassRow = StatementCell & {
@@ -61,7 +73,11 @@ function emptyCell(): StatementCell {
     promoted: 0,
     repeat: 0,
     graduated: 0,
+    droppedOut: 0,
     doNotReturn: 0,
+    suspended: 0,
+    passed: 0,
+    failed: 0,
   };
 }
 
@@ -78,7 +94,20 @@ function bumpOutcome(cell: StatementCell, outcome: string) {
   if (o === "PROMOTED") cell.promoted += 1;
   else if (o === "REPEAT") cell.repeat += 1;
   else if (o === "GRADUATED") cell.graduated += 1;
+  else if (o === "DROPPED_OUT") cell.droppedOut += 1;
   else if (o === "DO_NOT_RETURN") cell.doNotReturn += 1;
+}
+
+function bumpExtras(
+  cell: StatementCell,
+  studentUserId: string,
+  suspended: Set<string>,
+  passFail: Map<string, "PASS" | "FAIL">
+) {
+  if (suspended.has(studentUserId)) cell.suspended += 1;
+  const verdict = passFail.get(studentUserId);
+  if (verdict === "PASS") cell.passed += 1;
+  else if (verdict === "FAIL") cell.failed += 1;
 }
 
 function addCells(a: StatementCell, b: StatementCell): StatementCell {
@@ -91,18 +120,38 @@ function addCells(a: StatementCell, b: StatementCell): StatementCell {
     promoted: a.promoted + b.promoted,
     repeat: a.repeat + b.repeat,
     graduated: a.graduated + b.graduated,
+    droppedOut: a.droppedOut + b.droppedOut,
     doNotReturn: a.doNotReturn + b.doNotReturn,
+    suspended: a.suspended + b.suspended,
+    passed: a.passed + b.passed,
+    failed: a.failed + b.failed,
   };
+}
+
+function toSuspendedSet(input: StatementExtras["suspendedStudentIds"]): Set<string> {
+  if (!input) return new Set();
+  return input instanceof Set ? input : new Set(input);
+}
+
+function toPassFailMap(
+  input: StatementExtras["passFailByStudent"]
+): Map<string, "PASS" | "FAIL"> {
+  if (!input) return new Map();
+  if (input instanceof Map) return input;
+  return new Map(Object.entries(input));
 }
 
 export function assemblePromotionStatementMatrix(
   censusRows: CensusRowInput[],
   decisions: DecisionInput[],
-  labels: LabelMaps
+  labels: LabelMaps,
+  extras: StatementExtras = {}
 ): { school: StatementCell; divisions: StatementDivisionBlock[] } {
   const outcomeByStudent = new Map(
     decisions.map((d) => [d.studentUserId, String(d.outcome || "").toUpperCase()])
   );
+  const suspended = toSuspendedSet(extras.suspendedStudentIds);
+  const passFail = toPassFailMap(extras.passFailByStudent);
 
   type Bucket = { cell: StatementCell; gradeLevelId: string | null; classroomId: string | null };
   const buckets = new Map<string, Bucket>();
@@ -121,6 +170,7 @@ export function assemblePromotionStatementMatrix(
       buckets.set(key, bucket);
     }
     bumpGender(bucket.cell, normalizeGender(row.gender));
+    bumpExtras(bucket.cell, row.studentUserId, suspended, passFail);
     const outcome = outcomeByStudent.get(row.studentUserId);
     if (outcome) bumpOutcome(bucket.cell, outcome);
   }

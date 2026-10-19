@@ -751,7 +751,7 @@ export const receiptService = {
       const html = await renderReceiptPreviewHtml(templateId, sample);
       return { contentType: "text/html", body: html };
     }
-    const pdf = await renderReceiptDocument("PDFKIT_DEFAULT", sample);
+    const pdf = await renderReceiptDocument(resolved, sample);
     return { contentType: "application/pdf", body: pdf };
   },
 };

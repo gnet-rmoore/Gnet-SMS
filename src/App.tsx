@@ -784,7 +784,7 @@ export default function App() {
                   <Route 
                     path="transcripts" 
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "VPI", "VPA"]}>
                         <Transcripts />
                       </ProtectedRoute>
                     } 

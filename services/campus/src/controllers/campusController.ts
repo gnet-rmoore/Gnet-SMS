@@ -9,10 +9,17 @@ function canViewConfidential(req: Request) {
   return COUNSELOR_ROLES.includes(role);
 }
 
-async function enrichStudents(schoolId: string, rows: Array<{ studentId: string }>) {
+async function enrichStudents(
+  schoolId: string,
+  rows: Array<{ studentId?: string; studentUserId?: string }>,
+  key: "studentId" | "studentUserId" = "studentId"
+) {
   const students = await getIdentityStudents(schoolId);
   const map = nameMap(students);
-  return rows.map((r) => ({ ...r, studentName: map.get(r.studentId) || r.studentId }));
+  return rows.map((r) => {
+    const id = (key === "studentUserId" ? r.studentUserId : r.studentId) || "";
+    return { ...r, studentName: map.get(id) || id };
+  });
 }
 
 export const campusController = {
@@ -267,6 +274,57 @@ export const campusController = {
       res.json(await campusService.upsertCafeteriaMealCount(req.params.schoolId, req.body));
     } catch (err: any) {
       res.status(400).json({ error: err.message || "Failed to save meal count" });
+    }
+  },
+
+  // Discipline
+  async listDisciplineRecords(req: Request, res: Response) {
+    try {
+      const rows = await campusService.listDisciplineRecords(req.params.schoolId, {
+        studentId: typeof req.query.studentId === "string" ? req.query.studentId : undefined,
+        type: typeof req.query.type === "string" ? req.query.type : undefined,
+        from: typeof req.query.from === "string" ? req.query.from : undefined,
+        to: typeof req.query.to === "string" ? req.query.to : undefined,
+      });
+      res.json(await enrichStudents(req.params.schoolId, rows, "studentUserId"));
+    } catch {
+      res.status(500).json({ error: "Failed to fetch discipline records" });
+    }
+  },
+  async createDisciplineRecord(req: Request, res: Response) {
+    try {
+      const actor = (req as any).user?.id;
+      res
+        .status(201)
+        .json(await campusService.createDisciplineRecord(req.params.schoolId, req.body, actor));
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "Failed to record discipline" });
+    }
+  },
+  async updateDisciplineRecord(req: Request, res: Response) {
+    try {
+      res.json(await campusService.updateDisciplineRecord(req.params.id, req.body));
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "Failed to update record" });
+    }
+  },
+  async deleteDisciplineRecord(req: Request, res: Response) {
+    try {
+      res.json(await campusService.deleteDisciplineRecord(req.params.id));
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "Failed to delete record" });
+    }
+  },
+  async getDisciplineSummaryInternal(req: Request, res: Response) {
+    try {
+      res.json(
+        await campusService.getDisciplineSummary(req.params.schoolId, {
+          from: typeof req.query.from === "string" ? req.query.from : undefined,
+          to: typeof req.query.to === "string" ? req.query.to : undefined,
+        })
+      );
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch discipline summary" });
     }
   },
 };
