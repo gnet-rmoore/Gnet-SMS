@@ -4,6 +4,15 @@
 > **Scope:** Teachers author online questions + max violations; students sit exams in fullscreen kiosk mode; parents track scores  
 > **Companion:** `IMPLEMENTATION_STATUS.md`
 
+### 2026-10-21 — Demo/preview matches the real student kiosk
+
+- **Change:** The staff demo (sample + "Test this exam") now renders the **exact same kiosk flow** as the student `TakePage` instead of a simplified single-page UI: secure pre-flight with instruction acceptance (+ screen-share consent when the exam requires it), fullscreen entry, live enforced countdown, one-question-at-a-time with progress bar and answered gating, violation counting (warn at `warnAt`, auto-submit at `maxViolations` using the exam's real `kioskConfig`), warning banner, and screen-share indicator.
+- **Difference retained (by design):** scoring still goes through the preview APIs, so no `ExamAttempt`, answers, violations, notifications, or grade rows are created; a "Preview mode" badge and the dry-run note on submit/results disclose this.
+- **Services:** `academic` (`getExamPreview`/`getSamplePreview` now return `kioskConfig` + `proctorLevel` so the demo honours real per-exam settings), `frontend-spa` (`PreviewPage.tsx` rewritten against `TakePage`'s flow; violations/timer enforced client-side only).
+- **Verify:**
+  - Staff → **Online exams** → **Try a sample exam** → consent → fullscreen + countdown → one question at a time → leave fullscreen/tab until max → auto-submit → per-question score with no attempt recorded
+  - Staff → **Test this exam** → same flow with the exam's own duration, kiosk limits, instructions, and proctor level
+
 ### 2026-10-11 — Staff preview / sample demo
 
 - **Change:** Staff (`SCHOOL_ADMIN`, `PRINCIPAL`, `VPI`, `TEACHER`) can dry-run the student experience without creating an attempt: preview any authored online exam, or try a built-in sample paper covering every question type.

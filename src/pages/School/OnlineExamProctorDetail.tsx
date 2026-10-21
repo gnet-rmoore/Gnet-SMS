@@ -6,21 +6,20 @@ import {
   CheckCircle2,
   XCircle,
   Clock3,
+  FileText,
   Loader2,
   ShieldAlert,
   AlertTriangle,
   Wifi,
   UserCheck,
   UserX,
-  Eye,
-  Download,
-  Printer,
   AlertCircle,
   Monitor,
   RefreshCw,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { onlineExamApi } from "../../features/online-exam/api";
+import { RichContent } from "../../features/online-exam/RichContent";
 import { useExamSocket } from "../../features/online-exam/useExamSocket";
 import { PageToast, usePageToast } from "../../features/academics-shared/PageToast";
 import { alertError } from "../../lib/swal";
@@ -179,6 +178,13 @@ export const OnlineExamProctorDetail = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            to={`/${school?.slug}/online-exams/${examId}/proctor/${attemptId}/script`}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 hover:bg-slate-50"
+          >
+            <FileText className="w-4 h-4" />
+            {t("onlineExams.proctor.answerScript")}
+          </Link>
           <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
             attempt.status === "IN_PROGRESS" ? "bg-indigo-50 text-indigo-700"
               : attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED" ? "bg-emerald-50 text-emerald-700"
@@ -337,7 +343,7 @@ export const OnlineExamProctorDetail = () => {
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-medium text-slate-900">
                     <span className="font-mono text-slate-400 mr-2">Q{index + 1}</span>
-                    {q.prompt}
+                    <RichContent content={q.prompt} className="inline" />
                   </p>
                   <span className="text-xs font-mono text-slate-500 shrink-0">
                     {pending ? t("common:pending") : ok ? `+${q.answer?.pointsAwarded ?? q.points}` : "0"}
@@ -345,18 +351,25 @@ export const OnlineExamProctorDetail = () => {
                 </div>
                 {q.answer?.textAnswer != null && q.answer.textAnswer !== "" && (
                   <p className="mt-2 text-sm text-slate-600">
-                    {t("onlineExams.results.yourAnswer", { text: q.answer.textAnswer })}
+                    <span className="font-semibold">{t("onlineExams.proctor.studentAnswer")} </span>
+                    <RichContent content={q.answer.textAnswer} className="text-slate-800" />
                   </p>
                 )}
                 {q.answer?.selectedChoiceId && (
                   <p className="mt-2 text-sm text-slate-600">
-                    {t("onlineExams.results.yourChoice")}:{" "}
-                    {q.choices?.find((c: any) => c.id === q.answer.selectedChoiceId)?.text || "—"}
+                    <span className="font-semibold">{t("onlineExams.proctor.studentChoice")}: </span>
+                    <RichContent
+                      content={
+                        q.choices?.find((c: any) => c.id === q.answer.selectedChoiceId)?.text || "—"
+                      }
+                      className="text-slate-800"
+                    />
                   </p>
                 )}
                 {!pending && !ok && q.type === "FILL_BLANK" && q.correctAnswer && (
                   <p className="mt-1 text-sm text-emerald-700">
-                    {t("onlineExams.results.expected", { text: q.correctAnswer })}
+                    <span className="font-semibold">{t("onlineExams.results.expected", { text: "" }).trim()} </span>
+                    <RichContent content={q.correctAnswer} className="text-emerald-800" />
                   </p>
                 )}
                 {q.type === "ESSAY" && attempt.status !== "IN_PROGRESS" && (

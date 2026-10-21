@@ -835,6 +835,8 @@ export const onlineExamService = {
         classId: exam.classId,
         subjectId: exam.subjectId,
         paperDueAt: exam.paperDueAt,
+        proctorLevel: exam.proctorLevel,
+        kioskConfig: parseKioskConfig(exam.kioskConfig, exam.maxViolations),
       },
       questions: questions.map((q) => stripCorrectFromQuestion(q, false)),
     };
@@ -873,6 +875,8 @@ export const onlineExamService = {
         duration: exam.duration,
         maxViolations: exam.maxViolations,
         showResultsImmediately: exam.showResultsImmediately,
+        proctorLevel: "MONITOR",
+        kioskConfig: parseKioskConfig(null, exam.maxViolations),
       },
       questions: sampleQuestions().map((q) => stripCorrectFromQuestion(q, false)),
     };

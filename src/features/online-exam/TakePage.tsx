@@ -1,18 +1,33 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Clock, ShieldAlert, Send, Loader2, RotateCcw, Play, MonitorUp, ArrowRight } from "lucide-react";
+import { Send, Loader2, RotateCcw, Play, MonitorUp, School, Pencil } from "lucide-react";
 import { onlineExamApi, type KioskConfig, type ProctorLevel } from "./api";
-import { formatRemaining } from "./types";
+import {
+  IntroFacts,
+  PrevNextButtons,
+  QuestionPalette,
+  ReviewSheet,
+  SaveIndicator,
+  ShortcutHint,
+  SystemCheck,
+  TimeProgress,
+  TimerPill,
+  ViolationShield,
+  WordCountBadge,
+  firstUnansweredIndex,
+  isQuestionAnswered,
+  type KioskAnswerMap,
+  type SaveState,
+} from "./KioskUI";
+import { SketchPad } from "./SketchPad";
 import { RichContent } from "./RichContent";
-import { confirmAction, alertError } from "../../lib/swal";
+import { SchoolLogo } from "../report-cards/components/pages/BifoldChrome";
+import { alertError } from "../../lib/swal";
 import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
 
-type AnswerMap = Record<
-  string,
-  { selectedChoiceId?: string | null; textAnswer?: string | null }
->;
+type AnswerMap = KioskAnswerMap;
 
 const DEFAULT_KIOSK: KioskConfig = {
   requireFullscreen: true,
@@ -23,28 +38,31 @@ const DEFAULT_KIOSK: KioskConfig = {
   allowReconnect: true,
 };
 
-function isQuestionAnswered(
-  question: any,
-  answer?: { selectedChoiceId?: string | null; textAnswer?: string | null }
-) {
-  if (!answer) return false;
-  if (question?.type === "MULTIPLE_CHOICE" || question?.type === "TRUE_FALSE") {
-    return Boolean(answer.selectedChoiceId);
-  }
-  return Boolean(answer.textAnswer && answer.textAnswer.trim().length > 0);
-}
+type IntroFactsState = {
+  duration: number | null;
+  count: number;
+  points: number;
+  start: string | null;
+  end: string | null;
+};
 
-function firstUnansweredIndex(questions: any[], answers: AnswerMap) {
-  if (!questions.length) return 0;
-  const idx = questions.findIndex((q) => !isQuestionAnswered(q, answers[q.id]));
-  return idx === -1 ? questions.length - 1 : idx;
+const EMPTY_INTRO_FACTS: IntroFactsState = {
+  duration: null,
+  count: 0,
+  points: 0,
+  start: null,
+  end: null,
+};
+
+function sumPoints(list: any[]) {
+  return list.reduce((acc, q) => acc + (Number(q?.points) || 0), 0);
 }
 
 export default function TakeOnlineExamPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { examId, attemptId: routeAttemptId } = useParams();
   const navigate = useNavigate();
-  const { school } = useAuthStore();
+  const { school, user } = useAuthStore();
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
   const [attemptId, setAttemptId] = React.useState<string | null>(routeAttemptId || null);
@@ -68,6 +86,16 @@ export default function TakeOnlineExamPage() {
   const [proctorLevel, setProctorLevel] = React.useState<ProctorLevel>("MONITOR");
   const [screenCaptureEnabled, setScreenCaptureEnabled] = React.useState(false);
   const [frameIntervalMs, setFrameIntervalMs] = React.useState(15000);
+  const [saveState, setSaveState] = React.useState<SaveState>("idle");
+  const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
+  const [offline, setOffline] = React.useState(false);
+  const [reviewOpen, setReviewOpen] = React.useState(false);
+  const [sketchOpen, setSketchOpen] = React.useState(false);
+  const [totalMs, setTotalMs] = React.useState(0);
+  const [introFacts, setIntroFacts] = React.useState<IntroFactsState>(EMPTY_INTRO_FACTS);
+  const heartbeatFailsRef = React.useRef(0);
+  /** Arrow-key navigation without re-binding the kiosk listener on every render. */
+  const navRef = React.useRef<(direction: 1 | -1) => void>(() => undefined);
   const reportingRef = React.useRef(false);
   const answersRef = React.useRef(answers);
   answersRef.current = answers;
@@ -149,11 +177,16 @@ export default function TakeOnlineExamPage() {
       }));
     }
     if (!payload.length) return;
+    setSaveState("saving");
     try {
       const res = await onlineExamApi.saveAnswers(attemptId, payload);
       if (useDeltas) {
         dirtyRef.current.clear();
       }
+      setSaveState("saved");
+      setLastSavedAt(Date.now());
+      setOffline(false);
+      heartbeatFailsRef.current = 0;
       if (res.serverNow && res.endsAt) {
         const server = new Date(res.serverNow).getTime();
         setClockOffset(server - Date.now());
@@ -162,6 +195,8 @@ export default function TakeOnlineExamPage() {
     } catch (err: any) {
       if (err?.code === "TIME_EXPIRED" || err?.message?.includes("expired")) {
         if (attemptId) goResults(attemptId);
+      } else {
+        setSaveState("error");
       }
     }
   }, [attemptId, goResults]);
@@ -184,7 +219,16 @@ export default function TakeOnlineExamPage() {
         ? new Date(data.attempt.serverNow).getTime()
         : Date.now();
       setClockOffset(serverNow - Date.now());
-      setEndsAtMs(new Date(data.attempt.endsAt).getTime());
+      const endsMs = new Date(data.attempt.endsAt).getTime();
+      setEndsAtMs(endsMs);
+      setTotalMs(Math.max(0, endsMs - serverNow));
+      setIntroFacts((prev) => ({
+        duration: data.exam?.duration ?? prev.duration,
+        count: (data.questions || []).length,
+        points: sumPoints(data.questions || []),
+        start: prev.start,
+        end: prev.end,
+      }));
       const map: AnswerMap = {};
       for (const a of data.answers || []) {
         map[a.questionId] = {
@@ -218,6 +262,13 @@ export default function TakeOnlineExamPage() {
           setExamTitle(meta?.exam?.title || t("onlineExams.take.examFallback"));
           setInstructions(meta?.exam?.instructions || null);
           setMaxViolations(meta?.exam?.maxViolations ?? 3);
+          setIntroFacts({
+            duration: meta?.exam?.duration ?? null,
+            count: meta?.questions?.length || 0,
+            points: sumPoints(meta?.questions || []),
+            start: meta?.exam?.startDate ?? null,
+            end: meta?.exam?.endDate ?? null,
+          });
           if (meta?.exam?.kioskConfig) {
             setKioskConfig({ ...DEFAULT_KIOSK, ...meta.exam.kioskConfig });
           }
@@ -284,6 +335,14 @@ export default function TakeOnlineExamPage() {
     return () => window.clearInterval(id);
   }, [started, attemptId, flushAnswers]);
 
+  // Debounced save shortly after the student touches an answer.
+  React.useEffect(() => {
+    if (!started || !attemptId) return;
+    if (dirtyRef.current.size === 0) return;
+    const id = window.setTimeout(() => void flushAnswers(), 1200);
+    return () => window.clearTimeout(id);
+  }, [answers, started, attemptId, flushAnswers]);
+
   // Heartbeat so proctors can show live connection state.
   React.useEffect(() => {
     if (!started || !attemptId) return;
@@ -291,11 +350,16 @@ export default function TakeOnlineExamPage() {
     const beat = async () => {
       try {
         const res = await onlineExamApi.heartbeat(attemptId);
-        if (!cancelled && res?.expired && attemptId) {
+        if (cancelled) return;
+        heartbeatFailsRef.current = 0;
+        setOffline(false);
+        if (res?.expired) {
           goResults(attemptId);
         }
       } catch {
-        /* transient */
+        /* transient — flag offline after two consecutive failures */
+        heartbeatFailsRef.current += 1;
+        if (heartbeatFailsRef.current >= 2) setOffline(true);
       }
     };
     void beat();
@@ -406,6 +470,14 @@ export default function TakeOnlineExamPage() {
         e.preventDefault();
         void enterFullscreen();
       }
+      const target = e.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || !!target.isContentEditable);
+      if (!typing && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        navRef.current(e.key === "ArrowRight" ? 1 : -1);
+      }
       if ((e.ctrlKey || e.metaKey) && ["c", "v", "x", "p", "s"].includes(e.key.toLowerCase())) {
         e.preventDefault();
         void reportViolation("COPY_ATTEMPT", e.key);
@@ -513,14 +585,10 @@ export default function TakeOnlineExamPage() {
     }
   };
 
+  /** Runs from the review sheet — the sheet itself is the confirm step. */
   const handleSubmit = async () => {
     if (!attemptId) return;
-    const ok = await confirmAction({
-      title: t("onlineExams.take.submitConfirm"),
-      text: t("onlineExams.take.submitConfirmText"),
-      confirmText: t("common:submit"),
-    });
-    if (!ok) return;
+    setReviewOpen(false);
     setSubmitting(true);
     try {
       await flushAnswers();
@@ -543,11 +611,17 @@ export default function TakeOnlineExamPage() {
     ? isQuestionAnswered(currentQuestion, currentAnswer)
     : false;
   const isLastQuestion = questions.length === 0 || currentIndex >= questions.length - 1;
-  const answeredCount = questions.filter((q) => isQuestionAnswered(q, answers[q.id])).length;
 
   const goNextQuestion = () => {
     if (!currentAnswered) return;
     setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
+  };
+
+  const goPrevQuestion = () => setCurrentIndex((i) => Math.max(0, i - 1));
+
+  navRef.current = (direction: 1 | -1) => {
+    if (direction === 1) goNextQuestion();
+    else goPrevQuestion();
   };
 
   if (loading) {
@@ -568,14 +642,45 @@ export default function TakeOnlineExamPage() {
           className="max-w-lg w-full rounded-[32px] border border-slate-800 bg-slate-900 p-8 space-y-6"
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
-              <ShieldAlert className="w-6 h-6" />
+            <div className="shrink-0 rounded-2xl overflow-hidden bg-white p-1.5 border border-slate-800">
+              <SchoolLogo url={school?.logoUrl} size="md" />
             </div>
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight font-dashboard">{examTitle}</h1>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 truncate">
+                {school?.name}
+              </p>
+              <h1 className="text-2xl font-extrabold tracking-tight font-dashboard truncate">
+                {examTitle}
+              </h1>
               <p className="text-slate-400 text-sm">{t("onlineExams.take.secureIntro")}</p>
             </div>
           </div>
+
+          {user?.name && (
+            <p className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-300">
+              <School className="w-4 h-4 text-indigo-300" />
+              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                {t("onlineExams.take.candidateLabel")}
+              </span>
+              <span className="font-semibold text-slate-100">{user.name}</span>
+            </p>
+          )}
+
+          <IntroFacts
+            duration={introFacts.duration}
+            questionCount={introFacts.count}
+            totalPoints={introFacts.points}
+            maxViolations={maxViolations}
+            proctorLevel={proctorLevel}
+            windowStart={introFacts.start}
+            windowEnd={introFacts.end}
+          />
+
+          <SystemCheck
+            screenShareRequired={needsScreenConsent}
+            screenShareReady={screenSharing || Boolean(attemptId)}
+          />
+
           <ul className="text-sm text-slate-300 space-y-2 list-disc pl-5">
             {kioskConfig.requireFullscreen && <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>}
             {needsScreenConsent && (
@@ -676,32 +781,16 @@ export default function TakeOnlineExamPage() {
     <div className="min-h-screen bg-slate-50 select-none">
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-extrabold tracking-tight text-slate-900">{examTitle}</p>
-            <p className="text-xs text-slate-500">
-              {t("onlineExams.take.violations")}{" "}
-              <span className="font-mono">
-                {violationCount}
-                {maxViolations > 0 ? ` / ${maxViolations}` : ""}
-              </span>
-            </p>
+          <div className="min-w-0">
+            <p className="font-extrabold tracking-tight text-slate-900 truncate">{examTitle}</p>
+            <ViolationShield count={violationCount} max={maxViolations} />
           </div>
-          <div className="flex items-center gap-3">
-            <div
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 font-mono font-extrabold ${
-                remainingMs < 60_000
-                  ? "bg-rose-50 text-rose-700"
-                  : remainingMs < 5 * 60_000
-                    ? "bg-amber-50 text-amber-800"
-                    : "bg-slate-100 text-slate-800"
-              }`}
-            >
-              <Clock className="w-4 h-4" />
-              {formatRemaining(remainingMs)}
-            </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <SaveIndicator state={saveState} savedAt={lastSavedAt} offline={offline} />
+            <TimerPill remainingMs={remainingMs} />
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => setReviewOpen(true)}
               disabled={submitting}
               className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
             >
@@ -724,6 +813,7 @@ export default function TakeOnlineExamPage() {
             ● {t("onlineExams.take.screenSharingActive")}
           </div>
         )}
+        <TimeProgress remainingMs={remainingMs} totalMs={totalMs} />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -734,12 +824,7 @@ export default function TakeOnlineExamPage() {
               total: questions.length,
             })}
           </p>
-          <p className="text-xs text-slate-400">
-            {t("onlineExams.take.answeredCount", {
-              answered: answeredCount,
-              total: questions.length,
-            })}
-          </p>
+          <ShortcutHint />
         </div>
         <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
           <div
@@ -751,6 +836,13 @@ export default function TakeOnlineExamPage() {
             }}
           />
         </div>
+
+        <QuestionPalette
+          questions={questions}
+          answers={answers}
+          currentIndex={currentIndex}
+          onJump={(i) => setCurrentIndex(i)}
+        />
 
         <AnimatePresence mode="wait">
           {currentQuestion && (
@@ -822,19 +914,31 @@ export default function TakeOnlineExamPage() {
               )}
 
               {currentQuestion.type === "ESSAY" && (
-                <textarea
-                  value={currentAnswer.textAnswer || ""}
-                  onChange={(e) => {
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [currentQuestion.id]: { textAnswer: e.target.value },
-                    }));
-                    try { dirtyRef.current.add(currentQuestion.id); } catch {}
-                  }}
-                  rows={6}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3"
-                  placeholder={t("onlineExams.take.writeAnswer")}
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={currentAnswer.textAnswer || ""}
+                    onChange={(e) => {
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [currentQuestion.id]: { textAnswer: e.target.value },
+                      }));
+                      try { dirtyRef.current.add(currentQuestion.id); } catch {}
+                    }}
+                    rows={6}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
+                    placeholder={t("onlineExams.take.writeAnswer")}
+                  />
+                  <WordCountBadge text={currentAnswer.textAnswer} />
+                  <button
+                    type="button"
+                    onClick={() => setSketchOpen(true)}
+                    title={t("onlineExams.take.roughWorkHint")}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    {t("onlineExams.take.roughWork")}
+                  </button>
+                </div>
               )}
             </motion.div>
           )}
@@ -846,29 +950,47 @@ export default function TakeOnlineExamPage() {
               ? t("onlineExams.take.answerRecorded")
               : t("onlineExams.take.answerToContinue")}
           </p>
-          {isLastQuestion ? (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting || !currentAnswered}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {t("onlineExams.take.finishExam")}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={goNextQuestion}
-              disabled={!currentAnswered}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
-            >
-              {t("onlineExams.take.nextQuestion")}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
+          <PrevNextButtons
+            isFirst={currentIndex <= 0}
+            isLast={isLastQuestion}
+            canAdvance={currentAnswered}
+            onPrev={goPrevQuestion}
+            onNext={goNextQuestion}
+            onFinish={() => setReviewOpen(true)}
+            submitting={submitting}
+          />
         </div>
       </div>
+
+      <ReviewSheet
+        open={reviewOpen}
+        questions={questions}
+        answers={answers}
+        currentIndex={currentIndex}
+        onJump={(i) => setCurrentIndex(i)}
+        onClose={() => setReviewOpen(false)}
+        onSubmit={() => void handleSubmit()}
+        submitting={submitting}
+      />
+
+      <SketchPad
+        open={sketchOpen}
+        onClose={() => setSketchOpen(false)}
+        onInsert={() => setSketchOpen(false)}
+        labels={{
+          title: t("onlineExams.take.roughWork"),
+          hint: t("onlineExams.take.roughWorkHint"),
+          insert: t("onlineExams.take.roughWorkDone"),
+          clear: t("onlineExams.author.math.sketch.clear"),
+          undo: t("onlineExams.author.math.sketch.undo"),
+          pen: t("onlineExams.author.math.sketch.pen"),
+          eraser: t("onlineExams.author.math.sketch.eraser"),
+          line: t("onlineExams.author.math.sketch.line"),
+          arrow: t("onlineExams.author.math.sketch.arrow"),
+          rect: t("onlineExams.author.math.sketch.rect"),
+          ellipse: t("onlineExams.author.math.sketch.ellipse"),
+        }}
+      />
     </div>
   );
 }

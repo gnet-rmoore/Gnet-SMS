@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import {
   AlertTriangle,
   Clock,
+  FileText,
   UserCheck,
   UserX,
   Wifi,
@@ -519,6 +520,13 @@ export default function OnlineExamProctorPage() {
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
                             >
                               <Eye className="w-3 h-3" /> {t("onlineExams.proctor.view")}
+                            </Link>
+                            <Link
+                              to={`/${school?.slug}/online-exams/${examId}/proctor/${a.id}/script`}
+                              title={t("onlineExams.proctor.answerScript")}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              <FileText className="w-3 h-3" />
                             </Link>
                           </div>
                         </td>

@@ -83,6 +83,9 @@ const OnlineExamProctor = lazy(() =>
 const OnlineExamProctorDetail = lazy(() =>
   import("./pages/School/OnlineExamProctorDetail").then((m) => ({ default: m.OnlineExamProctorDetail }))
 );
+const OnlineExamAnswerScript = lazy(() =>
+  import("./pages/School/OnlineExamAnswerScript").then((m) => ({ default: m.OnlineExamAnswerScript }))
+);
 const ExamPaper = lazy(() =>
   import("./pages/School/ExamPaper").then((m) => ({ default: m.ExamPaper }))
 );
@@ -531,6 +534,14 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
                         <OnlineExamProctorDetail />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="online-exams/:examId/proctor/:attemptId/script"
+                    element={
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
+                        <OnlineExamAnswerScript />
                       </ProtectedRoute>
                     }
                   />
