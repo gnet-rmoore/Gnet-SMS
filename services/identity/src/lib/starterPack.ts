@@ -20,8 +20,18 @@ export async function seedStarterPack(schoolId: string) {
     });
     if (!seedRes.ok) {
       // Fall back to one-by-one create for older academic builds
-      const grades = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
-      for (const name of grades) {
+      const defaultLevels = [
+        "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+        "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+      ];
+      const existingRes = await fetch(`${ACADEMIC_URL}/api/internal/schools/${schoolId}/grade-levels`, {
+        method: "GET",
+        headers: headers(),
+      });
+      const existing = (await existingRes.json()).map((g: any) => g.name.toLowerCase());
+      const toCreate = defaultLevels.filter((l) => !existing.includes(l.toLowerCase()));
+
+      for (const name of toCreate) {
         await fetch(`${ACADEMIC_URL}/api/internal/schools/${schoolId}/grade-levels`, {
           method: "POST",
           headers: headers(),
