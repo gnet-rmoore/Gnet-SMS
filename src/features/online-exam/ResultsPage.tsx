@@ -170,8 +170,8 @@ export default function OnlineExamResultsPage() {
                   pending
                     ? "border-slate-100 bg-slate-50"
                     : ok
-                      ? "border-emerald-100 bg-emerald-50/40"
-                      : "border-rose-100 bg-rose-50/40"
+                      ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                      : "border-rose-100 bg-rose-50 text-rose-700"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">

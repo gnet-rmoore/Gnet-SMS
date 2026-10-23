@@ -53,6 +53,7 @@ import {
   sampleExamMeta,
   sampleQuestions,
 } from "../lib/onlineExamPreviewSample";
+import { createDemoToken, verifyDemoToken } from "../lib/onlineExamDemoLink";
 import { getClassroomsByMember } from "../lib/classroomClient";
 import { resolveStudentWindow } from "../lib/examSchedule";
 import { emitLiveExamEvent } from "../lib/liveExamEvents";
@@ -107,7 +108,7 @@ function toScoreable(questions: any[]): ScoreableQuestion[] {
 }
 
 type PreviewExamMeta = {
-  source: "exam" | "sample";
+  source: "exam" | "sample" | "demo";
   id: string;
   title: string;
   instructions?: string | null;
@@ -193,6 +194,48 @@ async function loadExamOrThrow(examId: string) {
   const exam = await prisma.exam.findUnique({ where: { id: examId } });
   if (!exam) throw httpError("Exam not found", 404);
   return exam;
+}
+
+/**
+ * Load a real exam plus its questions for a non-persisting preview run.
+ * Used by the staff dry run and by shared demo links.
+ */
+async function loadPreviewExam(examId: string, schoolId: string) {
+  const exam = await loadExamOrThrow(examId);
+  if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
+  const questions = await prisma.examQuestion.findMany({
+    where: { examId, schoolId: exam.schoolId },
+    include: { choices: { orderBy: { orderIndex: "asc" } } },
+    orderBy: { orderIndex: "asc" },
+  });
+  return { exam, questions };
+}
+
+/** The exam header both the staff preview and demo links hand to the kiosk. */
+function previewExamPayload(exam: any) {
+  return {
+    id: exam.id,
+    title: exam.title,
+    isOnline: exam.isOnline,
+    maxViolations: exam.maxViolations,
+    showResultsImmediately: exam.showResultsImmediately,
+    instructions: exam.instructions,
+    duration: exam.duration,
+    startDate: exam.startDate,
+    endDate: exam.endDate,
+    classId: exam.classId,
+    subjectId: exam.subjectId,
+    paperDueAt: exam.paperDueAt,
+    proctorLevel: exam.proctorLevel,
+    kioskConfig: parseKioskConfig(exam.kioskConfig, exam.maxViolations),
+  };
+}
+
+/** Resolve a demo link to its exam, enforcing both tenant scopes. */
+function resolveDemoExam(token: string, schoolId: string) {
+  const payload = verifyDemoToken(token);
+  if (payload.schoolId !== schoolId) throw httpError("Forbidden", 403);
+  return payload;
 }
 
 async function loadAttemptOrThrow(attemptId: string) {
@@ -812,45 +855,18 @@ export const onlineExamService = {
 
   /** Staff-only dry run of a real exam: no answer keys until the score response. */
   async getExamPreview(examId: string, schoolId: string) {
-    const exam = await loadExamOrThrow(examId);
-    if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
-    const questions = await prisma.examQuestion.findMany({
-      where: { examId, schoolId: exam.schoolId },
-      include: { choices: { orderBy: { orderIndex: "asc" } } },
-      orderBy: { orderIndex: "asc" },
-    });
+    const { exam, questions } = await loadPreviewExam(examId, schoolId);
     return {
       preview: true,
       source: "exam",
-      exam: {
-        id: exam.id,
-        title: exam.title,
-        isOnline: exam.isOnline,
-        maxViolations: exam.maxViolations,
-        showResultsImmediately: exam.showResultsImmediately,
-        instructions: exam.instructions,
-        duration: exam.duration,
-        startDate: exam.startDate,
-        endDate: exam.endDate,
-        classId: exam.classId,
-        subjectId: exam.subjectId,
-        paperDueAt: exam.paperDueAt,
-        proctorLevel: exam.proctorLevel,
-        kioskConfig: parseKioskConfig(exam.kioskConfig, exam.maxViolations),
-      },
+      exam: previewExamPayload(exam),
       questions: questions.map((q) => stripCorrectFromQuestion(q, false)),
     };
   },
 
   /** Staff-only scoring of a real exam dry run: no attempt rows, no notifications. */
   async scoreExamPreview(examId: string, schoolId: string, answersInput: any[]) {
-    const exam = await loadExamOrThrow(examId);
-    if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
-    const questions = await prisma.examQuestion.findMany({
-      where: { examId, schoolId },
-      include: { choices: { orderBy: { orderIndex: "asc" } } },
-      orderBy: { orderIndex: "asc" },
-    });
+    const { exam, questions } = await loadPreviewExam(examId, schoolId);
     return buildPreviewResult(questions, answersInput, {
       source: "exam",
       id: exam.id,
@@ -880,6 +896,54 @@ export const onlineExamService = {
       },
       questions: sampleQuestions().map((q) => stripCorrectFromQuestion(q, false)),
     };
+  },
+
+  /**
+   * Issue a shareable demo link for an exam. The link is a signed, self-expiring
+   * token: no database rows are created and nothing is persisted.
+   */
+  async createDemoLink(examId: string, schoolId: string) {
+    const exam = await loadExamOrThrow(examId);
+    if (exam.schoolId !== schoolId) throw httpError("Forbidden", 403);
+    const { demoToken, expiresAt } = createDemoToken(exam.id, exam.schoolId);
+    return {
+      demoToken,
+      expiresAt,
+      examId: exam.id,
+      examTitle: exam.title,
+      durationMinutes: exam.duration,
+    };
+  },
+
+  /**
+   * Resolve a demo link for a student. Returns the same kiosk payload as the
+   * staff preview but without answer keys. No attempt rows are created.
+   */
+  async getDemoPreview(token: string, schoolId: string) {
+    const payload = resolveDemoExam(token, schoolId);
+    const { exam, questions } = await loadPreviewExam(payload.examId, payload.schoolId);
+    return {
+      preview: true,
+      source: "demo",
+      demo: { expiresAt: new Date(payload.exp * 1000).toISOString() },
+      exam: previewExamPayload(exam),
+      questions: questions.map((q) => stripCorrectFromQuestion(q, false)),
+    };
+  },
+
+  /** Score a demo-link run without touching any attempt records. */
+  async scoreDemoPreview(token: string, schoolId: string, answersInput: any[]) {
+    const payload = resolveDemoExam(token, schoolId);
+    const { exam, questions } = await loadPreviewExam(payload.examId, payload.schoolId);
+    return buildPreviewResult(questions, answersInput, {
+      source: "demo",
+      id: exam.id,
+      title: exam.title,
+      instructions: exam.instructions,
+      duration: exam.duration,
+      maxViolations: exam.maxViolations,
+      showResultsImmediately: exam.showResultsImmediately,
+    });
   },
 
   /** Score the built-in demo paper without touching any attempt records. */

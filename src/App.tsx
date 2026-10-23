@@ -514,6 +514,14 @@ export default function App() {
                     }
                   />
                   <Route
+                    path="online-exams/demo/:demoToken"
+                    element={
+                      <ProtectedRoute allowedRoles={["STUDENT"]}>
+                        <OnlineExamPreview />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="online-exams/:examId/preview"
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>

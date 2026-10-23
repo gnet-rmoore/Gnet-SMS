@@ -203,6 +203,25 @@ export const onlineExamApi = {
 
   getSamplePreview: () => api.get(`/api/exams/preview/sample`),
 
+  // Shareable demo links: staff issue one, any student in the school can open it.
+  createDemoLink: (examId: string) =>
+    api.post(`/api/exams/${examId}/demo-link`) as Promise<{
+      success: boolean;
+      demoToken: string;
+      expiresAt: string;
+      examId: string;
+      examTitle: string;
+      durationMinutes: number | null;
+    }>,
+
+  getDemoPreview: (demoToken: string) =>
+    api.get(`/api/exams/demo/${encodeURIComponent(demoToken)}`),
+
+  scoreDemoPreview: (
+    demoToken: string,
+    answers: { questionId: string; selectedChoiceId?: string | null; textAnswer?: string | null }[]
+  ) => api.post(`/api/exams/demo/${encodeURIComponent(demoToken)}/score`, { answers }),
+
   scoreSamplePreview: (
     answers: { questionId: string; selectedChoiceId?: string | null; textAnswer?: string | null }[]
   ) => api.post(`/api/exams/preview/sample/score`, { answers }),

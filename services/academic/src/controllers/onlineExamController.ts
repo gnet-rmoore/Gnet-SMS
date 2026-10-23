@@ -337,6 +337,52 @@ export const onlineExamController = {
     }
   },
 
+  /** Create a shareable demo link for an exam (staff only, no attempt persistence). */
+  async createDemoLink(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (!staffCanAuthor(user.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const data = await onlineExamService.createDemoLink(req.params.id, user.schoolId);
+      res.json({ success: true, ...data });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to create demo link" });
+    }
+  },
+
+  /** Resolve a demo link into a student-ready kiosk preview (no attempt rows). */
+  async getDemoPreview(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") {
+      return res.status(403).json({ error: "Only students can open a demo link" });
+    }
+    try {
+      const data = await onlineExamService.getDemoPreview(req.params.token, user.schoolId);
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to load the demo" });
+    }
+  },
+
+  /** Score a demo-link run without persisting an attempt. */
+  async scoreDemoPreview(req: Request, res: Response) {
+    const user = (req as any).user;
+    if (user.role !== "STUDENT") {
+      return res.status(403).json({ error: "Only students can submit a demo" });
+    }
+    try {
+      const data = await onlineExamService.scoreDemoPreview(
+        req.params.token,
+        user.schoolId,
+        req.body?.answers || []
+      );
+      res.json(data);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to score the demo" });
+    }
+  },
+
   /** Built-in sample paper for the student-experience demo. */
   async getSamplePreview(req: Request, res: Response) {
     const user = (req as any).user;

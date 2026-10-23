@@ -66,9 +66,10 @@ function sumPoints(list: any[]) {
  */
 export default function OnlineExamPreviewPage() {
   const { t } = useTranslation(["pages", "common"]);
-  const { examId } = useParams();
+  const { examId, demoToken } = useParams();
   const { school } = useAuthStore();
-  const isSample = !examId;
+  const isDemo = !!demoToken;
+  const isSample = !examId && !isDemo;
   const navigate = useNavigate();
 
   const [phase, setPhase] = React.useState<Phase>("loading");
@@ -108,10 +109,10 @@ export default function OnlineExamPreviewPage() {
   const capturesScreen = proctorLevel === "SCREEN_VIEW";
   const needsScreenConsent = kioskConfig.requireScreenShare || capturesScreen;
 
-  const backTo = isSample
-    ? `/${school?.slug}/online-exams`
-    : `/${school?.slug}/exams/${examId}/online`;
-
+  const backTo =
+    isSample || isDemo
+      ? `/${school?.slug}/online-exams`
+      : `/${school?.slug}/exams/${examId}/online`;
   const examTitle = exam?.title || t("onlineExams.preview.sampleTitle");
 
   const enterFullscreen = React.useCallback(async () => {
@@ -190,7 +191,9 @@ export default function OnlineExamPreviewPage() {
     try {
       const data = isSample
         ? await onlineExamApi.getSamplePreview()
-        : await onlineExamApi.getExamPreview(examId as string);
+        : isDemo
+          ? await onlineExamApi.getDemoPreview(demoToken as string)
+          : await onlineExamApi.getExamPreview(examId as string);
       const list = Array.isArray(data?.questions) ? data.questions : [];
       setExam(data?.exam || null);
       setQuestions(list);
@@ -206,7 +209,7 @@ export default function OnlineExamPreviewPage() {
       await alertError(t("onlineExams.preview.loadFailed"), err?.message);
       setPhase("unavailable");
     }
-  }, [examId, isSample, t]);
+  }, [examId, isSample, isDemo, demoToken, t]);
 
   React.useEffect(() => {
     void loadPreview();
@@ -226,7 +229,9 @@ export default function OnlineExamPreviewPage() {
         }));
         const data = isSample
           ? await onlineExamApi.scoreSamplePreview(payload)
-          : await onlineExamApi.scoreExamPreview(examId as string, payload);
+          : isDemo
+            ? await onlineExamApi.scoreDemoPreview(demoToken as string, payload)
+            : await onlineExamApi.scoreExamPreview(examId as string, payload);
         data.attempt = {
           ...data.attempt,
           violationCount: violationRef.current,
@@ -245,7 +250,7 @@ export default function OnlineExamPreviewPage() {
         setSubmitting(false);
       }
     },
-    [questions, isSample, examId, stopScreenShare, t]
+    [questions, isSample, isDemo, demoToken, examId, stopScreenShare, t]
   );
 
   const countViolation = React.useCallback(
@@ -494,7 +499,9 @@ export default function OnlineExamPreviewPage() {
           <p className="text-sm text-slate-300">
             {isSample
               ? t("onlineExams.preview.introSample")
-              : t("onlineExams.preview.introExam")}
+              : isDemo
+                ? t("onlineExams.preview.introDemo")
+                : t("onlineExams.preview.introExam")}
           </p>
 
           <IntroFacts
@@ -661,8 +668,8 @@ export default function OnlineExamPreviewPage() {
                       pending
                         ? "border-slate-100 bg-slate-50"
                         : ok
-                          ? "border-emerald-100 bg-emerald-50/40"
-                          : "border-rose-100 bg-rose-50/40"
+                          ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border-rose-100 bg-rose-50 text-rose-700"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">

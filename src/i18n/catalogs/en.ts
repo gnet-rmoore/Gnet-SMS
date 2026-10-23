@@ -6196,6 +6196,12 @@ export const enPages = {
       sampleTitle: "Sample online exam",
       badge: "Preview mode",
       testThisExam: "Test this exam",
+      demoLink: "Share demo link",
+      demoLinkHint:
+        "Create a link a student can use to try this exam. Nothing they answer is recorded.",
+      demoLinkCopied: "Demo link copied",
+      demoLinkExpires: "Link expires {{time}}",
+      demoLinkFailed: "Could not create the demo link",
       trySample: "Try a sample exam",
       start: "Start preview",
       timerNote: "Preview — timer not enforced",
@@ -6207,6 +6213,8 @@ export const enPages = {
         "You are previewing the actual questions students will see. Answer keys are revealed after you submit.",
       introSample:
         "This is a built-in demo paper with one of each question type. Submit to see how scoring works.",
+      introDemo:
+        "You are trying a demo of this exam. Nothing you answer is recorded.",
       resultTitle: "Preview result",
       resultNote: "Preview only — nothing was saved and no grade was recorded.",
       tryAgain: "Try again",

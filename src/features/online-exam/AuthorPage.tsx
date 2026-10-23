@@ -11,6 +11,9 @@ import {
   ListChecks,
   Loader2,
   Eye,
+  Link2,
+  Copy,
+  Check,
   RotateCcw,
   Upload,
   Library,
@@ -69,6 +72,9 @@ export default function OnlineExamAuthorPage() {
   const [maxRetakes, setMaxRetakes] = React.useState("1");
   const [waitingPeriodHours, setWaitingPeriodHours] = React.useState("0");
   const [scoreRetention, setScoreRetention] = React.useState<"best" | "last" | "average">("last");
+  const [demoLink, setDemoLink] = React.useState<{ url: string; expiresAt: string } | null>(null);
+  const [creatingDemoLink, setCreatingDemoLink] = React.useState(false);
+  const [demoCopied, setDemoCopied] = React.useState(false);
 
   // Duration / max-violations / kiosk lockdown / retake policy are school
   // administration settings for exams; teachers may set them for quizzes only.
@@ -197,6 +203,33 @@ export default function OnlineExamAuthorPage() {
     }
   };
 
+  const handleCreateDemoLink = React.useCallback(async () => {
+    if (!examId) return;
+    setCreatingDemoLink(true);
+    try {
+      const data = await onlineExamApi.createDemoLink(examId);
+      const url = `${window.location.origin}/${school?.slug}/online-exams/demo/${data.demoToken}`;
+      setDemoLink({ url, expiresAt: data.expiresAt });
+      setDemoCopied(false);
+    } catch (err: any) {
+      await alertError(t("onlineExams.preview.demoLinkFailed"), err?.message);
+    } finally {
+      setCreatingDemoLink(false);
+    }
+  }, [examId, school?.slug, t]);
+
+  const copyDemoLink = React.useCallback(async () => {
+    if (!demoLink?.url) return;
+    try {
+      await navigator.clipboard.writeText(demoLink.url);
+      setDemoCopied(true);
+      showToast(t("onlineExams.preview.demoLinkCopied"));
+      window.setTimeout(() => setDemoCopied(false), 2500);
+    } catch {
+      /* Clipboard may be blocked; the input stays selectable for manual copy. */
+    }
+  }, [demoLink, showToast, t]);
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-6 sm:px-8 py-16 flex items-center justify-center text-slate-500 gap-2">
@@ -254,6 +287,15 @@ export default function OnlineExamAuthorPage() {
           <p className="text-slate-500 font-medium">{title}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => void handleCreateDemoLink()}
+            disabled={creatingDemoLink}
+            className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-6 py-3 font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
+          >
+            {creatingDemoLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+            {t("onlineExams.preview.demoLink")}
+          </button>
           <Link
             to={`/${school?.slug}/online-exams/${examId}/preview`}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 font-bold text-slate-700 hover:bg-slate-50"
@@ -680,6 +722,66 @@ export default function OnlineExamAuthorPage() {
           ))}
         </div>
       </div>
+
+      {demoLink && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          onClick={() => setDemoLink(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold tracking-tight text-slate-900">
+                  {t("onlineExams.preview.demoLink")}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {t("onlineExams.preview.demoLinkHint")}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                readOnly
+                value={demoLink.url}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
+              />
+              <button
+                type="button"
+                onClick={() => void copyDemoLink()}
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 shrink-0"
+              >
+                {demoCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {demoCopied
+                  ? t("onlineExams.preview.demoLinkCopied")
+                  : t("common:copy")}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              {t("onlineExams.preview.demoLinkExpires", {
+                time: new Date(demoLink.expiresAt).toLocaleString(),
+              })}
+            </p>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDemoLink(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
+              >
+                {t("common:close")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

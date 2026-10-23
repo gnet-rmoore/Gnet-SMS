@@ -56,6 +56,32 @@ router.post(
   onlineExamController.scoreSamplePreview
 );
 
+// Shareable demo links. Staff issue a link for a real exam; any student in the
+// same school can open it and run the kiosk without an attempt being recorded.
+// The link is a signed, self-expiring token — nothing is persisted.
+router.post(
+  "/api/exams/:id/demo-link",
+  authenticate,
+  requireRoles(EXAM_WRITE_ROLES),
+  requireResourceTenant(resourceLoaders.exam),
+  onlineExamController.createDemoLink
+);
+
+router.get(
+  "/api/exams/demo/:token",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  onlineExamController.getDemoPreview
+);
+
+router.post(
+  "/api/exams/demo/:token/score",
+  authenticate,
+  requireRoles(["STUDENT"]),
+  validateBody(onlineExamPreviewScoreSchema),
+  onlineExamController.scoreDemoPreview
+);
+
 router.get(
   "/api/schools/:schoolId/online-exams",
   authenticate,

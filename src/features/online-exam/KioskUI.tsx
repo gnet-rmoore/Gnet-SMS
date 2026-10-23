@@ -42,8 +42,8 @@ function chipState(i: number, currentIndex: number, answered: boolean) {
 
 const CHIP_CLASS: Record<string, string> = {
   current: "bg-indigo-600 border-indigo-600 text-white shadow-[0_2px_6px_rgb(79,70,229,0.35)]",
-  answered: "bg-emerald-50 border-emerald-200 text-emerald-700 hover:border-emerald-400",
-  unanswered: "bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600",
+  answered: "bg-emerald-100 border-emerald-300 text-emerald-700 hover:border-emerald-400",
+  unanswered: "bg-slate-50 border-slate-300 text-slate-600 hover:border-indigo-300 hover:text-indigo-600",
 };
 
 export function QuestionPalette({
