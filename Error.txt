@@ -1,0 +1,7 @@
+[PRISMA SETUP] DATABASE_URL unset or non-Postgres — using generate placeholder. Runtime requires a real postgresql:// URL.
+npm warn install-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+Error: 
+ENOSPC: no space left on device, copyfile 'C:\Users\IPREP\Desktop\GNET-2026\node_modules\prisma\query_engine-windows.dll.node' -> 'C:\Users\IPREP\Desktop\GNET-2026\node_modules\.prisma\client\query_engine-windows.dll.node.tmp15964'
+
+
+[PRISMA SETUP] Failed to generate Prisma Client: Command failed: npx prisma generate
