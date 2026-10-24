@@ -1904,6 +1904,97 @@ export const platformOpsService = {
       ...mrr,
     };
   },
+
+  async seedDemoSchool(actor: Actor, req?: any) {
+    await requireCap(actor, "schools.manage");
+    const bcrypt = await import("bcryptjs");
+    const demoPasswordHash = bcrypt.hashSync("demo123", 10);
+
+    const existing = await prisma.school.findFirst({
+      where: { OR: [{ slug: "demo-school" }, { name: "Demo International School" }] },
+    });
+    if (existing) {
+      throw Object.assign(new Error("Demo school already exists"), { status: 400, code: "DEMO_EXISTS" });
+    }
+
+    const school = await prisma.school.create({
+      data: {
+        name: "Demo International School",
+        slug: "demo-school",
+        schoolCode: "DEMO123",
+        country: "United Kingdom",
+        timezone: "Europe/London",
+        contactEmail: "info@demoschool.com",
+        status: "ACTIVE",
+        planCode: "ENTERPRISE",
+        billingStatus: "ACTIVE_PAID",
+      },
+    });
+
+    const staffRoles = [
+      { role: "SCHOOL_ADMIN", email: "demo.admin@demoschool.com", name: "Demo School Admin" },
+      { role: "PRINCIPAL", email: "demo.principal@demoschool.com", name: "Demo Principal" },
+      { role: "VPI", email: "demo.vpi@demoschool.com", name: "Demo VP Instruction" },
+      { role: "VPA", email: "demo.vpa@demoschool.com", name: "Demo VP Administration" },
+      { role: "REGISTRAR", email: "demo.registrar@demoschool.com", name: "Demo Registrar" },
+      { role: "ACCOUNTANT", email: "demo.accountant@demoschool.com", name: "Demo Accountant" },
+      { role: "IT_ADMIN", email: "demo.itadmin@demoschool.com", name: "Demo IT Admin" },
+      { role: "TRANSPORTATION", email: "demo.transport@demoschool.com", name: "Demo Transport Manager" },
+      { role: "MAINTENANCE", email: "demo.maintenance@demoschool.com", name: "Demo Maintenance Manager" },
+      { role: "LIBRARIAN", email: "demo.librarian@demoschool.com", name: "Demo Librarian" },
+      { role: "NURSE", email: "demo.nurse@demoschool.com", name: "Demo Nurse" },
+      { role: "COUNSELOR", email: "demo.counselor@demoschool.com", name: "Demo Counselor" },
+      { role: "SECURITY", email: "demo.security@demoschool.com", name: "Demo Security Chief" },
+      { role: "PROCUREMENT", email: "demo.procurement@demoschool.com", name: "Demo Procurement Officer" },
+      { role: "ATHLETICS_DIRECTOR", email: "demo.athletics@demoschool.com", name: "Demo Athletics Director" },
+      { role: "HOSTEL_WARDEN", email: "demo.hostel@demoschool.com", name: "Demo Hostel Warden" },
+      { role: "CAFETERIA_MANAGER", email: "demo.cafeteria@demoschool.com", name: "Demo Cafeteria Manager" },
+    ];
+
+    const users = [];
+    for (const s of staffRoles) {
+      const u = await prisma.user.upsert({
+        where: { email: s.email },
+        update: { schoolId: school.id, passwordHash: demoPasswordHash, role: s.role, name: s.name, isActive: true },
+        create: { email: s.email, name: s.name, passwordHash: demoPasswordHash, role: s.role, schoolId: school.id, isActive: true },
+      });
+      users.push(u);
+    }
+
+    for (let i = 1; i <= 5; i++) {
+      const u = await prisma.user.upsert({
+        where: { email: `demo.teacher${i}@demoschool.com` },
+        update: { schoolId: school.id, passwordHash: demoPasswordHash, role: "TEACHER", name: `Demo Teacher ${i}`, isActive: true },
+        create: { email: `demo.teacher${i}@demoschool.com`, name: `Demo Teacher ${i}`, passwordHash: demoPasswordHash, role: "TEACHER", schoolId: school.id, isActive: true },
+      });
+      users.push(u);
+    }
+
+    for (let i = 1; i <= 20; i++) {
+      const u = await prisma.user.upsert({
+        where: { email: `demo.student${i}@demoschool.com` },
+        update: { schoolId: school.id, passwordHash: demoPasswordHash, role: "STUDENT", name: `Demo Student ${i}`, isActive: true },
+        create: { email: `demo.student${i}@demoschool.com`, name: `Demo Student ${i}`, passwordHash: demoPasswordHash, role: "STUDENT", schoolId: school.id, isActive: true },
+      });
+      users.push(u);
+    }
+
+    await logSystemEvent(
+      "demo_school_seeded",
+      "SUPER_ADMIN",
+      `Seeded demo school ${school.slug} with staff/teachers/students (demo123)`,
+      "INFO",
+      req,
+      { schoolId: school.id }
+    );
+
+    return {
+      school,
+      counts: { staff: staffRoles.length, teachers: 5, students: 20 },
+      password: "demo123",
+      message: "Demo school seeded successfully",
+    };
+  },
 };
 
 export async function getMaintenanceGate(): Promise<{

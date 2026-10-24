@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FeatureModalShell,
@@ -23,6 +23,25 @@ export function GradeLevelModal({
   submitting,
 }: GradeLevelModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const onSubmit = (e: React.FormEvent) => {
+    setLocalError(null);
+    const name = (gradeForm?.name || "").trim();
+    if (!name) {
+      e.preventDefault();
+      setLocalError(t("curriculum.gradeLevelModal.nameRequired", { defaultValue: "Please enter a grade level name." }));
+      return;
+    }
+    if (name.length < 2) {
+      e.preventDefault();
+      setLocalError(t("curriculum.gradeLevelModal.nameTooShort", { defaultValue: "Grade level name must be at least 2 characters." }));
+      return;
+    }
+    if (handleCreateGradeLevel) {
+      return handleCreateGradeLevel(e);
+    }
+  };
 
   return (
     <FeatureModalShell
@@ -33,7 +52,7 @@ export function GradeLevelModal({
     >
       <form
         id="grade-level-form"
-        onSubmit={handleCreateGradeLevel}
+        onSubmit={onSubmit}
         className="p-8 space-y-5"
       >
         <div className="space-y-1.5">
@@ -43,12 +62,22 @@ export function GradeLevelModal({
           </label>
           <input
             type="text"
-            value={gradeForm.name}
-            onChange={(e) => setGradeForm({ ...gradeForm, name: e.target.value })}
+            value={gradeForm?.name || ""}
+            onChange={(e) => {
+              setLocalError(null);
+              setGradeForm({ ...(gradeForm || {}), name: e.target.value });
+            }}
             placeholder={t("curriculum.gradeLevelModal.namePlaceholder")}
             className={fieldInput}
+            autoFocus
             required
           />
+          <p className="text-xs text-slate-500 font-medium">
+            {t("curriculum.gradeLevelModal.nameHint", { defaultValue: "e.g., Grade 1, Kindergarten, Year 7" })}
+          </p>
+          {localError && (
+            <p className="text-xs text-rose-600 font-semibold">{localError}</p>
+          )}
         </div>
       </form>
       <div className="px-8 pb-8 flex gap-3">

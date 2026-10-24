@@ -22,6 +22,7 @@ import {
   enrichClassrooms,
 } from "../academics-shared/enrichClassrooms";
 import { useTranslation } from "react-i18next";
+import { CurriculumSetupWizard } from "./components/CurriculumSetupWizard";
 import {
   buildTeachingScope,
   createAdminSyllabusFormDefaults,
@@ -164,6 +165,7 @@ export const Curriculum = () => {
   const [editingSyllabusId, setEditingSyllabusId] = useState<string | null>(null);
   const [selectedSyllabus, setSelectedSyllabus] = useState<SyllabusPlan | null>(null);
   const [showSyllabusViewModal, setShowSyllabusViewModal] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [syllabusFeedback, setSyllabusFeedback] = useState("");
   const [syllabusFilterStatus, setSyllabusFilterStatus] = useState("ALL");
   const [syllabusSearchTerm, setSyllabusSearchTerm] = useState("");
@@ -376,8 +378,9 @@ export const Curriculum = () => {
           handleDeleteGradeLevel={handleDeleteGradeLevel}
           handleDeleteSubject={handleDeleteSubject}
           handleDeleteSyllabus={handleDeleteSyllabus}
-          handleSeedGradeLevels={handleSeedGradeLevels}
-          handleUpdateGradeLevel={handleUpdateGradeLevel}
+            handleSeedGradeLevels={handleSeedGradeLevels}
+            handleUpdateGradeLevel={handleUpdateGradeLevel}
+            onOpenSetupWizard={() => setShowSetupWizard(true)}
 submitting={submitting}
             syllabi={syllabi}
             syllabusFilterStatus={syllabusFilterStatus}
@@ -513,6 +516,21 @@ submitting={submitting}
           />
         )}
       </AnimatePresence>
+
+      <CurriculumSetupWizard
+        open={showSetupWizard}
+        onClose={() => setShowSetupWizard(false)}
+        onComplete={() => {
+          void (async () => {
+            try {
+              await refetchCurriculum?.();
+            } catch {}
+          })();
+          showToast("Setup wizard completed", "success");
+        }}
+      />
     </div>
   );
 };
+
+

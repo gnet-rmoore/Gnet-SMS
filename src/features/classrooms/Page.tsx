@@ -603,6 +603,9 @@ export const Classrooms = () => {
               <p className="text-sm text-amber-800 font-medium">
                 {t("classrooms.setupHint")}
               </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {t("classrooms.setupHint2", { defaultValue: "Quick steps: Go to Curriculum → Add Grade Level(s) → Return here to create classes." })}
+              </p>
             </div>
           </div>
           <Link

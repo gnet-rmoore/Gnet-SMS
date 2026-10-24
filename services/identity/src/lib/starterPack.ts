@@ -1,6 +1,7 @@
 /**
  * Optional starter pack after school provision (Phase A3).
  * Best-effort: failures are logged, provisioning still succeeds.
+ * NOTE: This is NOT auto-invoked by default. Only call explicitly when user requests.
  */
 const ACADEMIC_URL = process.env.ACADEMIC_URL || "http://localhost:3015";
 const FINANCE_URL = process.env.FINANCE_URL || "http://localhost:3016";
@@ -13,36 +14,7 @@ function headers() {
 }
 
 export async function seedStarterPack(schoolId: string) {
-  try {
-    const seedRes = await fetch(`${ACADEMIC_URL}/api/internal/schools/${schoolId}/grade-levels/seed`, {
-      method: "POST",
-      headers: headers(),
-    });
-    if (!seedRes.ok) {
-      // Fall back to one-by-one create for older academic builds
-      const defaultLevels = [
-        "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
-        "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
-      ];
-      const existingRes = await fetch(`${ACADEMIC_URL}/api/internal/schools/${schoolId}/grade-levels`, {
-        method: "GET",
-        headers: headers(),
-      });
-      const existing = (await existingRes.json()).map((g: any) => g.name.toLowerCase());
-      const toCreate = defaultLevels.filter((l) => !existing.includes(l.toLowerCase()));
-
-      for (const name of toCreate) {
-        await fetch(`${ACADEMIC_URL}/api/internal/schools/${schoolId}/grade-levels`, {
-          method: "POST",
-          headers: headers(),
-          body: JSON.stringify({ name }),
-        });
-      }
-    }
-  } catch (err: any) {
-    console.warn("[starter-pack] grade seed skipped:", err.message);
-  }
-
+  // No automatic grade/class seeding; user must explicitly request seeding.
   try {
     await fetch(`${FINANCE_URL}/api/internal/fees`, {
       method: "POST",

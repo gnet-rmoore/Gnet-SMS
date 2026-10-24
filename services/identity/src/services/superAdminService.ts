@@ -748,20 +748,21 @@ export const superAdminService = {
   },
 
   async updateSchool(id: string, data: any) {
-    const { name, slug, country, timezone, contactEmail, planCode, trialEndsAt } = data;
-    return await prisma.school.update({
-      where: { id },
-      data: {
-        name,
-        slug,
-        country,
-        ...(timezone !== undefined ? { timezone } : {}),
-        contactEmail,
-        ...(planCode !== undefined ? { planCode } : {}),
-        ...(trialEndsAt !== undefined ? { trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null } : {}),
-      },
-    });
-  },
+      const { name, slug, country, timezone, contactEmail, planCode, trialEndsAt, backgroundImageUrl } = data;
+      return await prisma.school.update({
+        where: { id },
+        data: {
+          ...(name !== undefined ? { name } : {}),
+          ...(slug !== undefined ? { slug } : {}),
+          ...(country !== undefined ? { country } : {}),
+          ...(timezone !== undefined ? { timezone } : {}),
+          ...(contactEmail !== undefined ? { contactEmail } : {}),
+          ...(planCode !== undefined ? { planCode } : {}),
+          ...(trialEndsAt !== undefined ? { trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null } : {}),
+          ...(backgroundImageUrl !== undefined ? { backgroundImageUrl: backgroundImageUrl === null ? null : String(backgroundImageUrl) } : {}),
+        },
+      });
+    },
 
   async deleteSchool(id: string) {
     // Only identity-owned rows are cleaned up here. Classroom/Academic/

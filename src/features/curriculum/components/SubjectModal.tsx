@@ -186,6 +186,9 @@ export function SubjectModal({
             placeholder={t("curriculum.subjectModal.descriptionPlaceholder")}
             className={`${fieldInput} resize-none h-24 font-medium`}
           />
+          <p className="text-xs text-slate-500 font-medium">
+            {t("curriculum.subjectModal.descriptionHint", { defaultValue: "Optional — add a short description to help others understand this subject." })}
+          </p>
         </div>
       </form>
 

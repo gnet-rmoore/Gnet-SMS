@@ -633,6 +633,9 @@ export function CurriculumViews({
                         {submitting ? t("curriculum.gradeLevels.seeding") : t("curriculum.gradeLevels.seedDefaults")}
                       </button>
                     </div>
+                    <p className="mt-3 text-xs text-slate-500 text-center max-w-md mx-auto">
+                      {t("curriculum.gradeLevels.emptyHint", { defaultValue: "Start by adding a grade level manually, or use \"Seed defaults\" to quickly add Grades 1–12." })}
+                    </p>
                   )}
                 </div>
               )}

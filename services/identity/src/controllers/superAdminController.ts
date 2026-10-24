@@ -123,6 +123,15 @@ export const superAdminController = {
     }
   },
 
+  async seedDemoSchool(req: Request, res: Response) {
+    try {
+      const result = await platformOpsService.seedDemoSchool(actorFromReq(req), req);
+      res.status(201).json(result);
+    } catch (err: any) {
+      sendErr(res, err, "Failed to seed demo school");
+    }
+  },
+
   async getStats(req: Request, res: Response) {
     try {
       res.json(await superAdminService.getStats());
@@ -262,7 +271,16 @@ export const superAdminController = {
     try {
       res.json(await superAdminService.updateSchool(req.params.id, req.body));
     } catch (err: any) {
-      res.status(500).json({ error: "Failed to update school", message: err.message });
+      sendErr(res, err, "Failed to update school");
+    }
+  },
+
+  async updateSchoolBackgroundImage(req: Request, res: Response) {
+    try {
+      const { backgroundImageUrl } = req.body || {};
+      res.json(await superAdminService.updateSchool(req.params.id, { backgroundImageUrl }));
+    } catch (err: any) {
+      sendErr(res, err, "Failed to update school background image");
     }
   },
 

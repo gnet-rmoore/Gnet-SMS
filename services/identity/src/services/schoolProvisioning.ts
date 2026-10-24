@@ -132,13 +132,6 @@ export async function provisionSchool(data: ProvisionSchoolInput, req?: any) {
     );
   }
 
-  try {
-    const { seedStarterPack } = await import("../lib/starterPack");
-    await seedStarterPack(school.id);
-  } catch (err: any) {
-    console.warn("[provision] starter pack skipped:", err.message);
-  }
-
   return {
     school,
     admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },

@@ -147,6 +147,30 @@ export const SuperAdminDashboard = () => {
               <Download className="w-4 h-4" />
               {t("common:download")}
             </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/super-admin/schools/seed-demo", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    await toast.fire({ icon: "error", title: data.error || "Failed to seed demo school" });
+                    return;
+                  }
+                  await toast.fire({ icon: "success", title: "Demo school seeded successfully (password: demo123)" });
+                  void fetchData();
+                } catch (e: any) {
+                  await toast.fire({ icon: "error", title: e?.message || "Failed to seed demo school" });
+                }
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Seed Demo School
+            </Button>
           </>
         }
       />

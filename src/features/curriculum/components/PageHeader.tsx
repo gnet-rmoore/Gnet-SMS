@@ -13,6 +13,7 @@ export type PageHeaderProps = {
   slug?: string;
   title?: string;
   subtitle?: string;
+  onOpenSetupWizard?: () => void;
 };
 
 export function PageHeader({
@@ -24,6 +25,7 @@ export function PageHeader({
   slug,
   title,
   subtitle,
+  onOpenSetupWizard,
 }: PageHeaderProps) {
   const { t } = useTranslation("pages");
   const pageTitle = title ?? t("curriculum.title");
@@ -61,6 +63,11 @@ export function PageHeader({
           )}
           {canManage && (
             <>
+              {onOpenSetupWizard && (
+                <Button type="button" variant="secondary" onClick={onOpenSetupWizard}>
+                  {t("common:actions.quickSetup", { defaultValue: "Quick Setup" })}
+                </Button>
+              )}
               <Button type="button" variant="secondary" onClick={() => setShowGradeModal?.(true)}>
                 <Plus className="w-4 h-4" />
                 {t("curriculum.header.addGradeLevel")}

@@ -11,6 +11,7 @@ const sa = authenticateSuperAdmin;
 router.get("/api/super-admin/schools", sa, superAdminController.getSchools);
 router.get("/api/super-admin/schools/export.csv", sa, superAdminController.exportSchoolsCsv);
 router.post("/api/super-admin/schools", sa, superAdminController.registerSchool);
+router.post("/api/super-admin/schools/seed-demo", sa, superAdminController.seedDemoSchool);
 router.get("/api/super-admin/schools/:id", sa, superAdminController.getSchool);
 router.get("/api/super-admin/schools/:id/students", sa, superAdminController.listSchoolStudents);
 router.get("/api/super-admin/schools/:id/staff", sa, superAdminController.listSchoolStaff);
@@ -31,6 +32,7 @@ router.patch("/api/super-admin/schools/:id/notes", sa, superAdminController.upda
 router.post("/api/super-admin/schools/:id/request-delete", sa, superAdminController.requestDelete);
 router.post("/api/super-admin/schools/:id/resend-invite", sa, superAdminController.resendInvite);
 router.patch("/api/super-admin/schools/:id/status", sa, superAdminController.updateSchoolStatus);
+router.patch("/api/super-admin/schools/:id/background-image", sa, superAdminController.updateSchoolBackgroundImage);
 router.patch("/api/super-admin/schools/:id", sa, superAdminController.updateSchool);
 router.delete("/api/super-admin/schools/:id", sa, superAdminController.deleteSchool);
 

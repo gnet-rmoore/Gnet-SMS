@@ -106,7 +106,7 @@ export function CreateClassroomModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto" noValidate>
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
               {t("classroomModals.className")} <span className="text-rose-500">*</span>
@@ -117,6 +117,7 @@ export function CreateClassroomModal({
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={t("classroomModals.classNamePlaceholder")}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              autoFocus
               required
             />
             <p className="text-xs text-slate-500">{t("classroomModals.classNameHint")}</p>
