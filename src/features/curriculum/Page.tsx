@@ -22,4 +22,4 @@ import { useSubjects } from "../subjects/hooks/useSubjects";
 import { useSyllabus } from "../syllabus/hooks/useSyllabus";
 import { useAcademicYearsStore } from "../../store/academicYearsStore";
 import { CurriculumSetupWizard } from "./components/CurriculumSetupWizard";
-export { Curriculum } from "./Page";
+export { default as Curriculum } from "./Page";

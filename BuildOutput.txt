@@ -1,0 +1,8 @@
+
+> gnet-sms@0.0.0 build
+> tsx prisma/setup-provider.ts && vite build
+
+[PRISMA SETUP] PostgreSQL-only mode
+[PRISMA SETUP] Regenerating Prisma Client...
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
