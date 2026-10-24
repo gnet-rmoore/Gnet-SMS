@@ -1,9 +1,165 @@
-Boss,
-
-Just a quick update: gnetsms.com is finally live. The exams overhaul is complete and deployed. 
-
-All the major pieces (kiosk mode, live proctoring with screen view, auto grade posting) are working as expected. 
-
-Thanks for the support!
-
-� Team
+latest: digest: sha256:e951347a67eaba29094c64524d0ef201df373a01cd944f263cf3ad06d7941229 size: 2406
+34s
+Run set -euo pipefail
+  
+#0 building with "default" instance using docker driver
+#1 [internal] load build definition from Dockerfile.frontend
+#1 transferring dockerfile: 1.54kB done
+#1 DONE 0.0s
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.1s
+#3 [internal] load metadata for docker.io/library/nginx:1.25.5-alpine
+#3 ...
+#4 [auth] library/nginx:pull token for registry-1.docker.io
+#4 DONE 0.0s
+#3 [internal] load metadata for docker.io/library/nginx:1.25.5-alpine
+#3 DONE 0.8s
+#5 [internal] load .dockerignore
+#5 transferring context: 506B done
+#5 DONE 0.0s
+#6 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#6 DONE 0.0s
+#7 [builder 2/6] WORKDIR /app
+#7 CACHED
+#8 [stage-1 1/6] FROM docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
+#8 resolve docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00 done
+#8 sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00 9.07kB / 9.07kB done
+#8 sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8 0B / 3.41MB 0.2s
+#8 sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 3.99MB / 3.99MB 0.1s done
+#8 sha256:e6ef242c157026935bf8a69e6cf19f8f6635e44507c813daf0cc644f2e22396b 629B / 629B 0.1s done
+#8 sha256:721fa00bc549df26b3e67cc558ff176112d4ba69847537766f3c28e171d180e7 2.50kB / 2.50kB done
+#8 sha256:501d84f5d06487ff81e506134dc922ed4fd2080d5521eb5b6ee4054fa17d15c4 10.80kB / 10.80kB done
+#8 sha256:13fcfbc94648785b918ecc1af675ac5187cdfc30f4fdaf9afa8bd2e9dedf548b 0B / 954B 0.2s
+#8 sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b 0B / 393B 0.2s
+#8 sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8 3.41MB / 3.41MB 0.2s done
+#8 sha256:13fcfbc94648785b918ecc1af675ac5187cdfc30f4fdaf9afa8bd2e9dedf548b 954B / 954B 0.2s done
+#8 sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b 393B / 393B 0.2s done
+#8 extracting sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8
+#8 sha256:8a3742a9529dc5c00974dfcf5e465be9f1606ff8a1911527b3928cf86ad57465 0B / 1.40kB 0.3s
+#8 sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 0B / 1.21kB 0.3s
+#8 sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0B / 13.04MB 0.3s
+#8 extracting sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8 0.2s done
+#8 sha256:8a3742a9529dc5c00974dfcf5e465be9f1606ff8a1911527b3928cf86ad57465 1.40kB / 1.40kB 0.3s done
+#8 sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 1.21kB / 1.21kB 0.3s done
+#8 sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 13.04MB / 13.04MB 0.4s done
+#8 extracting sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413
+#8 ...
+#9 [internal] load build context
+#9 transferring context: 100.53MB 0.6s done
+#9 DONE 0.6s
+#10 [builder 3/6] COPY package.json package-lock.json ./
+#10 DONE 0.1s
+#8 [stage-1 1/6] FROM docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
+#8 extracting sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 0.3s done
+#8 extracting sha256:e6ef242c157026935bf8a69e6cf19f8f6635e44507c813daf0cc644f2e22396b
+#8 extracting sha256:e6ef242c157026935bf8a69e6cf19f8f6635e44507c813daf0cc644f2e22396b done
+#8 extracting sha256:13fcfbc94648785b918ecc1af675ac5187cdfc30f4fdaf9afa8bd2e9dedf548b done
+#8 extracting sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b done
+#8 extracting sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 done
+#8 extracting sha256:8a3742a9529dc5c00974dfcf5e465be9f1606ff8a1911527b3928cf86ad57465 done
+#8 extracting sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0.1s
+#8 extracting sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0.3s done
+#8 DONE 1.4s
+#11 [builder 4/6] RUN npm ci --ignore-scripts
+#11 ...
+#12 [stage-1 2/6] COPY 30-tune-worker-processes.sh /docker-entrypoint.d/30-tune-worker-processes.sh
+#12 DONE 0.0s
+#13 [stage-1 3/6] RUN chmod +x /docker-entrypoint.d/30-tune-worker-processes.sh
+#13 DONE 0.2s
+#11 [builder 4/6] RUN npm ci --ignore-scripts
+#11 ...
+#14 [stage-1 4/6] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#14 DONE 0.0s
+#11 [builder 4/6] RUN npm ci --ignore-scripts
+#11 1.241 npm warn EBADENGINE Unsupported engine {
+#11 1.241 npm warn EBADENGINE   package: 'commander@15.0.0',
+#11 1.241 npm warn EBADENGINE   required: { node: '>=22.12.0' },
+#11 1.241 npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+#11 1.241 npm warn EBADENGINE }
+#11 1.242 npm warn EBADENGINE Unsupported engine {
+#11 1.242 npm warn EBADENGINE   package: 'nanoid@6.0.2',
+#11 1.242 npm warn EBADENGINE   required: { node: '^22 || ^24 || >=26' },
+#11 1.242 npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+#11 1.242 npm warn EBADENGINE }
+#11 5.651 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#11 19.74 
+#11 19.74 added 782 packages, and audited 783 packages in 19s
+#11 19.74 
+#11 19.74 119 packages are looking for funding
+#11 19.74   run `npm fund` for details
+#11 19.89 
+#11 19.89 63 vulnerabilities (3 low, 25 moderate, 32 high, 3 critical)
+#11 19.89 
+#11 19.89 To address issues that do not require attention, run:
+#11 19.89   npm audit fix
+#11 19.89 
+#11 19.89 To address all issues possible (including breaking changes), run:
+#11 19.89   npm audit fix --force
+#11 19.89 
+#11 19.89 Some issues need review, and may require choosing
+#11 19.89 a different dependency.
+#11 19.89 
+#11 19.89 Run `npm audit` for details.
+#11 19.89 npm notice
+#11 19.89 npm notice New major version of npm available! 10.8.2 -> 12.2.1
+#11 19.89 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#11 19.89 npm notice To update run: npm install -g npm@12.2.1
+#11 19.89 npm notice
+#11 DONE 20.7s
+#15 [builder 5/6] COPY . .
+#15 DONE 0.3s
+#16 [builder 6/6] RUN npm run build
+#16 0.275 
+#16 0.275 > gnet-sms@0.0.0 build
+#16 0.275 > tsx prisma/setup-provider.ts && vite build
+#16 0.275 
+#16 0.641 [PRISMA SETUP] PostgreSQL-only mode
+#16 0.641 [PRISMA SETUP] Regenerating Prisma Client...
+#16 1.533 prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+#16 1.533 Please manually install OpenSSL and try installing Prisma again.
+#16 2.080 Prisma schema loaded from prisma/schema.prisma
+#16 2.135 prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+#16 2.135 Please manually install OpenSSL and try installing Prisma again.
+#16 3.764 
+#16 3.764 ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 578ms
+#16 3.764 
+#16 3.764 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#16 3.764 
+#16 3.764 Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+#16 3.764 
+#16 3.969 [PRISMA SETUP] Prisma Client generated successfully!
+#16 4.389 vite v6.4.1 building for production...
+#16 4.488 transforming...
+#16 11.65 ✓ 3517 modules transformed.
+#16 11.65 ✗ Build failed in 7.22s
+#16 11.65 error during build:
+#16 11.65 Could not resolve "./components/CurriculumSetupWizard" from "src/features/curriculum/Page.tsx"
+#16 11.65 file: /app/src/features/curriculum/Page.tsx
+#16 11.65     at getRollupError (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+#16 11.65     at error (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+#16 11.65     at ModuleLoader.handleInvalidResolvedId (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21710:24)
+#16 11.65     at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21670:26
+#16 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [builder 6/6] RUN npm run build:
+4.488 transforming...
+11.65 ✓ 3517 modules transformed.
+11.65 ✗ Build failed in 7.22s
+11.65 error during build:
+11.65 Could not resolve "./components/CurriculumSetupWizard" from "src/features/curriculum/Page.tsx"
+11.65 file: /app/src/features/curriculum/Page.tsx
+11.65     at getRollupError (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+11.65     at error (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+11.65     at ModuleLoader.handleInvalidResolvedId (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21710:24)
+11.65     at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21670:26
+------
+Dockerfile.frontend:22
+--------------------
+  20 |     # Placeholder so `prisma generate` (called by `npm run build`) works without a live DB
+  21 |     ENV DATABASE_URL=***localhost:5432/placeholder?schema=public
+  22 | >>> RUN npm run build
+  23 |     
+  24 |     # --- Stage 2: Runtime ---
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+Error: Process completed with exit code 1.
