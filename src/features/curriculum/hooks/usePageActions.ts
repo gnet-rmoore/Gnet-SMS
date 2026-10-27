@@ -596,8 +596,13 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleUpdateSubject = async (id: string, data: any) => {
     try {
-      await curriculumApi.updateSubject(id, data);
-      fetchData();
+      const payload: any = {};
+      if (data.name !== undefined) payload.name = String(data.name).trim();
+      if (data.code !== undefined) payload.code = String(data.code).trim().toUpperCase();
+      if (data.description !== undefined) payload.description = data.description;
+      await curriculumApi.updateSubject(id, payload);
+      await fetchData();
+      showToast((t as any)("curriculum.toast.subjectUpdated") || "Subject updated", "success");
     } catch (err: any) {
       console.error(err);
       showToast(err?.message || t("curriculum.toast.subjectUpdateFailed"), "error");

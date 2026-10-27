@@ -2328,6 +2328,7 @@ export const enPages = {
       syllabusDeleteFailed: "Failed to delete syllabus",
       schoolNotFound: "School information not found. Please refresh.",
       subjectCreated: "Subject \"{{name}}\" created{{suffix}}",
+      subjectUpdated: "Subject updated",
       subjectCreatedOffered: " and offered for the selected grade level",
       subjectCreatedSynced: " and synced to {{count}} class group(s)",
       subjectCreateFailed: "Failed to create subject",
