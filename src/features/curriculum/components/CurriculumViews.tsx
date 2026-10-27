@@ -452,20 +452,15 @@ export function CurriculumViews({
                         <button
                           type="button"
                           onClick={() => {
-            const ok = window.confirm(t("curriculum.confirm.deleteSubjectText") || "Delete this subject?");
-            if (ok && handleDeleteSubject) handleDeleteSubject(subject.id);
-          }}
-          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-          title={t("curriculum.subjects.deleteSubject")}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      ) : null}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                            const ok = window.confirm(t("curriculum.confirm.deleteSubjectText") || "Delete this subject?");
+                            if (ok && handleDeleteSubject) handleDeleteSubject(subject.id);
+                          }}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title={t("curriculum.subjects.deleteSubject")}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ))}
