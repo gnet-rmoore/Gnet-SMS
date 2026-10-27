@@ -2332,6 +2332,7 @@ export const enPages = {
       subjectCreatedSynced: " and synced to {{count}} class group(s)",
       subjectCreateFailed: "Failed to create subject",
       gradeLevelsSeeded: "Default grade levels added",
+      gradeLevelUpdated: "Grade level updated",
       gradeLevelsSeedFailed: "Failed to seed grade levels",
       gradeLevelNameRequired: "Grade level name is required",
       gradeLevelExists: "A grade level with this name already exists",

@@ -143,7 +143,7 @@ export function CreateClassroomModal({
                 ))}
               </select>
             </div>
-            {gradeLevels.length === 0 && (
+            {gradeLevels && gradeLevels.length === 0 && (
               <p className="text-xs font-semibold text-rose-600">
                 {t("classroomModals.noGradeLevelsBefore")}{" "}
                 <Link to={`/${slug}/curriculum`} className="underline hover:text-rose-700">

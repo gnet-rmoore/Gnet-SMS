@@ -648,8 +648,14 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleUpdateGradeLevel = async (id: string, name: string) => {
     try {
-      await curriculumApi.updateGradeLevel(id, { name });
-      fetchData();
+      const trimmed = name?.trim();
+      if (!trimmed) {
+        showToast(t("curriculum.toast.gradeLevelUpdateFailed"), "error");
+        return;
+      }
+      await curriculumApi.updateGradeLevel(id, { name: trimmed });
+      await fetchData();
+      showToast((t as any)("curriculum.toast.gradeLevelUpdated") || "Grade level updated", "success");
     } catch (err: any) {
       console.error(err);
       showToast(err?.message || t("curriculum.toast.gradeLevelUpdateFailed"), "error");

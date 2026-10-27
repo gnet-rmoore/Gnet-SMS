@@ -82,7 +82,7 @@ export const Classrooms = () => {
   const canManageStudents = ["SCHOOL_ADMIN", "PRINCIPAL", "REGISTRAR"].includes(user?.role || "");
   const canCreate = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
   const isAdmin = ["SCHOOL_ADMIN", "PRINCIPAL", "SUPER_ADMIN"].includes(user?.role || "");
-  const needsCurriculumSetup = gradeLevels.length === 0 || subjects.length === 0;
+  const needsCurriculumSetup = !loading && (gradeLevels.length === 0 || subjects.length === 0);
 
   const filterFields: FilterFieldDef[] = useMemo(
     () => {
