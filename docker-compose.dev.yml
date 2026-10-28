@@ -53,6 +53,7 @@ services:
       PLATFORM_EDGE_HOSTNAME: ${PLATFORM_EDGE_HOSTNAME:-localhost}
       PLATFORM_CNAME_TARGET: ${PLATFORM_CNAME_TARGET:-localhost}
       PLATFORM_HOSTS: ${PLATFORM_HOSTS:-localhost,127.0.0.1}
+      S3_PUBLIC_URL: http://localhost:9000
 
   lifecycle:
     environment:

@@ -24,6 +24,13 @@
     reverse_proxy frontend-spa:80
 }
 
+# Object storage for presigned uploads and public file GETs. Without this,
+# files.<domain> falls through to the SPA catch-all above and browser PUTs
+# (class banners, attachments, docs) fail with a CORS/NetworkError.
+files.{$APP_DOMAIN} {
+    reverse_proxy http://minio:9000
+}
+
 :80 {
     reverse_proxy frontend-spa:80
 }

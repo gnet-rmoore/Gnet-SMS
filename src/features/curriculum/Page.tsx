@@ -124,6 +124,8 @@ export const Curriculum = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [showEditSubjectModal, setShowEditSubjectModal] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<any | null>(null);
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [showManageSubjectsModal, setShowManageSubjectsModal] = useState(false);
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<GradeLevel | null>(null);
@@ -438,6 +440,19 @@ submitting={submitting}
             handleCreateGradeLevel={handleCreateGradeLevel}
             setGradeForm={setGradeForm}
             setShowGradeModal={setShowGradeModal}
+            submitting={submitting}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showEditSubjectModal && (
+          <EditSubjectModal
+            subject={editingSubject}
+            handleUpdateSubject={handleUpdateSubject}
+            setShowEditSubjectModal={(v) => {
+              setShowEditSubjectModal(v);
+              if (!v) setEditingSubject(null);
+            }}
             submitting={submitting}
           />
         )}

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, UserRound } from "lucide-react";
+import { Search, UserPlus, UserRound } from "lucide-react";
 import { AdmissionFormWizard } from "../../admission-form";
 import {
   emptyManualAdmissionForm,
@@ -130,30 +130,46 @@ export function ManualAdmissionTab({
   );
 
   return (
-    <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6 md:p-8 max-w-4xl">
-      <div className="mb-8 space-y-1">
-        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
-          {t("admissions.manualAdmission.title")}
-        </h3>
-        <p className="text-sm text-slate-500 font-medium mt-1">
-          {t("admissions.manualAdmission.subtitle")}
-        </p>
-      </div>
-
-      <AdmissionFormWizard
-        form={f}
-        onChange={(patch) => setManualAdmissionForm({ ...f, ...patch })}
-        gradeLevels={gradeLevels}
-        mode="staff"
-        onSubmit={(e) => handleManualAdmissionSubmit(e)}
-        submitting={submitting}
-        submitLabel={
-          submitting
-            ? t("admissions.manualAdmission.submitting")
-            : t("admissions.manualAdmission.submitApplication")
-        }
-        firstStepExtra={applicantPicker}
+    <div className="relative max-w-4xl overflow-hidden rounded-[32px] border border-indigo-100/80 bg-gradient-to-br from-indigo-50/70 via-white to-slate-100/80 p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] md:p-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-200/40 blur-3xl"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-sky-200/40 blur-3xl"
+      />
+
+      <div className="relative">
+        <div className="mb-8 flex items-start gap-4 rounded-2xl border border-white/80 bg-white/70 p-5 shadow-sm backdrop-blur">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200/60">
+            <UserPlus className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <h3 className="text-xl font-extrabold tracking-tight text-slate-900">
+              {t("admissions.manualAdmission.title")}
+            </h3>
+            <p className="text-sm font-medium text-slate-500">
+              {t("admissions.manualAdmission.subtitle")}
+            </p>
+          </div>
+        </div>
+
+        <AdmissionFormWizard
+          form={f}
+          onChange={(patch) => setManualAdmissionForm({ ...f, ...patch })}
+          gradeLevels={gradeLevels}
+          mode="staff"
+          onSubmit={(e) => handleManualAdmissionSubmit(e)}
+          submitting={submitting}
+          submitLabel={
+            submitting
+              ? t("admissions.manualAdmission.submitting")
+              : t("admissions.manualAdmission.submitApplication")
+          }
+          firstStepExtra={applicantPicker}
+        />
+      </div>
     </div>
   );
 }

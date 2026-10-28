@@ -53,6 +53,8 @@ const STAFF_ROLES = new Set([
   "SUPER_ADMIN",
 ]);
 
+const CREATE_TOPIC_OPTION = "__create_new_topic__";
+
 function stripHtml(html: string) {
   const tmp = document.createElement("div");
   tmp.innerHTML = html || "";
@@ -395,12 +397,13 @@ export function ClassroomRoomPage() {
     if (!id || !newTopicTitle.trim()) return;
     setSavingTopic(true);
     try {
-      await workspaceApi.createTopic(id, newTopicTitle.trim());
+      const created = await workspaceApi.createTopic(id, newTopicTitle.trim());
       showToast(t("classroomWorkspace.toast.topicCreated"));
       setTopicCreateOpen(false);
       setNewTopicTitle("");
       const roomTopics = await workspaceApi.fetchTopics(id);
       setTopics(Array.isArray(roomTopics) ? roomTopics : []);
+      if (created?.id) setComposeTopicId(created.id);
     } catch (e: any) {
       showToast(e?.message || t("classroomWorkspace.toast.createTopicFailed"), "error");
     } finally {
@@ -1167,7 +1170,16 @@ export function ClassroomRoomPage() {
                 <select
                   className={`${fieldInput} mt-1.5`}
                   value={composeTopicId}
-                  onChange={(e) => setComposeTopicId(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === CREATE_TOPIC_OPTION) {
+                      e.target.value = "";
+                      setComposeTopicId("");
+                      setTopicCreateOpen(true);
+                      return;
+                    }
+                    setComposeTopicId(next);
+                  }}
                 >
                   <option value="">{t("classroomWorkspace.compose.noTopic")}</option>
                   {topics.map((t) => (
@@ -1175,6 +1187,9 @@ export function ClassroomRoomPage() {
                       {t.title}
                     </option>
                   ))}
+                  <option value={CREATE_TOPIC_OPTION}>
+                    {t("classroomWorkspace.compose.createNewTopic")}
+                  </option>
                 </select>
               </div>
             )}

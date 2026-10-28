@@ -82,6 +82,8 @@ export function CurriculumViews({
   setSelectedSyllabus,
   setShowGradeModal,
   setShowManageSubjectsModal,
+  setEditingSubject,
+  setShowEditSubjectModal,
   setShowSyllabusModal,
   setShowSyllabusViewModal,
   setSyllabusFeedback,
@@ -433,13 +435,18 @@ export function CurriculumViews({
                         <button
                           type="button"
                           onClick={() => {
-                            const newName = prompt(t("curriculum.subjects.promptName"), subject.name);
-                            const newCode = prompt(t("curriculum.subjects.promptCode"), subject.code);
-                            if (newName || newCode) {
-                              handleUpdateSubject(subject.id, { 
-                                name: newName?.trim() || subject.name, 
-                                code: (newCode?.trim() || subject.code).toUpperCase() 
-                              });
+                            if (setEditingSubject && setShowEditSubjectModal) {
+                              setEditingSubject(subject);
+                              setShowEditSubjectModal(true);
+                            } else {
+                              const newName = prompt(t("curriculum.subjects.promptName"), subject.name);
+                              const newCode = prompt(t("curriculum.subjects.promptCode"), subject.code);
+                              if (newName || newCode) {
+                                handleUpdateSubject(subject.id, { 
+                                  name: newName?.trim() || subject.name, 
+                                  code: (newCode?.trim() || subject.code).toUpperCase() 
+                                });
+                              }
                             }
                           }}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"

@@ -436,6 +436,7 @@ export const userService = {
       joiningDate,
       isActive,
       mustChangePassword,
+      photoUrl,
     } = data;
 
     if (!name?.trim() || !email?.trim()) {
@@ -475,6 +476,7 @@ export const userService = {
         joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
         isActive: isActive !== undefined ? Boolean(isActive) : true,
         mustChangePassword: mustChangePassword !== undefined ? Boolean(mustChangePassword) : true,
+        photoUrl: typeof photoUrl === "string" && photoUrl.trim() ? photoUrl.trim() : null,
       },
       select: {
         id: true,
@@ -485,6 +487,7 @@ export const userService = {
         dob: true,
         gender: true,
         address: true,
+        photoUrl: true,
         joiningDate: true,
         isActive: true,
         mustChangePassword: true,

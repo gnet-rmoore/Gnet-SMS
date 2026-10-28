@@ -8,12 +8,12 @@ set -u
 mc alias set local http://minio:9000 "${MINIO_ROOT_USER:-smsminio}" "${MINIO_ROOT_PASSWORD:-smsminio-secret}" || exit 1
 
 # Public-download buckets (matches previous behaviour + the bucket academic failed to create).
-for bucket in sms-classroom sms-admissions sms-receipts sms-exam-papers; do
+for bucket in sms-classroom sms-admissions sms-receipts sms-exam-papers sms-school-assets; do
   mc mb -p "local/${bucket}" 2>/dev/null || true
   if ! mc anonymous set download "local/${bucket}"; then
     echo "[minio-init] warn: could not set public download on ${bucket} (continuing)"
   fi
 done
 
-echo "[minio-init] buckets ready: sms-classroom, sms-admissions, sms-receipts, sms-exam-papers"
+echo "[minio-init] buckets ready: sms-classroom, sms-admissions, sms-receipts, sms-exam-papers, sms-school-assets"
 exit 0

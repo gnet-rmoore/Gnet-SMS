@@ -14,6 +14,7 @@ import {
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { STAFF_CREATE_ROLES, staffRoleLabel } from "../../../constants/roles";
+import { StaffPhotoField } from "./StaffPhotoField";
 
 export type AddStaffFormValues = {
   name: string;
@@ -24,6 +25,7 @@ export type AddStaffFormValues = {
   gender: string;
   address: string;
   joiningDate: string;
+  photoUrl: string;
   passwordMode: "auto" | "custom";
   password: string;
   mustChangePassword: boolean;
@@ -39,6 +41,7 @@ const emptyForm = (): AddStaffFormValues => ({
   gender: "",
   address: "",
   joiningDate: new Date().toISOString().split("T")[0],
+  photoUrl: "",
   passwordMode: "auto",
   password: "",
   mustChangePassword: true,
@@ -126,6 +129,7 @@ export function AddStaffModal({ open, submitting, onClose, onSubmit }: Props) {
         gender: form.gender || undefined,
         address: form.address.trim() || undefined,
         joiningDate: form.joiningDate || undefined,
+        photoUrl: form.photoUrl || undefined,
         password: form.passwordMode === "custom" ? form.password.trim() : undefined,
         mustChangePassword: form.mustChangePassword,
         isActive: form.isActive,
@@ -249,6 +253,13 @@ export function AddStaffModal({ open, submitting, onClose, onSubmit }: Props) {
                   <Briefcase className="w-4 h-4 text-indigo-500" />
                   <h3 className="text-sm font-extrabold tracking-tight">{t("pages:staff.accountSection")}</h3>
                 </div>
+                <StaffPhotoField
+                  name={form.name}
+                  photoUrl={form.photoUrl || null}
+                  onChange={(photoUrl) => set("photoUrl", photoUrl || "")}
+                  onError={setError}
+                  disabled={submitting}
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
                     <label className={labelClass} htmlFor="staff-name">{t("common:fullName")}</label>

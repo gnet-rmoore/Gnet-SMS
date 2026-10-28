@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { motion, AnimatePresence } from "motion/react";
 import { AddStaffModal } from "../../features/staff-management/components/AddStaffModal";
+import { StaffPhotoField } from "../../features/staff-management/components/StaffPhotoField";
 import { ImportRosterModal } from "../../features/bulk-import/ImportRosterModal";
 import { bulkImportApi } from "../../features/bulk-import/api";
 import { STAFF_CREATE_ROLES, staffRoleLabel } from "../../constants/roles";
@@ -55,6 +56,7 @@ export const StaffManagement = () => {
     gender: "",
     joiningDate: "",
     isActive: true,
+    photoUrl: "",
     newPassword: "",
     confirmPassword: "",
     mustChangePassword: true,
@@ -105,6 +107,40 @@ export const StaffManagement = () => {
       { id: editFormData.id, role: editFormData.role }
     );
 
+  const assignmentsByStaff = useMemo(() => {
+    const map = new Map<string, Array<{ classroomId: string; classroomName: string; role: string }>>();
+    for (const room of classrooms) {
+      const members = Array.isArray(room?.members) ? room.members : [];
+      for (const member of members) {
+        const staffId = member?.userId;
+        if (!staffId) continue;
+        const list = map.get(staffId) || [];
+        if (!list.some((item) => item.classroomId === room.id)) {
+          list.push({
+            classroomId: room.id,
+            classroomName: room.name || "",
+            role: member.role || "TEACHER",
+          });
+        }
+        map.set(staffId, list);
+      }
+    }
+    return map;
+  }, [classrooms]);
+
+  const classroomRoleLabel = (role: string) =>
+    role === "CO_TEACHER"
+      ? t("pages:staff.directory.coTeacher")
+      : role === "ASSISTANT"
+        ? t("pages:staff.directory.assistant")
+        : t("pages:staff.directory.leadTeacher");
+
+  const selectedAssignments = selectedStaff
+    ? assignmentsByStaff.get(selectedStaff.id) || []
+    : [];
+  const assignedClassroomIds = new Set(selectedAssignments.map((item) => item.classroomId));
+  const assignableClassrooms = classrooms.filter((room) => !assignedClassroomIds.has(room.id));
+
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -122,6 +158,7 @@ export const StaffManagement = () => {
       gender: staff.gender || "",
       joiningDate: staff.joiningDate ? String(staff.joiningDate).slice(0, 10) : "",
       isActive: staff.isActive !== undefined ? staff.isActive : true,
+      photoUrl: staff.photoUrl || "",
       newPassword: "",
       confirmPassword: "",
       mustChangePassword: true,
@@ -166,6 +203,7 @@ export const StaffManagement = () => {
           gender: editFormData.gender || undefined,
           joiningDate: editFormData.joiningDate || undefined,
           isActive: editFormData.isActive,
+          photoUrl: editFormData.photoUrl || null,
           ...(resetting
             ? {
                 password: editFormData.newPassword.trim(),
@@ -299,10 +337,35 @@ export const StaffManagement = () => {
       });
 
       if (response.ok) {
+        const previousAssignments = (assignmentsByStaff.get(selectedStaff.id) || []).filter(
+          (item) => item.role === assignData.role && item.classroomId !== assignData.classroomId
+        );
+
+        let removalFailed = false;
+        for (const item of previousAssignments) {
+          const removeResponse = await fetch(
+            `/api/classrooms/${item.classroomId}/members/${selectedStaff.id}`,
+            {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          if (!removeResponse.ok) removalFailed = true;
+        }
+
         setShowAssignModal(false);
         fetchData();
         setAssignData({ classroomId: "", role: "TEACHER" });
-        showToast(t("pages:staff.toast.assigned"));
+
+        if (removalFailed) {
+          showToast(t("pages:staff.toast.reassignFailed"), "error");
+        } else {
+          showToast(
+            previousAssignments.length > 0
+              ? t("pages:staff.toast.reassigned")
+              : t("pages:staff.toast.assigned")
+          );
+        }
       } else {
         const data = await response.json();
         showToast(data.error || t("pages:staff.toast.assignFailed"), "error");
@@ -462,20 +525,51 @@ export const StaffManagement = () => {
               </div>
 
               <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("pages:staff.directory.currentAssignment")}</label>
+                {selectedAssignments.length === 0 ? (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm font-medium text-slate-500">
+                    {t("pages:staff.directory.notAssigned")}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedAssignments.map((item) => (
+                        <span
+                          key={item.classroomId}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-xs font-bold text-indigo-700"
+                        >
+                          <span>{item.classroomName}</span>
+                          <span className="text-indigo-400">•</span>
+                          <span>{classroomRoleLabel(item.role)}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">{t("pages:staff.directory.reassignHint")}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("pages:staff.directory.classroom")}</label>
                 <select
                   value={assignData.classroomId}
                   onChange={(e) => setAssignData({ ...assignData, classroomId: e.target.value })}
                   className={fieldClass}
                   required
+                  disabled={assignableClassrooms.length === 0}
                 >
                   <option value="">{t("pages:staff.directory.selectClassroom")}</option>
-                  {classrooms.map((c) => (
+                  {assignableClassrooms.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} - {c.subject?.name} ({c.gradeLevel?.name})
+                      {c.name}
+                      {c.subject?.name ? ` - ${c.subject.name}` : ""}
+                      {c.gradeLevel?.name ? ` (${c.gradeLevel.name})` : ""}
                     </option>
                   ))}
                 </select>
+                {assignableClassrooms.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-medium">{t("pages:staff.directory.noOtherClassrooms")}</p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -502,7 +596,7 @@ export const StaffManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || assignableClassrooms.length === 0}
                   className="flex-1 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50"
                 >
                   {submitting ? t("pages:staff.directory.assigning") : t("pages:staff.directory.assign")}
@@ -533,20 +627,23 @@ export const StaffManagement = () => {
           <table className={dataTableClass.table}>
             <thead className={dataTableClass.thead}>
               <tr>
-                <th className={`${dataTableClass.th} w-[32%]`}>
+                <th className={`${dataTableClass.th} w-[26%]`}>
                   {t("pages:staff.directory.colStaff")}
                 </th>
-                <th className={`${dataTableClass.th} w-[14%]`}>
+                <th className={`${dataTableClass.th} w-[12%]`}>
                   {t("common:role")}
                 </th>
-                <th className={`${dataTableClass.th} w-[18%]`}>
+                <th className={`${dataTableClass.th} w-[16%]`}>
                   {t("pages:staff.directory.colContact")}
                 </th>
-                <th className={`${dataTableClass.th} w-[12%]`}>
+                <th className={`${dataTableClass.th} w-[20%]`}>
+                  {t("pages:staff.directory.colClass")}
+                </th>
+                <th className={`${dataTableClass.th} w-[10%]`}>
                   {t("pages:staff.directory.colStatus")}
                 </th>
                 {canManage && (
-                  <th className={`${dataTableClass.thEnd} w-[14%]`}>
+                  <th className={`${dataTableClass.thEnd} w-[16%]`}>
                     {t("pages:staff.directory.colActions")}
                   </th>
                 )}
@@ -556,12 +653,12 @@ export const StaffManagement = () => {
               {loading ? (
                 [1, 2, 3].map((i) => (
                   <tr key={i}>
-                    <td colSpan={canManage ? 5 : 4} className={`${dataTableClass.td} animate-pulse bg-slate-50/50 h-16`} />
+                    <td colSpan={canManage ? 6 : 5} className={`${dataTableClass.td} animate-pulse bg-slate-50/50 h-16`} />
                   </tr>
                 ))
               ) : filteredStaff.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 5 : 4} className={dataTableClass.tdEmpty}>
+                  <td colSpan={canManage ? 6 : 5} className={dataTableClass.tdEmpty}>
                     <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-slate-200 p-8 space-y-2">
                       <p className="font-extrabold tracking-tight text-slate-900">{t("pages:staff.directory.noStaffTitle")}</p>
                       <p className="text-sm text-slate-500">
@@ -585,7 +682,9 @@ export const StaffManagement = () => {
                   </td>
                 </tr>
               ) : (
-                filteredStaff.map((staff) => (
+                filteredStaff.map((staff) => {
+                  const staffAssignments = assignmentsByStaff.get(staff.id) || [];
+                  return (
                   <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className={dataTableClass.td}>
                       <div className="flex items-center gap-3 min-w-0">
@@ -613,6 +712,36 @@ export const StaffManagement = () => {
                       </span>
                     </td>
                     <td className={dataTableClass.td}>
+                      {staffAssignments.length === 0 ? (
+                        <span className="text-xs text-slate-400 font-medium italic">
+                          {t("pages:staff.directory.notAssigned")}
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {staffAssignments.slice(0, 2).map((item) => (
+                            <span
+                              key={item.classroomId}
+                              title={`${item.classroomName} • ${classroomRoleLabel(item.role)}`}
+                              className="inline-flex max-w-full items-center px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700"
+                            >
+                              <span className="truncate">{item.classroomName}</span>
+                            </span>
+                          ))}
+                          {staffAssignments.length > 2 ? (
+                            <span
+                              title={staffAssignments
+                                .slice(2)
+                                .map((item) => `${item.classroomName} • ${classroomRoleLabel(item.role)}`)
+                                .join(", ")}
+                              className="inline-flex items-center px-2 py-1 rounded-lg bg-slate-100 text-[11px] font-bold text-slate-600"
+                            >
+                              +{staffAssignments.length - 2}
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                    <td className={dataTableClass.td}>
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest ${
                           staff.isActive !== false
@@ -635,7 +764,11 @@ export const StaffManagement = () => {
                                 setSelectedStaff(staff);
                                 setShowAssignModal(true);
                               }}
-                              title={t("pages:staff.directory.assignToClass")}
+                              title={
+                                staffAssignments.length > 0
+                                  ? t("pages:staff.directory.reassignClass")
+                                  : t("pages:staff.directory.assignToClass")
+                              }
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
@@ -663,7 +796,8 @@ export const StaffManagement = () => {
                       </td>
                     )}
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -695,6 +829,15 @@ export const StaffManagement = () => {
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4 overflow-y-auto">
+              <StaffPhotoField
+                name={editFormData.name}
+                photoUrl={editFormData.photoUrl || null}
+                onChange={(photoUrl) =>
+                  setEditFormData({ ...editFormData, photoUrl: photoUrl || "" })
+                }
+                onError={(message) => showToast(message, "error")}
+                disabled={submitting}
+              />
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t("common:fullName")}</label>
                 <input
