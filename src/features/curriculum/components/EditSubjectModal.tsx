@@ -92,7 +92,7 @@ export function EditSubjectModal({
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder={t("curriculum.subjectModal.descriptionPlaceholder")}
-            className={${fieldInput} resize-none h-28 font-medium}
+            className={`${fieldInput} resize-none h-28 font-medium`}
           />
         </div>
       </form>

@@ -31,11 +31,11 @@ export function ExamSeatingModal({ examId, onClose }: Props) {
   const handleGenerate = async () => {
     setGenerateLoading(true);
     try {
-      const resp = await fetch(/api/exams//seats/generate, {
+      const resp = await fetch(`/api/exams/${examId}/seats/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: Bearer ,
+          Authorization: `Bearer ${(useAuthStore.getState() as any).accessToken}`,
         },
       });
       if (!resp.ok) {

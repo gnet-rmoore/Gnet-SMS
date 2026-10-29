@@ -7497,7 +7497,17 @@ export const enResources = {
   errors: enErrors,
   roles: enRoles,
   pages: deepMergePages(enPages as unknown as Record<string, unknown>, enPagesGaps as unknown as Record<string, unknown>),
-  public: enPublic,
+public: enPublic,
+  examDetails: {
+    seatingModalTitle: "Seats & Admit Cards",
+    seatingModalSubtitle: "Manage exam seating and generate admit‑cards for financially eligible students.",
+    seatedStudents: "Seated students",
+    eligible: "eligible",
+    skipped: "skipped (not financially eligible)",
+    notEligible: "not financially eligible",
+    generateSeats: "Generate seats",
+    downloadAdmitCards: "Download admit‑cards",
+  },
 };
 examDetails.seatingModalTitle: "Seats & Admit Cards"
 examDetails.seatingModalSubtitle: "Manage exam seating and generate admit‑cards for financially eligible students."
