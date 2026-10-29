@@ -72,12 +72,6 @@ export const Exams = () => {
     });
     setShowEditModal(true);
   };
-
-  const handleEditSave = (form: Partial<Exam>) => {
-    // TODO: call API to update exam
-    showToast(t("exams.toast.updated"), "success");
-    setShowEditModal(false);
-  };
   const periods = Array.isArray(calendar?.periods) ? calendar.periods : [];
 
   const filterFields: FilterFieldDef[] = React.useMemo(
@@ -151,6 +145,11 @@ export const Exams = () => {
   React.useEffect(() => {
     fetchExams();
   }, [fetchExams]);
+
+  const handleEditSave = () => {
+    setShowEditModal(false);
+    void fetchExams();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

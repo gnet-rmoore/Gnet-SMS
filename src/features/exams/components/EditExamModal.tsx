@@ -1,13 +1,9 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
-import { X } from "lucide-react";
-import { motion } from "motion/react";
 import { FeatureModalShell, fieldInput, fieldLabel } from "../../academics-shared/FeatureModalShell";
-import { useAuthStore } from "../../store/authStore";
-import { toast, showToast } from "../../academics-shared/PageToast";
-import { confirmAction } from "../../lib/swal";
-import { examsApi } from "../../services/api";
+import { useAuthStore } from "../../../store/authStore";
+import { PageToast, usePageToast } from "../../academics-shared/PageToast";
+import { examsApi } from "../api";
 import type { Exam } from "../types";
 
 type Props = {
@@ -17,27 +13,30 @@ type Props = {
   onSave: (data: Partial<Exam>) => void;
 };
 
+const EXAM_EDIT_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
+
 export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
   const { t } = useTranslation(["pages", "common"]);
-  const { user, school } = useAuthStore();
+  const { user } = useAuthStore();
+  const { toast, showToast } = usePageToast();
   const [form, setForm] = useState<Partial<Exam>>({ ...initial });
   const [saving, setSaving] = useState(false);
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
-    if (!user?.role?.includes("SCHOOL_ADMIN")) {
+    if (!EXAM_EDIT_ROLES.includes(user?.role || "")) {
       showToast(t("exams.toast.unauthorized"), "error");
       return;
     }
     setSaving(true);
     try {
-      await examsApi.updateExam(examId, form as any);
-      showToast(t("exams.toast.scheduled"), "success");
-      onSave(form as Partial<Exam>);
+      await examsApi.updateExam(examId, form);
+      showToast(t("exams.toast.updated"), "success");
+      onSave(form);
       onClose();
     } catch (err: any) {
       showToast(err?.message || t("exams.toast.scheduleFailed"), "error");
@@ -52,16 +51,19 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
       subtitle={t("exams.editExamSubtitle")}
       onClose={onClose}
     >
+      <PageToast toast={toast} />
       <form
         className="space-y-4"
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
-          handleSave();
+          void handleSave();
         }}
       >
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <fieldLabel htmlFor="edit-title">{t("exams.title")}</fieldLabel>
+            <label htmlFor="edit-title" className={fieldLabel}>
+              {t("exams.scheduleModal.examTitle")}
+            </label>
             <input
               id="edit-title"
               name="title"
@@ -73,7 +75,9 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
             />
           </div>
           <div>
-            <fieldLabel htmlFor="edit-startDate">{t("exams.startDate")}</fieldLabel>
+            <label htmlFor="edit-startDate" className={fieldLabel}>
+              {t("exams.startDate")}
+            </label>
             <input
               id="edit-startDate"
               name="startDate"
@@ -85,7 +89,9 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
             />
           </div>
           <div>
-            <fieldLabel htmlFor="edit-endDate">{t("exams.endDate")}</fieldLabel>
+            <label htmlFor="edit-endDate" className={fieldLabel}>
+              {t("exams.endDate")}
+            </label>
             <input
               id="edit-endDate"
               name="endDate"
@@ -97,7 +103,9 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
             />
           </div>
           <div>
-            <fieldLabel htmlFor="edit-deliveryMode">{t("exams.deliveryMode")}</fieldLabel>
+            <label htmlFor="edit-deliveryMode" className={fieldLabel}>
+              {t("exams.scheduleModal.deliveryMode")}
+            </label>
             <select
               id="edit-deliveryMode"
               name="deliveryMode"
@@ -106,15 +114,17 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
               onChange={handleInput}
               required
             >
-              <option value="ONLINE">{t("exams.deliveryMode.ONLINE")}</option>
-              <option value="OFFLINE">{t("exams.deliveryMode.OFFLINE")}</option>
-              <option value="HYBRID">{t("exams.deliveryMode.HYBRID")}</option>
+              <option value="ONLINE">{t("exams.scheduleModal.deliveryModeOnline")}</option>
+              <option value="OFFLINE">{t("exams.scheduleModal.deliveryModeOffline")}</option>
+              <option value="HYBRID">{t("exams.scheduleModal.deliveryModeHybrid")}</option>
             </select>
           </div>
         </div>
 
         <div>
-          <fieldLabel htmlFor="edit-paperDueAt">{t("exams.paperDueAt")}</fieldLabel>
+          <label htmlFor="edit-paperDueAt" className={fieldLabel}>
+            {t("exams.paperDueAt")}
+          </label>
           <input
             id="edit-paperDueAt"
             name="paperDueAt"

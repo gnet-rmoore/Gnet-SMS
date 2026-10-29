@@ -5,8 +5,10 @@ export const examsApi = {
     const qs = params ? `?${new URLSearchParams(params).toString()}` : "";
     return api.get(`/api/schools/${schoolId}/exams${qs}`);
   },
+  get: (examId: string) => api.get(`/api/exams/${examId}`),
   create: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/exams`, data),
+  updateExam: (examId: string, data: unknown) => api.put(`/api/exams/${examId}`, data),
   releaseGrades: (examId: string, isGradesReleased: boolean) =>
     api.patch(`/api/exams/${examId}/release-grades`, { isGradesReleased }),
   listSchedules: (examId: string) => api.get(`/api/exams/${examId}/schedule`),

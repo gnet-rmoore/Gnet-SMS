@@ -28,6 +28,8 @@ export type Exam = {
   hasPendingGrades?: boolean;
   examComponentId?: string | null;
   examComponent?: ExamComponentRef | null;
+  deliveryMode?: string;
+  paperDueAt?: string | null;
 };
 
 export type ScheduleExamFormData = {
