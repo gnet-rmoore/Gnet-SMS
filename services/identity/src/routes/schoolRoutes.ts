@@ -107,6 +107,18 @@ router.post(
 );
 
 router.post(
+  "/api/schools/:schoolId/admission-background/upload",
+  authenticate,
+  requireTenant,
+  requireRoles(["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL"]),
+  express.raw({
+    type: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    limit: "6mb",
+  }),
+  schoolController.uploadBackground
+);
+
+router.post(
   "/api/schools/:schoolId/onboarding/complete",
   authenticate,
   requireTenant,

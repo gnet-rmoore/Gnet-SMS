@@ -1,0 +1,132 @@
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../../store/authStore";
+import { motion, AnimatePresence } from "motion/react";
+import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
+import { toast, showToast } from "../../academics-shared/PageToast";
+import { examsApi } from "../../services/api";
+import { X } from "lucide-react";
+
+type Props = {
+  examId: string;
+  onClose: () => void;
+};
+
+export function ExamSeatingModal({ examId, onClose }: Props) {
+  const { t } = useTranslation(["pages", "common"]);
+  const { user, school } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [generateLoading, setGenerateLoading] = useState(false);
+  const [eligibleCount, setEligibleCount] = useState(0);
+  const [skipped, setSkipped] = useState(0);
+
+  React.useEffect(() => {
+    // TODO: fetch students for this exam (classroom members + identity lookup)
+    // const classroom = ...;
+    // setStudents(...);
+  }, [examId]);
+
+  const handleGenerate = async () => {
+    setGenerateLoading(true);
+    try {
+      const resp = await fetch(/api/exams//seats/generate, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: Bearer ,
+        },
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.message || "Seat generation failed");
+      }
+      const result = await resp.json(); // { eligibleCount: number, skipped: number, generated: number }
+      setEligibleCount(result.eligibleCount);
+      setSkipped(result.skipped);
+      showToast(t("exams.toast.seatsGenerated"), "success");
+    } catch (err: any) {
+      showToast(err?.message || t("exams.toast.seatGenerationFailed"), "error");
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
+  const handleDownloadAdmitCards = async () => {
+    setGenerateLoading(true);
+    try {
+      // TODO: call admit-card generation endpoint, build PDFs
+      showToast(t("exams.toast.admitCardsReady"), "success");
+    } catch (err: any) {
+      showToast(err?.message || t("exams.toast.admitCardFailed"), "error");
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
+  return (
+    <FeatureModalShell
+      title={t("examDetails.seatingModalTitle")}
+      subtitle={t("examDetails.seatingModalSubtitle")}
+      onClose={onClose}
+    >
+      <div className="p-6">
+        {loading ? (
+          <p>{t("examDetails.loading")}</p>
+        ) : students.length === 0 ? (
+          <p>{t("examDetails.noStudents")}</p>
+        ) : (
+          <>
+            <p className="font-medium mb-2">
+              {t("examDetails.seatedStudents", { count: eligibleCount })}{" "}
+              {t("examDetails.eligible")}
+            </p>
+            <span className="text-sm text-slate-500">
+              {t("examDetails.skipped", { count: skipped })} {t("examDetails.notEligible")}
+            </span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-slate-600">
+                <thead>
+                  <tr>
+                    <th className="text-left text-xs text-slate-500 uppercase font-bold border-b-2 border-slate-200 bg-slate-100 sticky top-0">
+                      {t("examDetails.student")}
+                    </th>
+                    <th className="text-left text-xs text-slate-500 uppercase font-bold border-b-2 border-slate-200 bg-slate-100">
+                      {t("examDetails.seatNumber")}
+                    </th>
+                    <th className="text-left text-xs text-slate-500 uppercase font-bold border-b-2 border-slate-200 bg-slate-100">
+                      {t("examDetails.room")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seats.map((s, i) => (
+                    <tr key={s.studentId}>
+                      <td className="font-medium">{s.studentName}</td>
+                      <td className="font-mono">{s.seatNumber}</td>
+                      <td>{s.room || t("examDetails.unspecified")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={generateLoading}
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {generateLoading ? t("common:saving") : t("examDetails.generateSeats")}
+            </button>
+            <button
+              onClick={handleDownloadAdmitCards}
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              {t("examDetails.downloadAdmitCards")}
+            </button>
+          </>
+        )}
+      </div>
+    </FeatureModalShell>
+  );
+}

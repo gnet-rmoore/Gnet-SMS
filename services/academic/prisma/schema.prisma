@@ -92,7 +92,8 @@ model Exam {
   startDate               DateTime
   endDate                 DateTime
   gradeSubmissionDeadline DateTime
-  duration                Int
+  /// Set when the paper is approved; the default is a placeholder only.
+  duration                Int          @default(60)
   status                  String       @default("SCHEDULED")
   isGradesReleased        Boolean      @default(false)
   /// Optional link to AcademicCalendar ExamComponent
@@ -130,6 +131,7 @@ model Exam {
   paperPackages           ExamPaperPackage[]
   rosterFlags             ExamPaperRosterFlag[]
   schedules               ExamSchedule[]
+  seatAllocations         ExamSeatAllocation[]
   paperRevisions          ExamPaperRevision[]
 
   @@index([schoolId])
@@ -162,6 +164,24 @@ model ExamSchedule {
   @@index([examId])
   @@index([schoolId, startAt])
   @@index([classId])
+  @@schema("academic")
+}
+
+/// Per-student exam seating. Only financially cleared students are allocated seats.
+model ExamSeatAllocation {
+  id          String   @id @default(uuid())
+  schoolId    String
+  examId      String
+  studentId   String
+  seatNumber  String
+  room        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([schoolId, examId])
+  @@index([examId, seatNumber])
   @@schema("academic")
 }
 

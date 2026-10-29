@@ -76,4 +76,11 @@ export const registrarApi = {
       uploadUrl: string;
       fileUrl: string;
     }>,
+  uploadAdmissionBackground: (schoolId: string, file: File) =>
+    api.post(`/api/schools/${schoolId}/admission-background/upload`, file, {
+      headers: {
+        "Content-Type": file.type,
+        "X-File-Name": encodeURIComponent(file.name),
+      },
+    }) as Promise<{ fileUrl: string }>,
 };

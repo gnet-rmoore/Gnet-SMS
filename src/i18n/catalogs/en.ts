@@ -7499,3 +7499,11 @@ export const enResources = {
   pages: deepMergePages(enPages as unknown as Record<string, unknown>, enPagesGaps as unknown as Record<string, unknown>),
   public: enPublic,
 };
+examDetails.seatingModalTitle: "Seats & Admit Cards"
+examDetails.seatingModalSubtitle: "Manage exam seating and generate admit‑cards for financially eligible students."
+examDetails.seatedStudents: "Seated students"
+examDetails.eligible: "eligible"
+examDetails.skipped: "skipped (not financially eligible)"
+examDetails.notEligible: "not financially eligible"
+examDetails.generateSeats: "Generate seats"
+examDetails.downloadAdmitCards: "Download admit‑cards"

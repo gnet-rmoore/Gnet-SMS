@@ -1907,7 +1907,6 @@ export const platformOpsService = {
 
   async seedDemoSchool(actor: Actor, req?: any) {
     await requireCap(actor, "schools.write");
-    const bcrypt = await import("bcryptjs");
     const demoPasswordHash = bcrypt.hashSync("demo123", 10);
 
     const existing = await prisma.school.findFirst({

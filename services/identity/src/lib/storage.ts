@@ -1,6 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   HeadBucketCommand,
   CreateBucketCommand,
 } from "@aws-sdk/client-s3";
@@ -64,22 +65,38 @@ async function ensureBucket(s3: S3Client) {
 
 const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-/** Presigned PUT for a school-admission background image. */
-export async function createBackgroundUploadUrl(opts: {
-  schoolId: string;
-  fileName: string;
-  mimeType: string;
-}): Promise<{ uploadUrl: string; fileUrl: string }> {
-  const mime = String(opts.mimeType || "image/jpeg").toLowerCase();
+function normalizeImageMime(value: string | undefined) {
+  const mime = String(value || "image/jpeg").split(";")[0].trim().toLowerCase();
   if (!ALLOWED_IMAGE_MIMES.includes(mime)) {
     const err: any = new Error(`Image type not allowed: ${mime}`);
     err.status = 400;
     err.code = "INVALID_MIME";
     throw err;
   }
+  return mime;
+}
+
+function backgroundStorageKey(schoolId: string, fileName: string, mime: string) {
   const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "gif";
-  const safeName = opts.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || `background.${ext}`;
-  const storageKey = `admissions/${opts.schoolId}/background/${Date.now()}-${safeName}`;
+  const safeName = String(fileName || "").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || `background.${ext}`;
+  return `admissions/${schoolId}/background/${Date.now()}-${safeName}`;
+}
+
+function storageUnavailable() {
+  const err: any = new Error("File storage is not configured");
+  err.status = 503;
+  err.code = "STORAGE_UNAVAILABLE";
+  return err;
+}
+
+/** Presigned PUT for a school-admission background image. */
+export async function createBackgroundUploadUrl(opts: {
+  schoolId: string;
+  fileName: string;
+  mimeType: string;
+}): Promise<{ uploadUrl: string; fileUrl: string }> {
+  const mime = normalizeImageMime(opts.mimeType);
+  const storageKey = backgroundStorageKey(opts.schoolId, opts.fileName, mime);
   const expiresIn = 900;
 
   const s3 = getClient();
@@ -98,4 +115,58 @@ export async function createBackgroundUploadUrl(opts: {
   const fileUrl = PUBLIC_BASE ? `${PUBLIC_BASE}/${BUCKET}/${storageKey}` : `s3://${BUCKET}/${storageKey}`;
 
   return { uploadUrl, fileUrl };
+}
+
+/** Server-side upload used when the browser cannot reach the storage host. */
+export async function putBackgroundObject(opts: {
+  schoolId: string;
+  fileName: string;
+  mimeType: string;
+  body: Buffer;
+}): Promise<{ storageKey: string }> {
+  const mime = normalizeImageMime(opts.mimeType);
+  const s3 = getClient();
+  if (!s3) throw storageUnavailable();
+
+  await ensureBucket(s3);
+  const storageKey = backgroundStorageKey(opts.schoolId, opts.fileName, mime);
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: storageKey,
+      ContentType: mime,
+      Body: opts.body,
+    })
+  );
+  return { storageKey };
+}
+
+export async function getBackgroundObject(storageKey: string): Promise<{
+  body: Buffer;
+  contentType: string;
+}> {
+  const s3 = getClient();
+  if (!s3) throw storageUnavailable();
+
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: storageKey }));
+    if (!result.Body) {
+      const err: any = new Error("Background image not found");
+      err.status = 404;
+      throw err;
+    }
+    const bytes = await result.Body.transformToByteArray();
+    return {
+      body: Buffer.from(bytes),
+      contentType: result.ContentType || "application/octet-stream",
+    };
+  } catch (err: any) {
+    if (err?.status) throw err;
+    if (err?.name === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404) {
+      const notFound: any = new Error("Background image not found");
+      notFound.status = 404;
+      throw notFound;
+    }
+    throw err;
+  }
 }

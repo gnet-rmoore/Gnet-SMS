@@ -139,21 +139,31 @@ export function OnlineRegistrationCard({ onMessage }: Props) {
     }
     setUploadingBackground(true);
     try {
-      const presign = await registrarApi.presignAdmissionBackground(school.id, {
-        fileName: file.name,
-        mimeType: file.type,
-      });
-      if (!presign?.uploadUrl || !presign?.fileUrl) {
-        throw new Error(t("admissions.onlineRegistration.background.storageUnavailable"));
+      let fileUrl = "";
+      try {
+        const presign = await registrarApi.presignAdmissionBackground(school.id, {
+          fileName: file.name,
+          mimeType: file.type,
+        });
+        if (presign?.uploadUrl && presign?.fileUrl) {
+          const put = await fetch(presign.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+          if (put.ok) fileUrl = presign.fileUrl;
+        }
+      } catch {
+        fileUrl = "";
       }
-      // Direct-to-storage upload (external signed URL — raw fetch, no auth header).
-      const put = await fetch(presign.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!put.ok) throw new Error(t("admissions.onlineRegistration.background.uploadFailed"));
-      await savePatch({ applyBackgroundUrl: presign.fileUrl });
+      if (!fileUrl) {
+        const uploaded = await registrarApi.uploadAdmissionBackground(school.id, file);
+        if (!uploaded?.fileUrl) {
+          throw new Error(t("admissions.onlineRegistration.background.storageUnavailable"));
+        }
+        fileUrl = uploaded.fileUrl;
+      }
+      await savePatch({ applyBackgroundUrl: fileUrl });
     } catch (e: any) {
       onMessage?.(e?.message || t("admissions.onlineRegistration.background.uploadFailed"), "error");
     } finally {

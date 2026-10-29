@@ -225,6 +225,7 @@ export const examPaperReviewSchema = z.object({
   action: z.enum(["APPROVE", "RETURN"]),
   feedback: z.string().max(5000).optional().nullable(),
   deliveryMode: z.enum(["ONLINE", "OFFLINE", "HYBRID"]).optional(),
+  duration: z.coerce.number().int().min(1).max(600).optional(),
 });
 
 export const examPaperRosterSchema = z.object({

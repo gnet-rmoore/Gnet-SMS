@@ -14,7 +14,11 @@ import {
   serializeSecurityPolicy,
 } from "../lib/securityPolicy";
 import { parseAdmissionPolicy, mergeAdmissionPolicy } from "../lib/admissionPolicy";
-import { createBackgroundUploadUrl } from "../lib/storage";
+import {
+  createBackgroundUploadUrl,
+  putBackgroundObject,
+  getBackgroundObject,
+} from "../lib/storage";
 import {
   parseCertificateDefaults,
   serializeCertificateDefaults,
@@ -399,6 +403,45 @@ export const schoolService = {
     const fileName = String(data?.fileName || "background.jpg");
     const mimeType = String(data?.mimeType || "image/jpeg");
     return createBackgroundUploadUrl({ schoolId, fileName, mimeType });
+  },
+
+  async uploadBackground(
+    schoolId: string,
+    data: { fileName: string; mimeType: string; body: Buffer }
+  ) {
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { id: true, slug: true },
+    });
+    if (!school) {
+      throw Object.assign(new Error("School not found"), { status: 404 });
+    }
+    const uploaded = await putBackgroundObject({
+      schoolId,
+      fileName: String(data?.fileName || "background.jpg"),
+      mimeType: String(data?.mimeType || "image/jpeg"),
+      body: data.body,
+    });
+    const key = encodeURIComponent(uploaded.storageKey);
+    return {
+      fileUrl: `/api/public/schools/${encodeURIComponent(school.slug)}/admission-background?key=${key}`,
+    };
+  },
+
+  async getPublicBackground(slug: string, storageKey: string) {
+    const school = await prisma.school.findUnique({
+      where: { slug: String(slug || "").toLowerCase().trim() },
+      select: { id: true },
+    });
+    if (!school) {
+      throw Object.assign(new Error("Background image not found"), { status: 404 });
+    }
+    const prefix = `admissions/${school.id}/background/`;
+    const key = String(storageKey || "");
+    if (!key.startsWith(prefix)) {
+      throw Object.assign(new Error("Background image not found"), { status: 404 });
+    }
+    return getBackgroundObject(key);
   },
 };
 

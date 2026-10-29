@@ -56,6 +56,11 @@ router.get("/api/public/schools/:slug", async (req, res) => {
   return schoolController.getBySlugPublic(req, res);
 });
 
+router.get("/api/public/schools/:slug/admission-background", async (req, res) => {
+  const { schoolController } = await import("../controllers/schoolController");
+  return schoolController.getPublicBackground(req, res);
+});
+
 router.get("/api/public/schools/:slug/grade-levels", async (req, res) => {
   const { schoolController } = await import("../controllers/schoolController");
   return schoolController.getPublicGradeLevels(req, res);

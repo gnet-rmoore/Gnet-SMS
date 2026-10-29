@@ -69,10 +69,12 @@ async function request(
   };
   let payload: BodyInit | undefined;
   if (body !== undefined) {
-    if (!headers["Content-Type"] && !(body instanceof FormData)) {
+    const isRawBody =
+      body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer;
+    if (!headers["Content-Type"] && !isRawBody) {
       headers["Content-Type"] = "application/json";
     }
-    payload = body instanceof FormData ? body : JSON.stringify(body);
+    payload = isRawBody ? (body as BodyInit) : JSON.stringify(body);
   }
 
   const res = await fetch(buildUrl(path, options?.params), {

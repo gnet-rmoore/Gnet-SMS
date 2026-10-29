@@ -251,6 +251,48 @@ export const schoolController = {
     }
   },
 
+  async uploadBackground(req: Request, res: Response) {
+    const { schoolId } = req.params;
+    const user = (req as any).user;
+    if (user?.role !== "SUPER_ADMIN" && user?.schoolId !== schoolId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).json({ error: "Image body is required" });
+      }
+      const mimeType = String(req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
+      const rawName = String(req.headers["x-file-name"] || "background.jpg");
+      let fileName = rawName;
+      try {
+        fileName = decodeURIComponent(rawName);
+      } catch {}
+      const result = await schoolService.uploadBackground(schoolId, {
+        fileName,
+        mimeType,
+        body: req.body,
+      });
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to upload background" });
+    }
+  },
+
+  async getPublicBackground(req: Request, res: Response) {
+    try {
+      const result = await schoolService.getPublicBackground(
+        String(req.params.slug || ""),
+        String(req.query.key || "")
+      );
+      res.setHeader("Content-Type", result.contentType);
+      res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.send(result.body);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Background image not found" });
+    }
+  },
+
   async getAdmissionPolicyInternal(req: Request, res: Response) {
     try {
       const row = await schoolService.getAdmissionPolicy(String(req.params.schoolId || ""));

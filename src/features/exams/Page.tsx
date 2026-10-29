@@ -12,6 +12,7 @@ import {
   EyeOff,
   CalendarDays,
   Layers,
+  Pencil,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -22,6 +23,7 @@ import { confirmAction } from "../../lib/swal";
 import { useAcademicCalendarQuery } from "../academic-calendar/hooks/useAcademicCalendarQuery";
 import { ScheduleExamModal } from "./components/ScheduleExamModal";
 import { ExamScheduleModal } from "./components/ExamScheduleModal";
+import { EditExamModal } from "./components/EditExamModal";
 import { examsApi } from "./api";
 import {
   emptyScheduleForm,
@@ -49,12 +51,33 @@ export const Exams = () => {
   const [formData, setFormData] = React.useState<ScheduleExamFormData>(emptyScheduleForm());
   const [submitting, setSubmitting] = React.useState(false);
   const [scheduleExam, setScheduleExam] = React.useState<Exam | null>(null);
+  const [showEditModal, setShowEditModal] = React.useState(false);
+  const [editExamForm, setEditExamForm] = React.useState<Partial<Exam>>({});
+  const [editExamId, setEditExamId] = React.useState<string>("");
 
   const canSchedule = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "");
   const canManageSchedules = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"].includes(
     user?.role || ""
   );
   const slug = school?.slug || "";
+
+  const handleOpenEdit = (exam: Exam) => {
+    setEditExamId(exam.id);
+    setEditExamForm({
+      title: exam.title,
+      startDate: exam.startDate,
+      endDate: exam.endDate,
+      deliveryMode: exam.deliveryMode,
+      paperDueAt: exam.paperDueAt,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = (form: Partial<Exam>) => {
+    // TODO: call API to update exam
+    showToast(t("exams.toast.updated"), "success");
+    setShowEditModal(false);
+  };
   const periods = Array.isArray(calendar?.periods) ? calendar.periods : [];
 
   const filterFields: FilterFieldDef[] = React.useMemo(
@@ -326,6 +349,14 @@ export const Exams = () => {
             onChanged={fetchExams}
           />
         )}
+        {showEditModal && editExamId && (
+          <EditExamModal
+            examId={editExamId}
+            initial={editExamForm}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleEditSave}
+          />
+        )}
       </AnimatePresence>
 
       {loading ? (
@@ -406,6 +437,16 @@ export const Exams = () => {
                           <span className="text-xs font-bold uppercase tracking-wider">
                             {exam.isGradesReleased ? t("exams.released") : t("exams.private")}
                           </span>
+                        </button>
+                      )}
+                      { ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "") && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(exam)}
+                          className="p-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-colors flex items-center gap-2"
+                          title={t("exams.editExam")}
+                        >
+                          <Pencil className="w-4 h-4" /> {t("exams.editExam")}
                         </button>
                       )}
                     </div>
