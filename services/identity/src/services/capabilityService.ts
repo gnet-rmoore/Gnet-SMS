@@ -9,6 +9,12 @@ import {
 } from "../lib/capabilities";
 import { SCHOOL_ASSIGNABLE_ROLES, isSchoolAssignableRole } from "../lib/roleChange";
 
+const CAPABILITY_LABELS = new Map(CAPABILITY_CATALOG.map((c) => [c.key, c.label]));
+
+function capabilityLabel(key: string): string {
+  return CAPABILITY_LABELS.get(key) ?? "Unknown capability";
+}
+
 export const capabilityService = {
   catalog() {
     return CAPABILITY_CATALOG;
@@ -99,11 +105,11 @@ export const capabilityService = {
       const key = String(o?.capabilityKey || "").trim();
       if (!key || seen.has(key)) continue;
       if (!isKnownCapability(key)) {
-        throw Object.assign(new Error(`Unknown capability: ${key}`), { status: 400 });
+        throw Object.assign(new Error("Unknown capability selection"), { status: 400 });
       }
       if (role === "SCHOOL_ADMIN" && LOCKED_KEYS_FOR_SCHOOL_ADMIN.includes(key) && !o.allowed) {
         throw Object.assign(
-          new Error(`Cannot remove locked capability "${key}" from School Admin`),
+          new Error(`Cannot remove locked capability "${capabilityLabel(key)}" from School Admin`),
           { status: 400 }
         );
       }

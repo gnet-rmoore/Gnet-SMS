@@ -21,6 +21,7 @@ import {
   assertSaCapability,
   SaCapabilityDeniedError,
   normalizeSaPlatformRole,
+  saCapabilityLabel,
 } from "../services/identity/src/domain/saCapabilities";
 import {
   emptyHeadcounts,
@@ -112,9 +113,14 @@ assert.equal(saHasCapability("SUPPORT", "impersonate"), true);
 assert.equal(saHasCapability("OWNER", "schools.delete"), true);
 assert.ok(capabilitiesForSaRole("OWNER").includes("operators.manage"));
 
+assert.equal(saCapabilityLabel("schools.read"), "View schools");
+assert.equal(saCapabilityLabel("unknown.key"), "Unknown Key");
 assert.throws(
   () => assertSaCapability("ANALYST", "impersonate"),
-  (err: unknown) => err instanceof SaCapabilityDeniedError
+  (err: unknown) =>
+    err instanceof SaCapabilityDeniedError &&
+    err.message.includes("Impersonate school users") &&
+    !err.message.includes("impersonate")
 );
 
 const map = headcountsFromRoleGroups([

@@ -227,9 +227,6 @@ export function CustomizeRolesPanel({ showToast }: Props) {
                             {c.label}
                             {isLocked ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : null}
                           </span>
-                          <span className="block text-xs text-slate-400 font-mono mt-0.5 truncate">
-                            {c.key}
-                          </span>
                           {!isDefault && on ? (
                             <span className="inline-flex mt-1 text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
                               Added

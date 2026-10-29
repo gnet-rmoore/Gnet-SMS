@@ -1906,7 +1906,7 @@ export const platformOpsService = {
   },
 
   async seedDemoSchool(actor: Actor, req?: any) {
-    await requireCap(actor, "schools.manage");
+    await requireCap(actor, "schools.write");
     const bcrypt = await import("bcryptjs");
     const demoPasswordHash = bcrypt.hashSync("demo123", 10);
 

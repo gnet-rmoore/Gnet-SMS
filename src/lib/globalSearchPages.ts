@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { NavSection } from "../constants/navByRole";
+import { pageMetaForPath } from "./globalSearchPageMeta";
 
 export type SearchPageItem = {
   id: string;
@@ -13,12 +14,15 @@ export type SearchPageItem = {
     sectionId: string;
     sectionLabel: string;
     labelKey: string;
+    title?: string;
+    keywords: string[];
   };
 };
 
 export function pathSegment(path: string): string {
-  const parts = path.split("/").filter(Boolean);
-  return parts[parts.length - 1] || path;
+  const cleanPath = path.split(/[?#]/)[0];
+  const parts = cleanPath.split("/").filter(Boolean);
+  return parts[parts.length - 1] || cleanPath;
 }
 
 export function humanizeSegment(segment: string): string {
@@ -43,6 +47,7 @@ export function navSectionsToSearchPages(
       if (seen.has(item.to)) continue;
       seen.add(item.to);
       const segment = pathSegment(item.to);
+      const pageMeta = pageMetaForPath(item.to);
       const label =
         translateNavKey(item.labelKey).trim() ||
         humanizeSegment(segment) ||
@@ -59,6 +64,8 @@ export function navSectionsToSearchPages(
           sectionId: section.id,
           sectionLabel,
           labelKey: item.labelKey,
+          title: pageMeta?.title,
+          keywords: pageMeta?.keywords ?? [],
         },
       });
     }

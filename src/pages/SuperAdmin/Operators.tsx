@@ -2,6 +2,7 @@ import React from "react";
 import { useAuthStore } from "../../store/authStore";
 import { PageShell, PageHeader, Surface, Button, Field, DataTable, dataTableClass } from "../../components/ui";
 import { toast, confirmAction } from "../../lib/swal";
+import { saCapabilityLabel, saPlatformRoleLabel } from "../../lib/saCapabilities";
 import { Shield, UserPlus, Ban, Unlock, KeyRound } from "lucide-react";
 import { FeatureModalShell } from "../../features/academics-shared/FeatureModalShell";
 
@@ -41,7 +42,7 @@ export const Operators = () => {
         }).then(async (r) => ({ ok: r.ok, data: await r.json() })),
       ]);
       if (!o.ok) {
-        setError(o.data.error || "Cannot load operators (need operators.manage)");
+        setError(o.data.error || "Cannot load operators (requires Manage platform operators)");
         setOps([]);
       } else {
         setError("");
@@ -229,14 +230,17 @@ export const Operators = () => {
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {saPlatformRoleLabel(r)}
                         </option>
                       ))}
                     </select>
                   </td>
-                  <td className={`${dataTableClass.td} text-xs text-slate-500 font-mono`}>
-                    <span className="block truncate">
-                      {op.capabilities.slice(0, 6).join(", ")}
+                  <td className={`${dataTableClass.td} text-xs text-slate-500`}>
+                    <span
+                      className="block truncate"
+                      title={op.capabilities.map(saCapabilityLabel).join(", ")}
+                    >
+                      {op.capabilities.slice(0, 6).map(saCapabilityLabel).join(", ")}
                       {op.capabilities.length > 6 ? "…" : ""}
                     </span>
                   </td>
@@ -361,7 +365,7 @@ export const Operators = () => {
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
-                      {r}
+                      {saPlatformRoleLabel(r)}
                     </option>
                   ))}
                 </select>

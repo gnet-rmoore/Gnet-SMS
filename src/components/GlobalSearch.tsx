@@ -382,6 +382,8 @@ export const GlobalSearch = () => {
       const score = scoreFields(
         [
           { text: p.label, weight: 1 },
+          { text: p.meta?.title, weight: 0.98 },
+          ...(p.meta?.keywords ?? []).map((keyword) => ({ text: keyword, weight: 0.78 })),
           { text: p.meta?.sectionLabel, weight: 0.6 },
           { text: p.meta?.segment, weight: 0.55 },
           { text: p.path, weight: 0.45 },

@@ -29,6 +29,39 @@ export const SA_CAPABILITIES = [
 
 export type SaCapability = (typeof SA_CAPABILITIES)[number];
 
+/** Friendly capability names for API errors — never expose raw keys to users. */
+const SA_CAPABILITY_LABELS: Record<SaCapability, string> = {
+  "schools.read": "View schools",
+  "schools.write": "Create and edit schools",
+  "schools.suspend": "Suspend or reactivate schools",
+  "schools.delete": "Delete schools",
+  "registrations.review": "Review school registrations",
+  "users.read": "View platform users",
+  "users.write": "Create and edit platform users",
+  "users.password_reset": "Reset user passwords",
+  "users.disable": "Disable user accounts",
+  "plans.manage": "Manage plans and entitlements",
+  "credentials.manage": "Manage credentials",
+  "settings.manage": "Manage platform settings",
+  "operators.manage": "Manage platform operators",
+  impersonate: "Impersonate school users",
+  "export.dsr": "Export data subject requests",
+  broadcast: "Send platform broadcasts",
+  "audit.read": "View audit logs",
+  "reports.read": "View platform reports",
+};
+
+function humanizeCapability(capability: string): string {
+  return capability
+    .replace(/[._-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
+}
+
+export function saCapabilityLabel(capability: string): string {
+  return SA_CAPABILITY_LABELS[capability as SaCapability] ?? humanizeCapability(capability);
+}
+
 const ALL = [...SA_CAPABILITIES];
 
 const BY_ROLE: Record<SaPlatformRole, SaCapability[]> = {
@@ -78,7 +111,7 @@ export class SaCapabilityDeniedError extends Error {
   status = 403;
   code = "SA_CAPABILITY_DENIED";
   constructor(capability: string) {
-    super(`Super Admin capability required: ${capability}`);
+    super(`Super Admin capability required: ${saCapabilityLabel(capability)}`);
     this.name = "SaCapabilityDeniedError";
   }
 }
