@@ -7509,11 +7509,13 @@ public: enPublic,
     downloadAdmitCards: "Download admit‑cards",
   },
 };
-examDetails.seatingModalTitle: "Seats & Admit Cards"
-examDetails.seatingModalSubtitle: "Manage exam seating and generate admit‑cards for financially eligible students."
-examDetails.seatedStudents: "Seated students"
-examDetails.eligible: "eligible"
-examDetails.skipped: "skipped (not financially eligible)"
-examDetails.notEligible: "not financially eligible"
-examDetails.generateSeats: "Generate seats"
-examDetails.downloadAdmitCards: "Download admit‑cards"
+examDetails: {
+  seatingModalTitle: "Seats & Admit Cards",
+  seatingModalSubtitle: "Manage exam seating and generate admit‑cards for financially eligible students.",
+  seatedStudents: "Seated students",
+  eligible: "eligible",
+  skipped: "skipped (not financially eligible)",
+  notEligible: "not financially eligible",
+  generateSeats: "Generate seats",
+  downloadAdmitCards: "Download admit‑cards",
+};
