@@ -204,7 +204,7 @@ export function Library() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Titles" value={stats.titles} icon={<BookMarked className="w-5 h-5" />} />
         <StatTile label="Total copies" value={stats.copies} />
         <StatTile label="On loan" value={stats.out} icon={<BookOpen className="w-5 h-5" />} />

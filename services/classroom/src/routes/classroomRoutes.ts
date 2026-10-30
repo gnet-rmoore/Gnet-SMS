@@ -10,6 +10,7 @@ const CLASSROOM_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "TEACHER", "
 const CLASSROOM_ADMIN = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
 /** Roster add/remove — school staff only (not TEACHER). */
 const CLASSROOM_MEMBERSHIP_MANAGERS = [
+  "SUPER_ADMIN",
   "SCHOOL_ADMIN",
   "PRINCIPAL",
   "VPI",
@@ -71,6 +72,14 @@ router.post(
   requireRoles(CLASSROOM_MEMBERSHIP_MANAGERS),
   requireResourceTenant(resourceLoaders.classroom),
   classroomController.addMember
+);
+
+router.post(
+  "/api/classrooms/:id/members/bulk",
+  authenticate,
+  requireRoles(CLASSROOM_MEMBERSHIP_MANAGERS),
+  requireResourceTenant(resourceLoaders.classroom),
+  classroomController.addMembersBulk
 );
 
 router.delete(

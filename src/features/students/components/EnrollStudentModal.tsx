@@ -19,6 +19,10 @@ export type EnrollStudentModalProps = {
   credentials?: { email: string; temporaryPassword: string; name: string } | null;
   onDone?: () => void;
   classrooms?: any[];
+  onClose?: () => void;
+  onDiscardDraft?: () => void;
+  draftRestored?: boolean;
+  gradeLevelsLoading?: boolean;
 };
 
 export function EnrollStudentModal({
@@ -32,6 +36,10 @@ export function EnrollStudentModal({
   credentials,
   onDone,
   classrooms = [],
+  onClose,
+  onDiscardDraft,
+  draftRestored = false,
+  gradeLevelsLoading = false,
 }: EnrollStudentModalProps) {
   const { t } = useTranslation(["pages", "common"]);
   const [copied, setCopied] = useState<"email" | "password" | null>(null);
@@ -52,7 +60,7 @@ export function EnrollStudentModal({
         eyebrow={t("pages:students.title")}
         title={t("pages:students.enrolled")}
         subtitle={t("pages:students.enrolledSubtitle")}
-        onClose={() => onDone?.()}
+        onClose={() => undefined}
         wide
         footer={
           <button
@@ -65,6 +73,14 @@ export function EnrollStudentModal({
         }
       >
         <div className="p-6 sm:p-8 space-y-5">
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-indigo-900 font-medium">
+              {t("pages:students.credentialsSaveHint")}
+            </p>
+            <p className="sr-only" aria-live="polite">
+              {t("pages:students.credentialsRequired")}
+            </p>
+          </div>
           <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div>
@@ -78,6 +94,9 @@ export function EnrollStudentModal({
           </div>
 
           <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {t("pages:students.credentialsSection")}
+            </p>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className={fieldLabel}>{t("common:email")}</p>
@@ -131,20 +150,25 @@ export function EnrollStudentModal({
     );
   }
 
-  const noGrades = gradeLevels.length === 0;
+  const noGrades = !gradeLevelsLoading && gradeLevels.length === 0;
+  const closeModal = () => {
+    if (credentials) return;
+    if (onClose) onClose();
+    else setIsModalOpen?.(false);
+  };
 
   return (
     <FeatureModalShell
       eyebrow={t("pages:students.title")}
       title={t("pages:students.enroll")}
       subtitle={t("pages:students.enrollSubtitle")}
-      onClose={() => setIsModalOpen?.(false)}
+      onClose={closeModal}
       wide
       footer={
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setIsModalOpen?.(false)}
+            onClick={closeModal}
             className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
           >
             {t("common:cancel")}
@@ -165,6 +189,31 @@ export function EnrollStudentModal({
         onSubmit={handleEnroll}
         className="p-6 sm:p-8 space-y-6"
       >
+        {draftRestored ? (
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-indigo-900 font-medium">
+              {t("pages:students.draftRestored")}
+            </p>
+            <button
+              type="button"
+              onClick={onDiscardDraft}
+              className="min-h-11 rounded-xl bg-white px-4 text-sm font-bold text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+            >
+              {t("pages:students.startBlank")}
+            </button>
+          </div>
+        ) : null}
+        {draftRestored ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onDiscardDraft}
+              className="min-h-11 px-3 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl"
+            >
+              {t("pages:students.discardDraft")}
+            </button>
+          </div>
+        ) : null}
         {enrollError ? (
           <div className="p-4 bg-rose-50 text-rose-700 text-sm font-medium rounded-xl border border-rose-100 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -178,7 +227,11 @@ export function EnrollStudentModal({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <section className="space-y-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {t("pages:students.studentDetails")}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-1.5">
             <label className={fieldLabel}>{t("common:fullName")}</label>
             <input
@@ -189,7 +242,7 @@ export function EnrollStudentModal({
                 setNewStudent?.({ ...newStudent, name: e.target.value })
               }
               className={fieldInput}
-              placeholder="Alex Rivera"
+              placeholder={t("pages:students.namePlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
@@ -202,7 +255,7 @@ export function EnrollStudentModal({
                 setNewStudent?.({ ...newStudent, email: e.target.value })
               }
               className={fieldInput}
-              placeholder="alex@example.com"
+              placeholder={t("pages:students.emailPlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
@@ -232,6 +285,14 @@ export function EnrollStudentModal({
               <option value="OTHER">{t("common:other")}</option>
             </select>
           </div>
+          </div>
+        </section>
+
+        <section className="pt-4 border-t border-slate-100 space-y-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {t("pages:students.gradePlacement")}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-1.5 md:col-span-2">
             <label className={fieldLabel}>{t("common:gradeLevel")}</label>
             <select
@@ -244,9 +305,13 @@ export function EnrollStudentModal({
                 })
               }
               className={fieldInput}
-              disabled={noGrades}
+              disabled={gradeLevelsLoading || noGrades}
             >
-              <option value="">{t("pages:students.selectGradeLevel")}</option>
+              <option value="">
+                {gradeLevelsLoading
+                  ? t("pages:students.loadingGradeLevels")
+                  : t("pages:students.selectGradeLevel")}
+              </option>
               {gradeLevels.map((gl: any) => (
                 <option key={gl.id} value={gl.id}>
                   {gl.name}
@@ -299,6 +364,7 @@ export function EnrollStudentModal({
             </div>
           ) : null}
         </div>
+        </section>
 
         <div className="pt-2 border-t border-slate-100 space-y-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -318,7 +384,7 @@ export function EnrollStudentModal({
                   })
                 }
                 className={fieldInput}
-                placeholder="Jordan Rivera"
+                placeholder={t("pages:students.parentNamePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
@@ -334,7 +400,7 @@ export function EnrollStudentModal({
                   })
                 }
                 className={fieldInput}
-                placeholder="+1 555 0100"
+                placeholder={t("pages:students.parentPhonePlaceholder")}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../../store/authStore";
 import { studentsApi } from "../api";
+import { unwrapItems } from "../../../lib/apiEnvelope";
 
 export type StudentsListFilters = {
   q?: string;
@@ -50,7 +51,7 @@ export function useStudentsQuery(filters: StudentsListFilters = {}) {
         page: envelope.page,
         pageSize: envelope.pageSize,
         classrooms: Array.isArray(classrooms) ? classrooms : [],
-        gradeLevels: Array.isArray(gradeLevels) ? gradeLevels : [],
+        gradeLevels: unwrapItems<{ id: string; name: string }>(gradeLevels),
       };
     },
   });

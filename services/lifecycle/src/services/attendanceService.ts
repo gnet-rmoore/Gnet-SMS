@@ -5,6 +5,7 @@ import {
   checkInstructionalDay,
   upsertAttendanceCalendarEvent,
   assertClassroomTeacherAccess,
+  getTeacherClassrooms,
 } from "../lib/classroomClient";
 import {
   getIdentityUsersMap,
@@ -72,11 +73,85 @@ export const attendanceService = {
   async getAttendanceBySchool(
     schoolId: string,
     viewer?: { id: string; role: string },
-    opts?: { page?: number | string; pageSize?: number | string }
+    opts?: {
+      page?: number | string;
+      pageSize?: number | string;
+      classroomId?: string;
+      from?: string;
+      to?: string;
+      status?: string;
+      studentId?: string;
+    }
   ) {
     const page = Math.max(1, Number(opts?.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(opts?.pageSize) || 50));
-    const where = { schoolId };
+    const viewerRole = viewer?.role;
+    const viewerOnly = viewerRole === "STUDENT" || viewerRole === "PARENT";
+    const date: { gte?: Date; lt?: Date } = {};
+    if (opts?.from) {
+      const { start } = dayBoundsFromYmd(normalizeYmd(opts.from));
+      date.gte = start;
+    }
+    if (opts?.to) {
+      const { end } = dayBoundsFromYmd(normalizeYmd(opts.to));
+      date.lt = end;
+    }
+    if (opts?.from && opts?.to && date.gte && date.lt && date.gte >= date.lt) {
+      throw Object.assign(new Error("Invalid attendance date range"), { status: 400 });
+    }
+
+    const where: any = { schoolId };
+    let teacherClassroomIds: string[] | null = null;
+    if (viewerRole === "TEACHER" && viewer) {
+      teacherClassroomIds = (await getTeacherClassrooms(viewer.id, schoolId)).map(
+        (classroom) => classroom.id
+      );
+      if (!teacherClassroomIds.length) {
+        return { items: [], total: 0, page, pageSize };
+      }
+      where.classroomId = { in: teacherClassroomIds };
+    }
+    if (opts?.classroomId) {
+      if (
+        teacherClassroomIds &&
+        !teacherClassroomIds.includes(opts.classroomId)
+      ) {
+        return { items: [], total: 0, page, pageSize };
+      }
+      where.classroomId = opts.classroomId;
+    }
+    if (Object.keys(date).length) where.date = date;
+    const status = opts?.status?.toUpperCase();
+    if (status && VALID_STATUSES.has(status)) {
+      where.records = { some: { status } };
+    }
+
+    let viewerStudentIds: Set<string> | null = null;
+    if (viewerRole === "STUDENT" && viewer) {
+      viewerStudentIds = new Set([viewer.id]);
+    } else if (viewerRole === "PARENT" && viewer) {
+      viewerStudentIds = new Set(await getParentChildIds(viewer.id));
+    }
+    if (viewerStudentIds) {
+      where.records = {
+        some: {
+          studentId: { in: [...viewerStudentIds] },
+          ...(status && VALID_STATUSES.has(status) ? { status } : {}),
+        },
+      };
+    } else if (
+      opts?.studentId &&
+      viewerRole !== "STUDENT" &&
+      viewerRole !== "PARENT"
+    ) {
+      where.records = {
+        some: {
+          studentId: opts.studentId,
+          ...(status && VALID_STATUSES.has(status) ? { status } : {}),
+        },
+      };
+    }
+
     const [total, sessions] = await Promise.all([
       prisma.attendance.count({ where }),
       prisma.attendance.findMany({
@@ -88,23 +163,23 @@ export const attendanceService = {
       }),
     ]);
 
-    let filtered = sessions;
-    if (viewer?.role === "STUDENT") {
-      filtered = sessions
-        .map((s) => ({
-          ...s,
-          records: s.records.filter((r) => r.studentId === viewer.id),
-        }))
-        .filter((s) => s.records.length > 0);
-    } else if (viewer?.role === "PARENT") {
-      const childIds = new Set(await getParentChildIds(viewer.id));
-      filtered = sessions
-        .map((s) => ({
-          ...s,
-          records: s.records.filter((r) => childIds.has(r.studentId)),
-        }))
-        .filter((s) => s.records.length > 0);
-    }
+    const filtered = sessions.map((session) => {
+      let records = session.records;
+      if (viewerStudentIds) {
+        records = records.filter((record) => viewerStudentIds!.has(record.studentId));
+      } else if (
+        opts?.studentId &&
+        viewerRole !== "STUDENT" &&
+        viewerRole !== "PARENT"
+      ) {
+        records = records.filter((record) => record.studentId === opts.studentId);
+      }
+      if (status && VALID_STATUSES.has(status)) {
+        records = records.filter((record) => record.status === status);
+      }
+      const counts = viewerOnly ? countStatuses(records) : {};
+      return { ...session, ...counts, records };
+    });
 
     const items = await enrichSessions(filtered);
     return { items, total, page, pageSize };
@@ -294,19 +369,30 @@ export const attendanceService = {
     if (!details) return null;
 
     let session: any = details;
+    let viewerOnly = false;
     if (viewer?.role === "STUDENT") {
+      viewerOnly = true;
       session = {
         ...details,
         records: details.records.filter((r) => r.studentId === viewer.id),
       };
       if (!session.records.length) return null;
     } else if (viewer?.role === "PARENT") {
+      viewerOnly = true;
       const childIds = new Set(await getParentChildIds(viewer.id));
       session = {
         ...details,
         records: details.records.filter((r) => childIds.has(r.studentId)),
       };
       if (!session.records.length) return null;
+    } else if (viewer?.role === "TEACHER" && viewer) {
+      const classrooms = await getTeacherClassrooms(viewer.id, details.schoolId);
+      if (!classrooms.some((classroom) => classroom.id === details.classroomId)) {
+        return null;
+      }
+    }
+    if (viewerOnly) {
+      Object.assign(session, countStatuses(session.records));
     }
 
     const [enriched] = await enrichSessions([session]);
@@ -373,18 +459,31 @@ export const attendanceService = {
     }));
   },
 
-  async getAttendanceStats(schoolId: string) {
+  async getAttendanceStats(
+    schoolId: string,
+    viewer?: { id: string; role: string }
+  ) {
     const school = await getIdentitySchool(schoolId);
     const timeZone = school?.timezone || "UTC";
     const ymd = ymdInTimeZone(new Date(), timeZone);
     const { start } = dayBoundsFromYmd(ymd);
 
+    const teacherClassroomIds =
+      viewer?.role === "TEACHER"
+        ? (await getTeacherClassrooms(viewer.id, schoolId)).map(
+            (classroom) => classroom.id
+          )
+        : null;
+    const scope =
+      teacherClassroomIds !== null
+        ? { classroomId: { in: teacherClassroomIds } }
+        : {};
     const [todayRecords, totalRecords] = await Promise.all([
       prisma.attendance.findMany({
-        where: { schoolId, date: { gte: start } },
+        where: { schoolId, ...scope, date: { gte: start } },
       }),
       prisma.attendance.aggregate({
-        where: { schoolId },
+        where: { schoolId, ...scope },
         _sum: { presentCount: true, absentCount: true },
       }),
     ]);

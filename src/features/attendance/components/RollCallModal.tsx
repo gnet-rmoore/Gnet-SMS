@@ -7,6 +7,11 @@ import { UserAvatar } from "../../../components/UserAvatar";
 export type RollCallModalProps = {
   selectedRecord: any;
   setShowDetailsModal: (v: boolean) => void;
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
+  canViewStudentHistory: boolean;
+  onViewStudentHistory: (student: { id: string; name: string }) => void;
 };
 
 const statusClass = (status: string) => {
@@ -25,6 +30,11 @@ const statusClass = (status: string) => {
 export function RollCallModal({
   selectedRecord,
   setShowDetailsModal,
+  loading,
+  error,
+  onRetry,
+  canViewStudentHistory,
+  onViewStudentHistory,
 }: RollCallModalProps) {
   const { t } = useTranslation(["pages", "common"]);
   const sessionDate = new Date(selectedRecord.date).toLocaleDateString(undefined, {
@@ -54,6 +64,22 @@ export function RollCallModal({
         </button>
       }
     >
+      {loading ? (
+        <div role="status" className="py-12 text-center text-sm text-slate-500">
+          Loading attendance details…
+        </div>
+      ) : error ? (
+        <div className="py-10 text-center space-y-4">
+          <p role="alert" className="text-sm text-rose-700">{error}</p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
       <div className="space-y-6 max-h-[min(70vh,560px)] overflow-y-auto pr-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-100 text-center">
@@ -130,11 +156,28 @@ export function RollCallModal({
                     <span className="min-w-0 leading-relaxed">{r.notes}</span>
                   </div>
                 )}
+                {canViewStudentHistory && r.student?.id && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onViewStudentHistory({
+                        id: r.student.id,
+                        name,
+                      })
+                    }
+                    className="self-start ml-[3.25rem] text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                  >
+                    {t("attendance.history.open", {
+                      defaultValue: "Student history",
+                    })}
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       </div>
+      )}
     </FeatureModalShell>
   );
 }

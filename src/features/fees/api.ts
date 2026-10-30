@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 
 /** Thin API wrappers for the fees feature. */
 export const feesApi = {
@@ -71,7 +72,9 @@ export const feesApi = {
   batchApply: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/fees/batch-apply`, data),
   fetchGradeLevels: (schoolId: string) =>
-    api.get(`/api/schools/${schoolId}/grade-levels`),
+    fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
   fetchDivisions: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/divisions`),
 };

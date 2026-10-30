@@ -34,7 +34,7 @@ export function ClassroomsTab({
   const homerooms = classrooms.filter((c) => !c.subjectId);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-1 space-y-3">
         <h3 className="text-sm font-extrabold text-slate-900 tracking-tight px-1">{t("admissions.classroomsTab.classGroups")}</h3>
         <div className="space-y-2 max-h-[640px] overflow-y-auto pr-1">
@@ -68,7 +68,7 @@ export function ClassroomsTab({
 
       <div className="lg:col-span-2 space-y-6">
         {!selectedClassroom ? (
-          <div className="bg-white rounded-[32px] border border-dashed border-slate-200 py-20 text-center text-slate-400 text-sm font-semibold">
+          <div className="rounded-[32px] border border-dashed border-slate-200 bg-white py-20 text-center text-sm font-semibold text-slate-400">
             {t("admissions.classroomsTab.selectClassGroup")}
           </div>
         ) : (
@@ -81,11 +81,11 @@ export function ClassroomsTab({
                 </div>
                 <Users className="w-5 h-5 text-slate-300" />
               </div>
-              <form onSubmit={handleAssignStudentToClass} className="flex flex-col sm:flex-row gap-3">
+              <form onSubmit={handleAssignStudentToClass} className="flex min-w-0 flex-col gap-3 sm:flex-row">
                 <select
                   value={classAllocationStudentId}
                   onChange={(e) => setClassAllocationStudentId(e.target.value)}
-                  className="flex-1 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
                   <option value="">{t("admissions.classroomsTab.selectStudent")}</option>
@@ -110,19 +110,30 @@ export function ClassroomsTab({
                 <h4 className="font-bold text-slate-900 text-sm">{t("admissions.classroomsTab.roster")}</h4>
               </div>
               {rosterLoading ? (
-                <div className="p-10 text-center text-slate-400 text-sm font-semibold">{t("admissions.classroomsTab.loadingRoster")}</div>
+                <div role="status" aria-label={t("admissions.classroomsTab.loadingRoster")} className="divide-y divide-slate-50">
+                  {[0, 1, 2].map((row) => (
+                    <div key={row} aria-hidden="true" className="flex items-center justify-between gap-3 px-5 py-4">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 w-2/5 animate-pulse rounded bg-slate-100" />
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
+                      </div>
+                      <div className="h-8 w-8 animate-pulse rounded-xl bg-slate-100" />
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="divide-y divide-slate-50">
                   {classroomRoster.map((m) => (
                     <div key={m.id || m.userId} className="px-5 py-3.5 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm">{m.user?.name || m.name}</p>
-                        <p className="text-xs text-slate-500 font-medium">{m.user?.email || ""}</p>
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-bold text-slate-800">{m.user?.name || m.name}</p>
+                        <p className="break-all text-xs font-medium text-slate-500">{m.user?.email || ""}</p>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="compact"
+                        aria-label={t("common:remove")}
                         onClick={() => handleRemoveStudentFromClass(m.userId || m.user?.id)}
                         className="p-2 min-h-0 text-slate-400 hover:bg-red-50 hover:text-red-500"
                       >

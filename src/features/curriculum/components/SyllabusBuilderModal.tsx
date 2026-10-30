@@ -13,6 +13,7 @@ import type { TeachingScope } from "../teacherTeachingScope";
 import {
   gradeIdsForSubject,
   subjectIdsForGrade,
+  isValidTeachingPair,
 } from "../teacherTeachingScope";
 import {
   academicYearLabel,
@@ -129,12 +130,27 @@ export function SyllabusBuilderModal({
     isTeacherScoped && teachingScope != null && !teachingScope.hasTeachingRooms;
 
   const calendarReady = hasActiveCalendar(calendar);
+  const pairReady =
+    !isTeacherScoped ||
+    (teachingScope != null &&
+      isValidTeachingPair(
+        teachingScope.pairs,
+        syllabusForm.subjectId,
+        syllabusForm.gradeLevelId
+      ));
+  const calendarLinked = calendarReady && Boolean(syllabusForm.calendarPatternId);
+  const weightTotal = syllabusForm.gradingCriteria.reduce(
+    (sum: number, item: { weight: number }) => sum + Number(item.weight || 0),
+    0
+  );
+  const weightsValid = weightTotal === 100;
   const calendarPeriods = useMemo(
     () => normalizeCalendarPeriods(calendar?.periods),
     [calendar]
   );
   const calendarYearLabel = academicYearLabel(calendar);
-  const submitBlocked = teacherHasNoRooms || !calendarReady;
+  const submitBlocked =
+    teacherHasNoRooms || !pairReady || !calendarReady || !calendarLinked || !weightsValid;
 
   const handleSubjectChange = (subjectId: string) => {
     if (!isTeacherScoped || !teachingScope) {
@@ -222,7 +238,7 @@ export function SyllabusBuilderModal({
                         <p className="text-sm font-medium text-rose-800 leading-relaxed">
                           {t("curriculum.syllabusBuilder.calendarRequiredHint")}
                         </p>
-                        {calendarSettingsPath ? (
+                        {calendarSettingsPath && !isTeacherScoped ? (
                           <Link
                             to={calendarSettingsPath}
                             className="inline-flex items-center gap-2 text-sm font-bold text-indigo-700 hover:text-indigo-800"
@@ -232,6 +248,22 @@ export function SyllabusBuilderModal({
                         ) : null}
                       </div>
                     )}
+
+                    {calendarReady && !calendarLinked ? (
+                      <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900">
+                        {t("curriculum.syllabusBuilder.calendarNotLinked", {
+                          defaultValue: "This calendar is not linked to the syllabus form. Close and reopen the builder.",
+                        })}
+                      </p>
+                    ) : null}
+
+                    {isTeacherScoped && teachingScope?.hasTeachingRooms && !pairReady ? (
+                      <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900">
+                        {t("curriculum.syllabusBuilder.selectTeachingPair", {
+                          defaultValue: "Select a subject and grade-level pair you teach.",
+                        })}
+                      </p>
+                    ) : null}
 
                     {calendarReady && (
                       <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -656,6 +688,13 @@ export function SyllabusBuilderModal({
                             </>
                           )}
                         </div>
+                        {syllabusForm.weightsFromCalendar ? (
+                          <p className="text-xs font-medium text-slate-600">
+                            {t("curriculum.syllabusBuilder.calendarWeightsHint", {
+                              defaultValue: "These grading weights come from the active academic calendar. Calendar-derived fields are read-only.",
+                            })}
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -705,19 +744,28 @@ export function SyllabusBuilderModal({
                       </div>
 
                       <div className="flex items-center justify-between bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mt-4">
-                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Syllabus Sum Total Weight</span>
+                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          {t("curriculum.syllabusBuilder.weightTotal", { defaultValue: "Syllabus sum total weight" })}
+                        </span>
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-extrabold ${
-                            syllabusForm.gradingCriteria.reduce((sum, item) => sum + item.weight, 0) === 100 
+                            weightsValid
                               ? "text-emerald-600" 
                               : "text-amber-600"
                           }`}>
-                            {syllabusForm.gradingCriteria.reduce((sum, item) => sum + item.weight, 0)}%
+                            {weightTotal}%
                           </span>
-                          {syllabusForm.gradingCriteria.reduce((sum, item) => sum + item.weight, 0) === 100 ? (
-                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-lg border border-emerald-100 uppercase tracking-wide">Valid (100%)</span>
+                          {weightsValid ? (
+                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-lg border border-emerald-100 uppercase tracking-wide">
+                              {t("curriculum.syllabusBuilder.weightsValid", { defaultValue: "Valid (100%)" })}
+                            </span>
                           ) : (
-                            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-xs font-extrabold rounded-lg border border-amber-100 uppercase tracking-wide">Must sum to 100%</span>
+                            <span role="alert" className="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-xs font-extrabold rounded-lg border border-amber-100 uppercase tracking-wide">
+                              {t("curriculum.toast.weightsMustTotal100", {
+                                total: weightTotal,
+                                defaultValue: `Weights total ${weightTotal}%; they must equal 100%.`,
+                              })}
+                            </span>
                           )}
                         </div>
                       </div>

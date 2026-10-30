@@ -50,7 +50,8 @@ export async function listGradeLevels(schoolId: string): Promise<AcademicGradeLe
     );
     if (!res.ok) return [];
     const rows = await res.json();
-    return Array.isArray(rows) ? rows : [];
+    if (Array.isArray(rows)) return rows;
+    return rows && Array.isArray(rows.items) ? rows.items : [];
   } catch {
     return [];
   }

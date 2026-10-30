@@ -79,6 +79,8 @@ export function LessonPlansPage() {
     Array<{ id: string; label: string; shortCode: string; startTime: string; endTime: string }>
   >([]);
   const [loading, setLoading] = useState(true);
+  const [lookupsLoading, setLookupsLoading] = useState(false);
+  const [lookupsError, setLookupsError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -139,11 +141,67 @@ export function LessonPlansPage() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<LessonPlanForm>(() => emptyForm(todayIso()));
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftHydrated = React.useRef(false);
+  const draftKey =
+    school?.id && user?.id
+      ? `gnet:lesson-plan-draft:v1:${school.id}:${user.id}`
+      : null;
   const [selected, setSelected] = useState<LessonPlan | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
+  useEffect(() => {
+    draftHydrated.current = false;
+    setDraftRestored(false);
+    if (!draftKey) return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const value = saved?.version === 1 ? saved.form : null;
+        if (
+          value &&
+          typeof value === "object" &&
+          typeof value.lessonDate === "string" &&
+          typeof value.subjectId === "string" &&
+          Array.isArray(value.objectives) &&
+          Array.isArray(value.activities)
+        ) {
+          setForm(value as LessonPlanForm);
+          setDraftRestored(true);
+        } else {
+          window.localStorage.removeItem(draftKey);
+        }
+      }
+    } catch (err) {
+      console.error("Could not restore lesson plan draft", err);
+      setLookupsError(t("lessonPlans.draft.restoreFailed", {
+        defaultValue: "Could not restore the saved draft from this browser.",
+      }));
+    } finally {
+      draftHydrated.current = true;
+    }
+  }, [draftKey, t]);
+
+  useEffect(() => {
+    if (!builderOpen || editingId || !draftKey || !draftHydrated.current) return;
+    const timer = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify({ version: 1, form }));
+      } catch (err) {
+        console.error("Could not save lesson plan draft", err);
+        setLookupsError(t("lessonPlans.draft.saveFailed", {
+          defaultValue: "Could not save this draft in your browser.",
+        }));
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [builderOpen, editingId, draftKey, form, t]);
+
   const load = useCallback(async () => {
     if (!school?.id) return;
+    setLookupsLoading(true);
+    setLookupsError("");
     try {
       const scope = isReviewer && tab === "all" ? "all" : "mine";
       const listParams: Record<string, string> = {
@@ -166,8 +224,14 @@ export function LessonPlansPage() {
           : Promise.resolve([]),
         lessonPlansApi.listTemplates(school.id).catch(() => []),
         lessonPlansApi.listSyllabusUnits(school.id).catch(() => []),
-        lessonPlansApi.fetchSubjects(school.id).catch(() => []),
-        lessonPlansApi.fetchGradeLevels(school.id).catch(() => []),
+        lessonPlansApi.fetchSubjects(school.id).catch((err) => {
+          setLookupsError(err?.message || t("lessonPlans.toast.loadFailed"));
+          return [];
+        }),
+        lessonPlansApi.fetchGradeLevels(school.id).catch((err) => {
+          setLookupsError(err?.message || t("lessonPlans.toast.loadFailed"));
+          return [];
+        }),
         lessonPlansApi.fetchClassrooms(school.id).catch(() => []),
         lessonPlansApi.fetchBellSchedules(school.id).catch(() => []),
       ]);
@@ -198,6 +262,7 @@ export function LessonPlansPage() {
       setPending([]);
     } finally {
       setLoading(false);
+      setLookupsLoading(false);
     }
   }, [
     school?.id,
@@ -252,7 +317,7 @@ export function LessonPlansPage() {
 
   const openNew = () => {
     setEditingId(null);
-    setForm(emptyForm(selectedDate || todayIso()));
+    if (!draftRestored) setForm(emptyForm(selectedDate || todayIso()));
     setBuilderOpen(true);
   };
 
@@ -267,6 +332,10 @@ export function LessonPlansPage() {
     if (!school?.id || !user) return;
     if (!form.subjectId) {
       showToast(t("lessonPlans.toast.selectSubject"), "error");
+      return;
+    }
+    if (!form.lessonDate) {
+      showToast(t("lessonPlans.toast.selectDate", { defaultValue: "Select a lesson date before saving." }), "error");
       return;
     }
     setSubmitting(true);
@@ -290,6 +359,10 @@ export function LessonPlansPage() {
       }
       setBuilderOpen(false);
       setEditingId(null);
+      if (!editingId && draftKey) {
+        window.localStorage.removeItem(draftKey);
+        setDraftRestored(false);
+      }
       await load();
     } catch (err: any) {
       showToast(err?.message || t("lessonPlans.toast.saveFailed"), "error");
@@ -694,6 +767,16 @@ export function LessonPlansPage() {
             calendar={calendar}
             submitting={submitting}
             editingId={editingId}
+            lookupsLoading={lookupsLoading}
+            lookupsError={lookupsError}
+            draftRestored={draftRestored && !editingId}
+            onStartBlank={() => {
+              if (!draftKey) return;
+              window.localStorage.removeItem(draftKey);
+              setDraftRestored(false);
+              setForm(emptyForm(selectedDate || todayIso()));
+            }}
+            onRetryLookups={() => void load()}
             onClose={() => setBuilderOpen(false)}
             onSave={() => void saveDraft(false)}
             onSaveAndSubmit={() => void saveDraft(true)}

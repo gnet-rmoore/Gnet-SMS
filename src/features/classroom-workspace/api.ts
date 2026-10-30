@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 import type { MarksPayload, PostDetail } from "./types";
 
 function withStudent(url: string, studentId?: string | null) {
@@ -75,8 +76,14 @@ export const workspaceApi = {
   addSubmissionAttachment: (submissionId: string, fileUrl: string) =>
     api.post(`/api/submissions/${submissionId}/attachments`, { fileUrl }),
   fetchChildren: (parentId: string) => api.get(`/api/parents/${parentId}/children`),
-  fetchSubjects: (schoolId: string) => api.get(`/api/schools/${schoolId}/subjects`),
-  fetchGradeLevels: (schoolId: string) => api.get(`/api/schools/${schoolId}/grade-levels`),
+  fetchSubjects: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string; code?: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/subjects?page=${page}&pageSize=${pageSize}`)
+    ),
+  fetchGradeLevels: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
   fetchStaff: (schoolId: string) => api.get(`/api/schools/${schoolId}/staff`),
   fetchStudents: (schoolId: string) => api.get(`/api/schools/${schoolId}/students`),
 };
@@ -100,32 +107,65 @@ function guessMime(file: File): string {
 /** Upload file via presign PUT, then return public fileUrl. */
 export async function uploadClassroomFile(
   classroomId: string,
-  file: File
+  file: File,
+  onProgress?: (percent: number) => void
 ): Promise<{ fileUrl: string; fileType: string }> {
   const mimeType = guessMime(file);
   const presign = await workspaceApi.presignAttachment(classroomId, {
     fileName: file.name,
     mimeType,
   });
-  if (presign.uploadUrl) {
-    const put = await fetch(presign.uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": mimeType },
-      body: file,
-    });
-    if (!put.ok) {
-      const detail = await put.text().catch(() => "");
-      throw new Error(
-        detail?.trim()
-          ? `Upload to storage failed (${put.status}): ${detail.slice(0, 160)}`
-          : `Upload to storage failed (${put.status})`
-      );
-    }
-  } else if (!presign.fileUrl || String(presign.fileUrl).startsWith("local://")) {
-    throw new Error("File storage is not configured");
+  if (
+    !presign.uploadUrl ||
+    !presign.fileUrl ||
+    /^(local|s3):\/\//i.test(presign.uploadUrl) ||
+    /^(local|s3):\/\//i.test(presign.fileUrl)
+  ) {
+    throw new Error("Image storage is not configured with a browser-reachable URL.");
   }
+  const uploadUrl = new URL(presign.uploadUrl);
+  const fileUrl = new URL(presign.fileUrl);
+  if (!["http:", "https:"].includes(uploadUrl.protocol) || !["http:", "https:"].includes(fileUrl.protocol)) {
+    throw new Error("Image storage returned an unsupported URL.");
+  }
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    uploadUrl.protocol !== "https:"
+  ) {
+    throw new Error("Image storage must use HTTPS when the school portal uses HTTPS.");
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", uploadUrl.toString());
+    request.setRequestHeader("Content-Type", mimeType);
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+    request.onerror = () =>
+      reject(new Error("Image storage is unreachable. Ask your admin to check file storage configuration."));
+    request.onabort = () => reject(new Error("Image upload was cancelled."));
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        onProgress?.(100);
+        resolve();
+        return;
+      }
+      reject(
+        new Error(
+          request.responseText?.trim()
+            ? `Upload to storage failed (${request.status}): ${request.responseText.slice(0, 160)}`
+            : `Upload to storage failed (${request.status})`
+        )
+      );
+    };
+    request.send(file);
+  });
   return {
-    fileUrl: presign.fileUrl,
+    fileUrl: fileUrl.toString(),
     fileType: mimeType,
   };
 }

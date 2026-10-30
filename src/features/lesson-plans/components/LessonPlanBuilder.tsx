@@ -37,6 +37,11 @@ type Props = {
   calendar?: ActiveCalendar | null;
   submitting: boolean;
   editingId: string | null;
+  lookupsLoading?: boolean;
+  lookupsError?: string;
+  draftRestored?: boolean;
+  onStartBlank?: () => void;
+  onRetryLookups?: () => void;
   onClose: () => void;
   onSave: () => void;
   onSaveAndSubmit: () => void;
@@ -57,6 +62,11 @@ export function LessonPlanBuilder({
   calendar = null,
   submitting,
   editingId,
+  lookupsLoading = false,
+  lookupsError = "",
+  draftRestored = false,
+  onStartBlank,
+  onRetryLookups,
   onClose,
   onSave,
   onSaveAndSubmit,
@@ -76,6 +86,7 @@ export function LessonPlanBuilder({
     if (!period) return t("lessonPlans.components.builder.outsideAcademicPeriod");
     return null;
   }, [form.lessonDate, calendarPeriods, t]);
+  const saveBlocked = !form.subjectId || !form.lessonDate || lookupsLoading || Boolean(lookupsError);
 
   if (!open) return null;
 
@@ -123,7 +134,7 @@ export function LessonPlanBuilder({
           <button
             type="button"
             onClick={onSave}
-            disabled={submitting || !form.subjectId}
+            disabled={submitting || saveBlocked}
             className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-800 font-bold text-sm disabled:opacity-50"
           >
             {submitting ? t("common:saving") : b("saveDraft")}
@@ -131,7 +142,7 @@ export function LessonPlanBuilder({
           <button
             type="button"
             onClick={onSaveAndSubmit}
-            disabled={submitting || !form.subjectId}
+            disabled={submitting || saveBlocked}
             className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm disabled:opacity-50"
           >
             {submitting ? b("working") : b("saveAndSubmit")}
@@ -140,6 +151,36 @@ export function LessonPlanBuilder({
       }
     >
       <div className="p-6 sm:p-8 space-y-8 overflow-y-auto">
+        {draftRestored ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-semibold text-indigo-900">
+              {b("draftRestored")}
+            </p>
+            <button type="button" onClick={onStartBlank} className="min-h-11 text-sm font-bold text-indigo-700 underline underline-offset-2">
+              {b("startBlank")}
+            </button>
+          </div>
+        ) : null}
+        {lookupsLoading ? (
+          <p role="status" className="text-sm text-slate-600">
+            {b("loadingCatalogs")}
+          </p>
+        ) : null}
+        {lookupsError ? (
+          <div role="alert" className="flex flex-col gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-rose-800">{lookupsError}</p>
+            <button type="button" onClick={onRetryLookups} className="min-h-11 text-sm font-bold text-rose-800 underline underline-offset-2">
+              {t("common:retry", { defaultValue: "Retry" })}
+            </button>
+          </div>
+        ) : null}
+        {!form.subjectId || !form.lessonDate ? (
+          <p className="text-sm text-amber-800" role="status">
+            {!form.subjectId
+              ? b("selectSubjectToSave")
+              : b("selectDateToSave")}
+          </p>
+        ) : null}
         <section className="space-y-4">
           <h3 className="text-sm font-extrabold tracking-tight text-slate-900">{b("basics")}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -238,6 +279,7 @@ export function LessonPlanBuilder({
               <select
                 className={field}
                 value={form.subjectId}
+                disabled={lookupsLoading || Boolean(lookupsError)}
                 onChange={(e) => {
                   const sub = subjects.find((s) => s.id === e.target.value);
                   const gl = gradeLevels.find((g) => g.id === sub?.gradeLevelId);
@@ -265,6 +307,7 @@ export function LessonPlanBuilder({
               <select
                 className={field}
                 value={form.gradeLevelId}
+                disabled={lookupsLoading || Boolean(lookupsError)}
                 onChange={(e) => {
                   const gl = gradeLevels.find((g) => g.id === e.target.value);
                   setForm((f) => ({

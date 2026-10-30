@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 
 export type AdmissionPolicyPayload = {
   publicApplyEnabled: boolean;
@@ -25,7 +26,10 @@ export const registrarApi = {
     return api.get(`/api/schools/${schoolId}/applications${q}`);
   },
   fetchFunnel: (schoolId: string) => api.get(`/api/schools/${schoolId}/applications/funnel`),
-  fetchGradeLevels: (schoolId: string) => api.get(`/api/schools/${schoolId}/grade-levels`),
+  fetchGradeLevels: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
   fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`),
   fetchClassroomMembers: (classroomId: string) => api.get(`/api/classrooms/${classroomId}/members`),
   updateUser: (userId: string, data: unknown) => api.patch(`/api/users/${userId}`, data),

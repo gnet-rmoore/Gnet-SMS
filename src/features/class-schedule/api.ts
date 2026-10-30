@@ -1,5 +1,6 @@
 import { api } from "../../services/api";
 import { academicCalendarApi } from "../academics-shared/calendar/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 import type {
   BellScheduleDto,
   ScheduleHealthDto,
@@ -116,7 +117,10 @@ export const classScheduleApi = {
 
   fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`) as Promise<unknown[]>,
 
-  fetchSubjects: (schoolId: string) => api.get(`/api/schools/${schoolId}/subjects`) as Promise<unknown[]>,
+  fetchSubjects: (schoolId: string) =>
+    fetchAllItems((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/subjects?page=${page}&pageSize=${pageSize}`)
+    ),
 
   fetchTeachers: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/staff`) as Promise<unknown[]>,

@@ -69,7 +69,7 @@ async function main() {
       origin: corsOrigin,
       methods: ["GET", "POST"],
     },
-    handshakeTimeout: 10_000,
+    connectTimeout: 10_000,
   });
 
   if (process.env.REDIS_URL) {

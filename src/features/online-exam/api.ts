@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 
 export type QuestionType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "FILL_BLANK" | "ESSAY";
 
@@ -290,6 +291,16 @@ export const onlineExamApi = {
 
 /** School question bank (reusable authored questions). */
 export const questionBankApi = {
+  fetchSubjects: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string; code?: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/subjects?page=${page}&pageSize=${pageSize}`)
+    ),
+
+  fetchGradeLevels: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
+
   list: (schoolId: string, filters: BankListFilters = {}) =>
     api.get(`/api/schools/${schoolId}/question-bank`, {
       params: {

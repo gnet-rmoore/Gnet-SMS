@@ -241,7 +241,7 @@ export function Hostel() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Buildings" value={stats.buildings} icon={<Building className="w-5 h-5" />} />
         <StatTile label="Rooms" value={stats.rooms} icon={<Bed className="w-5 h-5" />} />
         <StatTile label="Beds occupied" value={stats.occupied} icon={<Users className="w-5 h-5" />} />

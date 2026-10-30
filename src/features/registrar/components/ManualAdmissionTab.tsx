@@ -130,19 +130,19 @@ export function ManualAdmissionTab({
   );
 
   return (
-    <div className="relative max-w-4xl overflow-hidden rounded-[32px] border border-indigo-100/80 bg-gradient-to-br from-indigo-50/70 via-white to-slate-100/80 p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] md:p-8">
+    <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[32px] border border-indigo-200 bg-gradient-to-br from-indigo-100/90 via-white to-sky-50 p-5 shadow-[0_1px_2px_rgb(15,23,42,0.06),0_12px_32px_rgb(79,70,229,0.12)] ring-1 ring-indigo-100 sm:p-6 md:p-8">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-200/40 blur-3xl"
+        className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-200/25 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-sky-200/40 blur-3xl"
+        className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-sky-200/25 blur-3xl"
       />
 
       <div className="relative">
-        <div className="mb-8 flex items-start gap-4 rounded-2xl border border-white/80 bg-white/70 p-5 shadow-sm backdrop-blur">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200/60">
+        <div className="mb-8 flex items-start gap-4 rounded-2xl border border-indigo-100 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-lg shadow-indigo-200/70">
             <UserPlus className="h-5 w-5" />
           </div>
           <div className="min-w-0 space-y-1">

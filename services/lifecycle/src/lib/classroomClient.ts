@@ -74,6 +74,28 @@ export type ClassroomRef = {
   subjectId?: string | null;
 };
 
+export async function getTeacherClassrooms(
+  userId: string,
+  schoolId: string
+): Promise<ClassroomRef[]> {
+  const query = new URLSearchParams({
+    userId,
+    schoolId,
+    roles: "TEACHER,CO_TEACHER",
+  });
+  const res = await fetch(`${CLASSROOM_URL}/api/internal/classrooms?${query}`, {
+    headers: headers(),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to load teacher classroom scope: ${res.status}`);
+  }
+  const data = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error("Classroom service returned an invalid teacher scope");
+  }
+  return data as ClassroomRef[];
+}
+
 export async function fetchGradeLevelsForSchool(
   schoolId: string
 ): Promise<Array<{ id: string; name: string }>> {
@@ -83,7 +105,11 @@ export async function fetchGradeLevelsForSchool(
     });
     if (!res.ok) return [];
     const data = await res.json();
-    const list = Array.isArray(data) ? data : (data as { gradeLevels?: unknown[] })?.gradeLevels || [];
+    const list = Array.isArray(data)
+      ? data
+      : data && typeof data === "object" && Array.isArray((data as { items?: unknown[] }).items)
+        ? (data as { items: unknown[] }).items
+        : (data as { gradeLevels?: unknown[] })?.gradeLevels || [];
     return list
       .map((row) => ({
         id: String((row as { id?: string }).id || ""),

@@ -78,7 +78,7 @@ export function LandingFooter() {
           </div>
 
           {/* Link columns */}
-          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:col-span-7 lg:gap-8">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 lg:col-span-7 lg:gap-8">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 {t("landing.footerExplore")}

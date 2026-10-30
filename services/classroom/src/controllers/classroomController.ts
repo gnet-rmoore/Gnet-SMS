@@ -321,6 +321,44 @@ export const classroomController = {
     }
   },
 
+  async addMembersBulk(req: any, res: Response) {
+    const { id: classroomId } = req.params;
+    const { userIds, role } = req.body || {};
+    if (!Array.isArray(userIds) || userIds.length === 0 || userIds.length > 200) {
+      return res.status(400).json({ error: "userIds must contain between 1 and 200 IDs" });
+    }
+    if (userIds.some((id: unknown) => typeof id !== "string" || !id.trim())) {
+      return res.status(400).json({ error: "userIds must contain non-empty strings" });
+    }
+    if (role !== "STUDENT") {
+      return res.status(400).json({ error: "Only STUDENT members can be bulk assigned" });
+    }
+
+    try {
+      const classroom = await classroomService.findById(classroomId);
+      if (!classroom) return res.status(404).json({ error: "Classroom not found" });
+      if (req.user.schoolId !== classroom.schoolId && req.user.role !== "SUPER_ADMIN") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      if (!canManageClassroomMembership(req.user.role)) {
+        return res.status(403).json({ error: "Only school staff can add students to a class" });
+      }
+
+      const results = await classroomService.addMembersBulk(
+        classroomId,
+        classroom.schoolId,
+        userIds
+      );
+      return res.json({
+        results,
+        succeeded: results.filter((result) => result.success).length,
+        failed: results.filter((result) => !result.success).length,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Failed to add members" });
+    }
+  },
+
   async removeMember(req: any, res: Response) {
     const { id: classroomId, userId } = req.params;
     try {

@@ -34,6 +34,7 @@ export const Registrar = () => {
     gradeLevels,
     classrooms,
     loading,
+    gradeLevelsLoading,
     invalidate: refetchRegistrar,
   } = useRegistrarQuery();
 
@@ -451,6 +452,7 @@ export const Registrar = () => {
       {showEditStudentModal && (
         <EditStudentModal
           gradeLevels={gradeLevels}
+          gradeLevelsLoading={gradeLevelsLoading}
           handleSaveStudent={handleSaveStudent}
           setShowEditStudentModal={setShowEditStudentModal}
           setStudentFormData={setStudentFormData}

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../../store/authStore";
 import { registrarApi } from "../api";
+import { unwrapItems } from "../../../lib/apiEnvelope";
 
 export function useRegistrarQuery() {
   const schoolId = useAuthStore((s) => s.school?.id);
@@ -23,7 +24,7 @@ export function useRegistrarQuery() {
           : [];
       return {
         students,
-        gradeLevels: Array.isArray(gradeLevels) ? gradeLevels : [],
+        gradeLevels: unwrapItems<{ id: string; name: string }>(gradeLevels),
         classrooms: Array.isArray(classrooms) ? classrooms : [],
       };
     },
@@ -38,6 +39,7 @@ export function useRegistrarQuery() {
     gradeLevels: query.data?.gradeLevels ?? [],
     classrooms: query.data?.classrooms ?? [],
     loading: query.isLoading,
+    gradeLevelsLoading: query.isLoading,
     refetchAll: () => query.refetch(),
     invalidate,
   };

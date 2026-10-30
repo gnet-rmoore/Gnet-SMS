@@ -548,7 +548,7 @@ export function AppearanceSettingsTab({
           <Palette className="w-4 h-4 text-indigo-600" />
           {t("pages:settings.brandColor")}
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-8 gap-3">
           {BRAND_COLORS.map((color) => (
             <button
               key={color.hex}

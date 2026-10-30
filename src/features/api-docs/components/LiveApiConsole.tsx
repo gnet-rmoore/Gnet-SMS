@@ -203,7 +203,7 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
       </div>
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 min-h-0">
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
           <button
             type="button"
             disabled={!canUseApiKey}

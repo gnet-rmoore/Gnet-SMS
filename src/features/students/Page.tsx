@@ -45,6 +45,23 @@ const emptyStudent = {
   feeCohort: "NEW",
 };
 
+const studentDraftFields = [
+  "name",
+  "email",
+  "dob",
+  "gender",
+  "parentName",
+  "parentPhone",
+  "gradeLevelId",
+  "classroomId",
+  "feeCohort",
+] as const;
+
+function hasStudentDraftContent(value: typeof emptyStudent) {
+  return ["name", "email", "dob", "parentName", "parentPhone", "gradeLevelId", "classroomId"]
+    .some((key) => String(value[key as keyof typeof emptyStudent] || "").trim());
+}
+
 export const Students = () => {
   const { t } = useTranslation(["pages", "common"]);
   const { school, user } = useAuthStore();
@@ -118,6 +135,7 @@ export const Students = () => {
     "none"
   );
   const [newStudent, setNewStudent] = React.useState({ ...emptyStudent });
+  const [draftRestored, setDraftRestored] = React.useState(false);
   const [editStudent, setEditStudent] = React.useState<any>({
     ...emptyStudent,
     isActive: true,
@@ -135,6 +153,93 @@ export const Students = () => {
     temporaryPassword: string;
     name: string;
   } | null>(null);
+  const enrollmentDraftKey =
+    school?.id && user?.id
+      ? `enroll-student-draft:${user.id}:${school.id}`
+      : null;
+
+  const clearEnrollmentDraft = () => {
+    try {
+      if (enrollmentDraftKey) window.sessionStorage.removeItem(enrollmentDraftKey);
+    } catch {
+      // Session storage may be unavailable in restricted browser contexts.
+    }
+  };
+
+  const openEnrollModal = () => {
+    setCredentials(null);
+    setEnrollError("");
+    let restored: typeof emptyStudent | null = null;
+    try {
+      const saved = enrollmentDraftKey
+        ? window.sessionStorage.getItem(enrollmentDraftKey)
+        : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          restored = Object.fromEntries(
+            studentDraftFields.map((key) => [
+              key,
+              typeof parsed[key] === "string" ? parsed[key] : emptyStudent[key],
+            ])
+          ) as typeof emptyStudent;
+          if (!hasStudentDraftContent(restored)) restored = null;
+        }
+      }
+    } catch {
+      restored = null;
+    }
+    setNewStudent(restored || { ...emptyStudent });
+    setDraftRestored(Boolean(restored));
+    setIsModalOpen(true);
+  };
+
+  const discardEnrollmentDraft = async () => {
+    const confirmed = await confirmAction({
+      title: t("pages:students.discardDraftTitle"),
+      text: t("pages:students.discardDraftText"),
+      confirmText: t("pages:students.discardDraft"),
+      danger: true,
+    });
+    if (!confirmed) return;
+    clearEnrollmentDraft();
+    setNewStudent({ ...emptyStudent });
+    setDraftRestored(false);
+    showToast(t("pages:students.draftDiscarded"), "info");
+  };
+
+  const closeEnrollModal = () => {
+    if (credentials) {
+      clearEnrollmentDraft();
+      setCredentials(null);
+      setDraftRestored(false);
+      setNewStudent({ ...emptyStudent });
+    } else if (enrollmentDraftKey && hasStudentDraftContent(newStudent)) {
+      try {
+        window.sessionStorage.setItem(enrollmentDraftKey, JSON.stringify(newStudent));
+      } catch {
+        // Keep the in-memory draft if session storage is unavailable.
+      }
+    }
+    setIsModalOpen(false);
+    setEnrollError("");
+  };
+
+  React.useEffect(() => {
+    if (!isModalOpen || credentials || !enrollmentDraftKey) return;
+    const timeout = window.setTimeout(() => {
+      try {
+        if (hasStudentDraftContent(newStudent)) {
+          window.sessionStorage.setItem(enrollmentDraftKey, JSON.stringify(newStudent));
+        } else {
+          window.sessionStorage.removeItem(enrollmentDraftKey);
+        }
+      } catch {
+        // Session storage may be unavailable in restricted browser contexts.
+      }
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [isModalOpen, credentials, enrollmentDraftKey, newStudent]);
 
   const canEnroll = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     user?.role || ""
@@ -175,7 +280,9 @@ export const Students = () => {
         temporaryPassword: data.temporaryPassword,
         name: data.name,
       });
+      clearEnrollmentDraft();
       setNewStudent({ ...emptyStudent });
+      setDraftRestored(false);
       refetchStudents();
       showToast(t("pages:students.enrolled"), "success");
     } catch (err: any) {
@@ -183,13 +290,6 @@ export const Students = () => {
     } finally {
       setIsEnrolling(false);
     }
-  };
-
-  const closeEnrollModal = () => {
-    setIsModalOpen(false);
-    setCredentials(null);
-    setEnrollError("");
-    setNewStudent({ ...emptyStudent });
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -312,12 +412,7 @@ export const Students = () => {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setCredentials(null);
-                setEnrollError("");
-                setNewStudent({ ...emptyStudent });
-                setIsModalOpen(true);
-              }}
+              onClick={openEnrollModal}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <UserPlus className="w-5 h-5" />
@@ -525,11 +620,15 @@ export const Students = () => {
             classrooms={classrooms}
             handleEnroll={handleEnroll}
             isEnrolling={isEnrolling}
+            gradeLevelsLoading={loading}
             newStudent={newStudent}
             setIsModalOpen={setIsModalOpen}
             setNewStudent={setNewStudent}
             credentials={credentials}
             onDone={closeEnrollModal}
+            onClose={closeEnrollModal}
+            onDiscardDraft={discardEnrollmentDraft}
+            draftRestored={draftRestored}
           />
         )}
       </AnimatePresence>

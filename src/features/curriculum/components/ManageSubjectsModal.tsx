@@ -28,7 +28,7 @@ export type ManageSubjectsModalProps = {
   setNewClassGroupName?: (v: string) => void;
   setNewClassGroupTeacherId?: (v: string) => void;
   setShowManageSubjectsModal?: (v: boolean) => void;
-  subjects?: Array<{ id: string; name: string; code: string }>;
+  subjects?: Array<{ id: string; name: string; code?: string }>;
   submitting?: boolean;
   teachers?: Array<{ id: string; name: string }>;
   [key: string]: any;
@@ -143,7 +143,7 @@ export function ManageSubjectsModal({
           classGroupId: cg.id,
           subjectId: subject.id,
           subjectName: subject.name,
-          subjectCode: subject.code,
+          subjectCode: subject.code || "",
           teacherId,
           gradeLevelId: selectedGradeLevel.id,
         });

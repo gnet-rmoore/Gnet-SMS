@@ -62,7 +62,7 @@ export function GallerySkeleton() {
           <SkeletonBone className="h-9 w-3/5 max-w-xs" />
           <SkeletonBone className="mt-4 h-4 w-full max-w-md" />
           <SkeletonBone className="h-4 w-5/6 max-w-sm" />
-          <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[0, 1, 2].map((i) => (
               <SkeletonBone key={i} className="aspect-square rounded-2xl" />
             ))}

@@ -314,10 +314,15 @@ export const schoolController = {
       }
       const { fetchSchoolGradeLevelsInternal } = await import("../lib/academicClient");
       const grades = await fetchSchoolGradeLevelsInternal(school.id);
-      res.json(Array.isArray(grades) ? grades : []);
+      const items = Array.isArray(grades)
+        ? grades
+        : grades && typeof grades === "object" && Array.isArray((grades as { items?: unknown }).items)
+          ? (grades as { items: unknown[] }).items
+          : [];
+      res.json(items);
     } catch (err: any) {
       console.warn("[identity] public grade-levels:", err.message);
-      res.json([]);
+      res.status(502).json({ error: "Could not load grade levels. Please try again." });
     }
   },
 };

@@ -131,7 +131,7 @@ export function OnlineExamPreview() {
 export function FeesPreview() {
   return (
     <PreviewShell title="Fees">
-      <div className="mb-3 grid grid-cols-2 gap-2">
+      <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div className="rounded-xl border border-slate-200 bg-white p-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</p>
           <p className="mt-1 font-mono text-lg font-extrabold text-slate-900">$120</p>

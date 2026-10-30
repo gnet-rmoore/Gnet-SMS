@@ -3,7 +3,6 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, BookmarkPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
-import { api } from "../../services/api";
 import { alertError } from "../../lib/swal";
 import { questionBankApi, type BankVisibility } from "./api";
 import { toApiQuestions } from "./mappers";
@@ -63,12 +62,12 @@ export function SaveToBankModal({
     (async () => {
       try {
         const [subs, gls] = await Promise.all([
-          api.get(`/api/schools/${schoolId}/subjects`) as Promise<Taxonomy[]>,
-          api.get(`/api/schools/${schoolId}/grade-levels`) as Promise<Taxonomy[]>,
+          questionBankApi.fetchSubjects(schoolId),
+          questionBankApi.fetchGradeLevels(schoolId),
         ]);
         if (cancelled) return;
-        setSubjects(Array.isArray(subs) ? subs : []);
-        setGrades(Array.isArray(gls) ? gls : []);
+        setSubjects(subs);
+        setGrades(gls);
       } catch {
         // taxonomy is optional
       }

@@ -25,6 +25,9 @@ const STATUS_ORDER: MarkStatus[] = ["PRESENT", "LATE", "ABSENT", "EXCUSED"];
 export type RollCallSheetProps = {
   todayLabel: string;
   classrooms: any[];
+  classroomsError: string;
+  loadingClassrooms: boolean;
+  onRetryClassrooms: () => void;
   selectedClassroom: string;
   setSelectedClassroom: (id: string) => void;
   students: any[];
@@ -44,6 +47,9 @@ export type RollCallSheetProps = {
   onClose: () => void;
   submitting: boolean;
   loadingRoster: boolean;
+  rosterError: string;
+  rosterWarning: string;
+  onRetryRoster: () => void;
   isRetake?: boolean;
 };
 
@@ -51,6 +57,9 @@ export function RollCallSheet(props: RollCallSheetProps) {
   const {
     todayLabel,
     classrooms,
+    classroomsError,
+    loadingClassrooms,
+    onRetryClassrooms,
     selectedClassroom,
     setSelectedClassroom,
     students,
@@ -70,6 +79,9 @@ export function RollCallSheet(props: RollCallSheetProps) {
     onClose,
     submitting,
     loadingRoster,
+    rosterError,
+    rosterWarning,
+    onRetryRoster,
     isRetake,
   } = props;
 
@@ -122,7 +134,7 @@ export function RollCallSheet(props: RollCallSheetProps) {
   };
 
   const statusButtonClass =
-    "inline-flex items-center justify-center gap-1.5 font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600/40 focus-visible:ring-offset-2 rounded-xl px-3 py-2 text-sm min-h-9";
+    "inline-flex flex-1 sm:flex-none min-w-[44px] min-h-[44px] items-center justify-center gap-1.5 font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 rounded-xl px-2.5 py-2 text-sm";
 
   const [focusIndex, setFocusIndex] = React.useState(0);
   const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -266,7 +278,18 @@ export function RollCallSheet(props: RollCallSheetProps) {
           </div>
         </div>
 
-        {classrooms.length === 0 ? (
+        {loadingClassrooms ? (
+          <Surface variant="empty" className="space-y-3">
+            <p className={typeClass.helper}>Loading classrooms…</p>
+          </Surface>
+        ) : classroomsError ? (
+          <Surface variant="empty" className="space-y-3">
+            <p role="alert" className="text-sm text-rose-700">{classroomsError}</p>
+            <Button type="button" variant="secondary" onClick={onRetryClassrooms}>
+              Retry
+            </Button>
+          </Surface>
+        ) : classrooms.length === 0 ? (
           <Surface variant="empty" className="space-y-3">
             <Users className="w-10 h-10 text-slate-300 mx-auto" />
             <p className={typeClass.sectionTitle}>{t("attendance.sheet.noClassrooms")}</p>
@@ -421,6 +444,20 @@ export function RollCallSheet(props: RollCallSheetProps) {
               <div key={i} className="h-16 rounded-2xl bg-slate-50 animate-pulse" />
             ))}
           </div>
+        ) : rosterError ? (
+          <div className="p-6 flex flex-col items-center gap-3 text-center">
+            <p role="alert" className="text-sm text-rose-700">{rosterError}</p>
+            <Button type="button" variant="secondary" onClick={onRetryRoster}>
+              Retry roster
+            </Button>
+          </div>
+        ) : rosterWarning ? (
+          <div className="p-6 flex flex-col items-center gap-3 text-center">
+            <p role="alert" className="text-sm text-amber-800">{rosterWarning}</p>
+            <Button type="button" variant="secondary" onClick={onRetryRoster}>
+              Retry loading today's roll call
+            </Button>
+          </div>
         ) : filteredStudents.length === 0 ? (
           <div className="py-16 text-center text-sm text-slate-400">
             {students.length === 0
@@ -485,32 +522,39 @@ export function RollCallSheet(props: RollCallSheetProps) {
                       >
                         <MessageSquare className="w-4 h-4" />
                       </Button>
-                      {STATUS_ORDER.map((s) => {
-                        const meta = STATUS_META[s];
-                        const on = status === s;
-                        return (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markStudent(student.id, s);
-                            }}
-                            className={cn(
-                              statusButtonClass,
-                              "uppercase tracking-wider border",
-                              on ? meta.active : meta.idle
-                            )}
-                            title={`${meta.label} (${meta.key})`}
-                            aria-pressed={on}
-                          >
-                            {meta.icon}
-                            <span className="hidden xs:inline sm:inline">
-                              {meta.label}
-                            </span>
-                          </button>
-                        );
-                      })}
+                      <div
+                        role="group"
+                        aria-label={`Attendance status for ${student.name}`}
+                        className="flex flex-1 sm:flex-none gap-1"
+                      >
+                        {STATUS_ORDER.map((s) => {
+                          const meta = STATUS_META[s];
+                          const on = status === s;
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markStudent(student.id, s);
+                              }}
+                              className={cn(
+                                statusButtonClass,
+                                "uppercase tracking-wider border",
+                                on ? meta.active : meta.idle
+                              )}
+                              title={`${meta.label} (${meta.key})`}
+                              aria-label={`${meta.label} (${meta.key})`}
+                              aria-pressed={on}
+                            >
+                              {meta.icon}
+                              <span className="hidden xs:inline sm:inline">
+                                {meta.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                   {(showNote || note) && (
@@ -583,7 +627,12 @@ export function RollCallSheet(props: RollCallSheetProps) {
               type="button"
               variant="primary"
               onClick={onSave}
-              disabled={submitting || students.length === 0}
+              disabled={
+                submitting ||
+                students.length === 0 ||
+                loadingRoster ||
+                Boolean(rosterError || rosterWarning)
+              }
               className="flex-1 sm:flex-none"
             >
               {submitting

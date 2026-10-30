@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import { Loader2, Plus, Search, Pencil, Trash2, Lock, Users, Library } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
-import { api } from "../../services/api";
 import { alertError, alertSuccess, confirmAction } from "../../lib/swal";
 import { questionBankApi, type BankItem, type BankVisibility } from "./api";
 import { RichContent } from "./RichContent";
@@ -75,12 +74,12 @@ export default function QuestionBankPage() {
     (async () => {
       try {
         const [subs, gls] = await Promise.all([
-          api.get(`/api/schools/${schoolId}/subjects`) as Promise<Taxonomy[]>,
-          api.get(`/api/schools/${schoolId}/grade-levels`) as Promise<Taxonomy[]>,
+          questionBankApi.fetchSubjects(schoolId),
+          questionBankApi.fetchGradeLevels(schoolId),
         ]);
         if (cancelled) return;
-        setSubjects(Array.isArray(subs) ? subs : []);
-        setGrades(Array.isArray(gls) ? gls : []);
+        setSubjects(subs);
+        setGrades(gls);
       } catch {
         // taxonomy optional
       }

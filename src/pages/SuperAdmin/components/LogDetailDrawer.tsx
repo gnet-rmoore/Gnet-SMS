@@ -210,7 +210,7 @@ export function LogDetailDrawer({
 
           <Section title={t("superAdmin.logsUi.sectionOverview")}>
             <p className="text-sm leading-relaxed text-slate-700">{log.details}</p>
-            <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
               <InfoRow label={t("superAdmin.logsUi.timestamp")} icon={<Clock className="h-3.5 w-3.5 text-slate-400" />}>
                 <span className="font-mono">{new Date(log.createdAt).toLocaleString()}</span>
               </InfoRow>
@@ -274,7 +274,7 @@ export function LogDetailDrawer({
           </div>
 
           <Section title={t("superAdmin.logsUi.sectionRequest")}>
-            <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
               <InfoRow label={t("superAdmin.logsUi.method")}>
                 <span className="font-mono">{log.httpMethod || "—"}</span>
               </InfoRow>
@@ -302,7 +302,7 @@ export function LogDetailDrawer({
 
           {log.authMethod || log.sessionId || log.userAgent ? (
             <Section title={t("superAdmin.logsUi.sectionSecurity")}>
-              <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
                 {log.authMethod ? (
                   <InfoRow label={t("superAdmin.logsUi.authMethod")} icon={<KeyRound className="h-3.5 w-3.5 text-slate-400" />}>
                     <span className="font-mono">{log.authMethod}</span>
@@ -404,7 +404,7 @@ export function LogDetailDrawer({
           ) : null}
 
           <Section title={t("superAdmin.logsUi.sectionTechnical")}>
-            <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
               <InfoRow label={t("superAdmin.logsUi.school")}>
                 {log.school?.name || "—"}
               </InfoRow>

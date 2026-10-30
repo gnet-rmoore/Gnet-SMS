@@ -362,7 +362,7 @@ export function IntroFacts({
     });
   }
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {facts.map((f) => (
         <div key={f.label} className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2.5">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{f.label}</p>

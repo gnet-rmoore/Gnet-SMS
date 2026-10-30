@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 import type { LessonPlan, LessonPlanTemplate, SyllabusWithUnits } from "./types";
 
 export const lessonPlansApi = {
@@ -61,8 +62,14 @@ export const lessonPlansApi = {
       `/api/schools/${schoolId}/lesson-plans/from-syllabus-unit`,
       data
     ) as Promise<LessonPlan>,
-  fetchSubjects: (schoolId: string) => api.get(`/api/schools/${schoolId}/subjects`),
-  fetchGradeLevels: (schoolId: string) => api.get(`/api/schools/${schoolId}/grade-levels`),
+  fetchSubjects: (schoolId: string) =>
+    fetchAllItems((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/subjects?page=${page}&pageSize=${pageSize}`)
+    ),
+  fetchGradeLevels: (schoolId: string) =>
+    fetchAllItems((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
   fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`),
   fetchBellSchedules: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/bell-schedules`) as Promise<

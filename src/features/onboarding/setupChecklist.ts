@@ -1,4 +1,5 @@
 import { APP_BRAND_DEFAULT } from "../../lib/brandPalette";
+import { unwrapItems } from "../../lib/apiEnvelope";
 import { isCalendarReady as sharedIsCalendarReady } from "../academics-shared/calendar/selectors";
 
 export type SetupStepId =
@@ -146,7 +147,7 @@ export function isBrandingDone(input: {
 }
 
 export function isNonEmptyList(data: unknown): boolean {
-  return Array.isArray(data) && data.length > 0;
+  return unwrapItems(data).length > 0;
 }
 
 /** Map fetch outcome to checklist status — never treat errors as empty todo. */

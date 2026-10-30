@@ -168,6 +168,12 @@ Required keys (generate secrets with `openssl rand -hex 32`, key with `-base64 3
 `docker-compose.prod.yml` uses `${VAR:?set in .env}` so a missing secret **fails
 the deploy** instead of silently using a dev default.
 
+Classroom banner uploads are browser-to-object-storage `PUT` requests. Set
+`S3_PUBLIC_URL` to the browser-reachable HTTPS base (not the Docker-only
+`minio:9000` endpoint), and configure the bucket CORS policy to allow the app's
+`APP_URL` origin, `PUT`/`GET`/`HEAD`, and the `Content-Type` request header.
+Local development uses the `localhost:9000` override and permissive MinIO CORS.
+
 ### 3.3 First deploy (build on the server)
 ```bash
 docker login -u gnetllc

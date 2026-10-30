@@ -59,7 +59,7 @@ export function EditExamModal({ examId, initial, onClose, onSave }: Props) {
           void handleSave();
         }}
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="edit-title" className={fieldLabel}>
               {t("exams.scheduleModal.examTitle")}

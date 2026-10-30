@@ -9,6 +9,7 @@ import type { FeePayment, FeeTemplate } from "../types";
 import { feeAmountPaid, feeBalance, isFeeOpen, isFeeOverdue } from "../types";
 import { confirmAction } from "../../../lib/swal";
 import { formatMoney } from "../../../i18n/format";
+import { unwrapItems } from "../../../lib/apiEnvelope";
 
 export type PageActionsDeps = {
   school: any;
@@ -115,7 +116,7 @@ export function usePageActions(deps: PageActionsDeps) {
         feesApi.fetchGradeLevels(school.id),
         feesApi.fetchDivisions(school.id).catch(() => []),
       ]);
-      setGradeLevels(Array.isArray(grades) ? grades : []);
+      setGradeLevels(unwrapItems(grades));
       setDivisions(Array.isArray(divs) ? divs : []);
     } catch {
       setGradeLevels([]);

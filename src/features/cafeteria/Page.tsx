@@ -180,7 +180,7 @@ export function Cafeteria() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Menu entries" value={stats.menuDays} icon={<UtensilsCrossed className="w-5 h-5" />} />
         <StatTile label="Meal types" value={stats.mealTypes} icon={<CalendarDays className="w-5 h-5" />} />
         <StatTile label="Planned today" value={stats.plannedToday} />

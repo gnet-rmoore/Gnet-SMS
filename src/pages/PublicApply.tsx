@@ -23,6 +23,7 @@ import {
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { captchaEnabledOnClient, turnstileSiteKey } from "../lib/captcha";
 import { buildApplyStatusUrl, saveApplyStatusCredentials } from "../lib/publicApplyStatus";
+import { unwrapItems } from "../lib/apiEnvelope";
 
 /**
  * Public student application portal (/apply/:slug).
@@ -39,6 +40,8 @@ export default function PublicApplyPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [result, setResult] = React.useState<any>(null);
   const [grades, setGrades] = React.useState<any[]>([]);
+  const [gradesLoading, setGradesLoading] = React.useState(false);
+  const [gradesError, setGradesError] = React.useState("");
   const [applicantType, setApplicantType] = React.useState<"NEW" | "RETURNING">("NEW");
   const [form, setForm] = React.useState<AdmissionApplicationForm>(emptyAdmissionApplicationForm);
   const [website, setWebsite] = React.useState("");
@@ -72,12 +75,7 @@ export default function PublicApplyPage() {
         if (data.admissionPolicy?.returningApplyEnabled === false) {
           setApplicantType("NEW");
         }
-        try {
-          const g = await fetch(`/api/public/schools/${slug}/grade-levels`);
-          if (g.ok) setGrades(await g.json());
-        } catch {
-          /* optional */
-        }
+        await loadGrades();
       } catch (err: any) {
         setError(translateApiError(err) || err.message);
       } finally {
@@ -85,6 +83,23 @@ export default function PublicApplyPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per slug; do not re-apply school locale on language switch
+  }, [slug]);
+
+  const loadGrades = React.useCallback(async () => {
+    if (!slug) return;
+    setGradesLoading(true);
+    setGradesError("");
+    try {
+      const response = await fetch(`/api/public/schools/${slug}/grade-levels`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Could not load grades");
+      setGrades(unwrapItems(data));
+    } catch (err: any) {
+      setGrades([]);
+      setGradesError(err?.message || "Could not load grades");
+    } finally {
+      setGradesLoading(false);
+    }
   }, [slug]);
 
   const returningEnabled = school?.admissionPolicy?.returningApplyEnabled !== false;
@@ -110,6 +125,15 @@ export default function PublicApplyPage() {
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!school) return;
+    if (
+      gradesLoading ||
+      gradesError ||
+      (applicantType === "NEW" && (grades.length === 0 || !grades.some((grade) => grade.id === form.gradeLevelId))) ||
+      (form.gradeLevelId && !grades.some((grade) => grade.id === form.gradeLevelId))
+    ) {
+      setError(gradesError || "Select a valid grade before submitting.");
+      return;
+    }
     if (captchaRequired && !captchaToken) {
       setError(t("public:apply.captchaRequired", "Complete the CAPTCHA check"));
       return;
@@ -323,7 +347,7 @@ export default function PublicApplyPage() {
     <div className="relative min-h-screen overflow-hidden">
       <PublicApplyBackground className="pointer-events-none absolute inset-0" imageSrc={school?.backgroundImageUrl} />
       <div className={PUBLIC_PORTAL_PAGE}>
-        <div className={PUBLIC_PORTAL_COLUMN}>
+        <div className={`${PUBLIC_PORTAL_COLUMN} space-y-4 sm:space-y-6`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               {backHomeLink}
@@ -331,11 +355,11 @@ export default function PublicApplyPage() {
                 <img
                   src={school.logoUrl}
                   alt=""
-                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/20"
+                  className="w-12 h-12 rounded-2xl object-cover shadow-sm"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center ring-2 ring-white/20">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-sm">
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
               )}
@@ -406,6 +430,14 @@ export default function PublicApplyPage() {
             form={form}
             onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
             gradeLevels={grades}
+            gradeLoadState={gradesLoading ? "loading" : gradesError ? "error" : grades.length === 0 ? "empty" : "ready"}
+            onRetryGrades={() => void loadGrades()}
+            gradesStateLabels={{
+              loading: t("public:apply.loadingGrades", "Loading grades..."),
+              error: t("public:apply.gradesLoadFailed", "Could not load grades — retry"),
+              empty: t("public:apply.noGrades", "No grades available for this school"),
+              retry: t("common:retry", "Retry"),
+            }}
             mode={applicantType === "RETURNING" ? "public-returning" : "public-new"}
             inputClassName={publicInput}
             labelClassName="text-sm font-medium text-slate-700"

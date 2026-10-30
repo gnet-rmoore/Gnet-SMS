@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 import { useAuthStore } from "../../store/authStore";
 
 export type TranscriptStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
@@ -80,9 +81,11 @@ export const transcriptsApi = {
     api.get(`/api/schools/${encodeURIComponent(schoolId)}/students`) as Promise<StudentOption[]>,
 
   listGradeLevels: (schoolId: string) =>
-    api.get(`/api/schools/${encodeURIComponent(schoolId)}/grade-levels`) as Promise<
-      GradeLevelOption[]
-    >,
+    fetchAllItems<GradeLevelOption>((page, pageSize) =>
+      api.get(
+        `/api/schools/${encodeURIComponent(schoolId)}/grade-levels?page=${page}&pageSize=${pageSize}`
+      )
+    ),
 
   list: (schoolId: string, params?: { status?: string | null; studentId?: string | null }) =>
     api.get(`/api/schools/${encodeURIComponent(schoolId)}/transcripts`, {

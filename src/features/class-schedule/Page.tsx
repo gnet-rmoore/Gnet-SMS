@@ -80,6 +80,7 @@ export function ClassSchedulePage() {
   const [yearBounds, setYearBounds] = useState<{ start: string; end: string } | null>(null);
   const [slotInfo, setSlotInfo] = useState<SlotAvailabilityDto | null>(null);
   const [loadingSlot, setLoadingSlot] = useState(false);
+  const [slotError, setSlotError] = useState("");
   const [health, setHealth] = useState<ScheduleHealthDto | null>(null);
   const [autoFilling, setAutoFilling] = useState(false);
   const slotReqRef = useRef(0);
@@ -187,6 +188,7 @@ export function ClassSchedulePage() {
     setCellForm({ teacherId: defaultTeacher, subjectId: defaultSubject || "" });
     setCellModal({ day, periodId });
     setSlotInfo(null);
+    setSlotError("");
     setLoadingSlot(true);
     const reqId = ++slotReqRef.current;
     void (async () => {
@@ -199,8 +201,13 @@ export function ClassSchedulePage() {
           subjectId: defaultSubject || undefined,
         });
         if (slotReqRef.current === reqId) setSlotInfo(info);
-      } catch {
-        if (slotReqRef.current === reqId) setSlotInfo(null);
+      } catch (err: any) {
+        if (slotReqRef.current === reqId) {
+          setSlotInfo(null);
+          setSlotError(err?.message || t("classSchedule.availabilityFailed", {
+            defaultValue: "Could not load teacher availability.",
+          }));
+        }
       } finally {
         if (slotReqRef.current === reqId) setLoadingSlot(false);
       }
@@ -730,8 +737,8 @@ export function ClassSchedulePage() {
           eyebrow={t("classSchedule.modals.timetable")}
           onClose={() => setCellModal(null)}
           footer={
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-2">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   type="button"
                   variant="ghost"
@@ -750,24 +757,34 @@ export function ClassSchedulePage() {
                   Suggest best
                 </Button>
               </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="secondary" onClick={() => setCellModal(null)}>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" variant="secondary" onClick={() => setCellModal(null)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button type="button" variant="primary" onClick={applyCell}>
+                <Button type="button" variant="primary" onClick={applyCell} className="w-full sm:w-auto">
                   Apply
                 </Button>
               </div>
             </div>
           }
         >
-          <div className="space-y-4">
+          <div className="space-y-5 sm:space-y-6 p-1 sm:p-2">
             {loadingSlot && (
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Checking teacher availability…
               </div>
             )}
+            {slotError ? (
+              <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                {slotError}
+              </p>
+            ) : null}
+            {!loadingSlot && !slotError && !teachers.length ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                {t("classSchedule.noTeachers", { defaultValue: "No teachers are available for this school." })}
+              </p>
+            ) : null}
 
             {slotInfo?.freePeriodIds && slotInfo.freePeriodIds.length > 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 px-3 py-2">
@@ -798,7 +815,8 @@ export function ClassSchedulePage() {
               <select
                 value={cellForm.teacherId}
                 onChange={(e) => setCellForm((f) => ({ ...f, teacherId: e.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
+                disabled={loadingSlot}
+                className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm disabled:bg-slate-50"
               >
                 <option value="">Select teacher</option>
                 {(slotInfo?.teachers?.length

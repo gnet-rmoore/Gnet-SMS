@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useCurriculumQuery } from "./hooks/useCurriculumQuery";
 import { SyllabusBuilderModal } from "./components/SyllabusBuilderModal";
 import { SubjectModal } from "./components/SubjectModal";
+import { EditSubjectModal } from "./components/EditSubjectModal";
 import { SyllabusViewModal } from "./components/SyllabusViewModal";
 import { GradeLevelModal } from "./components/GradeLevelModal";
 import { ManageSubjectsModal } from "./components/ManageSubjectsModal";
@@ -547,5 +548,4 @@ submitting={submitting}
     </div>
   );
 };
-
 

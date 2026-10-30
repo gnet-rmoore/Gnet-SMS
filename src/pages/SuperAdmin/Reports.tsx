@@ -285,7 +285,7 @@ export const Reports = () => {
               {billingNote || r("billingSummaryHint")}
             </p>
           </div>
-          <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
             <div>
               <dt className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 {r("paidSchools")}
@@ -364,7 +364,7 @@ export const Reports = () => {
 
         <Surface variant="nested" className="space-y-4 lg:col-span-1">
           <h3 className="text-sm font-extrabold tracking-tight text-slate-900">{r("platformTotals")}</h3>
-          <dl className="grid grid-cols-2 gap-3">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               { label: r("activeStudents"), value: totals.students },
               { label: r("totalStaff"), value: totals.staff },

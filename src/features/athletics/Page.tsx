@@ -229,7 +229,7 @@ export function Athletics() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Teams" value={stats.teams} icon={<Dumbbell className="w-5 h-5" />} />
         <StatTile label="Athletes" value={stats.athletes} icon={<Users className="w-5 h-5" />} />
         <StatTile label="Events" value={stats.events} icon={<Calendar className="w-5 h-5" />} />

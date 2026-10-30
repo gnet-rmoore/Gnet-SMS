@@ -24,6 +24,7 @@ import {
   type MarkStatus,
 } from "./components/RollCallSheet";
 import { RollCallModal } from "./components/RollCallModal";
+import { AttendanceStudentHistoryModal } from "./components/AttendanceStudentHistoryModal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { useTranslation } from "react-i18next";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
@@ -47,43 +48,10 @@ const CAN_STATS = new Set([
 export const Attendance = () => {
   const { t } = useTranslation(["pages", "common"]);
   const { school, user } = useAuthStore();
-  const {
-    attendance: attendanceRecords,
-    stats,
-    loading,
-    invalidate: refetchAttendance,
-  } = useAttendanceQuery();
-  const { toast, showToast } = usePageToast();
-
-  const classroomOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of attendanceRecords) {
-      if (r.classroomId) map.set(r.classroomId, r.classroom?.name || t("attendance.classroomFallback"));
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([value, label]) => ({ value, label }));
-  }, [attendanceRecords, t]);
-
-  const filterFields: FilterFieldDef[] = useMemo(
-    () =>
-      classroomOptions.length > 0
-        ? [
-            {
-              key: "classroomId",
-              label: t("attendance.classroomFallback"),
-              type: "enum",
-              primary: true,
-              allLabel: t("common:all"),
-              options: classroomOptions,
-            },
-          ]
-        : [],
-    [classroomOptions, t]
-  );
-
-  const filters = useListFilters({ fields: filterFields, syncUrl: true });
-
+  const [hubClassrooms, setHubClassrooms] = useState<any[]>([]);
+  const [hubError, setHubError] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
   const canTake = user?.role ? CAN_TAKE.has(user.role) : false;
   const showStats = user?.role ? CAN_STATS.has(user.role) : false;
   const isTeacher = user?.role === "TEACHER";
@@ -91,6 +59,62 @@ export const Attendance = () => {
     user?.role === "STUDENT" ||
     user?.role === "PARENT" ||
     user?.role === "HOSTEL_WARDEN";
+
+  const classroomOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of hubClassrooms) {
+      if (c.id) map.set(c.id, c.name || t("attendance.classroomFallback"));
+    }
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([value, label]) => ({ value, label }));
+  }, [hubClassrooms, t]);
+
+  const filterFields: FilterFieldDef[] = useMemo(() => {
+    const fields: FilterFieldDef[] = [];
+    if (classroomOptions.length > 0) {
+      fields.push({
+        key: "classroomId",
+        label: t("attendance.classroomFallback"),
+        type: "enum",
+        primary: true,
+        allLabel: t("common:all"),
+        options: classroomOptions,
+      });
+    }
+    fields.push({
+      key: "status",
+      label: "Status",
+      type: "enum",
+      primary: true,
+      allLabel: t("common:all"),
+      options: ["PRESENT", "LATE", "ABSENT", "EXCUSED"].map((value) => ({
+        value,
+        label: t(`attendance.markStatus.${value}`),
+      })),
+    });
+    return fields;
+  }, [classroomOptions, t]);
+
+  const filters = useListFilters({ fields: filterFields, syncUrl: true });
+  const {
+    attendance: attendanceRecords,
+    stats,
+    total: attendanceTotal,
+    loading,
+    error: attendanceError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetchAll,
+    invalidate: refetchAttendance,
+  } = useAttendanceQuery({
+    classroomId: filters.values.classroomId,
+    status: filters.values.status,
+    from: filterFrom,
+    to: filterTo,
+  });
+  const { toast, showToast } = usePageToast();
 
   const [rollCallOpen, setRollCallOpen] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -108,8 +132,19 @@ export const Attendance = () => {
   const [submitting, setSubmitting] = useState(false);
   const [generalNotes, setGeneralNotes] = useState("");
   const [isRetake, setIsRetake] = useState(false);
-  const [hubClassrooms, setHubClassrooms] = useState<any[]>([]);
-  const [hubReady, setHubReady] = useState(false);
+  const [rosterError, setRosterError] = useState("");
+  const [rosterRetry, setRosterRetry] = useState(0);
+  const [rosterWarning, setRosterWarning] = useState("");
+  const [classroomsError, setClassroomsError] = useState("");
+  const [classroomsRetry, setClassroomsRetry] = useState(0);
+  const [loadingClassrooms, setLoadingClassrooms] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailRecordId, setDetailRecordId] = useState("");
+  const [historyStudent, setHistoryStudent] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const schoolYmd = () => {
     try {
@@ -154,13 +189,19 @@ export const Attendance = () => {
     }
   }, [school?.timezone]);
 
-  const fetchRecordDetails = async (id: string) => {
+  const fetchRecordDetails = async (id: string, fallback: any = selectedRecord) => {
+    setDetailRecordId(id);
+    setDetailLoading(true);
+    setDetailError("");
+    setSelectedRecord({ ...fallback, id });
+    setShowDetailsModal(true);
     try {
       const details = await attendanceApi.fetchAttendanceDetails(id);
       setSelectedRecord(details);
-      setShowDetailsModal(true);
     } catch (error: any) {
-      showToast(error?.message || t("attendance.toast.loadRollCallFailed"), "error");
+      setDetailError(error?.message || t("attendance.toast.loadRollCallFailed"));
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -168,6 +209,7 @@ export const Attendance = () => {
   useEffect(() => {
     if (!school?.id || !canTake) return;
     let cancelled = false;
+    setHubError("");
     (async () => {
       try {
         const data =
@@ -176,23 +218,24 @@ export const Attendance = () => {
             : await attendanceApi.fetchSchoolClassrooms(school.id);
         if (!cancelled) {
           setHubClassrooms(Array.isArray(data) ? data : []);
-          setHubReady(true);
         }
       } catch {
         if (!cancelled) {
           setHubClassrooms([]);
-          setHubReady(true);
+          setHubError("Could not load classroom options. Retry to refresh your scoped classroom list.");
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [school?.id, user?.role, canTake]);
+  }, [school?.id, user?.role, canTake, classroomsRetry]);
 
   useEffect(() => {
     if (!rollCallOpen || !school?.id) return;
     let cancelled = false;
+    setLoadingClassrooms(true);
+    setClassroomsError("");
     (async () => {
       try {
         const data =
@@ -203,14 +246,16 @@ export const Attendance = () => {
       } catch {
         if (!cancelled) {
           setClassrooms([]);
-          showToast(t("attendance.toast.loadClassroomsFailed"), "error");
+          setClassroomsError(t("attendance.toast.loadClassroomsFailed"));
         }
+      } finally {
+        if (!cancelled) setLoadingClassrooms(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [rollCallOpen, school?.id, user?.role]);
+  }, [rollCallOpen, school?.id, user?.role, classroomsRetry]);
 
   useEffect(() => {
     if (!selectedClassroom || !rollCallOpen) {
@@ -224,6 +269,8 @@ export const Attendance = () => {
     (async () => {
       setLoadingRoster(true);
       setIsRetake(false);
+      setRosterError("");
+      setRosterWarning("");
       try {
         const data = await attendanceApi.fetchClassroomMembers(selectedClassroom);
         const list = (Array.isArray(data) ? data : [])
@@ -251,6 +298,7 @@ export const Attendance = () => {
         });
 
         if (existingSession?.id) {
+          setIsRetake(true);
           try {
             const details = await attendanceApi.fetchAttendanceDetails(
               existingSession.id
@@ -271,10 +319,14 @@ export const Attendance = () => {
                 }
               }
               setGeneralNotes(details.notes || "");
-              setIsRetake(true);
             }
-          } catch {
-            /* keep defaults */
+          } catch (error: any) {
+            if (!cancelled) {
+              setRosterWarning(
+                error?.message ||
+                  "Today's existing roll call could not be loaded. Retry before saving to avoid replacing unseen marks."
+              );
+            }
           }
         } else {
           setGeneralNotes("");
@@ -284,10 +336,12 @@ export const Attendance = () => {
         setStudentNotes(notes);
         setActiveNotesField(null);
         setStudentSearch("");
-      } catch {
+      } catch (error: any) {
         if (!cancelled) {
           setStudents([]);
-          showToast(t("attendance.toast.loadRosterFailed"), "error");
+          setRosterError(
+            error?.message || t("attendance.toast.loadRosterFailed")
+          );
         }
       } finally {
         if (!cancelled) setLoadingRoster(false);
@@ -296,7 +350,7 @@ export const Attendance = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedClassroom, rollCallOpen]);
+  }, [selectedClassroom, rollCallOpen, rosterRetry]);
 
   const closeRollCall = () => {
     setRollCallOpen(false);
@@ -308,6 +362,7 @@ export const Attendance = () => {
   };
 
   const handleSave = async () => {
+    if (rosterError || rosterWarning) return;
     if (!selectedClassroom || !school?.id) {
       showToast(t("attendance.toast.sessionMissing"), "error");
       return;
@@ -369,14 +424,7 @@ export const Attendance = () => {
     setAttendanceData(updated);
   };
 
-  const myClassroomIds = useMemo(() => {
-    if (!isTeacher || !hubReady) return null;
-    return new Set(hubClassrooms.map((c: any) => c.id).filter(Boolean));
-  }, [isTeacher, hubReady, hubClassrooms]);
-
   const filteredRecords = attendanceRecords.filter((r: any) => {
-    if (myClassroomIds && !myClassroomIds.has(r.classroomId)) return false;
-    if (filters.values.classroomId && r.classroomId !== filters.values.classroomId) return false;
     const q = filters.committedQ.toLowerCase();
     if (!q) return true;
     return (
@@ -478,6 +526,9 @@ export const Attendance = () => {
         <RollCallSheet
           todayLabel={todayLabel}
           classrooms={classrooms}
+          classroomsError={classroomsError}
+          loadingClassrooms={loadingClassrooms}
+          onRetryClassrooms={() => setClassroomsRetry((n) => n + 1)}
           selectedClassroom={selectedClassroom}
           setSelectedClassroom={setSelectedClassroom}
           students={students}
@@ -498,6 +549,9 @@ export const Attendance = () => {
           submitting={submitting}
           loadingRoster={loadingRoster}
           isRetake={isRetake}
+          rosterError={rosterError}
+          rosterWarning={rosterWarning}
+          onRetryRoster={() => setRosterRetry((n) => n + 1)}
         />
       </PageShell>
     );
@@ -527,6 +581,15 @@ export const Attendance = () => {
           </>
         }
       />
+
+      {canTake && hubError && (
+        <Surface variant="empty" className="flex items-center justify-between gap-4">
+          <p role="alert" className="text-sm text-rose-700">{hubError}</p>
+          <Button type="button" variant="secondary" onClick={() => setClassroomsRetry((n) => n + 1)}>
+            Retry
+          </Button>
+        </Surface>
+      )}
 
       {canTake && hubClassrooms.length > 0 && (
         <section className="space-y-4">
@@ -622,7 +685,7 @@ export const Attendance = () => {
             className="min-h-[8.5rem] flex flex-col [&>p:last-of-type]:mt-auto"
           />
           <StatTile
-            label={t("attendance.overallRate")}
+            label={isTeacher ? "Your classes · overall rate" : t("attendance.overallRate")}
             value={`${Number(stats.overall?.rate || 0).toFixed(1)}%`}
             icon={<UserCheck className="w-5 h-5" />}
             className="min-h-[8.5rem] flex flex-col [&>p:last-of-type]:mt-auto"
@@ -649,8 +712,41 @@ export const Attendance = () => {
           onValueChange={filters.setValue}
           onClear={filters.clear}
           searchPlaceholder={t("attendance.searchPlaceholder")}
-          shownCount={filteredRecords.length}
+          shownCount={attendanceTotal}
         />
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            From
+            <input
+              type="date"
+              value={filterFrom}
+              onChange={(event) => setFilterFrom(event.target.value)}
+              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+            To
+            <input
+              type="date"
+              value={filterTo}
+              onChange={(event) => setFilterTo(event.target.value)}
+              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+            />
+          </label>
+          {(filterFrom || filterTo) && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="compact"
+              onClick={() => {
+                setFilterFrom("");
+                setFilterTo("");
+              }}
+            >
+              Clear dates
+            </Button>
+          )}
+        </div>
       </section>
 
       {loading ? (
@@ -662,6 +758,15 @@ export const Attendance = () => {
             />
           ))}
         </div>
+      ) : attendanceError ? (
+        <Surface variant="empty" className="space-y-3">
+          <p role="alert" className="text-sm text-rose-700">
+            {(attendanceError as Error)?.message || "Could not load attendance sessions."}
+          </p>
+          <Button type="button" variant="secondary" onClick={() => refetchAll()}>
+            Retry
+          </Button>
+        </Surface>
       ) : filteredRecords.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRecords.map((record: any, index: number) => {
@@ -736,7 +841,7 @@ export const Attendance = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 divide-x divide-slate-200 rounded-2xl bg-slate-50 overflow-hidden mt-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 divide-x divide-slate-200 rounded-2xl bg-slate-50 overflow-hidden mt-auto">
                     <div className="py-3 px-2 text-center">
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         {t("attendance.present")}
@@ -771,7 +876,7 @@ export const Attendance = () => {
                     )}
                     <button
                       type="button"
-                      onClick={() => fetchRecordDetails(record.id)}
+                      onClick={() => fetchRecordDetails(record.id, record)}
                       className="text-indigo-600 font-bold text-xs hover:text-indigo-800 inline-flex items-center gap-1 whitespace-nowrap"
                     >
                       {t("attendance.viewMarks")}
@@ -789,17 +894,28 @@ export const Attendance = () => {
             <UserCheck className="w-7 h-7" />
           </div>
           <h3 className={typeClass.sectionTitle}>
-            {filters.hasActiveFilters ? t("pages:listFilters.noMatches") : t("attendance.emptyTitle")}
+            {filters.hasActiveFilters || filterFrom || filterTo
+              ? t("pages:listFilters.noMatches")
+              : t("attendance.emptyTitle")}
           </h3>
           <p className={`${typeClass.helper} max-w-sm mx-auto`}>
-            {filters.hasActiveFilters
+            {filters.hasActiveFilters || filterFrom || filterTo
               ? t("pages:listFilters.noMatchesHint")
               : canTake
                 ? t("attendance.emptyCanTake")
                 : t("attendance.emptyViewer")}
           </p>
-          {filters.hasActiveFilters ? (
-            <Button type="button" variant="secondary" size="compact" onClick={filters.clear}>
+          {filters.hasActiveFilters || filterFrom || filterTo ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="compact"
+              onClick={() => {
+                filters.clear();
+                setFilterFrom("");
+                setFilterTo("");
+              }}
+            >
               {t("pages:listFilters.clearAll")}
             </Button>
           ) : canTake ? (
@@ -811,14 +927,42 @@ export const Attendance = () => {
         </Surface>
       )}
 
+      {!loading && !attendanceError && hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isFetchingNextPage}
+            onClick={() => fetchNextPage()}
+          >
+            {isFetchingNextPage ? t("common:loading") : "Load more"}
+          </Button>
+        </div>
+      )}
+
       <AnimatePresence>
         {showDetailsModal && selectedRecord && (
           <RollCallModal
             selectedRecord={selectedRecord}
             setShowDetailsModal={setShowDetailsModal}
+            loading={detailLoading}
+            error={detailError}
+            onRetry={() => fetchRecordDetails(detailRecordId, selectedRecord)}
+            canViewStudentHistory={canTake}
+            onViewStudentHistory={(student) => {
+              if (canTake) setHistoryStudent(student);
+            }}
           />
         )}
       </AnimatePresence>
+      {canTake && historyStudent && school?.id && (
+        <AttendanceStudentHistoryModal
+          student={historyStudent}
+          schoolId={school.id}
+          classrooms={hubClassrooms}
+          onClose={() => setHistoryStudent(null)}
+        />
+      )}
     </PageShell>
   );
 };

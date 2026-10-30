@@ -191,6 +191,29 @@ export function PromotionStatementReport({
         </div>
       </div>
 
+      {loading && !statement ? (
+        <div
+          role="status"
+          aria-label={t("common:loading")}
+          className="space-y-4 rounded-[24px] border border-slate-200 bg-white p-5 sm:p-8"
+        >
+          <div className="mx-auto h-4 w-2/5 animate-pulse rounded bg-slate-100" />
+          <div className="mx-auto h-7 w-3/5 animate-pulse rounded bg-slate-100" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            {[0, 1, 2, 3].map((tile) => (
+              <div key={tile} aria-hidden="true" className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+            ))}
+          </div>
+          <div aria-hidden="true" className="h-48 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+      ) : null}
+
+      {!loading && !statement ? (
+        <div className="rounded-[24px] border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+          <p className="text-sm font-bold text-slate-500">{t("common:empty")}</p>
+        </div>
+      ) : null}
+
       {statement && (
         <div
           id="promotion-statement-doc"
@@ -239,11 +262,11 @@ export function PromotionStatementReport({
             <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
               {t("promotionStatement.byClass")}
             </h3>
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full border-collapse text-left">
+            <div className="mt-3 overflow-x-auto print:overflow-visible">
+              <table className="w-full min-w-[980px] border-collapse text-left print:min-w-0">
                 <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2">{t("promotionStatement.colGradeClass")}</th>
+                    <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 print:static">{t("promotionStatement.colGradeClass")}</th>
                     {COLUMNS.map((c) => (
                       <th key={c.key} className="whitespace-nowrap px-3 py-2 text-center">
                         {t(`promotionStatement.${c.labelKey}`)}
@@ -253,7 +276,7 @@ export function PromotionStatementReport({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   <tr className="bg-indigo-50/60 font-semibold">
-                    <td className="sticky left-0 z-10 bg-indigo-50/60 px-3 py-2 text-sm font-bold text-slate-900">
+                    <td className="sticky left-0 z-10 bg-indigo-50/60 px-3 py-2 text-sm font-bold text-slate-900 print:static">
                       {t("promotionStatement.wholeSchool")}
                     </td>
                     <CellNums cell={statement.school} />
@@ -261,13 +284,13 @@ export function PromotionStatementReport({
                   {statement.divisions.map((div) => (
                     <React.Fragment key={div.divisionId || "none"}>
                       <tr className="bg-slate-100/70">
-                        <td className="sticky left-0 z-10 bg-slate-100/70 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-600" colSpan={COLUMNS.length + 1}>
+                        <td className="sticky left-0 z-10 bg-slate-100/70 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-600 print:static" colSpan={COLUMNS.length + 1}>
                           {div.divisionName}
                         </td>
                       </tr>
                       {div.classes.map((row) => (
                         <tr key={row.key}>
-                          <td className="sticky left-0 z-10 bg-white px-3 py-2 text-sm">
+                          <td className="sticky left-0 z-10 bg-white px-3 py-2 text-sm print:static">
                             <span className="font-semibold text-slate-900">{row.gradeName}</span>
                             <span className="text-slate-400"> · </span>
                             <span className="text-slate-600">{row.classroomName}</span>
@@ -276,7 +299,7 @@ export function PromotionStatementReport({
                         </tr>
                       ))}
                       <tr className="bg-slate-50 font-semibold">
-                        <td className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-sm">
+                        <td className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-sm print:static">
                           {t("promotionStatement.divisionTotal")}
                         </td>
                         <CellNums cell={div.totals} />
@@ -291,59 +314,63 @@ export function PromotionStatementReport({
           {(statement.bestAcademicPerformers.length > 0 || statement.bestAttendance.length > 0) && (
             <section className="relative mt-8 grid gap-8 lg:grid-cols-2">
               {statement.bestAcademicPerformers.length > 0 && (
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
                     {t("promotionStatement.bestAcademic")}
                   </h3>
-                  <table className="mt-3 w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2">#</th>
-                        <th className="px-3 py-2">{t("promotionStatement.colStudent")}</th>
-                        <th className="px-3 py-2">{t("promotionStatement.colGrade")}</th>
-                        <th className="px-3 py-2 text-center">{t("promotionStatement.colAverage")}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {statement.bestAcademicPerformers.map((p) => (
-                        <tr key={p.studentUserId}>
-                          <td className="px-3 py-2 font-mono text-slate-500">{p.position}</td>
-                          <td className="px-3 py-2 font-semibold text-slate-800">{p.name}</td>
-                          <td className="px-3 py-2 text-slate-600">{p.gradeName}</td>
-                          <td className="px-3 py-2 text-center font-mono text-emerald-700">{p.overallAverage}%</td>
+                  <div className="mt-3 overflow-x-auto print:overflow-visible">
+                    <table className="w-full min-w-[420px] text-left text-sm print:min-w-0">
+                      <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2">#</th>
+                          <th className="px-3 py-2">{t("promotionStatement.colStudent")}</th>
+                          <th className="px-3 py-2">{t("promotionStatement.colGrade")}</th>
+                          <th className="px-3 py-2 text-center">{t("promotionStatement.colAverage")}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {statement.bestAcademicPerformers.map((p) => (
+                          <tr key={p.studentUserId}>
+                            <td className="px-3 py-2 font-mono text-slate-500">{p.position}</td>
+                            <td className="px-3 py-2 font-semibold text-slate-800">{p.name}</td>
+                            <td className="px-3 py-2 text-slate-600">{p.gradeName}</td>
+                            <td className="px-3 py-2 text-center font-mono text-emerald-700">{p.overallAverage}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
               {statement.bestAttendance.length > 0 && (
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
                     {t("promotionStatement.bestAttendance")}
                   </h3>
-                  <table className="mt-3 w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2">{t("promotionStatement.colStudent")}</th>
-                        <th className="px-3 py-2">{t("promotionStatement.colGrade")}</th>
-                        <th className="px-3 py-2 text-center">{t("promotionStatement.colAttendance")}</th>
-                        <th className="px-3 py-2 text-center">{t("promotionStatement.colPresent")}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {statement.bestAttendance.map((a) => (
-                        <tr key={a.studentUserId}>
-                          <td className="px-3 py-2 font-semibold text-slate-800">{a.name}</td>
-                          <td className="px-3 py-2 text-slate-600">{a.gradeName}</td>
-                          <td className="px-3 py-2 text-center font-mono text-emerald-700">{a.attendanceRate}%</td>
-                          <td className="px-3 py-2 text-center font-mono text-slate-600">
-                            {a.present}/{a.total}
-                          </td>
+                  <div className="mt-3 overflow-x-auto print:overflow-visible">
+                    <table className="w-full min-w-[420px] text-left text-sm print:min-w-0">
+                      <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2">{t("promotionStatement.colStudent")}</th>
+                          <th className="px-3 py-2">{t("promotionStatement.colGrade")}</th>
+                          <th className="px-3 py-2 text-center">{t("promotionStatement.colAttendance")}</th>
+                          <th className="px-3 py-2 text-center">{t("promotionStatement.colPresent")}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {statement.bestAttendance.map((a) => (
+                          <tr key={a.studentUserId}>
+                            <td className="px-3 py-2 font-semibold text-slate-800">{a.name}</td>
+                            <td className="px-3 py-2 text-slate-600">{a.gradeName}</td>
+                            <td className="px-3 py-2 text-center font-mono text-emerald-700">{a.attendanceRate}%</td>
+                            <td className="px-3 py-2 text-center font-mono text-slate-600">
+                              {a.present}/{a.total}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </section>

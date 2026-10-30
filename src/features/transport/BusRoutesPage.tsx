@@ -188,7 +188,7 @@ export function BusRoutesPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Routes" value={stats.routes} icon={<Bus className="w-5 h-5" />} />
         <StatTile label="Active" value={stats.active} />
         <StatTile label="Stops" value={stats.stops} icon={<MapPin className="w-5 h-5" />} />

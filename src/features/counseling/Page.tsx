@@ -130,7 +130,7 @@ export function Counseling() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Sessions" value={stats.total} icon={<HeartPulse className="w-5 h-5" />} />
         <StatTile label="Check-ins" value={stats.checkIns} />
         <StatTile label="With follow-up" value={stats.followUps} />

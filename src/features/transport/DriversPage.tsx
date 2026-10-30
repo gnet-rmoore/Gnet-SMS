@@ -96,7 +96,7 @@ export function DriversPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile label="Fleet" value={stats.fleet} icon={<Truck className="w-5 h-5" />} />
         <StatTile label="Assigned" value={stats.assigned} icon={<UserCheck className="w-5 h-5" />} />
         <StatTile label="Unassigned" value={stats.unassigned} />

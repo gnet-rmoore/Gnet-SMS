@@ -41,6 +41,14 @@ export type AdmissionFormWizardProps = {
   /** Rendered first inside the form, outside the steps (honeypot fields). */
   hiddenSlot?: React.ReactNode;
   className?: string;
+  gradeLoadState?: "loading" | "error" | "empty" | "ready";
+  onRetryGrades?: () => void;
+  gradesStateLabels?: {
+    loading: string;
+    error: string;
+    empty: string;
+    retry: string;
+  };
 };
 
 /** Field key → label for the error summary and review rows (matches field labels). */
@@ -87,6 +95,9 @@ export function AdmissionFormWizard({
   error,
   hiddenSlot,
   className,
+  gradeLoadState,
+  onRetryGrades,
+  gradesStateLabels,
 }: AdmissionFormWizardProps) {
   const { t } = useTranslation(["common"]);
   const total = ADMISSION_FORM_STEPS.length;
@@ -219,7 +230,7 @@ export function AdmissionFormWizard({
                       onClick={() => goToStep(i)}
                       aria-current={active ? "step" : undefined}
                       className={cn(
-                        "group flex min-w-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-bold transition-colors sm:px-3",
+                        "group flex min-w-0 items-center justify-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-bold transition-colors sm:justify-start sm:px-3",
                         active
                           ? "border-indigo-600 bg-indigo-600 text-white"
                           : done
@@ -240,7 +251,7 @@ export function AdmissionFormWizard({
                       >
                         {done ? <Check className="h-3 w-3" /> : i + 1}
                       </span>
-                      <span className="truncate">{stepLabel(s)}</span>
+                      <span className="hidden truncate sm:inline">{stepLabel(s)}</span>
                     </button>
                   </li>
                   {i < total - 1 ? (
@@ -254,6 +265,9 @@ export function AdmissionFormWizard({
             {t("admissionForm.stepOf", { current: stepIndex + 1, total })}
           </span>
         </div>
+        <p className="text-center text-sm font-bold text-slate-700 sm:hidden" aria-live="polite">
+          {stepLabel(step)}
+        </p>
         <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full rounded-full bg-indigo-600 transition-all duration-300"
@@ -302,6 +316,10 @@ export function AdmissionFormWizard({
           inputClassName={inputClassName}
           labelClassName={labelClassName}
           sectionTitleClassName={sectionTitleClassName}
+          gradeLoadState={gradeLoadState}
+          onRetryGrades={onRetryGrades}
+          gradesStateLabels={gradesStateLabels}
+          submitting={submitting}
         />
 
         {isFinalStep ? (

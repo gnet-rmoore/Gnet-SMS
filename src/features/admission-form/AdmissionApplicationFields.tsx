@@ -24,6 +24,15 @@ export type AdmissionApplicationFieldsProps = {
   inputClassName?: string;
   labelClassName?: string;
   sectionTitleClassName?: string;
+  gradeLoadState?: "loading" | "error" | "empty" | "ready";
+  onRetryGrades?: () => void;
+  gradesStateLabels?: {
+    loading: string;
+    error: string;
+    empty: string;
+    retry: string;
+  };
+  submitting?: boolean;
 };
 
 const DEFAULT_INPUT =
@@ -54,6 +63,10 @@ export function AdmissionApplicationFields({
   inputClassName = DEFAULT_INPUT,
   labelClassName = DEFAULT_LABEL,
   sectionTitleClassName = DEFAULT_SECTION,
+  gradeLoadState = "ready",
+  onRetryGrades,
+  gradesStateLabels,
+  submitting = false,
 }: AdmissionApplicationFieldsProps) {
   const set = (patch: Partial<AdmissionApplicationForm>) => onChange(patch);
   const isReturningPublic = mode === "public-returning";
@@ -144,10 +157,19 @@ export function AdmissionApplicationFields({
                 onChange={(e) => set({ gradeLevelId: e.target.value })}
                 required={gradeRequired}
                 aria-required={gradeRequired || undefined}
+                disabled={submitting || gradeLoadState === "loading" || gradeLoadState === "error"}
                 className={cn(`${inputClassName} font-bold`, errors?.gradeLevelId && ERROR_INPUT)}
               >
                 <option value="">
-                  {isReturningPublic ? "Keep current grade" : "Select grade..."}
+                  {gradeLoadState === "loading"
+                    ? gradesStateLabels?.loading || "Loading grades..."
+                    : isReturningPublic
+                      ? "Keep current grade"
+                      : gradeLoadState === "error"
+                        ? gradesStateLabels?.error || "Could not load grades"
+                        : gradeLoadState === "empty"
+                          ? gradesStateLabels?.empty || "No grades available for this school"
+                          : "Select grade..."}
                 </option>
                 {gradeLevels.map((gl) => (
                   <option key={gl.id} value={gl.id}>
@@ -155,6 +177,15 @@ export function AdmissionApplicationFields({
                   </option>
                 ))}
               </select>
+              {gradeLoadState === "error" && onRetryGrades ? (
+                <button
+                  type="button"
+                  onClick={onRetryGrades}
+                  className="min-h-11 text-sm font-bold text-indigo-700 underline underline-offset-2"
+                >
+                  {gradesStateLabels?.retry || "Retry"}
+                </button>
+              ) : null}
               <FieldError code={errors?.gradeLevelId} />
             </div>
           </div>
@@ -188,13 +219,15 @@ export function AdmissionApplicationFields({
           </div>
           <div className="space-y-1">
             <label className={labelClassName}>Home Address</label>
-            <input
-              type="text"
+            <textarea
+              rows={3}
+              maxLength={500}
               aria-invalid={Boolean(errors?.address)}
               value={f.address}
               onChange={(e) => set({ address: e.target.value })}
-              className={inputCls("address")}
+              className={`${inputCls("address")} resize-y`}
             />
+            <p className="text-xs text-slate-500">{f.address.length}/500</p>
             <FieldError code={errors?.address} />
           </div>
         </section>

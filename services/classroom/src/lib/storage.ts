@@ -12,7 +12,7 @@ export { normalizeMime, assertAllowedMime } from "./storageMime";
 const BUCKET = process.env.S3_BUCKET || "sms-classroom";
 const REGION = process.env.S3_REGION || "us-east-1";
 const ENDPOINT = process.env.S3_ENDPOINT;
-const PUBLIC_BASE = (process.env.S3_PUBLIC_URL || ENDPOINT || "").replace(/\/$/, "");
+const PUBLIC_BASE = (process.env.S3_PUBLIC_URL || "").replace(/\/$/, "");
 const FORCE_PATH = process.env.S3_FORCE_PATH_STYLE !== "false";
 
 let internalClient: S3Client | null = null;
@@ -94,12 +94,37 @@ export async function createClassroomUploadUrl(opts: {
   const s3 = getInternalClient();
 
   if (!s3) {
-    return {
-      uploadUrl: "",
-      fileUrl: `local://${storageKey}`,
-      storageKey,
-      expiresIn,
-    };
+    const error: any = new Error(
+      "File storage credentials are not configured. Ask your admin to configure S3 storage."
+    );
+    error.status = 503;
+    throw error;
+  }
+
+  if (!PUBLIC_BASE) {
+    const error: any = new Error(
+      "Browser file storage is not configured. Set S3_PUBLIC_URL to a browser-reachable URL."
+    );
+    error.status = 503;
+    throw error;
+  }
+  let publicUrl: URL;
+  try {
+    publicUrl = new URL(PUBLIC_BASE);
+  } catch {
+    const error: any = new Error("S3_PUBLIC_URL must be a valid browser-reachable HTTP(S) URL.");
+    error.status = 503;
+    throw error;
+  }
+  if (!["http:", "https:"].includes(publicUrl.protocol)) {
+    const error: any = new Error("S3_PUBLIC_URL must use HTTP or HTTPS.");
+    error.status = 503;
+    throw error;
+  }
+  if (process.env.NODE_ENV === "production" && publicUrl.protocol !== "https:") {
+    const error: any = new Error("S3_PUBLIC_URL must use HTTPS in production.");
+    error.status = 503;
+    throw error;
   }
 
   await ensureBucket(s3);
@@ -109,7 +134,12 @@ export async function createClassroomUploadUrl(opts: {
     ContentType: mimeType,
   });
 
-  const signingClient = getBrowserSigningClient() || s3;
+  const signingClient = getBrowserSigningClient();
+  if (!signingClient) {
+    const error: any = new Error("Could not configure browser-reachable file storage.");
+    error.status = 503;
+    throw error;
+  }
   const uploadUrl = await getSignedUrl(signingClient, command, { expiresIn });
   const fileUrl = PUBLIC_BASE
     ? `${PUBLIC_BASE}/${BUCKET}/${storageKey}`

@@ -184,7 +184,7 @@ export function HeroImageGrid() {
             </Link>
           </motion.div>
 
-          <ul className="mt-10 grid grid-cols-3 gap-3 sm:gap-4">
+          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {THUMBS.map((thumb) => (
               <li key={thumb.src}>
                 <ThumbLink src={thumb.src} alt={t(thumb.altKey)} />

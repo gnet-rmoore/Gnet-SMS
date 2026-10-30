@@ -88,6 +88,8 @@ export const Gradebook = () => {
   // Assessment mode (one calendar assessment + structure columns)
   const [myClassrooms, setMyClassrooms] = useState<any[]>([]);
   const [calendar, setCalendar] = useState<any>(null);
+  const [calendarLoadError, setCalendarLoadError] = useState("");
+  const [classroomLoadError, setClassroomLoadError] = useState("");
   const [legends, setLegends] = useState<GradeLegendLike[]>([]);
   const [assessmentClassId, setAssessmentClassId] = useState<string | null>(null);
   const [assessmentPeriodId, setAssessmentPeriodId] = useState<string | null>(null);
@@ -106,20 +108,29 @@ export const Gradebook = () => {
   const loadHub = useCallback(async () => {
     if (!school?.id) return;
     setLoading(true);
+    setCalendarLoadError("");
+    setClassroomLoadError("");
     try {
-      const [examList, rooms, cal, grants, legendList] = await Promise.all([
+      const [examList, grants, legendList] = await Promise.all([
         gradebookApi.fetchExams(school.id),
-        gradebookApi.fetchMyClassrooms(school.id).catch(() => []),
-        gradebookApi.fetchCalendar(school.id).catch(() => null),
         api
           .get(`/api/schools/${school.id}/grades/edit-grants/mine`)
           .catch(() => []),
         settingsApi.fetchGradeLegends(school.id).catch(() => []),
       ]);
+      const [roomsResult, calendarResult] = await Promise.allSettled([
+        gradebookApi.fetchMyClassrooms(school.id),
+        gradebookApi.fetchCalendar(school.id),
+      ]);
       setExams(Array.isArray(examList) ? examList : []);
       setLegends(Array.isArray(legendList) ? legendList : []);
       setMineGrants(Array.isArray(grants) ? grants : []);
-      const allRooms = Array.isArray(rooms) ? rooms : [];
+      const allRooms = roomsResult.status === "fulfilled" && Array.isArray(roomsResult.value)
+        ? roomsResult.value
+        : [];
+      if (roomsResult.status === "rejected") {
+        setClassroomLoadError(roomsResult.reason?.message || t("gradebook.toast.loadClassesFailed"));
+      }
       const mine =
         user?.role === "TEACHER"
           ? allRooms.filter(
@@ -132,14 +143,19 @@ export const Gradebook = () => {
                 )
             )
           : allRooms;
-      setMyClassrooms(mine.length ? mine : allRooms);
-      setCalendar(cal);
+      setMyClassrooms(user?.role === "TEACHER" ? mine : allRooms);
+      if (calendarResult.status === "fulfilled") {
+        setCalendar(calendarResult.value);
+      } else {
+        setCalendar(null);
+        setCalendarLoadError(calendarResult.reason?.message || t("gradebook.toast.loadFailed"));
+      }
     } catch (err: any) {
       showToast(err?.message || t("gradebook.toast.loadFailed"), "error");
     } finally {
       setLoading(false);
     }
-  }, [school?.id, user?.id, user?.role, showToast]);
+  }, [school?.id, user?.id, user?.role, showToast, t]);
 
   useEffect(() => {
     void loadHub();
@@ -751,8 +767,12 @@ export const Gradebook = () => {
               classrooms={myClassrooms}
               periods={periods}
               hasCalendar={Boolean(calendar)}
+              calendarLoadError={calendarLoadError}
+              classroomLoadError={classroomLoadError}
+              canManageCalendar={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"].includes(user?.role || "")}
               lastSession={lastSession}
               t={t}
+              onRetry={() => void loadHub()}
               onOpen={(classId, pId, aId) =>
                 void openAssessment(classId, pId, aId)
               }
@@ -939,20 +959,28 @@ function AssessmentHub({
   classrooms,
   periods,
   hasCalendar,
+  calendarLoadError,
+  classroomLoadError,
+  canManageCalendar,
   lastSession,
   t,
   onOpen,
   onContinue,
   onSetupCalendar,
+  onRetry,
 }: {
   classrooms: any[];
   periods: any[];
   hasCalendar: boolean;
+  calendarLoadError: string;
+  classroomLoadError: string;
+  canManageCalendar: boolean;
   lastSession: GradebookLastSession | null;
   t: (key: string, opts?: Record<string, unknown>) => string;
   onOpen: (classId: string, periodId: string, assessmentId: string) => void;
   onContinue: (session: GradebookLastSession) => void;
   onSetupCalendar: () => void;
+  onRetry: () => void;
 }) {
   const [classId, setClassId] = useState(classrooms[0]?.id || "");
   const [periodId, setPeriodId] = useState(periods[0]?.id || "");
@@ -979,19 +1007,63 @@ function AssessmentHub({
     }
   }, [periodId, assessments, assessmentId]);
 
+  if (calendarLoadError || classroomLoadError) {
+    return (
+      <Surface className="py-12 text-center px-6 border border-amber-200 bg-amber-50/50">
+        <p className="text-lg font-extrabold text-slate-900">
+          {t("gradebook.loadSetupFailed", { defaultValue: "Could not load gradebook setup" })}
+        </p>
+        <p role="alert" className="text-sm text-slate-600 mt-2">
+          {calendarLoadError || classroomLoadError}
+        </p>
+        <Button type="button" variant="primary" onClick={onRetry} className="mt-5 min-h-11">
+          {t("common:retry", { defaultValue: "Retry" })}
+        </Button>
+      </Surface>
+    );
+  }
+
   if (!hasCalendar) {
     return (
       <Surface className="py-16 text-center px-6 border-dashed">
         <Layers className="w-10 h-10 text-slate-300 mx-auto mb-3" />
         <p className="text-lg font-extrabold tracking-tight text-slate-900">
-          {t("gradebook.setupCalendarTitle")}
+          {canManageCalendar
+            ? t("gradebook.setupCalendarTitle")
+            : t("gradebook.teacherCalendarMissing", {
+                defaultValue: "No active academic calendar — ask your school admin to publish it.",
+              })}
         </p>
         <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-          {t("gradebook.setupCalendarHint")}
+          {canManageCalendar
+            ? t("gradebook.setupCalendarHint")
+            : t("gradebook.teacherCalendarMissingHint", {
+                defaultValue: "Grades will be available once the academic calendar is published.",
+              })}
         </p>
-        <Button type="button" variant="primary" onClick={onSetupCalendar} className="mt-6 min-h-[48px]">
-          {t("gradebook.setupCalendarCta")}
-        </Button>
+        {canManageCalendar ? (
+          <Button type="button" variant="primary" onClick={onSetupCalendar} className="mt-6 min-h-[48px]">
+            {t("gradebook.setupCalendarCta")}
+          </Button>
+        ) : null}
+      </Surface>
+    );
+  }
+
+  if (!periods.length || !periods.some((period: any) => period.examComponents?.length)) {
+    return (
+      <Surface className="py-16 text-center px-6 border-dashed">
+        <Layers className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+        <p className="text-lg font-extrabold tracking-tight text-slate-900">
+          {canManageCalendar
+            ? t("gradebook.calendarNeedsPeriods", { defaultValue: "Calendar has no grading periods — finish setup." })
+            : t("gradebook.teacherCalendarNeedsPeriods", { defaultValue: "Ask your admin to add grading periods." })}
+        </p>
+        {canManageCalendar ? (
+          <Button type="button" variant="primary" onClick={onSetupCalendar} className="mt-6 min-h-[48px]">
+            {t("gradebook.setupCalendarCta")}
+          </Button>
+        ) : null}
       </Surface>
     );
   }

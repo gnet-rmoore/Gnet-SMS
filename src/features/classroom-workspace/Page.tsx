@@ -8,6 +8,7 @@ import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { fieldInput, fieldLabel } from "../academics-shared/FeatureModalShell";
 import { classScheduleApi } from "../class-schedule/api";
 import { workspaceApi } from "./api";
+import { unwrapItems } from "../../lib/apiEnvelope";
 import type { ClassroomSummary } from "./types";
 import { ClassRoomCard, durationByClassroom, type ClassDurationInfo } from "./ClassRoomCard";
 import { useTranslation } from "react-i18next";
@@ -73,8 +74,8 @@ export function ClassroomWorkspaceList() {
         if (cancelled) return;
         setClassrooms(
           enrichClassrooms(Array.isArray(rooms) ? rooms : [], {
-            subjects: Array.isArray(subjects) ? subjects : [],
-            gradeLevels: Array.isArray(gradeLevels) ? gradeLevels : [],
+            subjects: unwrapItems(subjects),
+            gradeLevels: unwrapItems(gradeLevels),
             staff: Array.isArray(staff) ? staff : [],
           })
         );

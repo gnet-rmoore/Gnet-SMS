@@ -8,6 +8,7 @@ import { confirmAction } from "../../lib/swal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { yearTransitionApi, type PromotionDecision, type PromotionRun, type YearTransitionResult } from "./api";
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 
 function defaultYearKey() {
   const y = new Date().getFullYear();
@@ -62,7 +63,9 @@ export function YearTransitionPage() {
         yearTransitionApi.listRuns(schoolId, yearKey),
         api.get(`/api/schools/${schoolId}/students`),
         api.get(`/api/schools/${schoolId}/classrooms`),
-        api.get(`/api/schools/${schoolId}/grade-levels`),
+        fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+          api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+        ),
       ]);
       const census = censusRes;
       setCensusCount(census?._count?.rows ?? census?.rows?.length ?? null);
@@ -75,7 +78,7 @@ export function YearTransitionPage() {
       setStudents(studMap);
       const rooms = Array.isArray(classRes) ? classRes : [];
       setClassrooms(rooms.filter((c: any) => !c.subjectId));
-      setGradeLevels(Array.isArray(gradeRes) ? gradeRes : []);
+      setGradeLevels(gradeRes);
     } catch (err: any) {
       showToast(err?.response?.data?.error || t("yearTransition.toast.loadFailed"), "error");
     } finally {

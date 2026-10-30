@@ -512,6 +512,59 @@ export const classroomService = {
     return member;
   },
 
+  async addMembersBulk(classroomId: string, schoolId: string, userIds: string[]) {
+    const uniqueIds = [...new Set(userIds)];
+    const [users, existingMembers] = await Promise.all([
+      getIdentityUsersByIds(uniqueIds),
+      prisma.classroomMember.findMany({
+        where: { classroomId, userId: { in: uniqueIds } },
+        select: { userId: true },
+      }),
+    ]);
+    const existingIds = new Set(existingMembers.map((member) => member.userId));
+    const seen = new Set<string>();
+
+    const results: Array<{
+      userId: string;
+      success: boolean;
+      alreadyMember?: boolean;
+      reason?: string;
+    }> = [];
+    for (const userId of userIds) {
+      if (seen.has(userId)) {
+        results.push({ userId, success: false, reason: "duplicate" });
+        continue;
+      }
+      seen.add(userId);
+
+      const user = users.get(userId);
+      if (!user) {
+        results.push({ userId, success: false, reason: "user_not_found" });
+        continue;
+      }
+      if (user.role !== "STUDENT") {
+        results.push({ userId, success: false, reason: "not_a_student" });
+        continue;
+      }
+      if (user.schoolId !== schoolId) {
+        results.push({ userId, success: false, reason: "wrong_school" });
+        continue;
+      }
+      if (existingIds.has(userId)) {
+        results.push({ userId, success: true, alreadyMember: true });
+        continue;
+      }
+
+      try {
+        await this.addMember(classroomId, userId, "STUDENT");
+        results.push({ userId, success: true });
+      } catch {
+        results.push({ userId, success: false, reason: "assignment_failed" });
+      }
+    }
+    return results;
+  },
+
   async removeMember(classroomId: string, userId: string) {
     const existing = await prisma.classroomMember.findUnique({
       where: { classroomId_userId: { classroomId, userId } },
@@ -641,12 +694,15 @@ export const classroomService = {
     return users;
   },
 
-  /** Internal — classrooms where userId holds one of `roles`, used by Academic's examService. */
+  /** Internal — classrooms owned by or assigned to a user in one of `roles`. */
   async getClassroomsByMember(userId: string, roles: string[], schoolId?: string) {
     return prisma.classroom.findMany({
       where: {
         ...(schoolId && { schoolId }),
-        members: { some: { userId, role: { in: roles } } },
+        OR: [
+          { ownerTeacherId: userId },
+          { members: { some: { userId, role: { in: roles } } } },
+        ],
       },
       include: {
         _count: { select: { members: true } },

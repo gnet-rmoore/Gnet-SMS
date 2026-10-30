@@ -373,8 +373,8 @@ export const academicController = {
 
   async listGradeLevelsInternal(req: any, res: Response) {
     try {
-      const rows = await academicService.getGradeLevels(req.params.schoolId);
-      res.json(rows);
+      const result = await academicService.getGradeLevels(req.params.schoolId);
+      res.json(Array.isArray(result) ? result : result.items);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch grade levels" });
     }

@@ -141,10 +141,25 @@ export function ClassroomRoomPage() {
   const [bannerColorDraft, setBannerColorDraft] = useState("#4f46e5");
   const [bannerImageFile, setBannerImageFile] = useState<File[]>([]);
   const [savingBanner, setSavingBanner] = useState(false);
+  const [bannerUploadProgress, setBannerUploadProgress] = useState<number | null>(null);
+  const [bannerPreviewError, setBannerPreviewError] = useState(false);
+  const [bannerFileError, setBannerFileError] = useState("");
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState("");
 
   const [topicCreateOpen, setTopicCreateOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [savingTopic, setSavingTopic] = useState(false);
+
+  useEffect(() => {
+    const file = bannerImageFile[0];
+    if (!file) {
+      setBannerPreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setBannerPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [bannerImageFile]);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [postDetail, setPostDetail] = useState<PostDetail | null>(null);
@@ -452,13 +467,36 @@ export function ClassroomRoomPage() {
     useUploadedImage?: boolean;
   }) => {
     if (!id || !classroom) return;
+    if (opts.useUploadedImage && bannerImageFile[0]) {
+      const file = bannerImageFile[0];
+      const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+      if (!allowedTypes.has(file.type.toLowerCase())) {
+        setBannerFileError(t("classroomWorkspace.banner.invalidType", {
+          defaultValue: "Choose a JPG, PNG, WebP, or GIF image.",
+        }));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setBannerFileError(t("classroomWorkspace.banner.fileTooLarge", {
+          defaultValue: "Banner images must be 5 MB or smaller.",
+        }));
+        return;
+      }
+    }
     setSavingBanner(true);
+    setBannerFileError("");
+    setBannerPreviewError(false);
+    setBannerUploadProgress(opts.useUploadedImage ? 0 : null);
     try {
       let bannerImageUrl: string | null | undefined = undefined;
       if (opts.clearImage) {
         bannerImageUrl = null;
       } else if (opts.useUploadedImage && bannerImageFile[0]) {
-        const uploaded = await uploadClassroomFile(id, bannerImageFile[0]);
+        const uploaded = await uploadClassroomFile(
+          id,
+          bannerImageFile[0],
+          setBannerUploadProgress
+        );
         bannerImageUrl = uploaded.fileUrl;
       }
 
@@ -475,9 +513,11 @@ export function ClassroomRoomPage() {
       setBannerOpen(false);
       showToast(t("classroomWorkspace.toast.bannerUpdated"));
     } catch (e: any) {
+      setBannerFileError(e?.message || t("classroomWorkspace.toast.bannerUpdateFailed"));
       showToast(e?.message || t("classroomWorkspace.toast.bannerUpdateFailed"), "error");
     } finally {
       setSavingBanner(false);
+      setBannerUploadProgress(null);
     }
   };
 
@@ -1313,13 +1353,31 @@ export function ClassroomRoomPage() {
               classroom={{
                 bannerColor: bannerColorDraft,
                 bannerImageUrl:
-                  bannerImageFile[0]
-                    ? URL.createObjectURL(bannerImageFile[0])
-                    : classroom.bannerImageUrl,
+                  bannerPreviewUrl || classroom.bannerImageUrl,
               }}
               className="h-24 rounded-2xl overflow-hidden"
               dimImage={false}
+              onImageError={() => setBannerPreviewError(true)}
             />
+            {bannerPreviewError ? (
+              <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                {t("classroomWorkspace.banner.previewFailed", {
+                  defaultValue: "The image preview could not be loaded. Try another image or remove it.",
+                })}
+                {bannerImageFile.length ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBannerImageFile([]);
+                      setBannerPreviewError(false);
+                    }}
+                    className="ml-2 min-h-11 font-bold underline"
+                  >
+                    {t("classroomWorkspace.banner.removeImage", { defaultValue: "Remove image" })}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <div>
               <p className={fieldLabel}>{t("classroomWorkspace.banner.solidColor")}</p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -1351,13 +1409,31 @@ export function ClassroomRoomPage() {
             </div>
             <FileDropzone
               files={bannerImageFile}
-              onChange={setBannerImageFile}
+              onChange={(files) => {
+                setBannerFileError("");
+                setBannerPreviewError(false);
+                setBannerImageFile(files);
+              }}
               multiple={false}
               accept="image/*"
               label={t("classroomWorkspace.banner.imageLabel")}
               hint={t("classroomWorkspace.banner.imageHint")}
               disabled={savingBanner}
             />
+            {bannerUploadProgress !== null ? (
+              <div role="status" aria-live="polite">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                  <span>{t("classroomWorkspace.banner.uploading", { defaultValue: "Uploading image…" })}</span>
+                  <span>{bannerUploadProgress}%</span>
+                </div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full bg-indigo-600 transition-[width]" style={{ width: `${bannerUploadProgress}%` }} />
+                </div>
+              </div>
+            ) : null}
+            {bannerFileError ? (
+              <p role="alert" className="text-sm font-medium text-rose-700">{bannerFileError}</p>
+            ) : null}
             {classroom.bannerImageUrl && !bannerImageFile.length ? (
               <p className="text-xs text-slate-500">{t("classroomWorkspace.banner.currentImageHint")}</p>
             ) : null}

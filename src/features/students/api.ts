@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+import { fetchAllItems } from "../../lib/apiEnvelope";
 
 /** Thin API wrappers for the students feature. */
 export const studentsApi = {
@@ -14,7 +15,10 @@ export const studentsApi = {
     return api.get(`/api/schools/${schoolId}/students${qs ? `?${qs}` : ""}`);
   },
   fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`),
-  fetchGradeLevels: (schoolId: string) => api.get(`/api/schools/${schoolId}/grade-levels`),
+  fetchGradeLevels: (schoolId: string) =>
+    fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
+      api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
+    ),
   createStudent: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/students`, data),
   updateUser: (id: string, data: unknown) => api.patch(`/api/users/${id}`, data),

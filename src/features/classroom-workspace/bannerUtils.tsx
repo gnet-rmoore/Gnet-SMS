@@ -27,13 +27,6 @@ export function classroomBannerClass(bannerColor?: string | null) {
 }
 
 export function classroomBannerStyle(fields: BannerFields): React.CSSProperties | undefined {
-  if (fields.bannerImageUrl) {
-    return {
-      backgroundImage: `url(${fields.bannerImageUrl})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    };
-  }
   const color = fields.bannerColor;
   if (color?.startsWith("#") || color?.startsWith("rgb")) {
     return { backgroundColor: color };
@@ -46,11 +39,13 @@ export function ClassroomBannerStrip({
   className = "h-28",
   children,
   dimImage = true,
+  onImageError,
 }: {
   classroom: BannerFields;
   className?: string;
   children?: React.ReactNode;
   dimImage?: boolean;
+  onImageError?: () => void;
 }) {
   const hasImage = Boolean(classroom.bannerImageUrl);
   return (
@@ -58,6 +53,15 @@ export function ClassroomBannerStrip({
       className={`${className} relative ${classroomBannerClass(classroom.bannerColor)}`}
       style={classroomBannerStyle(classroom)}
     >
+      {classroom.bannerImageUrl ? (
+        <img
+          src={classroom.bannerImageUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={onImageError}
+        />
+      ) : null}
       {hasImage && dimImage ? <div className="absolute inset-0 bg-slate-950/20 pointer-events-none" /> : null}
       {children}
     </div>

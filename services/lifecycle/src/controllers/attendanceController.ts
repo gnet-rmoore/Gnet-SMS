@@ -14,14 +14,20 @@ export const attendanceController = {
         {
           page: req.query.page as string | undefined,
           pageSize: req.query.pageSize as string | undefined,
+          classroomId: req.query.classroomId as string | undefined,
+          from: req.query.from as string | undefined,
+          to: req.query.to as string | undefined,
+          status: req.query.status as string | undefined,
+          studentId: req.query.studentId as string | undefined,
         }
       );
       res.json(attendance);
     } catch (err) {
       console.error("getAttendanceBySchool error:", err);
-      res.status(500).json({
-        error: "Failed to fetch attendance",
-        message: (err as any).message,
+      const status = (err as any)?.status || 500;
+      res.status(status).json({
+        error: (err as any)?.message || "Failed to fetch attendance",
+        message: (err as any)?.message || "Failed to fetch attendance",
       });
     }
   },
@@ -54,7 +60,10 @@ export const attendanceController = {
   async getAttendanceStats(req: any, res: Response) {
     const { schoolId } = req.params;
     try {
-      const stats = await attendanceService.getAttendanceStats(schoolId);
+      const stats = await attendanceService.getAttendanceStats(schoolId, {
+        id: req.user.id,
+        role: req.user.role,
+      });
       res.json(stats);
     } catch (err) {
       console.error("getAttendanceStats error:", err);
