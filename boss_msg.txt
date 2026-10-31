@@ -1,233 +1,977 @@
-29df493baa13: Waiting
-5301e206c1e6: Waiting
-afa543f85b46: Waiting
-8990aa7d1bf9: Layer already exists
-894c9be657b2: Layer already exists
-c1a3d95953ec: Layer already exists
-10753d88aca1: Layer already exists
-0a1174e70d7a: Layer already exists
-afa543f85b46: Layer already exists
-29df493baa13: Layer already exists
-5301e206c1e6: Layer already exists
-e10358715ead: Layer already exists
-4983b93ee796: Layer already exists
-latest: digest: sha256:8b6b79204990d4a5874fe111603a8eec08ecd8a1211989577d514ab8022586c7 size: 2406
-28s
-Run set -euo pipefail
-  
-#0 building with "default" instance using docker driver
-#1 [internal] load build definition from Dockerfile.frontend
-#1 transferring dockerfile: 1.54kB done
-#1 DONE 0.0s
-#2 [internal] load metadata for docker.io/library/node:20-alpine
-#2 DONE 0.1s
-#3 [internal] load metadata for docker.io/library/nginx:1.25.5-alpine
-#3 ...
-#4 [auth] library/nginx:pull token for registry-1.docker.io
-#4 DONE 0.0s
-#3 [internal] load metadata for docker.io/library/nginx:1.25.5-alpine
-#3 DONE 0.6s
-#5 [internal] load .dockerignore
-#5 transferring context: 506B done
-#5 DONE 0.0s
-#6 [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-#6 DONE 0.0s
-#7 [builder 2/6] WORKDIR /app
-#7 CACHED
-#8 [stage-1 1/6] FROM docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
-#8 resolve docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00 done
-#8 sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8 3.41MB / 3.41MB 0.2s done
-#8 sha256:e6ef242c157026935bf8a69e6cf19f8f6635e44507c813daf0cc644f2e22396b 629B / 629B 0.1s done
-#8 sha256:501d84f5d06487ff81e506134dc922ed4fd2080d5521eb5b6ee4054fa17d15c4 10.80kB / 10.80kB done
-#8 sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 0B / 3.99MB 0.2s
-#8 sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00 9.07kB / 9.07kB done
-#8 sha256:721fa00bc549df26b3e67cc558ff176112d4ba69847537766f3c28e171d180e7 2.50kB / 2.50kB done
-#8 extracting sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8
-#8 sha256:13fcfbc94648785b918ecc1af675ac5187cdfc30f4fdaf9afa8bd2e9dedf548b 954B / 954B 0.2s done
-#8 sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b 0B / 393B 0.2s
-#8 sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 0B / 1.21kB 0.2s
-#8 sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 3.99MB / 3.99MB 0.3s done
-#8 extracting sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8 0.1s done
-#8 sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b 393B / 393B 0.2s done
-#8 sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 1.21kB / 1.21kB 0.3s done
-#8 sha256:8a3742a9529dc5c00974dfcf5e465be9f1606ff8a1911527b3928cf86ad57465 1.40kB / 1.40kB 0.3s done
-#8 sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0B / 13.04MB 0.3s
-#8 ...
-#9 [internal] load build context
-#9 transferring context: 100.56MB 0.3s done
-#9 DONE 0.3s
-#8 [stage-1 1/6] FROM docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
-#8 sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 13.04MB / 13.04MB 0.4s
-#8 extracting sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 0.2s
-#8 sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 13.04MB / 13.04MB 0.5s done
-#8 extracting sha256:fc21a1d387f514f53589abea6d67cd6b329dfd3c9059bc96a552af3b3c97b413 0.4s done
-#8 ...
-#10 [builder 3/6] COPY package.json package-lock.json ./
-#10 DONE 0.7s
-#8 [stage-1 1/6] FROM docker.io/library/nginx:1.25.5-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
-#8 extracting sha256:e6ef242c157026935bf8a69e6cf19f8f6635e44507c813daf0cc644f2e22396b done
-#8 extracting sha256:13fcfbc94648785b918ecc1af675ac5187cdfc30f4fdaf9afa8bd2e9dedf548b done
-#8 extracting sha256:d4bca490e609acaaf54ca73363442d31a31fd136a47a20a12370cf2025f0a10b done
-#8 extracting sha256:5406ed7b06d9a94b5bd15843d2a1c7e38796a3ec5dc7f40f16f70cc1d045f453 done
-#8 extracting sha256:8a3742a9529dc5c00974dfcf5e465be9f1606ff8a1911527b3928cf86ad57465 done
-#8 extracting sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0.1s
-#8 extracting sha256:0d0c16747d2c6b6c26c064652afcb964c15f1b1e596ec052b2aa19b83948ae27 0.2s done
-#8 DONE 1.6s
-#11 [builder 4/6] RUN npm ci --ignore-scripts
-#11 ...
-#12 [stage-1 2/6] COPY 30-tune-worker-processes.sh /docker-entrypoint.d/30-tune-worker-processes.sh
-#12 DONE 0.0s
-#13 [stage-1 3/6] RUN chmod +x /docker-entrypoint.d/30-tune-worker-processes.sh
-#13 DONE 0.1s
-#14 [stage-1 4/6] COPY nginx.conf /etc/nginx/conf.d/default.conf
-#14 DONE 0.0s
-#11 [builder 4/6] RUN npm ci --ignore-scripts
-#11 0.693 npm warn EBADENGINE Unsupported engine {
-#11 0.693 npm warn EBADENGINE   package: 'commander@15.0.0',
-#11 0.693 npm warn EBADENGINE   required: { node: '>=22.12.0' },
-#11 0.693 npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
-#11 0.693 npm warn EBADENGINE }
-#11 0.694 npm warn EBADENGINE Unsupported engine {
-#11 0.694 npm warn EBADENGINE   package: 'nanoid@6.0.2',
-#11 0.694 npm warn EBADENGINE   required: { node: '^22 || ^24 || >=26' },
-#11 0.694 npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
-#11 0.694 npm warn EBADENGINE }
-#11 2.747 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
-#11 11.61 
-#11 11.61 added 782 packages, and audited 783 packages in 11s
-#11 11.61 
-#11 11.61 119 packages are looking for funding
-#11 11.61   run `npm fund` for details
-#11 11.70 
-#11 11.70 63 vulnerabilities (3 low, 25 moderate, 32 high, 3 critical)
-#11 11.70 
-#11 11.70 To address issues that do not require attention, run:
-#11 11.70   npm audit fix
-#11 11.70 
-#11 11.70 To address all issues possible (including breaking changes), run:
-#11 11.70   npm audit fix --force
-#11 11.70 
-#11 11.70 Some issues need review, and may require choosing
-#11 11.70 a different dependency.
-#11 11.70 
-#11 11.70 Run `npm audit` for details.
-#11 11.70 npm notice
-#11 11.70 npm notice New major version of npm available! 10.8.2 -> 12.2.1
-#11 11.70 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
-#11 11.70 npm notice To update run: npm install -g npm@12.2.1
-#11 11.70 npm notice
-#11 DONE 16.5s
-#15 [builder 5/6] COPY . .
-#15 DONE 0.8s
-#16 [builder 6/6] RUN npm run build
-#16 0.191 
-#16 0.191 > gnet-sms@0.0.0 build
-#16 0.191 > tsx prisma/setup-provider.ts && vite build
-#16 0.191 
-#16 0.428 [PRISMA SETUP] PostgreSQL-only mode
-#16 0.428 [PRISMA SETUP] Regenerating Prisma Client...
-#16 1.000 prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
-#16 1.000 Please manually install OpenSSL and try installing Prisma again.
-#16 1.569 Prisma schema loaded from prisma/schema.prisma
-#16 1.604 prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
-#16 1.604 Please manually install OpenSSL and try installing Prisma again.
-#16 3.369 
-#16 3.369 ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 635ms
-#16 3.369 
-#16 3.369 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
-#16 3.369 
-#16 3.369 Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
-#16 3.369 
-#16 3.574 [PRISMA SETUP] Prisma Client generated successfully!
-#16 3.820 vite v6.4.1 building for production...
-#16 3.872 transforming...
-#16 8.461 ✓ 3970 modules transformed.
-#16 8.462 ✗ Build failed in 4.62s
-#16 8.462 error during build:
-#16 8.462 [vite:esbuild] Transform failed with 3 errors:
-#16 8.462 /app/src/features/curriculum/components/CurriculumViews.tsx:464:32: ERROR: Unexpected closing "motion.div" tag does not match opening "div" tag
-#16 8.462 /app/src/features/curriculum/components/CurriculumViews.tsx:465:30: ERROR: Unexpected closing fragment tag does not match opening "div" tag
-#16 8.462 /app/src/features/curriculum/components/CurriculumViews.tsx:466:27: ERROR: Expected ")" but found "}"
-#16 8.462 file: /app/src/features/curriculum/components/CurriculumViews.tsx:464:32
-#16 8.462 
-#16 8.462 Unexpected closing "motion.div" tag does not match opening "div" tag
-#16 8.462 462|          </button>
-#16 8.462 463|        ) : null}
-#16 8.462 464|                                </motion.div>
-#16 8.462    |                                  ^
-#16 8.462 465|                              </>
-#16 8.462 466|                            )}
-#16 8.462 
-#16 8.462 Unexpected closing fragment tag does not match opening "div" tag
-#16 8.462 463|        ) : null}
-#16 8.462 464|                                </motion.div>
-#16 8.462 465|                              </>
-#16 8.462    |                                ^
-#16 8.462 466|                            )}
-#16 8.462 467|                          </AnimatePresence>
-#16 8.462 
-#16 8.462 Expected ")" but found "}"
-#16 8.462 464|                                </motion.div>
-#16 8.462 465|                              </>
-#16 8.462 466|                            )}
-#16 8.462    |                             ^
-#16 8.462 467|                          </AnimatePresence>
-#16 8.462 468|                        </div>
-#16 8.462 
-#16 8.462     at failureErrorWithLog (/app/node_modules/vite/node_modules/esbuild/lib/main.js:1467:15)
-#16 8.462     at /app/node_modules/vite/node_modules/esbuild/lib/main.js:736:50
-#16 8.462     at responseCallbacks.<computed> (/app/node_modules/vite/node_modules/esbuild/lib/main.js:603:9)
-#16 8.462     at handleIncomingPacket (/app/node_modules/vite/node_modules/esbuild/lib/main.js:658:12)
-#16 8.462     at Socket.readFromStdout (/app/node_modules/vite/node_modules/esbuild/lib/main.js:581:7)
-#16 8.462     at Socket.emit (node:events:524:28)
-#16 8.462     at addChunk (node:internal/streams/readable:561:12)
-#16 8.462     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
-#16 8.462     at Readable.push (node:internal/streams/readable:392:5)
-#16 8.462     at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
-#16 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
-------
- > [builder 6/6] RUN npm run build:
-8.462     at failureErrorWithLog (/app/node_modules/vite/node_modules/esbuild/lib/main.js:1467:15)
-8.462     at /app/node_modules/vite/node_modules/esbuild/lib/main.js:736:50
-8.462     at responseCallbacks.<computed> (/app/node_modules/vite/node_modules/esbuild/lib/main.js:603:9)
-8.462     at handleIncomingPacket (/app/node_modules/vite/node_modules/esbuild/lib/main.js:658:12)
-8.462     at Socket.readFromStdout (/app/node_modules/vite/node_modules/esbuild/lib/main.js:581:7)
-8.462     at Socket.emit (node:events:524:28)
-8.462     at addChunk (node:internal/streams/readable:561:12)
-8.462     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
-8.462     at Readable.push (node:internal/streams/readable:392:5)
-8.462     at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
-------
-Dockerfile.frontend:22
---------------------
-  20 |     # Placeholder so `prisma generate` (called by `npm run build`) works without a live DB
-  21 |     ENV DATABASE_URL=***localhost:5432/placeholder?schema=public
-  22 | >>> RUN npm run build
-  23 |     
-  24 |     # --- Stage 2: Runtime ---
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+
+1m 30s
+Run npm run test:e2e
+
+> gnet-sms@0.0.0 test:e2e
+> playwright test
+
+
+Running 24 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/i18n-locale.spec.ts:13:3 › i18n locale › login shows French sign-in copy when locale is fr (597ms)
+  ✓   2 [chromium] › e2e/i18n-locale.spec.ts:33:3 › i18n locale › login shows Arabic chrome and dir=rtl when locale is ar (578ms)
+  ✓   3 [chromium] › e2e/i18n-locale.spec.ts:54:3 › i18n locale › login shows Chinese chrome when locale is zh-Hans (566ms)
+  ✓   4 [chromium] › e2e/i18n-locale.spec.ts:73:3 › i18n locale › login shows Hindi chrome when locale is hi (560ms)
+  ✘   5 [chromium] › e2e/landing.spec.ts:12:3 › landing page › landing loads with hero, capabilities, and register CTA (5.5s)
+  ✘   6 [chromium] › e2e/landing.spec.ts:12:3 › landing page › landing loads with hero, capabilities, and register CTA (retry #1) (6.2s)
+  ✓   7 [chromium] › e2e/landing.spec.ts:36:3 › landing page › modules page shows hero, search/filter, and domain catalog (762ms)
+  ✘   8 [chromium] › e2e/landing.spec.ts:45:3 › landing page › pricing page shows hero, plan cards, and comparison matrix (5.7s)
+  ✘   9 [chromium] › e2e/landing.spec.ts:45:3 › landing page › pricing page shows hero, plan cards, and comparison matrix (retry #1) (6.0s)
+  ✓  10 [chromium] › e2e/landing.spec.ts:56:3 › landing page › locale switch updates landing chrome (1.2s)
+  ✘  11 [chromium] › e2e/personas/smoke.spec.ts:19:3 › persona smoke › @tier1 school admin: dashboard + students (549ms)
+  ✘  12 [chromium] › e2e/personas/smoke.spec.ts:19:3 › persona smoke › @tier1 school admin: dashboard + students (retry #1) (1.5s)
+  ✘  13 [chromium] › e2e/personas/smoke.spec.ts:28:3 › persona smoke › @tier1 teacher: my classes (594ms)
+  ✘  14 [chromium] › e2e/personas/smoke.spec.ts:28:3 › persona smoke › @tier1 teacher: my classes (retry #1) (1.4s)
+  ✘  15 [chromium] › e2e/personas/smoke.spec.ts:36:3 › persona smoke › @tier2 student: my classes (615ms)
+  ✘  16 [chromium] › e2e/personas/smoke.spec.ts:36:3 › persona smoke › @tier2 student: my classes (retry #1) (1.5s)
+  ✘  17 [chromium] › e2e/personas/smoke.spec.ts:42:3 › persona smoke › @tier1 parent: children area reachable (624ms)
+  ✘  18 [chromium] › e2e/personas/smoke.spec.ts:42:3 › persona smoke › @tier1 parent: children area reachable (retry #1) (1.4s)
+  ✘  19 [chromium] › e2e/personas/smoke.spec.ts:48:3 › persona smoke › @tier2 super admin: schools (653ms)
+  ✘  20 [chromium] › e2e/personas/smoke.spec.ts:48:3 › persona smoke › @tier2 super admin: schools (retry #1) (1.5s)
+  ✘  21 [chromium] › e2e/personas/smoke.spec.ts:54:3 › persona smoke › @tier2 negative: teacher cannot open roles (678ms)
+  ✘  22 [chromium] › e2e/personas/smoke.spec.ts:54:3 › persona smoke › @tier2 negative: teacher cannot open roles (retry #1) (1.6s)
+  ✘  23 [chromium] › e2e/personas/smoke.spec.ts:61:3 › persona smoke › @tier2 specialty: library live catalog (670ms)
+  ✘  24 [chromium] › e2e/personas/smoke.spec.ts:61:3 › persona smoke › @tier2 specialty: library live catalog (retry #1) (1.5s)
+  ✘  25 [chromium] › e2e/platform-guide.spec.ts:27:3 › platform guide › school admin: guide hub + completion widget reachable (608ms)
+  ✘  26 [chromium] › e2e/platform-guide.spec.ts:27:3 › platform guide › school admin: guide hub + completion widget reachable (retry #1) (1.4s)
+  ✘  27 [chromium] › e2e/platform-guide.spec.ts:40:3 › platform guide › teacher: deep link ?step= opens tour (611ms)
+  ✘  28 [chromium] › e2e/platform-guide.spec.ts:40:3 › platform guide › teacher: deep link ?step= opens tour (retry #1) (1.5s)
+  ✘  29 [chromium] › e2e/platform-guide.spec.ts:48:3 › platform guide › parent: guide page distinct copy (638ms)
+  ✘  30 [chromium] › e2e/platform-guide.spec.ts:48:3 › platform guide › parent: guide page distinct copy (retry #1) (1.4s)
+  ✘  31 [chromium] › e2e/platform-guide.spec.ts:56:3 › platform guide › student: guide page loads (622ms)
+  ✘  32 [chromium] › e2e/platform-guide.spec.ts:56:3 › platform guide › student: guide page loads (retry #1) (1.4s)
+  ✘  33 [chromium] › e2e/platform-guide.spec.ts:63:3 › platform guide › super admin: platform guide route (645ms)
+  ✘  34 [chromium] › e2e/platform-guide.spec.ts:63:3 › platform guide › super admin: platform guide route (retry #1) (1.4s)
+  ✘  35 [chromium] › e2e/platform-guide.spec.ts:72:3 › platform guide › esc closes coach dialog (593ms)
+  ✘  36 [chromium] › e2e/platform-guide.spec.ts:72:3 › platform guide › esc closes coach dialog (retry #1) (1.5s)
+  ✘  37 [chromium] › e2e/sidebar.spec.ts:12:3 › app sidebar › login then sidebar expands/collapses on desktop (624ms)
+  ✘  38 [chromium] › e2e/sidebar.spec.ts:12:3 › app sidebar › login then sidebar expands/collapses on desktop (retry #1) (1.5s)
+  ✘  39 [chromium] › e2e/syllabus-calendar.spec.ts:19:3 › syllabus calendar alignment › teacher: syllabus builder references academic calendar (589ms)
+  ✘  40 [chromium] › e2e/syllabus-calendar.spec.ts:19:3 › syllabus calendar alignment › teacher: syllabus builder references academic calendar (retry #1) (1.4s)
+  ✘  41 [chromium] › e2e/syllabus-calendar.spec.ts:33:3 › syllabus calendar alignment › teacher: lesson plans week board shows period context (624ms)
+  ✘  42 [chromium] › e2e/syllabus-calendar.spec.ts:33:3 › syllabus calendar alignment › teacher: lesson plans week board shows period context (retry #1) (1.4s)
+
+
+  1) [chromium] › e2e/landing.spec.ts:12:3 › landing page › landing loads with hero, capabilities, and register CTA 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('h1')
+    Expected pattern: /Gnet/i
+    Received string:  "The operating system for modern schools"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1')
+        10 × locator resolved to <h1 class="mt-3 font-landing-sans text-[2rem] font-extrabold leading-[1.12] tracking-tight text-white sm:mt-4 sm:text-5xl lg:text-[3.35rem] lg:leading-[1.1]">The operating system for modern schools</h1>
+           - unexpected value "The operating system for modern schools"
+
+
+      13 |     await page.goto("/");
+      14 |
+    > 15 |     await expect(page.locator("h1")).toContainText(/Gnet/i);
+         |                                      ^
+      16 |     await expect(page.locator("#capabilities")).toBeVisible();
+      17 |     await expect(page.locator("#campus")).toBeVisible();
+      18 |     await expect(page.locator("#modules")).toHaveCount(0);
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/landing.spec.ts:15:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('h1')
+    Expected pattern: /Gnet/i
+    Received string:  "The operating system for modern schools"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1')
+        11 × locator resolved to <h1 class="mt-3 font-landing-sans text-[2rem] font-extrabold leading-[1.12] tracking-tight text-white sm:mt-4 sm:text-5xl lg:text-[3.35rem] lg:leading-[1.1]">The operating system for modern schools</h1>
+           - unexpected value "The operating system for modern schools"
+
+
+      13 |     await page.goto("/");
+      14 |
+    > 15 |     await expect(page.locator("h1")).toContainText(/Gnet/i);
+         |                                      ^
+      16 |     await expect(page.locator("#capabilities")).toBeVisible();
+      17 |     await expect(page.locator("#campus")).toBeVisible();
+      18 |     await expect(page.locator("#modules")).toHaveCount(0);
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/landing.spec.ts:15:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-landing-page-landi-8b484-pabilities-and-register-CTA-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e/landing.spec.ts:45:3 › landing page › pricing page shows hero, plan cards, and comparison matrix 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('#pricing')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('#pricing')
+
+
+      46 |     await page.goto("/pricing");
+      47 |     await expect(page.locator("h1")).toBeVisible();
+    > 48 |     await expect(page.locator("#pricing")).toBeVisible();
+         |                                            ^
+      49 |     const cards = page.locator("#pricing article");
+      50 |     await expect(cards.first()).toBeVisible();
+      51 |     expect(await cards.count()).toBeGreaterThanOrEqual(3);
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/landing.spec.ts:48:44
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('#pricing')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('#pricing')
+
+
+      46 |     await page.goto("/pricing");
+      47 |     await expect(page.locator("h1")).toBeVisible();
+    > 48 |     await expect(page.locator("#pricing")).toBeVisible();
+         |                                            ^
+      49 |     const cards = page.locator("#pricing article");
+      50 |     await expect(cards.first()).toBeVisible();
+      51 |     expect(await cards.count()).toBeGreaterThanOrEqual(3);
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/landing.spec.ts:48:44
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-landing-page-prici-e183e-cards-and-comparison-matrix-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e/personas/smoke.spec.ts:19:3 › persona smoke › @tier1 school admin: dashboard + students 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:20:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:20:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smo-0e1d8-ol-admin-dashboard-students-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e/personas/smoke.spec.ts:28:3 › persona smoke › @tier1 teacher: my classes ─────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:29:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:29:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smoke-tier1-teacher-my-classes-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e/personas/smoke.spec.ts:36:3 › persona smoke › @tier2 student: my classes ─────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:37:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:37:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smoke-tier2-student-my-classes-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e/personas/smoke.spec.ts:42:3 › persona smoke › @tier1 parent: children area reachable 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:43:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:43:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smo-9a8b9-ent-children-area-reachable-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › e2e/personas/smoke.spec.ts:48:3 › persona smoke › @tier2 super admin: schools ────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:49:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:49:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smoke-tier2-super-admin-schools-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › e2e/personas/smoke.spec.ts:54:3 › persona smoke › @tier2 negative: teacher cannot open roles 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:55:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:55:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smo-3af80-e-teacher-cannot-open-roles-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium] › e2e/personas/smoke.spec.ts:61:3 › persona smoke › @tier2 specialty: library live catalog 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:62:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/personas/smoke.spec.ts:62:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/personas-smoke-persona-smo-b29d3-cialty-library-live-catalog-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [chromium] › e2e/platform-guide.spec.ts:27:3 › platform guide › school admin: guide hub + completion widget reachable 
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:28:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:28:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-gu-d6e2a-completion-widget-reachable-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [chromium] › e2e/platform-guide.spec.ts:40:3 › platform guide › teacher: deep link ?step= opens tour 
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:41:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:41:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-gu-97e51-r-deep-link-step-opens-tour-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [chromium] › e2e/platform-guide.spec.ts:48:3 › platform guide › parent: guide page distinct copy 
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:49:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:49:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-gu-b85a0-nt-guide-page-distinct-copy-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [chromium] › e2e/platform-guide.spec.ts:56:3 › platform guide › student: guide page loads ────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:57:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-student-guide-page-loads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-guide-student-guide-page-loads-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:57:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-student-guide-page-loads-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-guide-student-guide-page-loads-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-student-guide-page-loads-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-guide-student-guide-page-loads-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [chromium] › e2e/platform-guide.spec.ts:63:3 › platform guide › super admin: platform guide route 
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:64:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:64:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-gu-e0246--admin-platform-guide-route-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [chromium] › e2e/platform-guide.spec.ts:72:3 › platform guide › esc closes coach dialog ──────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:73:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      10 |   await page.goto("/login");
+      11 |   await page.getByLabel(/email/i).fill(email);
+    > 12 |   await page.getById('login-password').fill(password);
+         |              ^
+      13 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      14 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      15 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:12:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/platform-guide.spec.ts:73:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/platform-guide-platform-guide-esc-closes-coach-dialog-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [chromium] › e2e/sidebar.spec.ts:12:3 › app sidebar › login then sidebar expands/collapses on desktop 
+
+    TypeError: page.getById is not a function
+
+      14 |     await page.goto("/login");
+      15 |     await page.getByLabel(/email/i).fill("schooladmin@yoursms.com");
+    > 16 |     await page.getById('login-password').fill("admin123");
+         |                ^
+      17 |     await page.getByRole("button", { name: /sign in|log in|connexion/i }).click();
+      18 |     await page.waitForURL(/\/[^/]+\/(dashboard)?/, { timeout: 20_000 });
+      19 |
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/sidebar.spec.ts:16:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+      14 |     await page.goto("/login");
+      15 |     await page.getByLabel(/email/i).fill("schooladmin@yoursms.com");
+    > 16 |     await page.getById('login-password').fill("admin123");
+         |                ^
+      17 |     await page.getByRole("button", { name: /sign in|log in|connexion/i }).click();
+      18 |     await page.waitForURL(/\/[^/]+\/(dashboard)?/, { timeout: 20_000 });
+      19 |
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/sidebar.spec.ts:16:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sidebar-app-sidebar-login--5c757-xpands-collapses-on-desktop-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [chromium] › e2e/syllabus-calendar.spec.ts:19:3 › syllabus calendar alignment › teacher: syllabus builder references academic calendar 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:20:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:20:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/syllabus-calendar-syllabus-2652f-eferences-academic-calendar-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [chromium] › e2e/syllabus-calendar.spec.ts:33:3 › syllabus calendar alignment › teacher: lesson plans week board shows period context 
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:34:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TypeError: page.getById is not a function
+
+       6 |   await page.goto("/login");
+       7 |   await page.getByLabel(/email/i).fill(email);
+    >  8 |   await page.getById('login-password').fill(password);
+         |              ^
+       9 |   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
+      10 |   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
+      11 | }
+        at login (/home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:8:14)
+        at /home/runner/work/Gnet-SMS/Gnet-SMS/e2e/syllabus-calendar.spec.ts:34:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium-retry1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/syllabus-calendar-syllabus-9ae5d--board-shows-period-context-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18 failed
+    [chromium] › e2e/landing.spec.ts:12:3 › landing page › landing loads with hero, capabilities, and register CTA 
+    [chromium] › e2e/landing.spec.ts:45:3 › landing page › pricing page shows hero, plan cards, and comparison matrix 
+    [chromium] › e2e/personas/smoke.spec.ts:19:3 › persona smoke › @tier1 school admin: dashboard + students 
+    [chromium] › e2e/personas/smoke.spec.ts:28:3 › persona smoke › @tier1 teacher: my classes ──────
+    [chromium] › e2e/personas/smoke.spec.ts:36:3 › persona smoke › @tier2 student: my classes ──────
+    [chromium] › e2e/personas/smoke.spec.ts:42:3 › persona smoke › @tier1 parent: children area reachable 
+    [chromium] › e2e/personas/smoke.spec.ts:48:3 › persona smoke › @tier2 super admin: schools ─────
+    [chromium] › e2e/personas/smoke.spec.ts:54:3 › persona smoke › @tier2 negative: teacher cannot open roles 
+    [chromium] › e2e/personas/smoke.spec.ts:61:3 › persona smoke › @tier2 specialty: library live catalog 
+    [chromium] › e2e/platform-guide.spec.ts:27:3 › platform guide › school admin: guide hub + completion widget reachable 
+    [chromium] › e2e/platform-guide.spec.ts:40:3 › platform guide › teacher: deep link ?step= opens tour 
+    [chromium] › e2e/platform-guide.spec.ts:48:3 › platform guide › parent: guide page distinct copy 
+    [chromium] › e2e/platform-guide.spec.ts:56:3 › platform guide › student: guide page loads ──────
+    [chromium] › e2e/platform-guide.spec.ts:63:3 › platform guide › super admin: platform guide route 
+    [chromium] › e2e/platform-guide.spec.ts:72:3 › platform guide › esc closes coach dialog ────────
+    [chromium] › e2e/sidebar.spec.ts:12:3 › app sidebar › login then sidebar expands/collapses on desktop 
+    [chromium] › e2e/syllabus-calendar.spec.ts:19:3 › syllabus calendar alignment › teacher: syllabus builder references academic calendar 
+    [chromium] › e2e/syllabus-calendar.spec.ts:33:3 › syllabus calendar alignment › teacher: lesson plans week board shows period context 
+  6 passed (1.5m)
 Error: Process completed with exit code 1.
-0s
-0s
-0s
-Post job cleanup.
-Logout from docker.io
-Post cache
-  
-0s
-Post job cleanup.
-/usr/bin/git version
-git version 2.55.0
-Temporarily overriding HOME='/home/runner/work/_temp/c72ddf97-6380-4c0a-bfe6-ff9268187e2e' before making global git config changes
-Adding repository directory to the temporary git global config as a safe directory
-/usr/bin/git config --global --add safe.directory /home/runner/work/Gnet-SMS/Gnet-SMS
-/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-http.https://github.com/.extraheader
-/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-0s
