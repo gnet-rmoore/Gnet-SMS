@@ -1,0 +1,74 @@
+name: Docker Disk Health Monitor
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 4 AM UTC daily
+  workflow_dispatch:  # Allow manual trigger from UI
+
+jobs:
+  check-disk-and-prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Show disk usage before check
+        run: |
+          echo "========================================"
+          echo " Docker Disk Health Check"
+          echo "========================================"
+          echo "Date: $(date -u)"
+          echo ""
+          df -h .
+          echo ""
+          echo "Free percentage (used% inverted):"
+          df -h . | tail -1 | awk '{print 100 - $5 "%"}'
+
+      - name: Check disk threshold (30%)
+        id: disk-check
+        run: |
+          USED_PCT=$(df -h . | tail -1 | awk '{print $5}' | tr -d '%')
+          FREE_PCT=$((100 - USED_PCT))
+          echo "Disk usage: ${USED_PCT}% used, ${FREE_PCT}% free"
+          echo "Threshold: 30% free minimum"
+          echo "free-pct=${FREE_PCT}" >> $GITHUB_OUTPUT
+          echo "used-pct=${USED_PCT}" >> $GITHUB_OUTPUT
+          if [ "$FREE_PCT" -lt 30 ]; then
+            echo "⚠️  Disk below 30% threshold - will prune"
+            echo "will-prune=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Disk OK: ${FREE_PCT}% free (above 30% threshold)"
+            echo "will-prune=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prune Docker (if below threshold)
+        if: steps.disk-check.outputs.will-prune == 'true'
+        run: |
+          echo "🗑️  Starting Docker prune (removing unused images/volumes)..."
+          docker system prune -a --volumes --force
+          echo "✅ Prune complete"
+          echo ""
+          echo "Disk usage after prune:"
+          df -h .
+
+      - name: Publish disk health summary
+        if: always()
+        run: |
+          echo "========================================"
+          echo " Docker Disk Health Check Complete"
+          echo "========================================"
+          FREE_PCT=$(df -h . | tail -1 | awk '{print 100 - $5 "%"}')
+          echo ""
+          echo "========================================"
+          echo "   FINAL SUMMARY"
+          echo "========================================"
+          echo " Free space: ${FREE_PCT}"
+          echo " Threshold:  30% minimum"
+          echo ""
+          if [ "$(echo $FREE_PCT | tr -d '%')" -ge 30 ]; then
+            echo "✅ STATUS: Disk health OK"
+          else
+            echo "⚠️  STATUS: Disk below threshold - manual cleanup may be needed"
+          fi
+          echo "========================================"
+          echo " Check complete: $(date -u)"
+          echo "========================================"
