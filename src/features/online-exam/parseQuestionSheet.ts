@@ -50,7 +50,7 @@ const TEMPLATE_GUIDE: (string | number)[][] = [
   ["Math formulas: wrap LaTeX in dollar signs, e.g. $\\frac{1}{2}$ or $x^{2}$."],
   ["Images / diagrams: paste an image URL in the Image column, or use =IMAGE(\"url\") in a cell."],
   ["You can also embed images directly in the Question or Option cells with =IMAGE(\"url\")."],
-  [`Import of the "${QUESTION_SHEET_NAME}" sheet is limited to 100 questions per exam.`],
+  [`Import of the "${QUESTION_SHEET_NAME}" sheet is limited to 100 questions per exam or Question Bank upload.`],
 ];
 
 function cellToString(v: unknown): string {
@@ -93,7 +93,7 @@ function rowsFromSheet(XLSX: any, sheet: any): Record<string, unknown>[] {
     header: 1,
     defval: "",
     raw: true,
-    blankrows: false,
+    blankrows: true,
   }) as unknown[][];
   if (!aoa.length) return [];
 
@@ -102,14 +102,12 @@ function rowsFromSheet(XLSX: any, sheet: any): Record<string, unknown>[] {
   for (let i = 1; i < aoa.length; i++) {
     const line = aoa[i] || [];
     const row: Record<string, unknown> = {};
-    let any = false;
     headers.forEach((h, idx) => {
       if (!h) return;
       const v = cellToString(line[idx]);
-      if (v) any = true;
       row[h] = v;
     });
-    if (any) rows.push(row);
+    rows.push(row);
   }
   return rows;
 }
@@ -149,7 +147,9 @@ export async function parseQuestionSheet(file: File): Promise<{
   );
   const sheetName = preferred || sheetNames[0];
   const rows = rowsFromSheet(XLSX, workbook.Sheets[sheetName]);
-  if (!rows.length) throw new QuestionSheetError("NO_ROWS");
+  if (!rows.some((row) => Object.values(row).some((value) => cellToString(value)))) {
+    throw new QuestionSheetError("NO_ROWS");
+  }
 
   return { rows, sourceFileName: name };
 }

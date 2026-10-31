@@ -518,7 +518,12 @@ export const academicController = {
     const page = req.query.page ? Number(req.query.page) : undefined;
     const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
     try {
-      const result = await academicService.getSyllabi(schoolId, page, pageSize);
+      const result = await academicService.getSyllabi(
+        schoolId,
+        page,
+        pageSize,
+        req.user.role === "TEACHER" ? req.user.id : undefined
+      );
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch syllabi" });
@@ -587,12 +592,17 @@ export const academicController = {
               error: "Teachers can only edit their own returned or draft syllabus plans",
             });
           }
-          if (body.subjectId && body.gradeLevelId) {
+          if (body.subjectId !== undefined || body.gradeLevelId !== undefined) {
+            const subjectId = body.subjectId ?? existing.subjectId;
+            const gradeLevelId = body.gradeLevelId ?? existing.gradeLevelId;
+            if (!subjectId || !gradeLevelId) {
+              return res.status(400).json({ error: "Subject and grade level are required" });
+            }
             await assertTeacherTeachesSyllabusPair({
               userId: req.user.id,
               schoolId: existing.schoolId,
-              subjectId: body.subjectId,
-              gradeLevelId: body.gradeLevelId,
+              subjectId,
+              gradeLevelId,
               role: req.user.role,
             });
           }

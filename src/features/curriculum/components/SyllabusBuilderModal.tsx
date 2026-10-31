@@ -143,7 +143,7 @@ export function SyllabusBuilderModal({
     (sum: number, item: { weight: number }) => sum + Number(item.weight || 0),
     0
   );
-  const weightsValid = weightTotal === 100;
+  const weightsValid = Math.abs(weightTotal - 100) < 0.01;
   const calendarPeriods = useMemo(
     () => normalizeCalendarPeriods(calendar?.periods),
     [calendar]
@@ -208,7 +208,7 @@ export function SyllabusBuilderModal({
                     </button>
                   </div>
 
-                  <form onSubmit={handleCreateSyllabus} className="p-6 md:p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                  <form noValidate onSubmit={handleCreateSyllabus} className="p-6 md:p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
                     {teacherHasNoRooms && (
                       <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5 space-y-3">

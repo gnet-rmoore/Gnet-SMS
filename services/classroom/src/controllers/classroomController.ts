@@ -80,11 +80,11 @@ export const classroomController = {
         return res.json(classrooms);
       }
 
-      // Teachers and other staff: membership or ownership only
+      // Teachers only see rooms where they are assigned as a teacher or co-teacher.
       const [asMember, owned] = await Promise.all([
         classroomService.getClassroomsByMember(
           req.user.id,
-          ["TEACHER", "CO_TEACHER", "ASSISTANT"],
+          ["TEACHER", "CO_TEACHER"],
           schoolId
         ),
         classroomService.getClassroomsOwnedByTeacher(schoolId, req.user.id),
@@ -654,11 +654,20 @@ export const classroomController = {
         const classrooms = await classroomService.getUserClassrooms(
           req.user.id,
           req.user.schoolId,
-          studentId
+          studentId,
+          ["STUDENT"]
         );
         return res.json(classrooms);
       }
-      const classrooms = await classroomService.getUserClassrooms(req.user.id, req.user.schoolId);
+      const teacher = req.user.role === "TEACHER";
+      const student = req.user.role === "STUDENT";
+      const classrooms = await classroomService.getUserClassrooms(
+        req.user.id,
+        req.user.schoolId,
+        undefined,
+        teacher ? ["TEACHER", "CO_TEACHER"] : student ? ["STUDENT"] : undefined,
+        teacher
+      );
       res.json(classrooms);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch classrooms" });

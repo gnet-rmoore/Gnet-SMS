@@ -29,6 +29,7 @@ import {
   formFromPlan,
   formToPayload,
   formatDayLabel,
+  hasLessonPlanDraftContent,
   todayIso,
   weekStartOf,
 } from "./utils";
@@ -167,8 +168,12 @@ export function LessonPlansPage() {
           Array.isArray(value.objectives) &&
           Array.isArray(value.activities)
         ) {
-          setForm(value as LessonPlanForm);
-          setDraftRestored(true);
+          if (hasLessonPlanDraftContent(value as LessonPlanForm)) {
+            setForm(value as LessonPlanForm);
+            setDraftRestored(true);
+          } else {
+            window.localStorage.removeItem(draftKey);
+          }
         } else {
           window.localStorage.removeItem(draftKey);
         }
@@ -185,6 +190,7 @@ export function LessonPlansPage() {
 
   useEffect(() => {
     if (!builderOpen || editingId || !draftKey || !draftHydrated.current) return;
+    if (!hasLessonPlanDraftContent(form)) return;
     const timer = window.setTimeout(() => {
       try {
         window.localStorage.setItem(draftKey, JSON.stringify({ version: 1, form }));
@@ -197,6 +203,37 @@ export function LessonPlansPage() {
     }, 400);
     return () => window.clearTimeout(timer);
   }, [builderOpen, editingId, draftKey, form, t]);
+
+  const closeBuilder = useCallback(() => {
+    if (!editingId && draftKey && hasLessonPlanDraftContent(form)) {
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify({ version: 1, form }));
+      } catch (err) {
+        console.error("Could not save lesson plan draft", err);
+        setLookupsError(
+          t("lessonPlans.draft.saveFailed", {
+            defaultValue: "Could not save this draft in your browser.",
+          })
+        );
+      }
+    }
+    setBuilderOpen(false);
+  }, [draftKey, editingId, form, t]);
+
+  const clearLocalDraft = useCallback(() => {
+    if (!draftKey) return;
+    try {
+      window.localStorage.removeItem(draftKey);
+      setDraftRestored(false);
+    } catch (err) {
+      console.error("Could not clear lesson plan draft", err);
+      setLookupsError(
+        t("lessonPlans.draft.clearFailed", {
+          defaultValue: "Could not clear the saved draft from this browser.",
+        })
+      );
+    }
+  }, [draftKey, t]);
 
   const load = useCallback(async () => {
     if (!school?.id) return;
@@ -360,8 +397,7 @@ export function LessonPlansPage() {
       setBuilderOpen(false);
       setEditingId(null);
       if (!editingId && draftKey) {
-        window.localStorage.removeItem(draftKey);
-        setDraftRestored(false);
+        clearLocalDraft();
       }
       await load();
     } catch (err: any) {
@@ -772,12 +808,11 @@ export function LessonPlansPage() {
             draftRestored={draftRestored && !editingId}
             onStartBlank={() => {
               if (!draftKey) return;
-              window.localStorage.removeItem(draftKey);
-              setDraftRestored(false);
+              clearLocalDraft();
               setForm(emptyForm(selectedDate || todayIso()));
             }}
             onRetryLookups={() => void load()}
-            onClose={() => setBuilderOpen(false)}
+            onClose={closeBuilder}
             onSave={() => void saveDraft(false)}
             onSaveAndSubmit={() => void saveDraft(true)}
           />

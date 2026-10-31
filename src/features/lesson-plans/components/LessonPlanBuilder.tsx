@@ -120,7 +120,7 @@ export function LessonPlanBuilder({
       subtitle={b("subtitle")}
       onClose={onClose}
       wide
-      maxWidthClass="max-w-3xl"
+      maxWidthClass="max-w-5xl"
       footer={
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <button
@@ -428,29 +428,35 @@ export function LessonPlanBuilder({
               key={idx}
               className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3"
             >
-              <div className="flex gap-2">
-                <input
-                  className={field}
-                  value={act.title}
-                  onChange={(e) => updateActivity(idx, { title: e.target.value })}
-                  placeholder={b("stepTitle", { n: idx + 1 })}
-                />
-                <input
-                  type="number"
-                  min={0}
-                  className={`${field} w-24 shrink-0`}
-                  value={act.minutes ?? ""}
-                  onChange={(e) =>
-                    updateActivity(idx, {
-                      minutes: e.target.value === "" ? null : Number(e.target.value),
-                    })
-                  }
-                  placeholder={t("lessonPlans.components.list.min")}
-                  title={b("minutes")}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_8rem_auto] gap-3 items-end">
+                <label className="block min-w-0">
+                  <span className={label}>{b("activityTitle")}</span>
+                  <input
+                    className={field}
+                    value={act.title}
+                    onChange={(e) => updateActivity(idx, { title: e.target.value })}
+                    placeholder={b("stepTitle", { n: idx + 1 })}
+                  />
+                </label>
+                <label className="block">
+                  <span className={label}>{b("minutes")}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    className={field}
+                    value={act.minutes ?? ""}
+                    onChange={(e) =>
+                      updateActivity(idx, {
+                        minutes: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                    aria-label={b("minutes")}
+                  />
+                </label>
                 {form.activities.length > 1 && (
                   <button
                     type="button"
+                    aria-label={b("removeActivity")}
                     className="p-3 rounded-2xl border border-slate-100 text-slate-400 hover:text-rose-500 bg-white"
                     onClick={() =>
                       setForm((f) => ({

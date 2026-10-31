@@ -18,6 +18,7 @@ import {
   QUESTION_TEMPLATE_EXAMPLES,
   QUESTION_TEMPLATE_HEADERS,
 } from "../src/features/online-exam/parseQuestionSheet.ts";
+import { prepareQuestionBankImport } from "../src/features/online-exam/questionBankImport.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -105,6 +106,42 @@ const mcqRaw = {
   );
   assert(!normalizeQuestion({ type: "TRUE_FALSE", prompt: "x", points: 1 }, 0).ok, "rejects True/False without a boolean");
   assert(!normalizeQuestion({ type: "FILL_BLANK", prompt: "x", points: 1 }, 0).ok, "rejects fill-blank without an answer");
+}
+
+{
+  const { validation, questions } = prepareQuestionBankImport([
+    {
+      Type: "Multiple Choice",
+      Question: "Which is a mammal?",
+      "Option A": "Whale",
+      "Option B": "Trout",
+      "Correct Answer": "A",
+      Points: 2,
+    },
+    {
+      Type: "True/False",
+      Question: "A whale is a mammal.",
+      "Correct Answer": "True",
+      Points: 1,
+    },
+    {
+      Type: "Fill in the blank",
+      Question: "A whale is a ___.",
+      "Correct Answer": "mammal",
+      Points: 1,
+    },
+    {
+      Type: "Essay",
+      Question: "Explain why whales are mammals.",
+      Points: 5,
+    },
+  ]);
+  assert(validation.errorCount === 0, "Question Bank import validates all supported question types");
+  assert(questions.length === 4, "Question Bank import maps all valid rows");
+  assert(questions[0]?.choices?.[0]?.isCorrect, "Question Bank import preserves MCQ answers");
+  assert(questions[1]?.correctBoolean === true, "Question Bank import maps True/False answers");
+  assert(questions[2]?.correctAnswer === "mammal", "Question Bank import maps fill-in answers");
+  assert(questions[3]?.type === "ESSAY", "Question Bank import maps essay prompts");
 }
 
 // ---------------------------------------------------------------------------

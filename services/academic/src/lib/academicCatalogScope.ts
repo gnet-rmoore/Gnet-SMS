@@ -1,7 +1,6 @@
 import {
   getClassroomsByMember,
   getClassroomsOwnedByTeacher,
-  listClassroomsBySchool,
 } from "./classroomClient";
 import { getIdentityUser } from "./identityClient";
 
@@ -32,13 +31,20 @@ export function getStudentAcademicCatalogScope(
   gradeLevelId: string | null | undefined,
   classrooms: ClassroomCatalogRef[]
 ): AcademicCatalogScope {
-  const gradeLevelIds = uniqueIds([gradeLevelId]);
+  const gradeLevelIds = uniqueIds(
+    gradeLevelId ? [gradeLevelId] : classrooms.map((classroom) => classroom.gradeLevelId)
+  );
   const gradeLevelSet = new Set(gradeLevelIds);
   return {
     gradeLevelIds,
     subjectIds: uniqueIds(
       classrooms
-        .filter((classroom) => classroom.gradeLevelId && gradeLevelSet.has(classroom.gradeLevelId))
+        .filter(
+          (classroom) =>
+            !gradeLevelId ||
+            !classroom.gradeLevelId ||
+            gradeLevelSet.has(classroom.gradeLevelId)
+        )
         .map((classroom) => classroom.subjectId)
     ),
   };
@@ -68,10 +74,7 @@ export async function getAcademicCatalogScope(
     if (!user || user.schoolId !== schoolId || user.role !== "STUDENT") {
       throw new Error("Could not verify the student's academic placement");
     }
-    if (!user.gradeLevelId) {
-      return { gradeLevelIds: [], subjectIds: [] };
-    }
-    const classrooms = await listClassroomsBySchool(schoolId);
+    const classrooms = await getClassroomsByMember(userId, ["STUDENT"], schoolId);
     return getStudentAcademicCatalogScope(user.gradeLevelId, classrooms);
   }
 

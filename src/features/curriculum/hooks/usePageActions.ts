@@ -167,9 +167,38 @@ export function usePageActions(deps: PageActionsDeps) {
       return;
     }
 
-    // Check if weights total is 100%
+    const hasMissingRequiredFields =
+      !syllabusForm.title.trim() ||
+      !syllabusForm.academicYear.trim() ||
+      !syllabusForm.standardsFramework.trim() ||
+      !syllabusForm.subjectId ||
+      !syllabusForm.gradeLevelId ||
+      syllabusForm.objectives.length === 0 ||
+      syllabusForm.objectives.some((objective: string) => !objective.trim()) ||
+      syllabusForm.units.length === 0 ||
+      syllabusForm.units.some(
+        (unit: { week?: string; topic?: string; academicPeriodId?: string }) =>
+          !unit.week?.trim() ||
+          !unit.topic?.trim() ||
+          (Boolean(calendar?.periods?.length) && !unit.academicPeriodId)
+      ) ||
+      syllabusForm.gradingCriteria.length === 0 ||
+      syllabusForm.gradingCriteria.some(
+        (item: { label?: string; weight?: number }) =>
+          !item.label?.trim() || !Number.isFinite(Number(item.weight))
+      );
+    if (hasMissingRequiredFields) {
+      showToast(
+        t("curriculum.syllabusBuilder.requiredFields", {
+          defaultValue: "Complete the required title, objectives, unit topics, periods, and grading fields.",
+        }),
+        "error"
+      );
+      return;
+    }
+
     const totalWeights = syllabusForm.gradingCriteria.reduce((sum, item) => sum + item.weight, 0);
-    if (totalWeights !== 100) {
+    if (Math.abs(totalWeights - 100) >= 0.01) {
       showToast(t("curriculum.toast.weightsMustTotal100", { total: totalWeights }), "error");
       return;
     }

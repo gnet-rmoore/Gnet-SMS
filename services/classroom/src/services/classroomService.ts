@@ -705,6 +705,10 @@ export const classroomService = {
         ],
       },
       include: {
+        members: {
+          where: { userId, role: { in: roles } },
+          select: { userId: true, role: true },
+        },
         _count: { select: { members: true } },
       },
     });
@@ -1060,12 +1064,29 @@ export const classroomService = {
     );
   },
 
-  async getUserClassrooms(userId: string, schoolId: string, asStudentId?: string) {
+  async getUserClassrooms(
+    userId: string,
+    schoolId: string,
+    asStudentId?: string,
+    roles?: string[],
+    includeOwned = false
+  ) {
     const memberId = asStudentId || userId;
+    const memberWhere = {
+      userId: memberId,
+      ...(roles?.length ? { role: { in: roles } } : {}),
+    };
     return prisma.classroom.findMany({
       where: {
         schoolId,
-        members: { some: { userId: memberId } },
+        ...(includeOwned && !asStudentId
+          ? {
+              OR: [
+                { ownerTeacherId: userId },
+                { members: { some: memberWhere } },
+              ],
+            }
+          : { members: { some: memberWhere } }),
       },
       include: {
         members: { where: { role: { in: [...CLASSROOM_STAFF_ROLES] } } },

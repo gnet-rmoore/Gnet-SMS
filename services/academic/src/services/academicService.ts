@@ -732,19 +732,25 @@ export const academicService = {
     return prisma.gradeLevel.delete({ where: { id } });
   },
 
-  async getSyllabi(schoolId: string, page?: number, pageSize?: number) {
+  async getSyllabi(
+    schoolId: string,
+    page?: number,
+    pageSize?: number,
+    teacherId?: string
+  ) {
     const p = page && page > 0 ? page : 1;
     const ps = pageSize && pageSize > 0 && pageSize <= 100 ? pageSize : 50;
     const skip = (p - 1) * ps;
+    const where = { schoolId, ...(teacherId ? { teacherId } : {}) };
 
     const [items, total] = await Promise.all([
       prisma.syllabusPlan.findMany({
-        where: { schoolId },
+        where,
         orderBy: { updatedAt: "desc" },
         skip,
         take: ps,
       }),
-      prisma.syllabusPlan.count({ where: { schoolId } }),
+      prisma.syllabusPlan.count({ where }),
     ]);
     return { items, total, page: p, pageSize: ps };
   },

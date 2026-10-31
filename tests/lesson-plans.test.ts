@@ -5,9 +5,11 @@
 import {
   addDays,
   formToPayload,
+  hasLessonPlanDraftContent,
   parseActivities,
   parseObjectives,
   statusLabel,
+  todayIso,
   weekStartOf,
   emptyForm,
 } from "../src/features/lesson-plans/utils.ts";
@@ -45,8 +47,19 @@ assert(acts.length === 2 && acts[0].title === "Do", "parse activities");
 assert(weekStartOf("2026-07-23") === "2026-07-20", "week start Thu → Mon");
 assert(addDays("2026-07-20", 6) === "2026-07-26", "addDays week end");
 
-const form = emptyForm("2026-07-23");
+const form = emptyForm(todayIso());
+assert(!hasLessonPlanDraftContent(form), "empty lesson form is not stored as a draft");
+const durationOnlyDraft = emptyForm(todayIso());
+durationOnlyDraft.durationMinutes = 60;
+assert(hasLessonPlanDraftContent(durationOnlyDraft), "duration-only edits are retained as drafts");
+const activityTimingDraft = emptyForm(todayIso());
+activityTimingDraft.activities[0].minutes = 20;
+assert(hasLessonPlanDraftContent(activityTimingDraft), "activity timing edits are retained as drafts");
+const dateOnlyDraft = emptyForm(todayIso());
+dateOnlyDraft.lessonDate = addDays(todayIso(), 1);
+assert(hasLessonPlanDraftContent(dateOnlyDraft), "date-only edits are retained as drafts");
 form.title = "  Fractions  ";
+assert(hasLessonPlanDraftContent(form), "lesson plan content is eligible for draft autosave");
 form.subjectId = "s1";
 form.subjectName = "Math";
 form.objectives = ["Compare unit fractions", ""];

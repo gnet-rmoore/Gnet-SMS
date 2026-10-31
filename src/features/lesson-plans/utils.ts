@@ -80,6 +80,34 @@ export function emptyForm(today: string): LessonPlanForm {
   };
 }
 
+export function hasLessonPlanDraftContent(form: LessonPlanForm): boolean {
+  const hasText = (value: unknown) =>
+    typeof value === "string" && value.trim().length > 0;
+  return Boolean(
+    hasText(form.title) ||
+      form.subjectId ||
+      form.gradeLevelId ||
+      form.classroomId ||
+      hasText(form.periodLabel) ||
+      form.schedulePeriodId ||
+      form.lessonDate !== todayIso() ||
+      form.durationMinutes !== 45 ||
+      (Array.isArray(form.objectives) && form.objectives.some(hasText)) ||
+      hasText(form.standards) ||
+      hasText(form.warmUp) ||
+      (Array.isArray(form.activities) && form.activities.some(
+        (activity) =>
+          hasText(activity?.title) ||
+          hasText(activity?.description) ||
+          (activity?.minutes !== undefined && activity.minutes !== 10)
+      )) ||
+      (Array.isArray(form.materials) && form.materials.some(hasText)) ||
+      hasText(form.assessment) ||
+      hasText(form.differentiation) ||
+      hasText(form.homework)
+  );
+}
+
 export function formFromPlan(plan: LessonPlan): LessonPlanForm {
   const objectives = parseObjectives(plan.objectives);
   const activities = parseActivities(plan.activities);

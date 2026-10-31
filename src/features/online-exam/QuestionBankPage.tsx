@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
-import { Loader2, Plus, Search, Pencil, Trash2, Lock, Users, Library } from "lucide-react";
+import { Download, Loader2, Plus, Search, Pencil, Trash2, Lock, Users, Library, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { alertError, alertSuccess, confirmAction } from "../../lib/swal";
@@ -8,6 +8,8 @@ import { questionBankApi, type BankItem, type BankVisibility } from "./api";
 import { RichContent } from "./RichContent";
 import { hasRichContent } from "./richText";
 import { QuestionBankEditorModal } from "./QuestionBankEditorModal";
+import { QuestionBankImportModal } from "./QuestionBankImportModal";
+import { downloadQuestionTemplate } from "./parseQuestionSheet";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
 
 type Taxonomy = { id: string; name: string };
@@ -35,6 +37,7 @@ export default function QuestionBankPage() {
   const [mine, setMine] = React.useState(false);
 
   const [editorOpen, setEditorOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<BankItem | null>(null);
   const [preview, setPreview] = React.useState<BankItem | null>(null);
 
@@ -101,6 +104,18 @@ export default function QuestionBankPage() {
     setEditorOpen(true);
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadQuestionTemplate("question-bank-template.xlsx");
+    } catch (err: any) {
+      console.error("Could not download Question Bank template", err);
+      await alertError(
+        t("onlineExams.questionBank.importFailed"),
+        err?.message
+      );
+    }
+  };
+
   const handleDelete = async (item: BankItem) => {
     const ok = await confirmAction({
       title: t("onlineExams.questionBank.deleteConfirmTitle"),
@@ -131,14 +146,32 @@ export default function QuestionBankPage() {
           </h1>
           <p className="text-slate-500 font-medium">{t("onlineExams.questionBank.pageSubtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={openNew}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl inline-flex items-center gap-2 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          {t("onlineExams.questionBank.newQuestion")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2 shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            {t("onlineExams.questionBank.downloadTemplate")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700 hover:bg-indigo-100 inline-flex items-center gap-2 shrink-0"
+          >
+            <Upload className="w-4 h-4" />
+            {t("onlineExams.questionBank.bulkImport")}
+          </button>
+          <button
+            type="button"
+            onClick={openNew}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl inline-flex items-center gap-2 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            {t("onlineExams.questionBank.newQuestion")}
+          </button>
+        </div>
       </motion.div>
 
       <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-4">
@@ -292,6 +325,19 @@ export default function QuestionBankPage() {
         onClose={() => setEditorOpen(false)}
         onSaved={load}
       />
+
+      {importOpen ? (
+        <QuestionBankImportModal
+          open={importOpen}
+          schoolId={schoolId}
+          subjects={subjects}
+          grades={grades}
+          initialSubjectId={subjectId}
+          initialGradeLevelId={gradeLevelId}
+          onClose={() => setImportOpen(false)}
+          onImported={load}
+        />
+      ) : null}
 
       {preview && (
         <FeatureModalShell
