@@ -85,6 +85,16 @@ export function GradingSettingsTab({
     (sum, col) => sum + (col.isActive ? Number(col.weightPct || 0) : 0),
     0
   );
+  const totalMaxPoints = gradebookColumns.reduce(
+    (sum, col) =>
+      sum +
+      (col.isActive
+        ? defaultMaxScoreForColumn(col)
+        : 0),
+    0
+  );
+  const weightIsValid = Math.abs(totalWeight - 100) < 0.01;
+  const maxPointsAreValid = totalMaxPoints <= 100;
 
   return (
     <motion.div
@@ -424,52 +434,95 @@ export function GradingSettingsTab({
               </table>
               </DataTable>
 
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-500 font-medium">{g("activeTotal")}</span>
-                  <span
-                    className={`px-3 py-1 rounded-lg font-mono font-extrabold text-sm ${
-                      totalWeight === 100
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    {totalWeight}% / 100%
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (totalWeight !== 100) {
-                      showToast(g("toastWeightOff", { total: totalWeight }), "error");
-                      return;
-                    }
-                    if (!schoolId) return;
-                    setSaving(true);
-                    try {
-                      const updatedSchool = await settingsApi.updateSchool(schoolId, {
-                        gradebookConfig: JSON.stringify(gradebookColumns),
-                      });
-                      setSchool(updatedSchool);
-                      try {
-                        await settingsApi.syncGradebookStructureTemplate(schoolId);
-                      } catch (syncErr) {
-                        console.warn("Gradebook structure sync to assessments failed:", syncErr);
+              <div className="mt-6 pt-5 border-t border-slate-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span className="text-slate-500 font-medium">
+                      {g("activeTotal")}
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-lg font-mono font-extrabold text-sm ${
+                        weightIsValid
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {Math.round(totalWeight * 100) / 100}% / 100%
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-lg font-mono font-extrabold text-sm ${
+                        maxPointsAreValid
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-rose-50 text-rose-700"
+                      }`}
+                    >
+                      {g("activeMaxPoints", { defaultValue: "Max pts total" })}: {totalMaxPoints} / 100
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!weightIsValid) {
+                        showToast(
+                          g("toastWeightOff", {
+                            total: Math.round(totalWeight * 100) / 100,
+                          }),
+                          "error"
+                        );
+                        return;
                       }
-                      showToast(g("toastStructureSaved"));
-                    } catch (e: any) {
-                      console.error(e);
-                      showToast(e?.message || g("toastStructureFailed"), "error");
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold text-sm disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? g("saving") : g("saveStructure")}
-                </button>
+                      if (!maxPointsAreValid) {
+                        showToast(
+                          g("toastMaxPointsOff", {
+                            total: totalMaxPoints,
+                            max: 100,
+                            defaultValue: `Max pts total ${totalMaxPoints}; it must not exceed 100.`,
+                          }),
+                          "error"
+                        );
+                        return;
+                      }
+                      if (!schoolId) return;
+                      setSaving(true);
+                      try {
+                        const updatedSchool = await settingsApi.updateSchool(schoolId, {
+                          gradebookConfig: JSON.stringify(gradebookColumns),
+                        });
+                        setSchool(updatedSchool);
+                        try {
+                          await settingsApi.syncGradebookStructureTemplate(schoolId);
+                        } catch (syncErr) {
+                          console.warn("Gradebook structure sync to assessments failed:", syncErr);
+                          showToast(
+                            g("toastStructureSyncFailed", {
+                              defaultValue:
+                                "Grading settings were saved, but existing assessments could not be updated. Retry the save or contact support.",
+                            }),
+                            "error"
+                          );
+                          return;
+                        }
+                        showToast(g("toastStructureSaved"));
+                      } catch (e: any) {
+                        console.error(e);
+                        showToast(e?.message || g("toastStructureFailed"), "error");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold text-sm disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? g("saving") : g("saveStructure")}
+                  </button>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-500">
+                  {g("maxPointsHint", {
+                    defaultValue:
+                      "Active Max pts are raw score caps and must total 100 or less. Active weights are percentages and must total exactly 100%.",
+                  })}
+                </p>
               </div>
             </div>
           </div>

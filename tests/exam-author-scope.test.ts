@@ -4,6 +4,7 @@
  */
 import {
   assertCanConfigureExamSettings,
+  SCHOOL_EXAM_CREATE_ROLES,
   isQuizComponentType,
   teacherScopeCoversExam,
 } from "../services/academic/src/lib/examAuthorScope.ts";
@@ -30,6 +31,11 @@ function throws(fn: () => void): { threw: boolean; code?: string; status?: numbe
 console.log("=========================================");
 console.log(" EXAM AUTHOR SCOPE TESTS");
 console.log("=========================================\n");
+
+assert(
+  !SCHOOL_EXAM_CREATE_ROLES.includes("TEACHER"),
+  "school exam creation is restricted to administrators"
+);
 
 // --- isQuizComponentType ---
 assert(isQuizComponentType("QUIZ"), "QUIZ is a quiz component type");

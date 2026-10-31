@@ -125,7 +125,12 @@ export function GradebookAssessmentSheet({
   submitting,
 }: GradebookAssessmentSheetProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const inputRefs = useRef<
+    Record<
+      string,
+      { card?: HTMLInputElement | null; table?: HTMLInputElement | null }
+    >
+  >({});
   const [activeColumnId, setActiveColumnId] = useState(columns[0]?.id || "");
   const [studentQuery, setStudentQuery] = useState("");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
@@ -196,16 +201,47 @@ export function GradebookAssessmentSheet({
     });
   }, [rows, studentQuery, showMissingOnly, activeColumns]);
 
-  const moveDown = (studentId: string, columnId: string) => {
-    const idx = rows.findIndex((r) => r.studentId === studentId);
-    for (let j = idx + 1; j < rows.length; j++) {
-      const next = rows[j];
-      const cell = next.cells[columnId];
-      if (cellEditable ? cellEditable(next.studentId, columnId, cell) : canEdit(cell)) {
-        inputRefs.current[`${next.studentId}:${columnId}`]?.focus();
-        inputRefs.current[`${next.studentId}:${columnId}`]?.select();
+  const focusCell = (studentId: string, columnId: string) => {
+    const refs = inputRefs.current[`${studentId}:${columnId}`];
+    const input = [refs?.card, refs?.table].find(
+      (candidate) => candidate && candidate.getClientRects().length > 0
+    );
+    input?.focus();
+    input?.select();
+  };
+
+  const moveInGrid = (
+    studentId: string,
+    columnId: string,
+    direction: "up" | "down" | "left" | "right"
+  ) => {
+    const rowIndex = visibleRows.findIndex((row) => row.studentId === studentId);
+    const columnIndex = activeColumns.findIndex((column) => column.id === columnId);
+    if (rowIndex < 0 || columnIndex < 0) return;
+
+    const rowStep = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+    const columnStep = direction === "left" ? -1 : direction === "right" ? 1 : 0;
+    let nextRowIndex = rowIndex + rowStep;
+    let nextColumnIndex = columnIndex + columnStep;
+    while (
+      nextRowIndex >= 0 &&
+      nextRowIndex < visibleRows.length &&
+      nextColumnIndex >= 0 &&
+      nextColumnIndex < activeColumns.length
+    ) {
+      const nextRow = visibleRows[nextRowIndex];
+      const nextColumn = activeColumns[nextColumnIndex];
+      const cell = nextRow.cells[nextColumn.id];
+      if (
+        cellEditable
+          ? cellEditable(nextRow.studentId, nextColumn.id, cell)
+          : canEdit(cell)
+      ) {
+        focusCell(nextRow.studentId, nextColumn.id);
         return;
       }
+      nextRowIndex += rowStep;
+      nextColumnIndex += columnStep;
     }
   };
 
@@ -259,9 +295,13 @@ export function GradebookAssessmentSheet({
             ariaLabel={`${row.student.name} ${col.label || col.shortCode}`}
             onFocus={() => setActiveColumnId(col.id)}
             onChange={(v) => onChangeGrade(row.studentId, col.id, v)}
-            onMoveDown={() => moveDown(row.studentId, col.id)}
+            onMoveDown={() => moveInGrid(row.studentId, col.id, "down")}
+            onMoveUp={() => moveInGrid(row.studentId, col.id, "up")}
+            onMoveLeft={() => moveInGrid(row.studentId, col.id, "left")}
+            onMoveRight={() => moveInGrid(row.studentId, col.id, "right")}
             inputRef={(el) => {
-              inputRefs.current[`${row.studentId}:${col.id}`] = el;
+              const key = `${row.studentId}:${col.id}`;
+              inputRefs.current[key] = { ...inputRefs.current[key], [layout]: el };
             }}
           />
           {onToggleIncomplete && (
@@ -301,9 +341,13 @@ export function GradebookAssessmentSheet({
             ariaLabel={`${row.student.name} ${col.label || col.shortCode}`}
             onFocus={() => setActiveColumnId(col.id)}
             onChange={(v) => onChangeGrade(row.studentId, col.id, v)}
-            onMoveDown={() => moveDown(row.studentId, col.id)}
+            onMoveDown={() => moveInGrid(row.studentId, col.id, "down")}
+            onMoveUp={() => moveInGrid(row.studentId, col.id, "up")}
+            onMoveLeft={() => moveInGrid(row.studentId, col.id, "left")}
+            onMoveRight={() => moveInGrid(row.studentId, col.id, "right")}
             inputRef={(el) => {
-              inputRefs.current[`${row.studentId}:${col.id}`] = el;
+              const key = `${row.studentId}:${col.id}`;
+              inputRefs.current[key] = { ...inputRefs.current[key], table: el };
             }}
           />
           {onToggleIncomplete && (
@@ -429,7 +473,7 @@ export function GradebookAssessmentSheet({
                     : canEdit(cell);
                 });
                 if (first) {
-                  inputRefs.current[`${first.studentId}:${col.id}`]?.focus();
+                  focusCell(first.studentId, col.id);
                 }
               }}
               className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -537,10 +581,10 @@ export function GradebookAssessmentSheet({
         </div>
         <div className="overflow-x-auto max-h-[min(68vh,720px)] overflow-y-auto overscroll-x-contain">
           <table className="w-full text-left border-collapse min-w-[720px]">
-            <thead className="sticky top-0 z-10">
+            <thead className="sticky top-0 z-30 bg-slate-50">
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
-                  className={`${gradebookStickyHeadClass} p-3 sm:p-4 text-xs font-extrabold text-slate-900 min-w-[12rem]`}
+                  className={`${gradebookStickyHeadClass} top-0 z-30 p-3 sm:p-4 text-xs font-extrabold text-slate-900 min-w-[12rem]`}
                 >
                   {t("common:student")}
                 </th>
@@ -549,7 +593,7 @@ export function GradebookAssessmentSheet({
                   return (
                   <th
                     key={col.id}
-                    className={`p-3 text-center min-w-[6rem] border-r border-slate-100 cursor-pointer transition-colors ${
+                    className={`sticky top-0 z-20 p-3 text-center min-w-[6rem] border-r border-slate-100 cursor-pointer transition-colors ${
                       activeColumnId === col.id
                         ? "bg-indigo-100 text-indigo-900"
                         : "text-slate-900 bg-slate-50 hover:bg-slate-100"
@@ -568,11 +612,11 @@ export function GradebookAssessmentSheet({
                   </th>
                   );
                 })}
-                <th className="sticky right-0 z-20 bg-slate-50 p-3 text-xs font-extrabold text-center text-slate-900 min-w-[4.5rem] border-l border-slate-200 shadow-[-4px_0_12px_-4px_rgb(15,23,42,0.06)]">
+                <th className="sticky top-0 right-0 z-30 bg-slate-50 p-3 text-xs font-extrabold text-center text-slate-900 min-w-[4.5rem] border-l border-slate-200 shadow-[-4px_0_12px_-4px_rgb(15,23,42,0.06)]">
                   {t("gradebook.total", { defaultValue: "Total" })}
                 </th>
                 {showLetterPreview && (
-                  <th className="p-3 text-xs font-extrabold text-center text-slate-900 min-w-[4rem] bg-slate-50">
+                  <th className="sticky top-0 z-20 p-3 text-xs font-extrabold text-center text-slate-900 min-w-[4rem] bg-slate-50">
                     {t("gradebook.letter", { defaultValue: "Letter" })}
                   </th>
                 )}

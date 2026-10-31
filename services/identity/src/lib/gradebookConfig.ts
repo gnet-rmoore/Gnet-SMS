@@ -8,6 +8,7 @@ export const gradebookCategorySchema = z
     label: z.string().optional(),
     name: z.string().optional(),
     weightPct: z.number().min(0).max(100),
+    maxScore: z.number().positive().optional(),
     componentType: z.string().optional(),
     id: z.string().optional(),
     isActive: z.boolean().optional(),
@@ -21,6 +22,38 @@ export const gradebookConfigSchema = z.union([
 
 export type GradebookCategory = z.infer<typeof gradebookCategorySchema>;
 export type GradebookConfig = { categories: GradebookCategory[] };
+
+export function defaultMaxScoreForCategory(category: GradebookCategory): number {
+  if (typeof category.maxScore === "number" && category.maxScore > 0) {
+    return category.maxScore;
+  }
+  const code = (category.shortCode || category.code || "").toUpperCase();
+  const type = String(category.componentType || "").toUpperCase();
+  if (type.includes("FINAL") || type.includes("FIN") || /^FIN/.test(code)) return 25;
+  if (type.includes("MID") || /MID/.test(code)) return 25;
+  if (type.includes("EXAM") || /EXAM/.test(code)) return 50;
+  return 10;
+}
+
+export function validateGradebookConfigTotals(config: GradebookConfig): string[] {
+  const active = normalizeCategories(config.categories).filter(
+    (category) => category.isActive !== false
+  );
+  const weightTotal = active.reduce((sum, category) => sum + category.weightPct, 0);
+  const maxPointsTotal = active.reduce(
+    (sum, category) => sum + defaultMaxScoreForCategory(category),
+    0
+  );
+  const errors: string[] = [];
+
+  if (Math.abs(weightTotal - 100) >= 0.01) {
+    errors.push(`Active weights total ${weightTotal}%; they must equal 100%.`);
+  }
+  if (maxPointsTotal > 100) {
+    errors.push(`Active Max pts total ${maxPointsTotal}; it must not exceed 100.`);
+  }
+  return errors;
+}
 
 export const DEFAULT_GRADEBOOK_CONFIG: GradebookConfig = {
   categories: [

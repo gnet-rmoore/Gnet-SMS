@@ -88,6 +88,17 @@ export function AttendanceStudentHistoryModal({
     () => sessions.flatMap((session) => session.records || []),
     [sessions]
   );
+  const statusCounts = useMemo(
+    () =>
+      records.reduce(
+        (counts: Record<string, number>, record) => {
+          counts[record.status] = (counts[record.status] || 0) + 1;
+          return counts;
+        },
+        { PRESENT: 0, ABSENT: 0, EXCUSED: 0, LATE: 0 }
+      ),
+    [records]
+  );
   const rate = records.length
     ? (records.filter((record) =>
         ["PRESENT", "LATE"].includes(record.status)
@@ -198,22 +209,33 @@ export function AttendanceStudentHistoryModal({
           </label>
         </section>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-indigo-50 px-4 py-3">
-          <p className="text-sm font-bold text-indigo-900">
-            {t("attendance.history.rate", {
-              defaultValue: "Attendance rate in loaded results",
-            })}
-          </p>
-          <span className="font-mono text-lg font-extrabold text-indigo-700">
-            {rate.toFixed(1)}%
-          </span>
-          <span className="w-full text-xs text-indigo-700">
-            {t("attendance.history.resultCount", {
-              count: sessions.length,
-              total,
-              defaultValue: `Showing ${sessions.length} of ${total} sessions`,
-            })}
-          </span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {[
+            { key: "PRESENT", tone: "border-emerald-100 bg-emerald-50 text-emerald-700" },
+            { key: "ABSENT", tone: "border-rose-100 bg-rose-50 text-rose-700" },
+            { key: "EXCUSED", tone: "border-slate-200 bg-slate-50 text-slate-700" },
+            { key: "LATE", tone: "border-amber-100 bg-amber-50 text-amber-700" },
+          ].map(({ key, tone }) => (
+            <div key={key} className={`rounded-2xl border p-3 ${tone}`}>
+              <p className="text-[11px] font-bold uppercase tracking-wider">
+                {t(`attendance.markStatus.${key}`, { defaultValue: key })}
+              </p>
+              <p className="mt-1 text-xl font-extrabold font-mono">{statusCounts[key] || 0}</p>
+            </div>
+          ))}
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3 text-indigo-800">
+            <p className="text-[11px] font-bold uppercase tracking-wider">
+              {t("attendance.history.rate", { defaultValue: "Attendance rate" })}
+            </p>
+            <p className="mt-1 text-xl font-extrabold font-mono">{rate.toFixed(1)}%</p>
+            <p className="mt-1 text-[11px] text-indigo-700">
+              {t("attendance.history.resultCount", {
+                count: sessions.length,
+                total,
+                defaultValue: `Showing ${sessions.length} of ${total} sessions`,
+              })}
+            </p>
+          </div>
         </div>
 
         {loading ? (

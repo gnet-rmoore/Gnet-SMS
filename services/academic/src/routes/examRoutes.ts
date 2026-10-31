@@ -3,6 +3,7 @@ import { authenticate, requireTenant, requireRoles, requireResourceTenant } from
 import { validateBody } from "../middleware/validate";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { examController } from "../controllers/examController";
+import { SCHOOL_EXAM_CREATE_ROLES } from "../lib/examAuthorScope";
 import {
   gradeEntryUpsertSchema,
   gradeEntryBulkSchema,
@@ -63,7 +64,7 @@ router.post(
   "/api/schools/:schoolId/exams",
   authenticate,
   requireTenant,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(SCHOOL_EXAM_CREATE_ROLES),
   examController.createExam
 );
 

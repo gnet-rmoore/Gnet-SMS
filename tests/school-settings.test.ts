@@ -23,6 +23,13 @@ import {
   validatePasswordAgainstPolicy,
   serializeSecurityPolicy,
 } from "../services/identity/src/lib/securityPolicy";
+import {
+  defaultMaxScoreForCategory,
+  parseGradebookConfig,
+  validateGradebookConfigTotals,
+  type GradebookConfig,
+} from "../services/identity/src/lib/gradebookConfig";
+import { schoolUpdateSchema } from "../services/identity/src/validation/schemas";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -75,6 +82,48 @@ assert(normalizeCustomEventKey("1bad") === null, "key must start with letter");
 assert(isSystemNotificationKey("ANNOUNCEMENT") === true, "system key known");
 assert(isKnownEventKey("ANNOUNCEMENT") === true, "server system key known");
 assert(normalizeServerKey("bus-delay") === "BUS_DELAY", "server normalize");
+
+const oversizedGradebookConfig: GradebookConfig = {
+  categories: [10, 10, 8, 10, 10, 10, 5, 5, 2, 40].map((points, index) => ({
+    id: `column-${index}`,
+    code: `C${index}`,
+    weightPct: points,
+    maxScore: points,
+    isActive: true,
+  })),
+};
+const gradebookTotalErrors = validateGradebookConfigTotals(oversizedGradebookConfig);
+assert(
+  gradebookTotalErrors.some((message) => message.includes("weights total 110%")),
+  "rejects active weights that exceed 100%"
+);
+assert(
+  gradebookTotalErrors.some((message) => message.includes("Max pts total 110")),
+  "rejects active Max pts above 100"
+);
+assert(
+  validateGradebookConfigTotals({
+    categories: [
+      { code: "HW", weightPct: 100, maxScore: 80, isActive: true },
+    ],
+  }).length === 0,
+  "allows Max pts totals below 100 when weights total 100%"
+);
+assert(
+  defaultMaxScoreForCategory({ shortCode: "MID", weightPct: 10 }) === 25 &&
+    defaultMaxScoreForCategory({ shortCode: "FIN", weightPct: 10 }) === 25,
+  "uses legacy defaults for missing midterm and final Max pts"
+);
+assert(
+  parseGradebookConfig(JSON.stringify(oversizedGradebookConfig)).categories[0].maxScore === 10,
+  "preserves Max pts when parsing gradebook settings"
+);
+assert(
+  !schoolUpdateSchema.shape.gradebookConfig.safeParse(
+    JSON.stringify(oversizedGradebookConfig)
+  ).success,
+  "rejects invalid gradebook totals at the school update API boundary"
+);
 
 const merged = mergeNotificationPrefsFromApi([
   { eventKey: "ANNOUNCEMENT", emailEnabled: false, inAppEnabled: true },

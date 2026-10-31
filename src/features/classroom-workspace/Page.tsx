@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { BookOpen } from "lucide-react";
@@ -66,8 +66,8 @@ export function ClassroomWorkspaceList() {
 
         const [rooms, subjects, gradeLevels, staff, timetable] = await Promise.all([
           workspaceApi.fetchMyClassrooms(isParent ? studentId : null),
-          workspaceApi.fetchSubjects(school.id).catch(() => []),
-          workspaceApi.fetchGradeLevels(school.id).catch(() => []),
+          workspaceApi.fetchSubjects(school.id),
+          workspaceApi.fetchGradeLevels(school.id),
           workspaceApi.fetchStaff(school.id).catch(() => []),
           classScheduleApi.listTimetable(school.id, timetableParams).catch(() => []),
         ]);
@@ -98,8 +98,8 @@ export function ClassroomWorkspaceList() {
       }
     : isStudent
       ? {
-          title: "No classes yet",
-          body: "Your school will place you in classes during admission or enrollment. You do not need a class code.",
+          title: "No subjects assigned yet",
+          body: "Your school will assign your subjects for your grade level during admission or enrollment.",
         }
       : isTeacher
         ? {
@@ -110,6 +110,33 @@ export function ClassroomWorkspaceList() {
             title: "No classes in your membership list",
             body: "Rooms you belong to as a member appear here. Admins manage class groups under Classrooms.",
           };
+
+  const studentSubjectGroups = useMemo(() => {
+    if (!isStudent) return [];
+    const groups = new Map<
+      string,
+      { id: string; name: string; rooms: ClassroomSummary[] }
+    >();
+    for (const room of classrooms) {
+      if (!room.subject?.name) continue;
+      const id = room.gradeLevelId || room.gradeLevel?.id || "unassigned";
+      const group = groups.get(id) || {
+        id,
+        name:
+          room.gradeLevel?.name ||
+          t("classroom.gradeLevelFallback", { defaultValue: "Grade level" }),
+        rooms: [],
+      };
+      group.rooms.push(room);
+      groups.set(id, group);
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [classrooms, isStudent, t]);
+
+  const classroomSections = isStudent
+    ? studentSubjectGroups
+    : [{ id: "all", name: "", rooms: classrooms }];
+  const hasVisibleClassrooms = classroomSections.some((section) => section.rooms.length > 0);
 
   const roomLink = (id: string) =>
     isParent && studentId
@@ -131,7 +158,7 @@ export function ClassroomWorkspaceList() {
             {isParent
               ? "Read-only view of your child’s class stream and returned assignment marks."
               : isStudent
-                ? "Stream, classwork, and marks for rooms you are placed in."
+                ? "Your subjects are grouped under your grade level."
                 : "Open a room to post announcements, assignments, and return student work."}
           </p>
         </div>
@@ -162,7 +189,7 @@ export function ClassroomWorkspaceList() {
             />
           ))}
         </div>
-      ) : classrooms.length === 0 ? (
+      ) : !hasVisibleClassrooms ? (
         <div className="rounded-[32px] border border-dashed border-slate-200 bg-white p-12 text-center shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
             <BookOpen className="w-7 h-7 text-slate-400" />
@@ -173,15 +200,34 @@ export function ClassroomWorkspaceList() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {classrooms.map((room, index) => (
-            <ClassRoomCard
-              key={room.id}
-              room={room}
-              to={roomLink(room.id)}
-              index={index}
-              duration={durationMap.get(room.id) || null}
-            />
+        <div className="space-y-8">
+          {classroomSections.map((section) => (
+            <section key={section.id} className="space-y-4">
+              {section.name && (
+                <div className="border-b border-slate-200 pb-3">
+                  <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+                    {section.name}
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500">
+                    {t("classroom.subjectsForGradeLevel", {
+                      defaultValue: "Subjects for this grade level",
+                    })}
+                  </p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {section.rooms.map((room, index) => (
+                  <ClassRoomCard
+                    key={room.id}
+                    room={room}
+                    to={roomLink(room.id)}
+                    index={index}
+                    duration={durationMap.get(room.id) || null}
+                    studentView={isStudent}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

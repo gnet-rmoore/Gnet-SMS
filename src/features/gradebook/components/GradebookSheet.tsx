@@ -63,7 +63,9 @@ export function GradebookSheet({
 }: GradebookSheetProps) {
   const { t } = useTranslation(["pages", "common"]);
   const resolvedColumnLabel = columnLabel ?? t("common:scorePercent");
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const inputRefs = useRef<
+    Array<{ card?: HTMLInputElement | null; table?: HTMLInputElement | null }>
+  >([]);
 
   const stats = useMemo(() => {
     const entered = rows.filter((r) => r.grade !== null && r.grade !== undefined);
@@ -82,7 +84,10 @@ export function GradebookSheet({
   );
 
   const focusIndex = (idx: number) => {
-    const el = inputRefs.current[idx];
+    const refs = inputRefs.current[idx];
+    const el = [refs?.card, refs?.table].find(
+      (input) => input && input.getClientRects().length > 0
+    );
     el?.focus();
     el?.select();
   };
@@ -158,7 +163,7 @@ export function GradebookSheet({
                     onMoveDown={() => moveRelative(i, 1)}
                     onMoveUp={() => moveRelative(i, -1)}
                     inputRef={(el) => {
-                      inputRefs.current[i] = el;
+                      inputRefs.current[i] = { ...inputRefs.current[i], card: el };
                     }}
                   />
                 </div>
@@ -178,17 +183,17 @@ export function GradebookSheet({
         </div>
         <div className="overflow-x-auto max-h-[min(68vh,720px)] overflow-y-auto overscroll-x-contain">
           <table className="w-full text-left border-collapse min-w-[520px]">
-            <thead className="sticky top-0 z-10">
+            <thead className="sticky top-0 z-30 bg-slate-50">
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
-                  className={`${gradebookStickyHeadClass} p-4 text-xs font-extrabold tracking-tight text-slate-900 min-w-[12rem]`}
+                  className={`${gradebookStickyHeadClass} top-0 z-30 p-4 text-xs font-extrabold tracking-tight text-slate-900 min-w-[12rem]`}
                 >
                   {t("common:student")}
                 </th>
-                <th className="p-4 text-xs font-extrabold tracking-tight text-slate-900 w-40 text-center">
+                <th className="sticky top-0 z-20 bg-slate-50 p-4 text-xs font-extrabold tracking-tight text-slate-900 w-40 text-center">
                   {resolvedColumnLabel}
                 </th>
-                <th className="p-4 text-xs font-extrabold tracking-tight text-slate-900">
+                <th className="sticky top-0 z-20 bg-slate-50 p-4 text-xs font-extrabold tracking-tight text-slate-900">
                   {t("common:status")}
                 </th>
               </tr>
@@ -239,7 +244,7 @@ export function GradebookSheet({
                         onMoveDown={() => moveRelative(i, 1)}
                         onMoveUp={() => moveRelative(i, -1)}
                         inputRef={(el) => {
-                          inputRefs.current[i] = el;
+                          inputRefs.current[i] = { ...inputRefs.current[i], table: el };
                         }}
                       />
                     </td>

@@ -18,9 +18,16 @@ type Props = {
   to: string;
   index?: number;
   duration?: ClassDurationInfo | null;
+  studentView?: boolean;
 };
 
-export function ClassRoomCard({ room, to, index = 0, duration = null }: Props) {
+export function ClassRoomCard({
+  room,
+  to,
+  index = 0,
+  duration = null,
+  studentView = false,
+}: Props) {
   const teachers = getTeachersForClassGroup(room as any);
   const primaryTeacher = teachers[0] || null;
   const teacherLabel = !primaryTeacher
@@ -38,9 +45,9 @@ export function ClassRoomCard({ room, to, index = 0, duration = null }: Props) {
   const memberCount = room._count?.members ?? 0;
   const postCount = room._count?.posts ?? 0;
 
-  const categoryPills = [kindLabel];
-  if (room.subject?.name) categoryPills.push(room.subject.name);
-  else if (room.gradeLevel?.name) categoryPills.push(room.gradeLevel.name);
+  const categoryPills = studentView ? [] : [kindLabel];
+  if (!studentView && room.subject?.name) categoryPills.push(room.subject.name);
+  else if (!studentView && room.gradeLevel?.name) categoryPills.push(room.gradeLevel.name);
 
   const metaChips: string[] = [];
   if (room.subject?.name && room.gradeLevel?.name) {
@@ -71,7 +78,7 @@ export function ClassRoomCard({ room, to, index = 0, duration = null }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 line-clamp-2 leading-snug">
-              {room.name}
+              {studentView ? room.subject?.name || room.name : room.name}
             </h2>
             {room.classCode ? (
               <span className="shrink-0 text-xs font-mono text-slate-400 pt-0.5">
@@ -83,18 +90,20 @@ export function ClassRoomCard({ room, to, index = 0, duration = null }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {categoryPills.map((label, i) => (
-          <span
-            key={`${label}-${i}`}
-            className={`inline-flex items-center rounded-full bg-amber-50 text-amber-800 px-2.5 py-1 text-xs font-bold tracking-wider ${
-              i === 0 ? "uppercase" : "normal-case"
-            }`}
-          >
-            {label}
-          </span>
-        ))}
-      </div>
+      {categoryPills.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {categoryPills.map((label, i) => (
+            <span
+              key={`${label}-${i}`}
+              className={`inline-flex items-center rounded-full bg-amber-50 text-amber-800 px-2.5 py-1 text-xs font-bold tracking-wider ${
+                i === 0 ? "uppercase" : "normal-case"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4 space-y-3 flex-1">
         <div className="space-y-2.5">
@@ -118,7 +127,7 @@ export function ClassRoomCard({ room, to, index = 0, duration = null }: Props) {
           </div>
         </div>
 
-        {visibleChips.length > 0 ? (
+        {!studentView && visibleChips.length > 0 ? (
           <>
             <div className="border-t border-slate-200/80" />
             <div className="flex flex-wrap gap-1.5">

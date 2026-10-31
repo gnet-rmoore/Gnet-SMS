@@ -19,6 +19,7 @@ import { settingsApi } from "../settings/api";
 import { GradebookModeSwitch } from "./components/GradebookModeSwitch";
 import { PendingSyncBanner } from "./components/PendingSyncBanner";
 import { gradebookHubCardClass } from "./components/gradebookUi";
+import { workspaceApi } from "../classroom-workspace/api";
 import { useGradebookAutosave } from "./hooks/useGradebookAutosave";
 import { useGradebookPendingCount } from "./hooks/useGradebookPendingCount";
 import { flushAllPendingGradebookDrafts } from "./lib/gradebookBackgroundSync";
@@ -38,6 +39,12 @@ import {
 } from "../../lib/gradeEditGrant";
 
 type HubMode = "exams" | "assessment";
+
+function classroomSubjectLabel(classroom: any) {
+  return classroom.subject?.name
+    ? `${classroom.name} - ${classroom.subject.name}`
+    : classroom.name;
+}
 
 function statusChip(status: string, t: (key: string, options?: any) => any) {
   const map: Record<string, string> = {
@@ -118,9 +125,10 @@ export const Gradebook = () => {
           .catch(() => []),
         settingsApi.fetchGradeLegends(school.id).catch(() => []),
       ]);
-      const [roomsResult, calendarResult] = await Promise.allSettled([
+      const [roomsResult, calendarResult, subjectsResult] = await Promise.allSettled([
         gradebookApi.fetchMyClassrooms(school.id),
         gradebookApi.fetchCalendar(school.id),
+        workspaceApi.fetchSubjects(school.id),
       ]);
       setExams(Array.isArray(examList) ? examList : []);
       setLegends(Array.isArray(legendList) ? legendList : []);
@@ -128,22 +136,25 @@ export const Gradebook = () => {
       const allRooms = roomsResult.status === "fulfilled" && Array.isArray(roomsResult.value)
         ? roomsResult.value
         : [];
+      const subjects =
+        subjectsResult.status === "fulfilled" && Array.isArray(subjectsResult.value)
+          ? subjectsResult.value
+          : [];
+      const subjectById = new Map(subjects.map((subject: any) => [subject.id, subject]));
       if (roomsResult.status === "rejected") {
         setClassroomLoadError(roomsResult.reason?.message || t("gradebook.toast.loadClassesFailed"));
+      } else if (subjectsResult.status === "rejected") {
+        setClassroomLoadError(subjectsResult.reason?.message || t("gradebook.toast.loadClassesFailed"));
       }
-      const mine =
-        user?.role === "TEACHER"
-          ? allRooms.filter(
-              (c: any) =>
-                c.ownerTeacherId === user.id ||
-                c.members?.some(
-                  (m: any) =>
-                    m.userId === user.id &&
-                    ["TEACHER", "CO_TEACHER"].includes(m.role)
-                )
-            )
-          : allRooms;
-      setMyClassrooms(user?.role === "TEACHER" ? mine : allRooms);
+      setMyClassrooms(
+        allRooms.map((classroom: any) => ({
+          ...classroom,
+          subject:
+            classroom.subject ||
+            (classroom.subjectId ? subjectById.get(classroom.subjectId) : null) ||
+            null,
+        }))
+      );
       if (calendarResult.status === "fulfilled") {
         setCalendar(calendarResult.value);
       } else {
@@ -155,7 +166,7 @@ export const Gradebook = () => {
     } finally {
       setLoading(false);
     }
-  }, [school?.id, user?.id, user?.role, showToast, t]);
+  }, [school?.id, showToast, t]);
 
   useEffect(() => {
     void loadHub();
@@ -364,7 +375,7 @@ export const Gradebook = () => {
         classId,
         periodId: pId,
         assessmentId: componentId,
-        className: room.name,
+        className: classroomSubjectLabel(room),
         periodLabel: period.label,
         assessmentLabel: component.label,
         updatedAt: new Date().toISOString(),
@@ -740,6 +751,7 @@ export const Gradebook = () => {
               exams={exams}
               slug={slug}
               t={t}
+              canBrowseExams={user?.role !== "TEACHER"}
               onPickExam={async (examId) => {
                 try {
                   const classrooms =
@@ -851,6 +863,7 @@ function ExamHub({
   classrooms,
   onOpenClass,
   onBrowseExams,
+  canBrowseExams,
 }: {
   exams: any[];
   slug?: string;
@@ -861,6 +874,7 @@ function ExamHub({
   classrooms: any[];
   onOpenClass: (classId: string) => void;
   onBrowseExams: () => void;
+  canBrowseExams: boolean;
 }) {
   if (!selectedExamId) {
     return (
@@ -872,11 +886,17 @@ function ExamHub({
               {t("gradebook.noExams")}
             </p>
             <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-              {t("gradebook.noExamsHint")}
+              {canBrowseExams
+                ? t("gradebook.noExamsHint")
+                : t("gradebook.teacherNoExamsHint", {
+                    defaultValue: "No exams are scheduled yet. Ask your school administrator to schedule one.",
+                  })}
             </p>
-            <Button type="button" variant="primary" onClick={onBrowseExams} className="mt-6 min-h-[48px]">
-              {t("gradebook.goToExams")}
-            </Button>
+            {canBrowseExams && (
+              <Button type="button" variant="primary" onClick={onBrowseExams} className="mt-6 min-h-[48px]">
+                {t("gradebook.goToExams")}
+              </Button>
+            )}
           </Surface>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -935,7 +955,7 @@ function ExamHub({
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <h3 className="font-extrabold tracking-tight text-slate-900 truncate">
-                {c.name}
+                {classroomSubjectLabel(c)}
               </h3>
               {statusChip(c.submissionStatus || "NOT_STARTED", t)}
             </div>
@@ -982,18 +1002,24 @@ function AssessmentHub({
   onSetupCalendar: () => void;
   onRetry: () => void;
 }) {
-  const [classId, setClassId] = useState(classrooms[0]?.id || "");
+  const subjectClassrooms = useMemo(
+    () => classrooms.filter((classroom) => classroom.subject?.name),
+    [classrooms]
+  );
+  const [classId, setClassId] = useState(subjectClassrooms[0]?.id || "");
   const [periodId, setPeriodId] = useState(periods[0]?.id || "");
   const [assessmentId, setAssessmentId] = useState("");
 
   const selectedPeriod = periods.find((p: any) => p.id === periodId);
   const assessments = selectedPeriod?.examComponents || [];
-  const selectedClass = classrooms.find((c) => c.id === classId);
+  const selectedClass = subjectClassrooms.find((c) => c.id === classId);
   const selectedAssessment = assessments.find((a: any) => a.id === assessmentId);
 
   useEffect(() => {
-    if (!classId && classrooms[0]?.id) setClassId(classrooms[0].id);
-  }, [classrooms, classId]);
+    if (!subjectClassrooms.some((classroom) => classroom.id === classId)) {
+      setClassId(subjectClassrooms[0]?.id || "");
+    }
+  }, [subjectClassrooms, classId]);
 
   useEffect(() => {
     if (!periodId && periods[0]?.id) setPeriodId(periods[0].id);
@@ -1154,10 +1180,9 @@ function AssessmentHub({
           onChange={(e) => setClassId(e.target.value)}
         >
           <option value="">{t("gradebook.selectClass")}</option>
-          {classrooms.map((c) => (
+          {subjectClassrooms.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
-              {c.subject?.name ? ` · ${c.subject.name}` : ""}
+              {classroomSubjectLabel(c)}
             </option>
           ))}
         </SelectField>
@@ -1201,7 +1226,7 @@ function AssessmentHub({
               {t("gradebook.readyToGrade", { defaultValue: "Ready to grade" })}
             </p>
             <p className="font-extrabold text-slate-900">
-              {selectedClass.name} · {selectedPeriod?.label} · {selectedAssessment.label}
+              {classroomSubjectLabel(selectedClass)} · {selectedPeriod?.label} · {selectedAssessment.label}
             </p>
           </div>
         )}

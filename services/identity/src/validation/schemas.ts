@@ -1,5 +1,40 @@
 import { z } from "zod";
 import { isKnownReceiptTemplateId } from "../lib/receiptTemplateIds";
+import {
+  gradebookConfigSchema,
+  normalizeCategories,
+  validateGradebookConfigTotals,
+} from "../lib/gradebookConfig";
+
+const gradebookConfigUpdateSchema = z.string().nullable().superRefine((raw, context) => {
+  if (raw == null) return;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Gradebook configuration must be valid JSON.",
+    });
+    return;
+  }
+
+  const result = gradebookConfigSchema.safeParse(parsed);
+  if (!result.success) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Gradebook configuration is invalid.",
+    });
+    return;
+  }
+
+  for (const message of validateGradebookConfigTotals({
+    categories: normalizeCategories(result.data),
+  })) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message });
+  }
+});
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -86,7 +121,7 @@ export const schoolUpdateSchema = z
       )
       .or(z.string()),
     brandColor: z.string(),
-    gradebookConfig: z.string().nullable(),
+    gradebookConfig: gradebookConfigUpdateSchema,
     payrollAttendanceRules: z.union([
       z.string(),
       z.object({

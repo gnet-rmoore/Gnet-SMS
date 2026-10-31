@@ -31,6 +31,9 @@ export type TeachingRoomRef = {
 /** Admin roles that always control exam settings (duration / violations / retakes). */
 export const EXAM_SETTINGS_ADMIN_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
 
+/** Only school administration may create scheduled school exams. */
+export const SCHOOL_EXAM_CREATE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
+
 /** Body keys a teacher may not set on a non-quiz exam. */
 export const RESTRICTED_EXAM_SETTING_FIELDS = [
   "duration",

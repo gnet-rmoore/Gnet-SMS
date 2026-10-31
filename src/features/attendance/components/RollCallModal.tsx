@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
@@ -37,6 +37,30 @@ export function RollCallModal({
   onViewStudentHistory,
 }: RollCallModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [studentQuery, setStudentQuery] = useState("");
+  const records = Array.isArray(selectedRecord.records) ? selectedRecord.records : [];
+  const statusCounts = useMemo(
+    () =>
+      records.reduce(
+        (counts: Record<string, number>, record: any) => {
+          counts[record.status] = (counts[record.status] || 0) + 1;
+          return counts;
+        },
+        { PRESENT: 0, ABSENT: 0, EXCUSED: 0, LATE: 0 }
+      ),
+    [records]
+  );
+  const visibleRecords = useMemo(() => {
+    const query = studentQuery.trim().toLowerCase();
+    return records.filter((record: any) => {
+      if (statusFilter !== "ALL" && record.status !== statusFilter) return false;
+      if (!query) return true;
+      const name = record.student?.name || "";
+      const email = record.student?.email || "";
+      return `${name} ${email}`.toLowerCase().includes(query);
+    });
+  }, [records, statusFilter, studentQuery]);
   const sessionDate = new Date(selectedRecord.date).toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
@@ -80,28 +104,27 @@ export function RollCallModal({
           </button>
         </div>
       ) : (
-      <div className="space-y-6 max-h-[min(70vh,560px)] overflow-y-auto pr-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-100 text-center">
-            <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider">
-              {t("attendance.presentLate")}
-            </p>
-            <p className="text-2xl font-extrabold tracking-tight text-emerald-800 font-mono mt-1">
-              {selectedRecord.presentCount}
-            </p>
-          </div>
-          <div className="bg-rose-50/80 p-4 rounded-2xl border border-rose-100 text-center">
-            <p className="text-rose-600 text-xs font-bold uppercase tracking-wider">
-              {t("attendance.absent")}
-            </p>
-            <p className="text-2xl font-extrabold tracking-tight text-rose-800 font-mono mt-1">
-              {selectedRecord.absentCount}
-            </p>
-          </div>
+      <div className="space-y-6 p-5 sm:p-7">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { key: "PRESENT", tone: "border-emerald-100 bg-emerald-50 text-emerald-700" },
+            { key: "ABSENT", tone: "border-rose-100 bg-rose-50 text-rose-700" },
+            { key: "EXCUSED", tone: "border-slate-200 bg-slate-50 text-slate-700" },
+            { key: "LATE", tone: "border-amber-100 bg-amber-50 text-amber-700" },
+          ].map(({ key, tone }) => (
+            <div key={key} className={`rounded-2xl border p-4 ${tone}`}>
+              <p className="text-xs font-bold uppercase tracking-wider">
+                {t(`attendance.markStatus.${key}`, { defaultValue: key })}
+              </p>
+              <p className="mt-1 text-2xl font-extrabold font-mono">
+                {statusCounts[key] || 0}
+              </p>
+            </div>
+          ))}
         </div>
 
         {selectedRecord.notes && (
-          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+          <div className="p-4 bg-white border border-slate-200 rounded-2xl">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {t("attendance.sessionNotes")}
             </p>
@@ -111,11 +134,64 @@ export function RollCallModal({
           </div>
         )}
 
-        <div className="space-y-2">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            {t("attendance.students")}
-          </h4>
-          {(selectedRecord.records || []).map((r: any) => {
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-extrabold tracking-tight text-slate-900">
+                {t("attendance.students")}
+              </h4>
+              <p className="mt-1 text-xs text-slate-500">
+                {t("attendance.history.resultCount", {
+                  count: visibleRecords.length,
+                  total: records.length,
+                  defaultValue: `${visibleRecords.length} of ${records.length} students`,
+                })}
+              </p>
+            </div>
+            <input
+              type="search"
+              value={studentQuery}
+              onChange={(event) => setStudentQuery(event.target.value)}
+              placeholder={t("common:search", { defaultValue: "Search students" })}
+              aria-label={t("common:search", { defaultValue: "Search students" })}
+              className="min-h-11 w-full sm:max-w-xs rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[
+              { key: "ALL", label: t("common:all", { defaultValue: "All" }), count: records.length },
+              ...["PRESENT", "ABSENT", "EXCUSED", "LATE"].map((key) => ({
+                key,
+                label: t(`attendance.markStatus.${key}`, { defaultValue: key }),
+                count: statusCounts[key] || 0,
+              })),
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                aria-pressed={statusFilter === filter.key}
+                onClick={() => setStatusFilter(filter.key)}
+                className={`shrink-0 min-h-10 rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${
+                  statusFilter === filter.key
+                    ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {filter.label} <span className="ml-1 font-mono">{filter.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {visibleRecords.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">
+              {t("attendance.history.empty", {
+                defaultValue: "No attendance records match these filters.",
+              })}
+            </p>
+          ) : (
+            <div className="space-y-2">
+          {visibleRecords.map((r: any) => {
             const name = r.student?.name || t("attendance.studentFallback");
             const statusKey = r.status as keyof typeof statusClass;
             const statusLabel = t(`attendance.markStatus.${r.status}`, {
@@ -124,7 +200,7 @@ export function RollCallModal({
             return (
               <div
                 key={r.id}
-                className="flex flex-col p-3.5 bg-white rounded-2xl border border-slate-100 gap-2"
+                className="flex flex-col p-4 bg-white rounded-2xl border border-slate-200 gap-3 hover:border-slate-300 transition-colors"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -165,7 +241,7 @@ export function RollCallModal({
                         name,
                       })
                     }
-                    className="self-start ml-[3.25rem] text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                    className="self-start ml-[3.25rem] min-h-9 text-xs font-bold text-indigo-600 hover:text-indigo-800"
                   >
                     {t("attendance.history.open", {
                       defaultValue: "Student history",
@@ -175,7 +251,9 @@ export function RollCallModal({
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+        </section>
       </div>
       )}
     </FeatureModalShell>

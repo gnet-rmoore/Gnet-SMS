@@ -14,6 +14,8 @@ export type GradebookScoreInputProps = {
   onChange: (value: number | null) => void;
   onMoveDown?: () => void;
   onMoveUp?: () => void;
+  onMoveLeft?: () => void;
+  onMoveRight?: () => void;
   inputRef?: (el: HTMLInputElement | null) => void;
 };
 
@@ -29,6 +31,8 @@ export function GradebookScoreInput({
   onChange,
   onMoveDown,
   onMoveUp,
+  onMoveLeft,
+  onMoveRight,
   inputRef,
 }: GradebookScoreInputProps) {
   return (
@@ -64,6 +68,16 @@ export function GradebookScoreInput({
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
           onMoveUp?.();
+        } else if (e.key === "ArrowLeft") {
+          if (onMoveLeft) {
+            e.preventDefault();
+            onMoveLeft();
+          }
+        } else if (e.key === "ArrowRight") {
+          if (onMoveRight) {
+            e.preventDefault();
+            onMoveRight();
+          }
         }
       }}
       className={`${gradebookInputClass} ${active ? gradebookInputActiveClass : ""} ${
