@@ -82,10 +82,29 @@ export function Layout({ children }: { children?: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [isPageLoading, setIsPageLoading] = React.useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = React.useState(false);
+  const [platformLogoUrl, setPlatformLogoUrl] = React.useState<string | null>(null);
   const profileDropdownRef = React.useRef<HTMLDivElement>(null);
   const { data: navBadges = {} } = useNavBadges();
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
   const refreshedSession = React.useRef(false);
+
+  React.useEffect(() => {
+    if (user?.role !== "SUPER_ADMIN") {
+      setPlatformLogoUrl(null);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/public/platform-branding")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Failed to load platform branding");
+        if (!cancelled) setPlatformLogoUrl(data.logoUrl || null);
+      })
+      .catch((err) => console.error("Failed to load platform branding:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role]);
 
   const isSidebarExpandedVisual = isDesktop ? !desktopCollapsed : mobileNavOpen;
   const closeMobileNav = React.useCallback(() => setMobileNavOpen(false), []);
@@ -354,7 +373,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
         desktopCollapsed={desktopCollapsed}
         mobileOpen={mobileNavOpen}
         brand={{
-          logoUrl: role !== "SUPER_ADMIN" ? school?.logoUrl : null,
+          logoUrl: role === "SUPER_ADMIN" ? platformLogoUrl : school?.logoUrl,
           title: "Gnet SMS",
           subtitle: role === "SUPER_ADMIN" ? "Super Admin" : school?.name || "School",
           letter: role === "SUPER_ADMIN" ? "S" : school?.name?.[0] || "S",

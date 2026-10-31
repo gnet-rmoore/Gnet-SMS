@@ -4,6 +4,7 @@
 > **Owning service:** Identity (`dbMaintenance`) + SPA `/super-admin/settings` (Database tab)
 > **UI:** Super Admin → Settings → Database
 > **Companion:** `docs/SUPERADMIN_CREDENTIALS.md`, `docs/SUPER_ADMIN_PLATFORM_PLAN.md`, `.github/workflows/backup.yml`
+> **Super Admin user guide:** [`SUPER_ADMIN_DATABASE_BACKUP_GUIDE.md`](./SUPER_ADMIN_DATABASE_BACKUP_GUIDE.md)
 
 ### Changelog
 

@@ -3,6 +3,28 @@ import { publicOnboardingController } from "../controllers/publicOnboardingContr
 
 const router = express.Router();
 
+router.get("/api/public/platform-branding", async (_req, res) => {
+  try {
+    const { platformOpsService } = await import("../services/platformOpsService");
+    res.json(await platformOpsService.getPublicPlatformBranding());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load platform branding" });
+  }
+});
+
+router.get("/api/public/platform-branding/logo", async (_req, res) => {
+  try {
+    const { platformOpsService } = await import("../services/platformOpsService");
+    const logo = await platformOpsService.getPublicPlatformLogo();
+    if (!logo) return res.sendStatus(404);
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    return res.type(logo.mimeType).send(logo.bytes);
+  } catch (err: any) {
+    return res.status(err.status || 500).json({ error: err.message || "Failed to load platform logo" });
+  }
+});
+
 router.get("/api/public/plans", async (_req, res) => {
   try {
     const { platformOpsService } = await import("../services/platformOpsService");

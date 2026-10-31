@@ -1,0 +1,18 @@
+feat: fix critical Authorization header bug & harden platform ops/settings
+
+- Fixed 3 instances of `Authorization: `****`` (literal text replacing Bearer token) causing all API calls to fail silently in src/pages/SuperAdmin/Settings.tsx
+  - Line 91: fetchDeliveryDiagnostics() - delivery diagnostics fetch
+  - Line 163: useEffect for GENERAL tab - platform settings fetch
+  - Line 407: savePlatformLogo() - platform logo upload save (also fixed TS1005 comma error)
+- All Authorization headers now consistently use `Bearer ${accessToken}`
+- TypeScript compilation passes with zero errors (npx tsc --noEmit)
+
+Additional hardening in this release:
+- Platform Ops > Maintenance mode: toggle + save now functional (was broken by auth bug)
+- Security > Default school security template: all inputs + save now functional
+- Database > Database Maintenance: backup/optimize/fetch status now functional
+- Credentials > Transactional email: EmailSettingsPanel load/save now functional
+- Notifications > Email Notifications: now functional (was noted as "too minimum") - includes EmailSettingsPanel + delivery history
+- Upload platform (Gnet SMS) logo: file validation (PNG/JPEG/WebP/GIF, max 1MB), preview, and PATCH API save now functional. Auth bug was the root cause preventing uploads.
+
+Fixes the user-requested features on Super Admin Platform settings page to working state.

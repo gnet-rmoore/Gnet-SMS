@@ -10,6 +10,7 @@ import {
 import { resolveEmailLocale, tEmail } from "../i18n/emailCatalogs";
 import { logSystemEvent } from "../utils/logger";
 import { ALLOWED_SCHOOL_STATUSES } from "../domain/schoolStatus";
+import { parseSecurityPolicy, serializeSecurityPolicy } from "../lib/securityPolicy";
 
 export { isSchoolLoginAllowed, ALLOWED_SCHOOL_STATUSES } from "../domain/schoolStatus";
 
@@ -57,6 +58,13 @@ export async function provisionSchool(data: ProvisionSchoolInput, req?: any) {
     throw Object.assign(new Error("A user with this contact email already exists"), { status: 409 });
   }
 
+  const platformSettings = await prisma.platformSettings.findUnique({
+    where: { id: "default" },
+    select: { defaultSecurityPolicy: true },
+  });
+  const defaultSecurityPolicy = serializeSecurityPolicy(
+    parseSecurityPolicy(platformSettings?.defaultSecurityPolicy)
+  );
   const school = await prisma.school.create({
     data: {
       name,
@@ -70,6 +78,7 @@ export async function provisionSchool(data: ProvisionSchoolInput, req?: any) {
       planCode: planCode || null,
       status,
       onboardingSource,
+      securityPolicy: defaultSecurityPolicy,
       approvedAt: status === "ACTIVE" || status === "TRIAL" ? new Date() : null,
       approvedBy: approvedBy || null,
       admissionPolicy: JSON.stringify({

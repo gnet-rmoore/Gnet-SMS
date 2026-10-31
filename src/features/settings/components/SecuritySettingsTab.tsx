@@ -14,7 +14,7 @@ export type SecurityPolicyForm = {
   allowSmsMfa: boolean;
 };
 
-const STAFF_ROLES = [
+export const STAFF_ROLES = [
   "SCHOOL_ADMIN",
   "TEACHER",
   "REGISTRAR",

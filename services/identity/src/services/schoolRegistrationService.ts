@@ -10,6 +10,7 @@ import { resolveEmailLocale, tEmail, type AppLocale } from "../i18n/emailCatalog
 import { provisionSchool } from "./schoolProvisioning";
 import { platformOpsService } from "./platformOpsService";
 import { logSystemEvent } from "../utils/logger";
+import { isRegistrationEmailConfirmationRequired } from "../domain/registrationEmailPolicy";
 
 const DEFAULT_NEEDS_INFO: Record<AppLocale, string> = {
   en: "Please reply with more details.",
@@ -71,7 +72,11 @@ export const schoolRegistrationService = {
       throw Object.assign(new Error("Slug is not available"), { status: 409 });
     }
 
-    const confirmationToken = generateRawToken(24);
+    const settings = await platformOpsService.ensurePlatformSettings();
+    const requireConfirmation = isRegistrationEmailConfirmationRequired(
+      settings.requireRegistrationEmailConfirm
+    );
+    const confirmationToken = requireConfirmation ? generateRawToken(24) : null;
     const row = await prisma.schoolRegistration.create({
       data: {
         organizationName,
@@ -85,23 +90,25 @@ export const schoolRegistrationService = {
         applicantEmail,
         applicantPhone,
         status: "SUBMITTED",
-        confirmationToken: hashToken(confirmationToken),
+        confirmationToken: confirmationToken ? hashToken(confirmationToken) : null,
         locale,
         ipHash: hashIp(meta.ip),
         userAgent: meta.userAgent?.slice(0, 500) || null,
       },
     });
 
-    const confirmUrl = `${appBaseUrl()}/register-school/confirm?token=${confirmationToken}&id=${row.id}`;
-    const confirmMail = tEmail(locale, "registrationConfirm", {
-      confirmUrl,
-      organizationName: row.organizationName,
-    });
-    await sendMail({
-      to: applicantEmail,
-      subject: confirmMail.subject,
-      text: confirmMail.text,
-    });
+    if (confirmationToken) {
+      const confirmUrl = `${appBaseUrl()}/register-school/confirm?token=${confirmationToken}&id=${row.id}`;
+      const confirmMail = tEmail(locale, "registrationConfirm", {
+        confirmUrl,
+        organizationName: row.organizationName,
+      });
+      await sendMail({
+        to: applicantEmail,
+        subject: confirmMail.subject,
+        text: confirmMail.text,
+      });
+    }
 
     return {
       id: row.id,
@@ -109,13 +116,26 @@ export const schoolRegistrationService = {
       organizationName: row.organizationName,
       applicantEmail: row.applicantEmail,
       locale,
-      message: "Registration submitted. Check your email to confirm your application before review.",
+      message: requireConfirmation
+        ? "Registration submitted. Check your email to confirm your application before review."
+        : "Registration submitted. Email confirmation is not required; your application is pending review.",
     };
   },
 
   async resendConfirmation(id: string) {
     const row = await prisma.schoolRegistration.findUnique({ where: { id } });
     if (!row) throw Object.assign(new Error("Registration not found"), { status: 404 });
+    const settings = await platformOpsService.ensurePlatformSettings();
+    if (
+      !isRegistrationEmailConfirmationRequired(settings.requireRegistrationEmailConfirm)
+    ) {
+      return {
+        id: row.id,
+        status: row.status,
+        email: row.applicantEmail,
+        confirmationNotRequired: true,
+      };
+    }
     if (row.emailConfirmedAt) {
       return { id: row.id, status: row.status, email: row.applicantEmail, alreadyConfirmed: true };
     }
@@ -251,9 +271,9 @@ export const schoolRegistrationService = {
       throw Object.assign(new Error("Registration cannot be approved in current status"), { status: 400 });
     }
     const settings = await platformOpsService.ensurePlatformSettings();
-    const requireConfirm =
-      settings.requireRegistrationEmailConfirm !== false &&
-      process.env.REQUIRE_REGISTRATION_EMAIL_CONFIRM !== "false";
+    const requireConfirm = isRegistrationEmailConfirmationRequired(
+      settings.requireRegistrationEmailConfirm
+    );
     if (!row.emailConfirmedAt && requireConfirm) {
       // Soft: allow approve but warn via notes; still require confirm in production default
       if (process.env.NODE_ENV === "production") {

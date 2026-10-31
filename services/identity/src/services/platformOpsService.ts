@@ -6,6 +6,8 @@ import { logSystemEvent } from "../utils/logger";
 import { getJwtAccessSecret } from "../middleware/auth";
 import { capabilityService } from "./capabilityService";
 import { isSchoolLoginAllowed } from "../domain/schoolStatus";
+import { isRegistrationEmailConfirmationRequired } from "../domain/registrationEmailPolicy";
+import { parsePlatformLogoDataUrl } from "../domain/platformLogo";
 import {
   listPlatformPlans,
   resolveEntitlements,
@@ -1141,17 +1143,44 @@ export const platformOpsService = {
     await requireCap(actor, "settings.manage");
     const row = await this.ensurePlatformSettings();
     const defaultSecurityPolicy = parseSecurityPolicy(row.defaultSecurityPolicy);
+    const { platformLogoData, ...settings } = row;
     return {
-      ...row,
+      ...settings,
+      platformLogoUrl: platformLogoData
+        ? `/api/public/platform-branding/logo?v=${row.updatedAt.getTime()}`
+        : null,
       defaultSecurityPolicy,
       jwtAccessTtl: ACCESS_TOKEN_TTL,
+    };
+  },
+
+  async getPublicPlatformLogo() {
+    const row = await prisma.platformSettings.findUnique({
+      where: { id: "default" },
+      select: { platformLogoData: true },
+    });
+    return parsePlatformLogoDataUrl(row?.platformLogoData);
+  },
+
+  async getPublicPlatformBranding() {
+    const row = await prisma.platformSettings.findUnique({
+      where: { id: "default" },
+      select: { platformLogoData: true, updatedAt: true },
+    });
+    return {
+      logoUrl: row?.platformLogoData
+        ? `/api/public/platform-branding/logo?v=${row.updatedAt.getTime()}`
+        : null,
     };
   },
 
   async ensurePlatformSettings() {
     return prisma.platformSettings.upsert({
       where: { id: "default" },
-      create: { id: "default" },
+      create: {
+        id: "default",
+        requireRegistrationEmailConfirm: isRegistrationEmailConfirmationRequired(undefined),
+      },
       update: {},
     });
   },
@@ -1160,6 +1189,7 @@ export const platformOpsService = {
     body: {
       maintenanceMode?: boolean;
       maintenanceMessage?: string | null;
+      platformLogoData?: unknown;
       defaultSecurityPolicy?: Partial<typeof DEFAULT_SECURITY_POLICY> | null;
       requireOperatorMfa?: boolean;
       requireRegistrationEmailConfirm?: boolean;
@@ -1171,6 +1201,9 @@ export const platformOpsService = {
     const data: any = { updatedById: actor.id };
     if (body.maintenanceMode !== undefined) data.maintenanceMode = Boolean(body.maintenanceMode);
     if (body.maintenanceMessage !== undefined) data.maintenanceMessage = body.maintenanceMessage;
+    if (body.platformLogoData !== undefined) {
+      data.platformLogoData = parsePlatformLogoDataUrl(body.platformLogoData)?.dataUrl ?? null;
+    }
     if (body.requireOperatorMfa !== undefined) {
       if (body.requireOperatorMfa) {
         const enrolled = await prisma.userMfaEnrollment.count({
@@ -1206,7 +1239,11 @@ export const platformOpsService = {
     }
     const row = await prisma.platformSettings.upsert({
       where: { id: "default" },
-      create: { id: "default", ...data },
+      create: {
+        id: "default",
+        requireRegistrationEmailConfirm: isRegistrationEmailConfirmationRequired(undefined),
+        ...data,
+      },
       update: data,
     });
     await logSystemEvent(

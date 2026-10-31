@@ -382,6 +382,7 @@ model PlatformSettings {
   id                     String   @id @default("default")
   maintenanceMode        Boolean  @default(false)
   maintenanceMessage     String?
+  platformLogoData       String?
   /// JSON securityPolicy template applied to newly provisioned schools when unset
   defaultSecurityPolicy  String?
   /// When true, Super Admin login requires TOTP (platform operator MFA)
