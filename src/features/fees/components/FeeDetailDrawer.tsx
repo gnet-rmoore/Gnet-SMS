@@ -22,6 +22,7 @@ import {
 } from "../types";
 import { feesApi } from "../api";
 import { formatMoney } from "../../../i18n/format";
+import { MoneyInput } from "../../../components/MoneyInput";
 
 export type FeeDetailDrawerProps = {
   handleCollectPayment: (
@@ -341,13 +342,9 @@ export function FeeDetailDrawer({
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   {t("common:amount")}
                 </span>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  max={balance}
+                <MoneyInput
                   value={payAmount}
-                  onChange={(e) => setPayAmount(e.target.value)}
+                  onValueChange={setPayAmount}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-mono"
                 />
               </label>
@@ -415,13 +412,9 @@ export function FeeDetailDrawer({
                 </div>
                 <CreditCard className="w-5 h-5 text-indigo-400 shrink-0" />
               </div>
-              <input
-                type="number"
-                min="1"
-                step="0.01"
-                max={balance}
+              <MoneyInput
                 value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
+                onValueChange={setPayAmount}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-mono text-white"
               />
               <button

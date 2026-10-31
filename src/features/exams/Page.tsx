@@ -543,7 +543,10 @@ export const Exams = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setShowModal(true)}
+                  onClick={() => {
+                    setFormData(emptyScheduleForm());
+                    setShowModal(true);
+                  }}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold"
                 >
                   <Plus className="w-4 h-4" />

@@ -6,6 +6,7 @@ import {
   fieldLabel,
   fieldSelect,
 } from "../../academics-shared/FeatureModalShell";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { FEE_TYPES } from "../types";
 
 export type TemplateModalProps = {
@@ -105,13 +106,10 @@ export function TemplateModal({
 
           <div className="space-y-1.5">
             <label className={fieldLabel}>{t("pages:fees.amountLabel")}</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
+            <MoneyInput
               value={templateForm.amount}
-              onChange={(e) =>
-                setTemplateForm({ ...templateForm, amount: e.target.value })
+              onValueChange={(amount) =>
+                setTemplateForm({ ...templateForm, amount })
               }
               placeholder="0.00"
               className={fieldInput}

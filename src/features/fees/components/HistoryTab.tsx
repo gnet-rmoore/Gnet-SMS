@@ -7,6 +7,7 @@ import { feesApi } from "../api";
 import { FEE_TYPES, PAYMENT_METHODS, type FeePayment, type FeePaymentTxn } from "../types";
 import { useAuthStore } from "../../../store/authStore";
 import { formatMoney } from "../../../i18n/format";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button } from "../../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../../list-filters";
 
@@ -260,12 +261,9 @@ export function HistoryTab({
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {t("fees.history.minInstallment")}
             </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
+            <MoneyInput
               value={minPayment}
-              onChange={(e) => setMinPayment(e.target.value)}
+              onValueChange={setMinPayment}
               className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-mono bg-white"
             />
           </label>

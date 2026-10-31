@@ -146,7 +146,11 @@ export async function uploadClassroomFile(
       }
     };
     request.onerror = () =>
-      reject(new Error("Image storage is unreachable. Ask your admin to check file storage configuration."));
+      reject(
+        new Error(
+          "Could not connect to image storage. Ask your admin to verify S3_PUBLIC_URL is browser-reachable and MinIO CORS allows this portal's origin."
+        )
+      );
     request.onabort = () => reject(new Error("Image upload was cancelled."));
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {

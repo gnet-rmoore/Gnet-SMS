@@ -23,8 +23,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
-      # Same origin as the app — not "*" (verified: browser presigned PUTs need this).
-      MINIO_API_CORS_ALLOW_ORIGIN: ${APP_URL:?set in .env}
+      # CORS does not grant storage access; presigned URLs remain signature-authorized.
+      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_API_CORS_ALLOW_ORIGIN:-*}
 
   minio-init:
     restart: on-failure

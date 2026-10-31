@@ -203,7 +203,7 @@ Start with the manual steps above first; flip on auto-deploy once it's stable.
 | Problem | Fix |
 | :--- | :--- |
 | `https://gnetsms.com` doesn't load | DNS not propagated yet (wait 15–60 min) or check firewall has 80/443 open. |
-| Site loads but "files" / uploads broken | Make sure the `files` A record exists and `S3_PUBLIC_URL` matches it. |
+| Site loads but "files" / uploads broken | Make sure the `files` A record exists, `S3_PUBLIC_URL` matches it, and MinIO CORS allows the portal origin (`MINIO_API_CORS_ALLOW_ORIGIN`; defaults to `*` for signed uploads). |
 | Login fails | `docker compose -f docker-compose.yml -f docker-compose.prod.yml ps` — `api-gateway` and `identity` must show healthy; check logs: `docker compose -f docker-compose.yml -f docker-compose.prod.yml logs identity`. |
 | Port already in use on the server | Something else owns 80/443. Stop it, or change the ports in `docker-compose.yml`. |
 | Want to wipe everything | `docker compose -f docker-compose.yml -f docker-compose.prod.yml down -v` — deletes **all** data. Only run this if you mean it. |

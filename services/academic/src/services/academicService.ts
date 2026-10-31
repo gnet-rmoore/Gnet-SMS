@@ -316,19 +316,28 @@ export const academicService = {
     return prisma.gradeLegend.delete({ where: { id: legendId } });
   },
 
-  async getGradeLevels(schoolId: string, page?: number, pageSize?: number) {
+  async getGradeLevels(
+    schoolId: string,
+    page?: number,
+    pageSize?: number,
+    allowedIds?: string[]
+  ) {
     const p = page && page > 0 ? page : 1;
     const ps = pageSize && pageSize > 0 && pageSize <= 100 ? pageSize : 50;
     const skip = (p - 1) * ps;
+    const where = {
+      schoolId,
+      ...(allowedIds !== undefined ? { id: { in: allowedIds } } : {}),
+    };
 
     const [items, total] = await Promise.all([
       prisma.gradeLevel.findMany({
-        where: { schoolId },
+        where,
         orderBy: { name: "asc" },
         skip,
         take: ps,
       }),
-      prisma.gradeLevel.count({ where: { schoolId } }),
+      prisma.gradeLevel.count({ where }),
     ]);
     return { items, total, page: p, pageSize: ps };
   },
@@ -368,19 +377,28 @@ export const academicService = {
     return toCreate.length;
   },
 
-  async getSubjects(schoolId: string, page?: number, pageSize?: number) {
+  async getSubjects(
+    schoolId: string,
+    page?: number,
+    pageSize?: number,
+    allowedIds?: string[]
+  ) {
     const p = page && page > 0 ? page : 1;
     const ps = pageSize && pageSize > 0 && pageSize <= 100 ? pageSize : 50;
     const skip = (p - 1) * ps;
+    const where = {
+      schoolId,
+      ...(allowedIds !== undefined ? { id: { in: allowedIds } } : {}),
+    };
 
     const [items, total] = await Promise.all([
       prisma.subject.findMany({
-        where: { schoolId },
+        where,
         orderBy: { name: "asc" },
         skip,
         take: ps,
       }),
-      prisma.subject.count({ where: { schoolId } }),
+      prisma.subject.count({ where }),
     ]);
     return { items, total, page: p, pageSize: ps };
   },

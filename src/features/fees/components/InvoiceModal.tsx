@@ -6,6 +6,7 @@ import {
   fieldLabel,
   fieldSelect,
 } from "../../academics-shared/FeatureModalShell";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { FEE_TYPES, type FeeTemplate } from "../types";
 import { formatMoney } from "../../../i18n/format";
 
@@ -162,13 +163,10 @@ export function InvoiceModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className={fieldLabel}>{t("fees.amountLabel")}</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
+            <MoneyInput
               value={invoiceForm.amount}
-              onChange={(e) =>
-                setInvoiceForm({ ...invoiceForm, amount: e.target.value })
+              onValueChange={(amount) =>
+                setInvoiceForm({ ...invoiceForm, amount })
               }
               placeholder="0.00"
               className={fieldInput}

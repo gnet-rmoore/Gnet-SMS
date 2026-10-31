@@ -8,6 +8,7 @@ import {
   fieldLabel,
   fieldSelect,
 } from "../../academics-shared/FeatureModalShell";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { FEE_TYPES, type FeeTemplate } from "../types";
 import { formatMoney } from "../../../i18n/format";
 
@@ -226,13 +227,10 @@ export function BatchBillingPanel({
 
               <div className="space-y-1.5">
                 <label className={fieldLabel}>{t("fees.amountLabel")}</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                <MoneyInput
                   value={batchForm.amount}
-                  onChange={(e) =>
-                    setBatchForm({ ...batchForm, amount: e.target.value })
+                  onValueChange={(amount) =>
+                    setBatchForm({ ...batchForm, amount })
                   }
                   placeholder="0.00"
                   className={fieldInput}

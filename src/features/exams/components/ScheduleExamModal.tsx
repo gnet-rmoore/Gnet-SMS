@@ -12,6 +12,11 @@ import { useAcademicCalendarQuery } from "../../academic-calendar/hooks/useAcade
 import { formatDisplayDate } from "../../academic-calendar/utils";
 import type { ExamComponent, Period } from "../../academic-calendar/types";
 import type { ScheduleExamFormData } from "../types";
+import {
+  validateScheduleExamForm,
+  type ScheduleExamErrors,
+  type ScheduleExamField,
+} from "../scheduleExamValidation";
 
 type Props = {
   formData: ScheduleExamFormData;
@@ -43,6 +48,7 @@ export function ScheduleExamModal({
   const { t } = useTranslation(["pages", "common"]);
   const { slug } = useParams();
   const { calendar, loading, activePeriod } = useAcademicCalendarQuery();
+  const [errors, setErrors] = React.useState<ScheduleExamErrors>({});
 
   const periods: Period[] = Array.isArray(calendar?.periods) ? calendar.periods : [];
   const selectedPeriod =
@@ -62,16 +68,37 @@ export function ScheduleExamModal({
   const periodMax = toDayBound(selectedPeriod?.endDate, true);
 
   const onPeriodChange = (periodId: string) => {
+    const previousTitle =
+      selectedPeriod && selectedComponent
+        ? `${selectedPeriod.shortCode}: ${selectedComponent.label}`
+        : "";
     setFormData((prev) => ({
       ...prev,
       periodId,
       examComponentId: "",
+      startDate: "",
+      endDate: "",
+      gradeSubmissionDeadline: "",
+      title: previousTitle && prev.title === previousTitle ? "" : prev.title,
     }));
+    setErrors({});
   };
 
   const onComponentChange = (componentId: string) => {
     if (!componentId || !selectedPeriod) {
-      setFormData((prev) => ({ ...prev, examComponentId: "" }));
+      const previousTitle =
+        selectedPeriod && selectedComponent
+          ? `${selectedPeriod.shortCode}: ${selectedComponent.label}`
+          : "";
+      setFormData((prev) => ({
+        ...prev,
+        examComponentId: "",
+        startDate: "",
+        endDate: "",
+        gradeSubmissionDeadline: "",
+        title: previousTitle && prev.title === previousTitle ? "" : prev.title,
+      }));
+      setErrors({});
       return;
     }
     const component = components.find((c) => String(c.id) === componentId);
@@ -86,19 +113,57 @@ export function ScheduleExamModal({
     const deadline =
       toDateTimeLocal(component.gradeSubmissionDeadline, "23:59") ||
       (end ? `${end.substring(0, 10)}T23:59` : "");
+    const previousTitle =
+      selectedPeriod && selectedComponent
+        ? `${selectedPeriod.shortCode}: ${selectedComponent.label}`
+        : "";
 
     setFormData((prev) => ({
       ...prev,
       examComponentId: String(component.id),
-      title: prev.title.trim()
-        ? prev.title
-        : `${selectedPeriod.shortCode}: ${component.label}`,
+      title:
+        !prev.title.trim() || prev.title === previousTitle
+          ? `${selectedPeriod.shortCode}: ${component.label}`
+          : prev.title,
       startDate: start,
       endDate: end,
       gradeSubmissionDeadline: deadline,
       duration: prev.duration || "120",
     }));
+    setErrors({});
   };
+
+  const updateField = (field: ScheduleExamField, value: string) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
+    setErrors((previous) => {
+      if (!previous[field]) return previous;
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const validation = validateScheduleExamForm(
+      formData,
+      selectedPeriod,
+      selectedComponent
+    );
+    if (Object.keys(validation).length > 0) {
+      event.preventDefault();
+      setErrors(validation);
+      return;
+    }
+    setErrors({});
+    onSubmit(event);
+  };
+
+  const errorMessage = (field: ScheduleExamField) =>
+    errors[field]
+      ? t(`exams.scheduleModal.validation.${field}`, {
+          defaultValue: errors[field],
+        })
+      : undefined;
 
   return (
     <FeatureModalShell
@@ -127,7 +192,7 @@ export function ScheduleExamModal({
         </div>
       }
     >
-      <form id="schedule-exam-form" onSubmit={onSubmit} className="p-6 sm:p-8 space-y-5">
+      <form id="schedule-exam-form" onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
         <div className="space-y-1.5">
           <label htmlFor="exam-period" className={fieldLabel}>
             {t("exams.scheduleModal.academicPeriod")}
@@ -140,6 +205,7 @@ export function ScheduleExamModal({
               value={formData.periodId}
               onChange={(e) => onPeriodChange(e.target.value)}
               className={fieldInput}
+              aria-invalid={Boolean(errors.periodId)}
               required
             >
               <option value="">{t("exams.scheduleModal.selectPeriod")}</option>
@@ -165,6 +231,11 @@ export function ScheduleExamModal({
               )}
             </div>
           )}
+          {errorMessage("periodId") && (
+            <p className="text-xs font-semibold text-rose-600" role="alert">
+              {errorMessage("periodId")}
+            </p>
+          )}
         </div>
 
         {selectedPeriod && (
@@ -179,6 +250,7 @@ export function ScheduleExamModal({
                   value={formData.examComponentId}
                   onChange={(e) => onComponentChange(e.target.value)}
                   className={fieldInput}
+                  aria-invalid={Boolean(errors.examComponentId)}
                   required
                 >
                   <option value="">{t("exams.scheduleModal.selectComponent")}</option>
@@ -194,6 +266,11 @@ export function ScheduleExamModal({
                 <p className="text-xs font-medium text-slate-500">
                   {t("exams.scheduleModal.datesHint")}
                 </p>
+                {errorMessage("examComponentId") && (
+                  <p className="text-xs font-semibold text-rose-600" role="alert">
+                    {errorMessage("examComponentId")}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-sm text-slate-500 font-medium rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -225,11 +302,17 @@ export function ScheduleExamModal({
             id="exam-title"
             type="text"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e) => updateField("title", e.target.value)}
             placeholder={t("exams.scheduleModal.titlePlaceholder")}
             className={fieldInput}
+            aria-invalid={Boolean(errors.title)}
             required
           />
+          {errorMessage("title") && (
+            <p className="text-xs font-semibold text-rose-600" role="alert">
+              {errorMessage("title")}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -237,9 +320,10 @@ export function ScheduleExamModal({
             id="exam-start"
             label={t("exams.scheduleModal.start")}
             value={formData.startDate}
-            onChange={(startDate) => setFormData({ ...formData, startDate })}
+            onChange={(startDate) => updateField("startDate", startDate)}
             min={periodMin}
             max={periodMax}
+            error={errorMessage("startDate")}
             hint={
               selectedPeriod
                 ? t("exams.scheduleModal.withinPeriod", { label: selectedPeriod.label })
@@ -250,9 +334,10 @@ export function ScheduleExamModal({
             id="exam-end"
             label={t("exams.scheduleModal.end")}
             value={formData.endDate}
-            onChange={(endDate) => setFormData({ ...formData, endDate })}
+            onChange={(endDate) => updateField("endDate", endDate)}
             min={formData.startDate || periodMin}
             max={periodMax}
+            error={errorMessage("endDate")}
           />
         </div>
 
@@ -261,9 +346,10 @@ export function ScheduleExamModal({
           label={t("exams.scheduleModal.gradeDeadline")}
           value={formData.gradeSubmissionDeadline}
           onChange={(gradeSubmissionDeadline) =>
-            setFormData({ ...formData, gradeSubmissionDeadline })
+            updateField("gradeSubmissionDeadline", gradeSubmissionDeadline)
           }
           min={formData.endDate || formData.startDate || periodMin}
+          error={errorMessage("gradeSubmissionDeadline")}
         />
 
         <div className="space-y-1.5">
@@ -275,11 +361,17 @@ export function ScheduleExamModal({
             type="number"
             min={1}
             value={formData.duration}
-            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+            onChange={(e) => updateField("duration", e.target.value)}
             placeholder="120"
             className={fieldInput}
+            aria-invalid={Boolean(errors.duration)}
             required
           />
+          {errorMessage("duration") && (
+            <p className="text-xs font-semibold text-rose-600" role="alert">
+              {errorMessage("duration")}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -289,7 +381,12 @@ export function ScheduleExamModal({
           <select
             id="exam-delivery-mode"
             value={formData.deliveryMode}
-            onChange={(e) => setFormData({ ...formData, deliveryMode: e.target.value })}
+            onChange={(e) =>
+              setFormData((previous) => ({
+                ...previous,
+                deliveryMode: e.target.value,
+              }))
+            }
             className={fieldInput}
           >
             <option value="ONLINE">{t("exams.scheduleModal.deliveryModeOnline")}</option>
@@ -305,9 +402,10 @@ export function ScheduleExamModal({
           id="exam-paper-due"
           label={t("exams.scheduleModal.paperDeadline")}
           value={formData.paperDueAt}
-          onChange={(paperDueAt) => setFormData({ ...formData, paperDueAt })}
+          onChange={(paperDueAt) => updateField("paperDueAt", paperDueAt)}
           max={formData.startDate || undefined}
           hint={t("exams.scheduleModal.paperDeadlineHint")}
+          error={errorMessage("paperDueAt")}
         />
       </form>
     </FeatureModalShell>

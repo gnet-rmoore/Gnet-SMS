@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { GoogleGenAI, Type } from "@google/genai";
 import { academicService } from "../services/academicService";
 import { assertTeacherTeachesSyllabusPair } from "../lib/syllabusTeachingScope";
+import { getAcademicCatalogScope } from "../lib/academicCatalogScope";
 import { syllabusPayloadHasContentChanges } from "../lib/syllabusCalendarValidation";
 import prisma from "../lib/prisma";
 
@@ -182,10 +183,20 @@ export const academicController = {
     const page = req.query.page ? Number(req.query.page) : undefined;
     const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
     try {
-      const result = await academicService.getGradeLevels(schoolId, page, pageSize);
+      const scopedRole = ["TEACHER", "STUDENT"].includes(req.user.role);
+      const scope = scopedRole
+        ? await getAcademicCatalogScope(req.user.id, schoolId, req.user.role)
+        : undefined;
+      const result = await academicService.getGradeLevels(
+        schoolId,
+        page,
+        pageSize,
+        scope?.gradeLevelIds
+      );
       res.json(result);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch grade levels" });
+    } catch (err: any) {
+      console.error("getGradeLevels error:", err);
+      res.status(502).json({ error: err.message || "Failed to fetch grade levels" });
     }
   },
 
@@ -244,10 +255,20 @@ export const academicController = {
     const page = req.query.page ? Number(req.query.page) : undefined;
     const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
     try {
-      const result = await academicService.getSubjects(schoolId, page, pageSize);
+      const scopedRole = ["TEACHER", "STUDENT"].includes(req.user.role);
+      const scope = scopedRole
+        ? await getAcademicCatalogScope(req.user.id, schoolId, req.user.role)
+        : undefined;
+      const result = await academicService.getSubjects(
+        schoolId,
+        page,
+        pageSize,
+        scope?.subjectIds
+      );
       res.json(result);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch subjects" });
+    } catch (err: any) {
+      console.error("getSubjects error:", err);
+      res.status(502).json({ error: err.message || "Failed to fetch subjects" });
     }
   },
 

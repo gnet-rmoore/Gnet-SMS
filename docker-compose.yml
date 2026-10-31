@@ -61,8 +61,9 @@ services:
     environment:
       MINIO_ROOT_USER: smsminio
       MINIO_ROOT_PASSWORD: smsminio-secret
-      # Production: replace "*" with explicit approved origins (e.g. https://sms.example.com)
-      MINIO_API_CORS_ALLOW_ORIGIN: "${APP_URL}"
+      # Presigned uploads are authorized by their signature; CORS only controls
+      # whether the browser can issue the request. Override to restrict origins.
+      MINIO_API_CORS_ALLOW_ORIGIN: "${MINIO_API_CORS_ALLOW_ORIGIN:-*}"
     ports:
       - "127.0.0.1:9000:9000"  # Internal only via SSH tunnel; not exposed to public internet
       - "127.0.0.1:9001:9001"  # Console localhost-only
@@ -379,6 +380,7 @@ services:
       SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       RECEIPT_HMAC_SECRET: ${RECEIPT_HMAC_SECRET}
+      ACADEMIC_URL: http://academic:3015
       IDENTITY_URL: http://identity:3011
       STAFF_URL: http://staff:3013
       LIFECYCLE_URL: http://lifecycle:3010
@@ -396,6 +398,8 @@ services:
         condition: service_healthy
       db-roles:
         condition: service_completed_successfully
+      academic:
+        condition: service_started
       minio:
         condition: service_started
       minio-init:

@@ -5,6 +5,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { EXPENSE_CATEGORIES } from "../categoryStyles";
 
 export type BudgetFormModalProps = {
@@ -87,12 +88,11 @@ export function BudgetFormModal({
           </div>
           <div className="space-y-1.5">
             <label className={fieldLabel}>{t("expenses.budget.allocatedLabel")}</label>
-            <input
-              type="number"
+            <MoneyInput
               required
               value={budgetForm.allocated}
-              onChange={(e) =>
-                setBudgetForm?.({ ...budgetForm, allocated: e.target.value })
+              onValueChange={(allocated) =>
+                setBudgetForm?.({ ...budgetForm, allocated })
               }
               placeholder="0"
               className={`${fieldInput} font-mono`}

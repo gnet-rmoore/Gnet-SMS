@@ -5,6 +5,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import { MoneyInput } from "../../../components/MoneyInput";
 import { EXPENSE_CATEGORIES } from "../categoryStyles";
 
 export type ExpenseFormModalProps = {
@@ -88,13 +89,11 @@ export function ExpenseFormModal({
           </div>
           <div className="space-y-1.5">
             <label className={fieldLabel}>{t("expenses.form.amountLabel")}</label>
-            <input
-              type="number"
-              step="0.01"
+            <MoneyInput
               required
               value={formData.amount}
-              onChange={(e) =>
-                setFormData?.({ ...formData, amount: e.target.value })
+              onValueChange={(amount) =>
+                setFormData?.({ ...formData, amount })
               }
               placeholder="0.00"
               className={`${fieldInput} font-mono`}

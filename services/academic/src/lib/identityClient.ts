@@ -28,6 +28,8 @@ export type IdentityUserRef = {
   name: string;
   email: string;
   role?: string;
+  schoolId?: string | null;
+  gradeLevelId?: string | null;
   photoUrl?: string | null;
   signatureUrl?: string | null;
 };
