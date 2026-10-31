@@ -27,6 +27,8 @@
     "test:registration-email-policy": "tsx tests/registration-email-policy.test.ts",
     "test:super-admin-credentials": "tsx tests/super-admin-credentials.test.ts",
     "test:db-maintenance": "tsx tests/db-maintenance.test.ts",
+    "disk:check": "node scripts/disk-space-guard.js",
+    "disk:shell": "bash scripts/check-disk-space.sh",
     "test:entitlements": "tsx tests/entitlements-enforcement.test.ts",
     "test:deferred-entitlements": "tsx tests/deferred-entitlements.test.ts",
     "test:audit-logs": "tsx tests/audit-system-logs.test.ts",
