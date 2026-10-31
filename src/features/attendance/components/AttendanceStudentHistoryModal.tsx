@@ -160,7 +160,7 @@ export function AttendanceStudentHistoryModal({
       }
     >
       <div className="space-y-6 p-5 sm:p-7">
-        <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+        <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
               {t("attendance.classroomFallback")}
