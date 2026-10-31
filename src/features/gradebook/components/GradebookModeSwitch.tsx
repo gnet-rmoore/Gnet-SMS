@@ -7,11 +7,13 @@ export function GradebookModeSwitch({
   onChange,
   examLabel,
   assessmentLabel,
+  showExams = true,
 }: {
   mode: GradebookMode;
   onChange: (mode: GradebookMode) => void;
   examLabel: string;
   assessmentLabel: string;
+  showExams?: boolean;
 }) {
   return (
     <div
@@ -22,7 +24,7 @@ export function GradebookModeSwitch({
       {(
         [
           { id: "assessment" as const, label: assessmentLabel, primary: true },
-          { id: "exams" as const, label: examLabel, primary: false },
+          ...(showExams ? [{ id: "exams" as const, label: examLabel, primary: false }] : []),
         ] as const
       ).map((tab) => {
         const active = mode === tab.id;

@@ -6,12 +6,14 @@ import {
   upsertAttendanceCalendarEvent,
   assertClassroomTeacherAccess,
   getTeacherClassrooms,
+  listSchoolClassrooms,
 } from "../lib/classroomClient";
 import {
   getIdentityUsersMap,
   getParentChildIds,
   getIdentitySchool,
   getStudentParentIds,
+  getUsersByRoles,
 } from "../lib/identityClient";
 import { dayBoundsFromYmd, normalizeYmd, ymdInTimeZone } from "../lib/schoolDay";
 import { notifyInAppMany } from "../lib/notifyInApp";
@@ -81,6 +83,7 @@ export const attendanceService = {
       to?: string;
       status?: string;
       studentId?: string;
+      q?: string;
     }
   ) {
     const page = Math.max(1, Number(opts?.page) || 1);
@@ -119,6 +122,46 @@ export const attendanceService = {
         return { items: [], total: 0, page, pageSize };
       }
       where.classroomId = opts.classroomId;
+    }
+    const q = opts?.q?.trim().toLowerCase();
+    if (q) {
+      const [classrooms, users] = await Promise.all([
+        listSchoolClassrooms(schoolId),
+        getUsersByRoles(schoolId, [
+          "TEACHER",
+          "CO_TEACHER",
+          "PRINCIPAL",
+          "VPI",
+          "VPA",
+          "SCHOOL_ADMIN",
+        ]),
+      ]);
+      const matchingClassroomIds = classrooms
+        .filter((classroom) => {
+          if (teacherClassroomIds && !teacherClassroomIds.includes(classroom.id)) {
+            return false;
+          }
+          return `${classroom.name || ""} ${classroom.classCode || ""}`
+            .toLowerCase()
+            .includes(q);
+        })
+        .map((classroom) => classroom.id);
+      const matchingTeacherIds = users
+        .filter((user) =>
+          `${user.name || ""} ${user.email || ""}`.toLowerCase().includes(q)
+        )
+        .map((user) => user.id);
+      if (!matchingClassroomIds.length && !matchingTeacherIds.length) {
+        return { items: [], total: 0, page, pageSize };
+      }
+      where.OR = [
+        ...(matchingClassroomIds.length
+          ? [{ classroomId: { in: matchingClassroomIds } }]
+          : []),
+        ...(matchingTeacherIds.length
+          ? [{ teacherId: { in: matchingTeacherIds } }]
+          : []),
+      ];
     }
     if (Object.keys(date).length) where.date = date;
     const status = opts?.status?.toUpperCase();

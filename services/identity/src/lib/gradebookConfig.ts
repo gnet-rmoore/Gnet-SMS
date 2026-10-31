@@ -8,7 +8,7 @@ export const gradebookCategorySchema = z
     label: z.string().optional(),
     name: z.string().optional(),
     weightPct: z.number().min(0).max(100),
-    maxScore: z.number().positive().optional(),
+    maxScore: z.number().nonnegative().optional(),
     componentType: z.string().optional(),
     id: z.string().optional(),
     isActive: z.boolean().optional(),
@@ -24,7 +24,7 @@ export type GradebookCategory = z.infer<typeof gradebookCategorySchema>;
 export type GradebookConfig = { categories: GradebookCategory[] };
 
 export function defaultMaxScoreForCategory(category: GradebookCategory): number {
-  if (typeof category.maxScore === "number" && category.maxScore > 0) {
+  if (typeof category.maxScore === "number" && category.maxScore >= 0) {
     return category.maxScore;
   }
   const code = (category.shortCode || category.code || "").toUpperCase();
@@ -41,13 +41,17 @@ export function validateGradebookConfigTotals(config: GradebookConfig): string[]
   );
   const weightTotal = active.reduce((sum, category) => sum + category.weightPct, 0);
   const maxPointsTotal = active.reduce(
-    (sum, category) => sum + defaultMaxScoreForCategory(category),
+    (sum, category) =>
+      sum +
+      (typeof category.maxScore === "number"
+        ? category.maxScore
+        : defaultMaxScoreForCategory(category)),
     0
   );
   const errors: string[] = [];
 
-  if (Math.abs(weightTotal - 100) >= 0.01) {
-    errors.push(`Active weights total ${weightTotal}%; they must equal 100%.`);
+  if (weightTotal > 100.01) {
+    errors.push(`Active weights total ${weightTotal}%; they must not exceed 100%.`);
   }
   if (maxPointsTotal > 100) {
     errors.push(`Active Max pts total ${maxPointsTotal}; it must not exceed 100.`);
@@ -57,11 +61,11 @@ export function validateGradebookConfigTotals(config: GradebookConfig): string[]
 
 export const DEFAULT_GRADEBOOK_CONFIG: GradebookConfig = {
   categories: [
-    { shortCode: "HW", label: "Homework", weightPct: 20, componentType: "HOMEWORK", isActive: true },
-    { shortCode: "QZ", label: "Quizzes", weightPct: 20, componentType: "QUIZ", isActive: true },
-    { shortCode: "CW", label: "Class Work", weightPct: 10, componentType: "CLASSWORK", isActive: true },
-    { shortCode: "MID", label: "Midterm Exam", weightPct: 20, componentType: "MIDTERM", isActive: true },
-    { shortCode: "FIN", label: "Final Exam", weightPct: 30, componentType: "FINAL", isActive: true },
+    { shortCode: "HW", label: "Homework", weightPct: 0, maxScore: 0, componentType: "HOMEWORK", isActive: true },
+    { shortCode: "QZ", label: "Quizzes", weightPct: 0, maxScore: 0, componentType: "QUIZ", isActive: true },
+    { shortCode: "CW", label: "Class Work", weightPct: 0, maxScore: 0, componentType: "CLASSWORK", isActive: true },
+    { shortCode: "MID", label: "Midterm Exam", weightPct: 0, maxScore: 0, componentType: "MIDTERM", isActive: true },
+    { shortCode: "FIN", label: "Final Exam", weightPct: 0, maxScore: 0, componentType: "FINAL", isActive: true },
   ],
 };
 

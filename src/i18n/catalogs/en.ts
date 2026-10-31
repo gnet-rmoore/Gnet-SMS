@@ -4350,7 +4350,7 @@ export const enPages = {
       columns: "Columns",
       activeTotal: "Active total",
       newCategoryDefault: "New category",
-      toastWeightOff: "Weights total {{total}}%. They must equal 100% to save.",
+      toastWeightOff: "Weights total {{total}}%. They must not exceed 100% to save.",
       toastStructureSaved: "Gradebook structure saved",
       toastStructureFailed: "Failed to save gradebook structure",
     },

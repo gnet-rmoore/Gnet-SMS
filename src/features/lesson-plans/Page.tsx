@@ -37,6 +37,7 @@ import { downloadLessonPlanPdf, downloadWeekPackPdf } from "./lib/lessonPlanPdf"
 import { useTranslation } from "react-i18next";
 import { ListFilterBar, ListPagination } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
+import { buildTeachingScope, isValidTeachingPair } from "../curriculum/teacherTeachingScope";
 
 type Tab = "mine" | "pending" | "all" | "library";
 
@@ -79,6 +80,34 @@ export function LessonPlansPage() {
   const [schedulePeriods, setSchedulePeriods] = useState<
     Array<{ id: string; label: string; shortCode: string; startTime: string; endTime: string }>
   >([]);
+  const teachingScope = useMemo(
+    () =>
+      isTeacher
+        ? buildTeachingScope(classrooms, user?.id, subjects, gradeLevels)
+        : null,
+    [classrooms, gradeLevels, isTeacher, subjects, user?.id]
+  );
+  const builderSubjects = useMemo(() => {
+    if (!teachingScope) return subjects;
+    return teachingScope.subjects.map((subject) => ({
+      ...subject,
+      gradeLevelId:
+        teachingScope.pairs.find((pair) => pair.subjectId === subject.id)
+          ?.gradeLevelId || "",
+    }));
+  }, [subjects, teachingScope]);
+  const builderGradeLevels = teachingScope
+    ? teachingScope.gradeLevels
+    : gradeLevels;
+  const builderClassrooms = teachingScope
+    ? classrooms.filter((room: any) =>
+        teachingScope.pairs.some(
+          (pair) =>
+            pair.subjectId === room.subjectId &&
+            pair.gradeLevelId === room.gradeLevelId
+        )
+      )
+    : classrooms;
   const [loading, setLoading] = useState(true);
   const [lookupsLoading, setLookupsLoading] = useState(false);
   const [lookupsError, setLookupsError] = useState("");
@@ -373,6 +402,23 @@ export function LessonPlansPage() {
     }
     if (!form.lessonDate) {
       showToast(t("lessonPlans.toast.selectDate", { defaultValue: "Select a lesson date before saving." }), "error");
+      return;
+    }
+    if (
+      isTeacher &&
+      (!teachingScope ||
+        !isValidTeachingPair(
+          teachingScope.pairs,
+          form.subjectId,
+          form.gradeLevelId
+        ))
+    ) {
+      showToast(
+        t("curriculum.toast.invalidTeachingPair", {
+          defaultValue: "Choose a subject and grade level you teach.",
+        }),
+        "error"
+      );
       return;
     }
     setSubmitting(true);
@@ -796,9 +842,9 @@ export function LessonPlansPage() {
             open={builderOpen}
             form={form}
             setForm={setForm}
-            subjects={subjects}
-            gradeLevels={gradeLevels}
-            classrooms={classrooms}
+            subjects={builderSubjects}
+            gradeLevels={builderGradeLevels}
+            classrooms={builderClassrooms}
             schedulePeriods={schedulePeriods}
             calendar={calendar}
             submitting={submitting}

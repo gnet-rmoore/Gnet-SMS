@@ -11,6 +11,8 @@ import { QuestionBankEditorModal } from "./QuestionBankEditorModal";
 import { QuestionBankImportModal } from "./QuestionBankImportModal";
 import { downloadQuestionTemplate } from "./parseQuestionSheet";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { workspaceApi } from "../classroom-workspace/api";
+import { buildTeachingScope } from "../curriculum/teacherTeachingScope";
 
 type Taxonomy = { id: string; name: string };
 
@@ -30,6 +32,7 @@ export default function QuestionBankPage() {
   const [loading, setLoading] = React.useState(true);
   const [subjects, setSubjects] = React.useState<Taxonomy[]>([]);
   const [grades, setGrades] = React.useState<Taxonomy[]>([]);
+  const [classrooms, setClassrooms] = React.useState<any[]>([]);
   const [search, setSearch] = React.useState("");
   const [subjectId, setSubjectId] = React.useState("");
   const [gradeLevelId, setGradeLevelId] = React.useState("");
@@ -42,6 +45,15 @@ export default function QuestionBankPage() {
   const [preview, setPreview] = React.useState<BankItem | null>(null);
 
   const isStaff = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"].includes(user?.role || "");
+  const teacherScope = React.useMemo(
+    () =>
+      user?.role === "TEACHER"
+        ? buildTeachingScope(classrooms, user.id, subjects, grades)
+        : null,
+    [classrooms, grades, subjects, user?.id, user?.role]
+  );
+  const visibleSubjects = teacherScope?.subjects || subjects;
+  const visibleGrades = teacherScope?.gradeLevels || grades;
   const canManage = (item: BankItem) =>
     isStaff &&
     (item.createdBy === user?.id ||
@@ -76,13 +88,17 @@ export default function QuestionBankPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [subs, gls] = await Promise.all([
+        const [subs, gls, rooms] = await Promise.all([
           questionBankApi.fetchSubjects(schoolId),
           questionBankApi.fetchGradeLevels(schoolId),
+          user?.role === "TEACHER"
+            ? workspaceApi.fetchMyClassrooms()
+            : Promise.resolve([]),
         ]);
         if (cancelled) return;
         setSubjects(subs);
         setGrades(gls);
+        setClassrooms(Array.isArray(rooms) ? rooms : []);
       } catch {
         // taxonomy optional
       }
@@ -90,7 +106,7 @@ export default function QuestionBankPage() {
     return () => {
       cancelled = true;
     };
-  }, [schoolId]);
+  }, [schoolId, user?.role]);
 
   const subjectName = (id: string | null) => subjects.find((s) => s.id === id)?.name || "";
   const gradeName = (id: string | null) => grades.find((g) => g.id === id)?.name || "";
@@ -187,7 +203,7 @@ export default function QuestionBankPage() {
           </div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className={fieldSelect}>
             <option value="">{t("onlineExams.questionBank.allSubjects")}</option>
-            {subjects.map((s) => (
+            {visibleSubjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -195,7 +211,7 @@ export default function QuestionBankPage() {
           </select>
           <select value={gradeLevelId} onChange={(e) => setGradeLevelId(e.target.value)} className={fieldSelect}>
             <option value="">{t("onlineExams.questionBank.allGrades")}</option>
-            {grades.map((g) => (
+            {visibleGrades.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
               </option>
@@ -330,8 +346,8 @@ export default function QuestionBankPage() {
         <QuestionBankImportModal
           open={importOpen}
           schoolId={schoolId}
-          subjects={subjects}
-          grades={grades}
+          subjects={visibleSubjects}
+          grades={visibleGrades}
           initialSubjectId={subjectId}
           initialGradeLevelId={gradeLevelId}
           onClose={() => setImportOpen(false)}

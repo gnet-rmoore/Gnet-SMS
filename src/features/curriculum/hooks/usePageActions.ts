@@ -251,11 +251,21 @@ export function usePageActions(deps: PageActionsDeps) {
         );
       } else {
         const errData = await res.json();
-        showToast(errData.error || t("curriculum.toast.syllabusSubmitFailed"), "error");
+        showToast(
+          errData.error ||
+            errData.message ||
+            t("curriculum.toast.syllabusSubmitFailed"),
+          "error"
+        );
       }
     } catch (err) {
       console.error(err);
-      showToast(t("curriculum.toast.syllabusSubmitFailed"), "error");
+      showToast(
+        err instanceof Error
+          ? err.message
+          : t("curriculum.toast.syllabusSubmitFailed"),
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }

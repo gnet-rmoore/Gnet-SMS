@@ -22,7 +22,7 @@ const structureColumnSchema = z
     name: z.string().optional(),
     weightPct: z.number().min(0).max(100),
     componentType: z.string().optional(),
-    maxScore: z.number().positive().optional(),
+    maxScore: z.number().nonnegative().optional(),
     isActive: z.boolean().optional(),
   })
   .refine((c) => !!(c.shortCode || c.code), { message: "shortCode or code required" });
@@ -79,7 +79,7 @@ export function normalizeStructureColumns(
     } as AssessmentStructureColumn;
     return {
       ...col,
-      maxScore: col.maxScore || defaultMaxScoreForColumn(col),
+      maxScore: typeof col.maxScore === "number" ? col.maxScore : defaultMaxScoreForColumn(col),
     };
   }) as AssessmentStructureColumn[];
 }
@@ -116,7 +116,7 @@ export function structureFromGradebookTemplate(
     } as AssessmentStructureColumn;
     return {
       ...col,
-      maxScore: col.maxScore || defaultMaxScoreForColumn(col),
+      maxScore: typeof col.maxScore === "number" ? col.maxScore : defaultMaxScoreForColumn(col),
     };
   }) as AssessmentStructureColumn[];
 }
@@ -244,7 +244,7 @@ export function legendCategoryForColumn(column: AssessmentStructureColumn): stri
 
 /** Default max points per column when not configured (teachers enter points earned, not %). */
 export function defaultMaxScoreForColumn(column: AssessmentStructureColumn): number {
-  if (typeof column.maxScore === "number" && column.maxScore > 0) {
+  if (typeof column.maxScore === "number" && column.maxScore >= 0) {
     return column.maxScore;
   }
   const code = (column.shortCode || column.code || "").toUpperCase();

@@ -547,7 +547,7 @@ export function EnrollmentPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-3">
+          <div className="rounded-[32px] border border-slate-200 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-3">
             <ListFilterBar
               fields={[]}
               q={studentFilters.q}

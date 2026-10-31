@@ -73,7 +73,12 @@ export function LessonPlanBuilder({
 }: Props) {
   const { t } = useTranslation(["pages", "common"]);
   const b = (key: string, opts?: Record<string, unknown>) =>
-    t(`lessonPlans.components.builder.${key}`, opts as any) as string;
+    t(`lessonPlans.components.builder.${key}`, {
+      defaultValue: key
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/^./, (letter) => letter.toUpperCase()),
+      ...(opts || {}),
+    }) as string;
 
   const calendarPeriods = useMemo(
     () => normalizeCalendarPeriods(calendar?.periods),
@@ -91,7 +96,10 @@ export function LessonPlanBuilder({
   if (!open) return null;
 
   const subjectRooms = classrooms.filter(
-    (c) => c.subjectId && (!form.subjectId || c.subjectId === form.subjectId)
+    (c) =>
+      c.subjectId &&
+      (!form.subjectId || c.subjectId === form.subjectId) &&
+      (!form.gradeLevelId || c.gradeLevelId === form.gradeLevelId)
   );
 
   const updateObjective = (idx: number, value: string) => {
@@ -120,7 +128,7 @@ export function LessonPlanBuilder({
       subtitle={b("subtitle")}
       onClose={onClose}
       wide
-      maxWidthClass="max-w-5xl"
+      maxWidthClass="max-w-7xl"
       footer={
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <button
@@ -177,8 +185,10 @@ export function LessonPlanBuilder({
         {!form.subjectId || !form.lessonDate ? (
           <p className="text-sm text-amber-800" role="status">
             {!form.subjectId
-              ? b("selectSubjectToSave")
-              : b("selectDateToSave")}
+            ? b("selectSubjectToSave", {
+                defaultValue: "Select a subject to save this lesson plan.",
+              })
+            : b("selectDateToSave")}
           </p>
         ) : null}
         <section className="space-y-4">
@@ -428,7 +438,7 @@ export function LessonPlanBuilder({
               key={idx}
               className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_8rem_auto] gap-3 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_auto] gap-4 items-end">
                 <label className="block min-w-0">
                   <span className={label}>{b("activityTitle")}</span>
                   <input
@@ -438,20 +448,25 @@ export function LessonPlanBuilder({
                     placeholder={b("stepTitle", { n: idx + 1 })}
                   />
                 </label>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className={label}>{b("minutes")}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    className={field}
-                    value={act.minutes ?? ""}
-                    onChange={(e) =>
-                      updateActivity(idx, {
-                        minutes: e.target.value === "" ? null : Number(e.target.value),
-                      })
-                    }
-                    aria-label={b("minutes")}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      className={`${field} pr-14 text-right tabular-nums`}
+                      value={act.minutes ?? ""}
+                      onChange={(e) =>
+                        updateActivity(idx, {
+                          minutes: e.target.value === "" ? null : Number(e.target.value),
+                        })
+                      }
+                      aria-label={b("minutes")}
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-4 inline-flex items-center text-xs font-bold text-slate-400">
+                      min
+                    </span>
+                  </div>
                 </label>
                 {form.activities.length > 1 && (
                   <button

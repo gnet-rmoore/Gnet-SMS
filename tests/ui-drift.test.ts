@@ -51,7 +51,7 @@ function countMatches(files: string[], re: RegExp): { total: number; samples: st
   let total = 0;
   const samples: string[] = [];
   for (const file of files) {
-    const rel = path.relative(root, file);
+    const rel = path.relative(root, file).replace(/\\/g, "/");
     if (ALLOWLIST_PATH_RE.test(rel)) continue;
     const text = fs.readFileSync(file, "utf8");
     const hits = text.match(re);

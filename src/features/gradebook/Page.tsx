@@ -75,9 +75,29 @@ export const Gradebook = () => {
 
   const [hubMode, setHubMode] = useState<HubMode>(() => {
     const m = searchParams.get("mode");
-    if (m === "exam" || searchParams.get("examId")) return "exams";
+    if (
+      user?.role !== "TEACHER" &&
+      (m === "exam" || searchParams.get("examId"))
+    ) return "exams";
     return "assessment";
   });
+  useEffect(() => {
+    if (user?.role !== "TEACHER") return;
+    setHubMode("assessment");
+    setSelectedExamId(null);
+    setSelectedClassId(null);
+    setExamClassrooms([]);
+    setExamMeta(null);
+    setRows([]);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      const isExamLink = next.get("mode") === "exam" || next.has("examId");
+      next.delete("examId");
+      if (isExamLink) next.delete("classId");
+      if (next.get("mode") === "exam") next.set("mode", "assessment");
+      return next;
+    }, { replace: true });
+  }, [user?.role, setSearchParams]);
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState<any[]>([]);
   const [examClassrooms, setExamClassrooms] = useState<any[]>([]);
@@ -173,7 +193,7 @@ export const Gradebook = () => {
   }, [loadHub]);
 
   const openExamClass = async (examId: string, classId: string) => {
-    if (!school?.id) return;
+    if (!school?.id || user?.role === "TEACHER") return;
     setSelectedExamId(examId);
     setSelectedClassId(classId);
     setSearchParams({ examId, classId });
@@ -639,6 +659,7 @@ export const Gradebook = () => {
 
   // Deep-link open
   useEffect(() => {
+    if (user?.role === "TEACHER") return;
     const examId = searchParams.get("examId");
     const classId = searchParams.get("classId");
     const mode = searchParams.get("mode");
@@ -655,7 +676,7 @@ export const Gradebook = () => {
       void openExamClass(examId, classId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendar]);
+  }, [calendar, user?.role]);
 
   const showExamSheet = selectedExamId && selectedClassId && rows.length >= 0 && examMeta;
   const showAssessmentSheet =
@@ -736,6 +757,7 @@ export const Gradebook = () => {
             onChange={setHubMode}
             examLabel={t("gradebook.modeByExam")}
             assessmentLabel={t("gradebook.modeByAssessment", { defaultValue: "By assessment" })}
+            showExams={user?.role !== "TEACHER"}
           />
 
           <PendingSyncBanner

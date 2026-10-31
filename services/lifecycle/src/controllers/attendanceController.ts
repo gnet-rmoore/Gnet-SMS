@@ -19,6 +19,7 @@ export const attendanceController = {
           to: req.query.to as string | undefined,
           status: req.query.status as string | undefined,
           studentId: req.query.studentId as string | undefined,
+          q: req.query.q as string | undefined,
         }
       );
       res.json(attendance);

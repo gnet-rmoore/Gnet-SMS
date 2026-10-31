@@ -7,6 +7,7 @@ export type AttendanceFilters = {
   to?: string;
   status?: string;
   studentId?: string;
+  q?: string;
 };
 
 export const attendanceApi = {

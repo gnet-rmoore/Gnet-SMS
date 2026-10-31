@@ -3,6 +3,7 @@ import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
 import { Button } from "../../../components/ui";
 import { attendanceApi } from "../api";
 import { useTranslation } from "react-i18next";
+import { formatAttendanceDate } from "../date";
 
 type AttendanceSession = {
   id: string;
@@ -151,62 +152,65 @@ export function AttendanceStudentHistoryModal({
       eyebrow={t("attendance.history.eyebrow", { defaultValue: "History" })}
       onClose={onClose}
       wide
+      maxWidthClass="max-w-6xl"
       footer={
         <Button type="button" variant="secondary" className="w-full" onClick={onClose}>
           {t("common:close")}
         </Button>
       }
     >
-      <div className="space-y-5">
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            {t("attendance.classroomFallback")}
-            <select
-              value={classroomId}
-              onChange={(event) => setClassroomId(event.target.value)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-            >
-              <option value="">{t("common:all")}</option>
-              {classrooms.map((classroom) => (
-                <option key={classroom.id} value={classroom.id}>
-                  {classroom.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            {t("attendance.history.status", { defaultValue: "Status" })}
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-            >
-              <option value="">{t("common:all")}</option>
-              {["PRESENT", "LATE", "ABSENT", "EXCUSED"].map((value) => (
-                <option key={value} value={value}>
-                  {t(`attendance.markStatus.${value}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            {t("attendance.history.from", { defaultValue: "From" })}
-            <input
-              type="date"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
-            {t("attendance.history.to", { defaultValue: "To" })}
-            <input
-              type="date"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-            />
-          </label>
+      <div className="space-y-6 p-5 sm:p-7">
+        <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              {t("attendance.classroomFallback")}
+              <select
+                value={classroomId}
+                onChange={(event) => setClassroomId(event.target.value)}
+                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              >
+                <option value="">{t("common:all")}</option>
+                {classrooms.map((classroom) => (
+                  <option key={classroom.id} value={classroom.id}>
+                    {classroom.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              {t("attendance.history.status", { defaultValue: "Status" })}
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              >
+                <option value="">{t("common:all")}</option>
+                {["PRESENT", "LATE", "ABSENT", "EXCUSED"].map((value) => (
+                  <option key={value} value={value}>
+                    {t(`attendance.markStatus.${value}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              {t("attendance.history.from", { defaultValue: "From" })}
+              <input
+                type="date"
+                value={from}
+                onChange={(event) => setFrom(event.target.value)}
+                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+              {t("attendance.history.to", { defaultValue: "To" })}
+              <input
+                type="date"
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              />
+            </label>
+          </div>
         </section>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -272,7 +276,11 @@ export function AttendanceStudentHistoryModal({
                   return (
                     <tr key={session.id}>
                       <td className="whitespace-nowrap px-4 py-3">
-                        {new Date(session.date).toLocaleDateString()}
+                        {formatAttendanceDate(session.date, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </td>
                       <td className="px-4 py-3">{session.classroom?.name || "—"}</td>
                       <td className="px-4 py-3">

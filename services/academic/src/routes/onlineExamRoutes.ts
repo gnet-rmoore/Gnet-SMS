@@ -24,6 +24,7 @@ const router = express.Router();
 
 const EXAM_READ_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"];
 const EXAM_WRITE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"];
+const EXAM_AUTHOR_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"];
 
 const RL_ENABLED = process.env.EXAM_RATE_LIMIT_ENABLED === "true";
 async function rlOrPass(key: string, limit: number, windowSec: number, req: any, res: any) {
@@ -111,7 +112,7 @@ router.get(
 router.patch(
   "/api/exams/:id/online-config",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(EXAM_AUTHOR_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   validateBody(onlineExamConfigSchema),
   onlineExamController.updateOnlineConfig
@@ -145,7 +146,7 @@ router.post(
 router.put(
   "/api/exams/:id/questions",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(EXAM_AUTHOR_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   validateBody(onlineExamQuestionsSchema),
   onlineExamController.replaceQuestions
@@ -154,7 +155,7 @@ router.put(
 router.post(
   "/api/exams/:id/questions/import/preview",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(EXAM_AUTHOR_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   validateBody(questionImportRowsSchema),
   onlineExamController.previewQuestionImport
@@ -163,7 +164,7 @@ router.post(
 router.post(
   "/api/exams/:id/questions/import",
   authenticate,
-  requireRoles(EXAM_WRITE_ROLES),
+  requireRoles(EXAM_AUTHOR_ROLES),
   requireResourceTenant(resourceLoaders.exam),
   validateBody(questionImportRowsSchema),
   onlineExamController.importQuestions

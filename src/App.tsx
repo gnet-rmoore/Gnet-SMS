@@ -444,7 +444,7 @@ export default function App() {
                   <Route
                     path="exams/:examId/online"
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI"]}>
                         <OnlineExamAuthor />
                       </ProtectedRoute>
                     }

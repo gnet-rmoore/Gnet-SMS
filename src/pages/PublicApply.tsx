@@ -355,11 +355,11 @@ export default function PublicApplyPage() {
                 <img
                   src={school.logoUrl}
                   alt=""
-                  className="w-12 h-12 rounded-2xl object-cover shadow-sm"
+                  className="w-12 h-12 rounded-2xl object-cover shadow-[0_1px_2px_rgb(15,23,42,0.12)]"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-[0_1px_2px_rgb(15,23,42,0.12)]">
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
               )}
@@ -384,7 +384,7 @@ export default function PublicApplyPage() {
                 }}
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
                   applicantType === "NEW"
-                    ? "bg-indigo-600 text-white shadow-sm"
+                    ? "bg-indigo-600 text-white shadow-[0_1px_2px_rgb(15,23,42,0.12)]"
                     : "text-white/85 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -400,7 +400,7 @@ export default function PublicApplyPage() {
                 }}
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
                   applicantType === "RETURNING"
-                    ? "bg-indigo-600 text-white shadow-sm"
+                    ? "bg-indigo-600 text-white shadow-[0_1px_2px_rgb(15,23,42,0.12)]"
                     : "text-white/85 hover:bg-white/10 hover:text-white"
                 }`}
               >

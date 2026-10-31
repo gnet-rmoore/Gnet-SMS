@@ -30,7 +30,10 @@ import {
   createTeacherSyllabusFormDefaults,
   defaultSyllabusFormShell,
 } from "./teacherTeachingScope";
-import { syllabusFormFromPlan } from "../academics-shared/syllabusCalendar";
+import {
+  attachCalendarToSyllabusForm,
+  syllabusFormFromPlan,
+} from "../academics-shared/syllabusCalendar";
 import { ListFilterBar, ListPagination } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
 
@@ -189,6 +192,58 @@ export const Curriculum = () => {
     return buildTeachingScope(classrooms, user?.id, subjects, gradeLevels);
   }, [isTeacherSyllabusScope, classrooms, user?.id, subjects, gradeLevels]);
 
+  const visibleCurriculumClassrooms = useMemo(() => {
+    if (!isTeacherSyllabusScope || !user?.id || !teachingScope) return classrooms;
+    const assigned = classrooms.filter((classroom: any) => {
+      if (classroom.ownerTeacherId === user.id) return true;
+      return classroom.members?.some(
+        (member: any) =>
+          member.userId === user.id &&
+          ["TEACHER", "CO_TEACHER"].includes(member.role)
+      );
+    });
+    const allowedPairs = new Set(
+      teachingScope.pairs.map((pair) => `${pair.subjectId}:${pair.gradeLevelId}`)
+    );
+    return assigned.filter(
+      (classroom: any) =>
+        !classroom.subjectId ||
+        allowedPairs.has(`${classroom.subjectId}:${classroom.gradeLevelId}`)
+    );
+  }, [classrooms, isTeacherSyllabusScope, teachingScope, user?.id]);
+
+  const visibleCurriculumSubjects = useMemo(() => {
+    if (!isTeacherSyllabusScope || !teachingScope) return subjects;
+    const allowed = new Set(teachingScope.subjects.map((subject) => subject.id));
+    return subjects.filter((subject) => allowed.has(subject.id));
+  }, [isTeacherSyllabusScope, subjects, teachingScope]);
+
+  const visibleCurriculumGradeLevels = useMemo(() => {
+    if (!isTeacherSyllabusScope || !teachingScope) return gradeLevels;
+    const assignedGradeIds = new Set([
+      ...teachingScope.gradeLevels.map((grade) => grade.id),
+      ...visibleCurriculumClassrooms
+        .map((classroom: any) => classroom.gradeLevelId)
+        .filter(Boolean),
+    ]);
+    return gradeLevels.filter((grade) => assignedGradeIds.has(grade.id));
+  }, [
+    gradeLevels,
+    isTeacherSyllabusScope,
+    teachingScope,
+    visibleCurriculumClassrooms,
+  ]);
+
+  const visibleCurriculumOfferings = useMemo(() => {
+    if (!isTeacherSyllabusScope || !teachingScope) return offerings;
+    const allowed = new Set(
+      teachingScope.pairs.map((pair) => `${pair.subjectId}:${pair.gradeLevelId}`)
+    );
+    return offerings.filter((offering: any) =>
+      allowed.has(`${offering.subjectId}:${offering.gradeLevelId}`)
+    );
+  }, [isTeacherSyllabusScope, offerings, teachingScope]);
+
   const openNewSyllabusModal = useCallback(() => {
     setEditingSyllabusId(null);
     if (isTeacherSyllabusScope && teachingScope) {
@@ -198,6 +253,27 @@ export const Curriculum = () => {
     }
     setShowSyllabusModal(true);
   }, [isTeacherSyllabusScope, teachingScope, subjects, gradeLevels, calendar]);
+
+  useEffect(() => {
+    if (
+      !showSyllabusModal ||
+      editingSyllabusId ||
+      !calendar?.id ||
+      syllabusForm.calendarPatternId
+    ) {
+      return;
+    }
+
+    setSyllabusForm((current) => {
+      return attachCalendarToSyllabusForm(current, calendar);
+    });
+  }, [
+    calendar,
+    editingSyllabusId,
+    setSyllabusForm,
+    showSyllabusModal,
+    syllabusForm.calendarPatternId,
+  ]);
 
   const openEditSyllabusModal = useCallback(
     (plan: SyllabusPlan) => {
@@ -304,7 +380,7 @@ export const Curriculum = () => {
   const filters = useListFilters({ fields: filterFields, syncUrl: true, defaultPageSize: 12 });
 
   const normalizedQuery = filters.committedQ.trim().toLowerCase();
-  const filteredSubjects = subjects.filter(
+  const filteredSubjects = visibleCurriculumSubjects.filter(
     (sub) =>
       !normalizedQuery ||
       sub.name.toLowerCase().includes(normalizedQuery) ||
@@ -313,7 +389,7 @@ export const Curriculum = () => {
 
   const totalSyllabi = syllabi.length;
   const totalSubjects = filteredSubjects.length;
-  const totalGradeLevels = gradeLevels.length;
+  const totalGradeLevels = visibleCurriculumGradeLevels.length;
   const totalClassrooms = classrooms.length;
 
   return (
@@ -373,10 +449,10 @@ export const Curriculum = () => {
           activeDropdown={activeDropdown}
           activeView={activeView}
           canManage={canManage}
-          classrooms={classrooms}
-          offerings={offerings}
+          classrooms={visibleCurriculumClassrooms}
+          offerings={visibleCurriculumOfferings}
           filteredSubjects={filteredSubjects}
-          gradeLevels={gradeLevels}
+          gradeLevels={visibleCurriculumGradeLevels}
           handleBackfillCurriculumLinks={handleBackfillCurriculumLinks}
           handleDeleteGradeLevel={handleDeleteGradeLevel}
           handleDeleteSubject={handleDeleteSubject}
@@ -472,7 +548,7 @@ submitting={submitting}
             setNewClassGroupName={setNewClassGroupName}
             setNewClassGroupTeacherId={setNewClassGroupTeacherId}
             setShowManageSubjectsModal={setShowManageSubjectsModal}
-            subjects={subjects}
+            subjects={visibleCurriculumSubjects}
             submitting={submitting}
             teachers={teachers}
           />
@@ -548,4 +624,3 @@ submitting={submitting}
     </div>
   );
 };
-

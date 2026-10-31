@@ -89,11 +89,13 @@ export function GradingSettingsTab({
     (sum, col) =>
       sum +
       (col.isActive
-        ? defaultMaxScoreForColumn(col)
+        ? typeof col.maxScore === "number"
+          ? col.maxScore
+          : defaultMaxScoreForColumn(col)
         : 0),
     0
   );
-  const weightIsValid = Math.abs(totalWeight - 100) < 0.01;
+  const weightIsValid = totalWeight <= 100.01;
   const maxPointsAreValid = totalMaxPoints <= 100;
 
   return (
@@ -277,8 +279,8 @@ export function GradingSettingsTab({
                       id,
                       name: g("newCategoryDefault"),
                       code: "NEW",
+                      maxScore: 0,
                       weightPct: 0,
-                      maxScore: 10,
                       isActive: true,
                     },
                   ]);
@@ -367,14 +369,14 @@ export function GradingSettingsTab({
                       <td className={`${dataTableClass.td} w-24`}>
                         <input
                           type="number"
-                          min={1}
+                          min={0}
                           max={500}
                           value={col.maxScore ?? defaultMaxScoreForColumn(col)}
                           onChange={(e) => {
                             const next = [...gradebookColumns];
                             next[idx] = {
                               ...next[idx],
-                              maxScore: Number(e.target.value) || 10,
+                              maxScore: e.target.value === "" ? 0 : Number(e.target.value),
                             };
                             setGradebookColumns(next);
                           }}
@@ -447,7 +449,7 @@ export function GradingSettingsTab({
                           : "bg-amber-50 text-amber-700"
                       }`}
                     >
-                      {Math.round(totalWeight * 100) / 100}% / 100%
+                      {Math.round(totalWeight * 100) / 100}% / 100% max
                     </span>
                     <span
                       className={`px-3 py-1 rounded-lg font-mono font-extrabold text-sm ${
@@ -466,6 +468,7 @@ export function GradingSettingsTab({
                         showToast(
                           g("toastWeightOff", {
                             total: Math.round(totalWeight * 100) / 100,
+                            defaultValue: `Active weights total ${Math.round(totalWeight * 100) / 100}%; they must not exceed 100%.`,
                           }),
                           "error"
                         );
@@ -476,7 +479,7 @@ export function GradingSettingsTab({
                           g("toastMaxPointsOff", {
                             total: totalMaxPoints,
                             max: 100,
-                            defaultValue: `Max pts total ${totalMaxPoints}; it must not exceed 100.`,
+                            defaultValue: `Active Max pts total ${totalMaxPoints}; they must not exceed 100.`,
                           }),
                           "error"
                         );
@@ -520,7 +523,7 @@ export function GradingSettingsTab({
                 <p className="text-xs leading-relaxed text-slate-500">
                   {g("maxPointsHint", {
                     defaultValue:
-                      "Active Max pts are raw score caps and must total 100 or less. Active weights are percentages and must total exactly 100%.",
+                  "Enter Max pts and weights for each active assessment. Each total may be less than 100, but neither may exceed 100.",
                   })}
                 </p>
               </div>

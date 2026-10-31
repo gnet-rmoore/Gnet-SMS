@@ -104,15 +104,27 @@ assert(
 assert(
   validateGradebookConfigTotals({
     categories: [
-      { code: "HW", weightPct: 100, maxScore: 80, isActive: true },
+      { code: "HW", weightPct: 40, maxScore: 80, isActive: true },
     ],
   }).length === 0,
-  "allows Max pts totals below 100 when weights total 100%"
+  "allows both weights and Max pts totals below 100"
+);
+assert(
+  validateGradebookConfigTotals({
+    categories: [
+      { code: "HW", weightPct: 0, maxScore: 0, isActive: true },
+    ],
+  }).length === 0,
+  "allows zero-valued grading defaults"
 );
 assert(
   defaultMaxScoreForCategory({ shortCode: "MID", weightPct: 10 }) === 25 &&
     defaultMaxScoreForCategory({ shortCode: "FIN", weightPct: 10 }) === 25,
   "uses legacy defaults for missing midterm and final Max pts"
+);
+assert(
+  defaultMaxScoreForCategory({ shortCode: "MID", weightPct: 0, maxScore: 0 }) === 0,
+  "preserves an explicitly configured zero Max pts"
 );
 assert(
   parseGradebookConfig(JSON.stringify(oversizedGradebookConfig)).categories[0].maxScore === 10,

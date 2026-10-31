@@ -169,11 +169,11 @@ export const Settings = () => {
   );
 
   const [gradebookColumns, setGradebookColumns] = React.useState<any[]>([
-    { id: "homework", name: "Homework", code: "HW", weightPct: 20, isActive: true },
-    { id: "quizzes", name: "Quizzes", code: "QZ", weightPct: 20, isActive: true },
-    { id: "classwork", name: "Class work", code: "CW", weightPct: 10, isActive: true },
-    { id: "midterm", name: "Midterm exam", code: "MID", weightPct: 20, isActive: true },
-    { id: "final", name: "Final exam", code: "FIN", weightPct: 30, isActive: true },
+    { id: "homework", name: "Homework", code: "HW", maxScore: 0, weightPct: 0, isActive: true },
+    { id: "quizzes", name: "Quizzes", code: "QZ", maxScore: 0, weightPct: 0, isActive: true },
+    { id: "classwork", name: "Class work", code: "CW", maxScore: 0, weightPct: 0, isActive: true },
+    { id: "midterm", name: "Midterm exam", code: "MID", maxScore: 0, weightPct: 0, isActive: true },
+    { id: "final", name: "Final exam", code: "FIN", maxScore: 0, weightPct: 0, isActive: true },
   ]);
 
   const [schoolName, setSchoolName] = React.useState("");

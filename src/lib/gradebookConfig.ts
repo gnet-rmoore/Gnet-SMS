@@ -9,7 +9,7 @@ export const gradebookCategorySchema = z
     name: z.string().optional(),
     weightPct: z.number().min(0).max(100),
     componentType: z.string().optional(),
-    maxScore: z.number().positive().optional(),
+    maxScore: z.number().nonnegative().optional(),
     id: z.string().optional(),
     isActive: z.boolean().optional(),
   })
@@ -27,11 +27,11 @@ export type GradebookConfig = { categories: GradebookCategory[] };
 
 export const DEFAULT_GRADEBOOK_CONFIG: GradebookConfig = {
   categories: [
-    { shortCode: "HW", label: "Homework", weightPct: 20, componentType: "HOMEWORK", isActive: true },
-    { shortCode: "QZ", label: "Quizzes", weightPct: 20, componentType: "QUIZ", isActive: true },
-    { shortCode: "CW", label: "Class Work", weightPct: 10, componentType: "CLASSWORK", isActive: true },
-    { shortCode: "MID", label: "Midterm Exam", weightPct: 20, componentType: "MIDTERM", isActive: true },
-    { shortCode: "FIN", label: "Final Exam", weightPct: 30, componentType: "FINAL", isActive: true },
+    { shortCode: "HW", label: "Homework", weightPct: 0, maxScore: 0, componentType: "HOMEWORK", isActive: true },
+    { shortCode: "QZ", label: "Quizzes", weightPct: 0, maxScore: 0, componentType: "QUIZ", isActive: true },
+    { shortCode: "CW", label: "Class Work", weightPct: 0, maxScore: 0, componentType: "CLASSWORK", isActive: true },
+    { shortCode: "MID", label: "Midterm Exam", weightPct: 0, maxScore: 0, componentType: "MIDTERM", isActive: true },
+    { shortCode: "FIN", label: "Final Exam", weightPct: 0, maxScore: 0, componentType: "FINAL", isActive: true },
   ],
 };
 

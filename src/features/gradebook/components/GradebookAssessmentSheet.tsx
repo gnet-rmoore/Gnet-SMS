@@ -289,7 +289,7 @@ export function GradebookAssessmentSheet({
           <GradebookScoreInput
             value={cell.grade}
             maxScore={maxScore}
-            disabled={!editable}
+            disabled={!editable || maxScore <= 0}
             active={isActive}
             compact
             ariaLabel={`${row.student.name} ${col.label || col.shortCode}`}
@@ -335,7 +335,7 @@ export function GradebookAssessmentSheet({
           <GradebookScoreInput
             value={cell.grade}
             maxScore={maxScore}
-            disabled={!editable}
+            disabled={!editable || maxScore <= 0}
             active={isActive}
             compact
             ariaLabel={`${row.student.name} ${col.label || col.shortCode}`}

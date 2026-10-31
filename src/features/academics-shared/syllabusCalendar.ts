@@ -140,6 +140,29 @@ export function applyCalendarToSyllabusForm<T extends Record<string, unknown>>(
   };
 }
 
+/** Link an open draft to a calendar without replacing content entered while loading. */
+export function attachCalendarToSyllabusForm<T extends {
+  calendarPatternId?: string | null;
+  academicYear?: string;
+  units: SyllabusUnitBlock[];
+}>(
+  form: T,
+  calendar: ActiveCalendar | null | undefined
+): T {
+  if (!hasActiveCalendar(calendar) || form.calendarPatternId) return form;
+
+  const firstPeriod = normalizeCalendarPeriods(calendar?.periods)[0];
+  return {
+    ...form,
+    calendarPatternId: calendar!.id,
+    academicYear: academicYearLabel(calendar),
+    units: form.units.map((unit) => ({
+      ...unit,
+      academicPeriodId: unit.academicPeriodId || firstPeriod?.id || "",
+    })),
+  };
+}
+
 export function periodContainingDate(
   periods: CalendarPeriod[],
   isoDate: string

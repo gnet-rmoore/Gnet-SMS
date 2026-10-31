@@ -113,6 +113,7 @@ export const Attendance = () => {
     status: filters.values.status,
     from: filterFrom,
     to: filterTo,
+    q: filters.committedQ,
   });
   const { toast, showToast } = usePageToast();
 
@@ -424,15 +425,6 @@ export const Attendance = () => {
     setAttendanceData(updated);
   };
 
-  const filteredRecords = attendanceRecords.filter((r: any) => {
-    const q = filters.committedQ.toLowerCase();
-    if (!q) return true;
-    return (
-      (r.classroom?.name || "").toLowerCase().includes(q) ||
-      (r.teacher?.name || "").toLowerCase().includes(q)
-    );
-  });
-
   const filteredStudents = students.filter(
     (s) =>
       (s.name || "").toLowerCase().includes(studentSearch.toLowerCase()) ||
@@ -475,7 +467,7 @@ export const Attendance = () => {
       t("attendance.csvHeaders.status"),
       t("attendance.csvHeaders.notes"),
     ]];
-    for (const session of filteredRecords) {
+    for (const session of attendanceRecords) {
       const date = session.date
         ? toSchoolYmd(session.date)
         : "";
@@ -767,9 +759,9 @@ export const Attendance = () => {
             Retry
           </Button>
         </Surface>
-      ) : filteredRecords.length > 0 ? (
+      ) : attendanceRecords.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRecords.map((record: any, index: number) => {
+          {attendanceRecords.map((record: any, index: number) => {
             const total = record.presentCount + record.absentCount;
             const rate = total > 0 ? (record.presentCount / total) * 100 : 100;
             const isToday = toSchoolYmd(record.date) === todayYmd;

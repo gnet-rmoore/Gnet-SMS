@@ -5,6 +5,7 @@
 import {
   academicYearLabel,
   applyCalendarToSyllabusForm,
+  attachCalendarToSyllabusForm,
   clampWeekStartToPeriod,
   gradingCriteriaFromCalendar,
   hasActiveCalendar,
@@ -82,6 +83,18 @@ assert(
   (applied.units as any[])[0].academicPeriodId === "p1",
   "first unit tied to first period"
 );
+const lateLinked = attachCalendarToSyllabusForm(
+  {
+    title: "Draft entered while loading",
+    calendarPatternId: "",
+    academicYear: "2025",
+    units: [{ week: "Weeks 1-4", topic: "Algebra", activities: "", assessment: "" }],
+  },
+  sampleCalendar
+);
+assert(lateLinked.title === "Draft entered while loading", "late calendar link preserves draft title");
+assert(lateLinked.units[0].topic === "Algebra", "late calendar link preserves entered unit content");
+assert(lateLinked.units[0].academicPeriodId === "p1", "late calendar link assigns unit period");
 assert(
   periodWeekLabel(sampleCalendar.periods[0]).includes("Term 1"),
   "period week label includes period name"

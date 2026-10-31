@@ -3,6 +3,7 @@ import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
 import { UserAvatar } from "../../../components/UserAvatar";
+import { formatAttendanceDate } from "../date";
 
 export type RollCallModalProps = {
   selectedRecord: any;
@@ -61,12 +62,7 @@ export function RollCallModal({
       return `${name} ${email}`.toLowerCase().includes(query);
     });
   }, [records, statusFilter, studentQuery]);
-  const sessionDate = new Date(selectedRecord.date).toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const sessionDate = formatAttendanceDate(selectedRecord.date);
 
   return (
     <FeatureModalShell
@@ -78,6 +74,7 @@ export function RollCallModal({
       eyebrow={t("attendance.sessionEyebrow")}
       onClose={() => setShowDetailsModal(false)}
       wide
+      maxWidthClass="max-w-6xl"
       footer={
         <button
           type="button"
