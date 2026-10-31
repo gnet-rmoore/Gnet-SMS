@@ -5,7 +5,7 @@ const password = "admin123";
 async function login(page: import("@playwright/test").Page, email: string) {
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
+  await page.getById('login-password').fill(password);
   await page.getByRole("button", { name: /sign in|log in|login/i }).click();
   await page.waitForURL(/\/(demo-school|super-admin)/, { timeout: 30_000 });
 }

@@ -13,7 +13,7 @@ test.describe("app sidebar", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/login");
     await page.getByLabel(/email/i).fill("schooladmin@yoursms.com");
-    await page.getByLabel(/password/i).fill("admin123");
+    await page.getById('login-password').fill("admin123");
     await page.getByRole("button", { name: /sign in|log in|connexion/i }).click();
     await page.waitForURL(/\/[^/]+\/(dashboard)?/, { timeout: 20_000 });
 
