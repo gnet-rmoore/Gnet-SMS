@@ -27,7 +27,7 @@ try {
   const total = parts[1];
   const used = parts[2];
   const available = parts[3];
-  const usePct = parts[5]; // e.g., "37%" or "37"
+  const usePct = parts[4]; // e.g., "37%" or "37" (df -h columns: 0=Filesystem,1=Size,2=Used,3=Avail,4=Use%,5=Mounted-on)
   
   const usePercentage = parseInt(usePct.replace('%', ''), 10);
   const freePercentage = 100 - usePercentage;
