@@ -8,7 +8,10 @@ import {
   Globe, 
   Mail, 
   Lock,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  Upload,
+  Trash2,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { CountryTimezoneFields } from "../../components/CountryTimezoneFields";
@@ -17,6 +20,8 @@ import { confirmAction, toast } from "../../lib/swal";
 import { PageShell, PageHeader, Surface, Button } from "../../components/ui";
 import { EmailSettingsPanel } from "./components/EmailSettingsPanel";
 import { useTranslation } from "react-i18next";
+import type { SecurityPolicy } from "../../lib/securityPolicy";
+import { STAFF_ROLES } from "../../features/settings/components/SecuritySettingsTab";
 
 export const Settings = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -39,7 +44,9 @@ export const Settings = () => {
   const [isAddingCred, setIsAddingCred] = React.useState(false);
   const [maintenanceMode, setMaintenanceMode] = React.useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = React.useState("");
-  const [defaultSecurityPolicy, setDefaultSecurityPolicy] = React.useState({
+  const [requireRegistrationEmailConfirm, setRequireRegistrationEmailConfirm] =
+    React.useState(true);
+  const [defaultSecurityPolicy, setDefaultSecurityPolicy] = React.useState<SecurityPolicy>({
     passwordMinLength: 6,
     requireStrongPassword: false,
     sessionIdleMinutes: 0,
@@ -51,9 +58,15 @@ export const Settings = () => {
   const [jwtAccessTtl, setJwtAccessTtl] = React.useState("8h");
   const [requireOperatorMfa, setRequireOperatorMfa] = React.useState(false);
   const [securitySaving, setSecuritySaving] = React.useState(false);
+  const [platformLogoUrl, setPlatformLogoUrl] = React.useState<string | null>(null);
+  const [platformLogoData, setPlatformLogoData] = React.useState<string | null>(null);
+  const [platformLogoSaving, setPlatformLogoSaving] = React.useState(false);
   const [broadcastSubject, setBroadcastSubject] = React.useState("");
   const [broadcastMessage, setBroadcastMessage] = React.useState("");
   const [deliveryItems, setDeliveryItems] = React.useState<any[]>([]);
+  const [deliverySummary, setDeliverySummary] = React.useState<{ sent: number; failed: number; recent: number } | null>(null);
+  const [deliveryLoading, setDeliveryLoading] = React.useState(false);
+  const [deliveryError, setDeliveryError] = React.useState("");
   const [backups, setBackups] = React.useState<{ name: string; bytes: number; createdAt: string }[]>([]);
   const [backupsLoading, setBackupsLoading] = React.useState(false);
   const [dbBackingUp, setDbBackingUp] = React.useState(false);
@@ -62,9 +75,33 @@ export const Settings = () => {
     ready?: boolean;
     backupReady?: boolean;
     optimizeReady?: boolean;
+    s3Configured?: boolean;
     issues?: string[];
   } | null>(null);
+  const [dbStatusError, setDbStatusError] = React.useState("");
+  const [backupsError, setBackupsError] = React.useState("");
   const { accessToken } = useAuthStore();
+
+  const fetchDeliveryDiagnostics = async () => {
+    if (!accessToken) return;
+    setDeliveryLoading(true);
+    setDeliveryError("");
+    try {
+      const response = await fetch("/api/super-admin/delivery-diagnostics", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Failed to load email delivery history");
+      setDeliveryItems(Array.isArray(data?.items) ? data.items : []);
+      setDeliverySummary(data?.mailDelivery || null);
+    } catch (err) {
+      setDeliveryError(
+        err instanceof Error ? err.message : "Failed to load email delivery history"
+      );
+    } finally {
+      setDeliveryLoading(false);
+    }
+  };
 
   const fetchCredentials = async () => {
     try {
@@ -88,9 +125,18 @@ export const Settings = () => {
       void fetch("/api/super-admin/database/status", {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
-        .then((r) => r.json())
-        .then((d) => setDbStatus(d && !d.error ? d : null))
-        .catch(() => setDbStatus(null));
+        .then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d?.error || "Failed to load database maintenance status");
+          setDbStatus(d);
+          setDbStatusError("");
+        })
+        .catch((err) => {
+          setDbStatus(null);
+          setDbStatusError(
+            err instanceof Error ? err.message : "Failed to load database maintenance status"
+          );
+        });
     }
     if (activeTab === "PLATFORM" && accessToken) {
       void fetch("/api/super-admin/platform-settings", {
@@ -101,6 +147,9 @@ export const Settings = () => {
           if (d && !d.error) {
             setMaintenanceMode(Boolean(d.maintenanceMode));
             setMaintenanceMessage(d.maintenanceMessage || "");
+            setRequireRegistrationEmailConfirm(
+              d.requireRegistrationEmailConfirm !== false
+            );
           }
         });
       void fetch("/api/super-admin/delivery-diagnostics", {
@@ -108,6 +157,17 @@ export const Settings = () => {
       })
         .then((r) => r.json())
         .then((d) => setDeliveryItems(Array.isArray(d?.items) ? d.items : []));
+    }
+    if (activeTab === "GENERAL" && accessToken) {
+      void fetch("/api/super-admin/platform-settings", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+        .then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d?.error || "Failed to load platform branding");
+          setPlatformLogoUrl(d.platformLogoUrl || null);
+        })
+        .catch((err) => console.error("Failed to load platform branding:", err));
     }
     if (activeTab === "SECURITY" && accessToken) {
       void fetch("/api/super-admin/platform-settings", {
@@ -122,6 +182,7 @@ export const Settings = () => {
           }
         });
     }
+    if (activeTab === "NOTIFICATIONS") void fetchDeliveryDiagnostics();
   }, [activeTab, accessToken]);
 
   const handleAddCredential = async (e: React.FormEvent) => {
@@ -194,10 +255,12 @@ export const Settings = () => {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Failed to load database backups");
       setBackups(Array.isArray(data?.backups) ? data.backups : []);
+      setBackupsError("");
     } catch (err) {
-      console.error("Failed to fetch backups:", err);
       setBackups([]);
+      setBackupsError(err instanceof Error ? err.message : "Failed to load database backups");
     } finally {
       setBackupsLoading(false);
     }
@@ -213,7 +276,18 @@ export const Settings = () => {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Backup failed");
-      await toast.fire({ icon: "success", title: s("backupDatabase") });
+      await toast.fire({
+        icon: "success",
+        title: s("backupDatabase"),
+        text:
+          data.uploadedToCloud === false
+            ? dbStatus?.s3Configured
+              ? s("backupCloudUploadFailed")
+              : s("backupLocalOnly")
+            : data.uploadedToCloud
+              ? s("backupCloudCopyCreated")
+              : undefined,
+      });
       await fetchBackups();
     } catch (err) {
       await toast.fire({
@@ -293,6 +367,63 @@ export const Settings = () => {
     }
   };
 
+  const handlePlatformLogoFile = async (file?: File) => {
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+      await toast.fire({ icon: "error", title: s("platformLogoInvalidType") });
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      await toast.fire({ icon: "error", title: s("platformLogoTooLarge") });
+      return;
+    }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error("Could not read image file"));
+        reader.onerror = () => reject(new Error("Could not read image file"));
+        reader.readAsDataURL(file);
+      });
+      setPlatformLogoData(dataUrl);
+      setPlatformLogoUrl(dataUrl);
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : s("platformLogoReadFailed"),
+      });
+    }
+  };
+
+  const savePlatformLogo = async () => {
+    if (!accessToken || platformLogoSaving) return;
+    setPlatformLogoSaving(true);
+    try {
+      const response = await fetch("/api/super-admin/platform-settings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ platformLogoData }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Failed to save platform logo");
+      setPlatformLogoUrl(data.platformLogoUrl || null);
+      setPlatformLogoData(null);
+      await toast.fire({ icon: "success", title: s("platformLogoSaved") });
+    } catch (err) {
+      await toast.fire({
+        icon: "error",
+        title: err instanceof Error ? err.message : "Failed to save platform logo",
+      });
+    } finally {
+      setPlatformLogoSaving(false);
+    }
+  };
+
   return (
     <PageShell>
       <PageHeader
@@ -341,6 +472,20 @@ export const Settings = () => {
                   placeholder="Optional message shown to school users"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl"
                 />
+                <div className="space-y-1 rounded-xl border border-slate-200 bg-white p-4">
+                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={requireRegistrationEmailConfirm}
+                      onChange={(e) => setRequireRegistrationEmailConfirm(e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600"
+                    />
+                    {s("requireRegistrationEmailConfirm")}
+                  </label>
+                  <p className="pl-6 text-xs text-slate-500">
+                    {s("requireRegistrationEmailConfirmHint")}
+                  </p>
+                </div>
                 <Button
                   onClick={async () => {
                     const res = await fetch("/api/super-admin/platform-settings", {
@@ -349,7 +494,11 @@ export const Settings = () => {
                         Authorization: `Bearer ${accessToken}`,
                         "Content-Type": "application/json",
                       },
-                      body: JSON.stringify({ maintenanceMode, maintenanceMessage }),
+                      body: JSON.stringify({
+                        maintenanceMode,
+                        maintenanceMessage,
+                        requireRegistrationEmailConfirm,
+                      }),
                     });
                     const data = await res.json();
                     if (!res.ok) {
@@ -445,6 +594,58 @@ export const Settings = () => {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-8"
             >
+              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{s("platformLogo")}</h3>
+                  <p className="text-sm text-slate-500">{s("platformLogoHint")}</p>
+                </div>
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    {platformLogoUrl ? (
+                      <img src={platformLogoUrl} alt={s("platformLogo")} className="h-full w-full object-contain" />
+                    ) : (
+                      <span className="text-2xl font-extrabold text-indigo-600">G</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">
+                      <Upload className="h-4 w-4" />
+                      {s("uploadPlatformLogo")}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        className="sr-only"
+                        onChange={(e) => {
+                          void handlePlatformLogoFile(e.target.files?.[0]);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    {platformLogoUrl && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          setPlatformLogoData("");
+                          setPlatformLogoUrl(null);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {s("removePlatformLogo")}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      loading={platformLogoSaving}
+                      disabled={platformLogoData === null}
+                      onClick={savePlatformLogo}
+                    >
+                      {s("savePlatformLogo")}
+                    </Button>
+                  </div>
+                </div>
+              </section>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 ml-1">{s("systemName")}</label>
@@ -532,6 +733,22 @@ export const Settings = () => {
                       className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Force password change (days; 0 = off)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={365}
+                      value={defaultSecurityPolicy.forcePasswordChangeDays}
+                      onChange={(e) =>
+                        setDefaultSecurityPolicy((p) => ({
+                          ...p,
+                          forcePasswordChangeDays: Math.min(365, Math.max(0, Number(e.target.value) || 0)),
+                        }))
+                      }
+                      className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm"
+                    />
+                  </div>
                 </div>
                 <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
                   <input
@@ -544,6 +761,68 @@ export const Settings = () => {
                   />
                   Require letter + number in passwords
                 </label>
+                <div className="space-y-3 border-t border-slate-100 pt-5">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Two-factor authentication
+                    </label>
+                    <select
+                      value={defaultSecurityPolicy.mfaMode}
+                      onChange={(e) =>
+                        setDefaultSecurityPolicy((p) => ({
+                          ...p,
+                          mfaMode: e.target.value as SecurityPolicy["mfaMode"],
+                        }))
+                      }
+                      className="mt-1 w-full max-w-md rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                    >
+                      <option value="OFF">Off</option>
+                      <option value="OPTIONAL">Optional</option>
+                      <option value="REQUIRED">Required for selected roles</option>
+                    </select>
+                  </div>
+                  {defaultSecurityPolicy.mfaMode === "REQUIRED" && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Required roles (empty means all staff)
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {STAFF_ROLES.map((roleName) => (
+                          <label
+                            key={roleName}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={defaultSecurityPolicy.mfaRequiredRoles.includes(roleName)}
+                              onChange={() =>
+                                setDefaultSecurityPolicy((p) => ({
+                                  ...p,
+                                  mfaRequiredRoles: p.mfaRequiredRoles.includes(roleName)
+                                    ? p.mfaRequiredRoles.filter((role) => role !== roleName)
+                                    : [...p.mfaRequiredRoles, roleName],
+                                }))
+                              }
+                              className="rounded border-slate-300 text-indigo-600"
+                            />
+                            {roleName.replaceAll("_", " ")}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={defaultSecurityPolicy.allowSmsMfa}
+                      onChange={(e) =>
+                        setDefaultSecurityPolicy((p) => ({ ...p, allowSmsMfa: e.target.checked }))
+                      }
+                      className="rounded border-slate-300 text-indigo-600"
+                    />
+                    Allow SMS as an MFA method
+                  </label>
+                </div>
                 <Button
                   loading={securitySaving}
                   onClick={async () => {
@@ -662,6 +941,16 @@ export const Settings = () => {
             >
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-slate-900">{s("databaseMaintenance")}</h3>
+                {dbStatusError && (
+                  <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                    {dbStatusError}
+                  </p>
+                )}
+                {backupsError && (
+                  <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                    {backupsError}
+                  </p>
+                )}
                 {dbStatus && dbStatus.ready === false && (
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -756,8 +1045,6 @@ export const Settings = () => {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-8"
             >
-              <EmailSettingsPanel accessToken={accessToken} />
-
               <div className="flex items-center justify-between border-t border-slate-100 pt-8">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{s("systemCredentials")}</h3>
@@ -886,22 +1173,71 @@ export const Settings = () => {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-8"
             >
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900">{s("emailNotifications")}</p>
-                      <p className="text-sm text-slate-500">{s("emailNotificationsHint")}</p>
-                    </div>
+              <EmailSettingsPanel accessToken={accessToken} />
+
+              <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{s("emailDeliveryHistory")}</h3>
+                    <p className="mt-1 text-sm text-slate-500">{s("emailDeliveryHistoryHint")}</p>
                   </div>
-                  <div className="w-12 h-6 bg-indigo-600 rounded-full relative cursor-pointer">
-                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]" />
-                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="compact"
+                    loading={deliveryLoading}
+                    onClick={() => void fetchDeliveryDiagnostics()}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {s("refreshEmailHistory")}
+                  </Button>
                 </div>
-              </div>
+                {deliveryError && (
+                  <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                    {deliveryError}
+                  </p>
+                )}
+                {deliverySummary && (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl bg-slate-50 p-4">
+                      <p className="text-xs font-bold uppercase text-slate-500">{s("recentEmailAttempts")}</p>
+                      <p className="mt-1 text-2xl font-bold text-slate-900">{deliverySummary.recent}</p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 p-4">
+                      <p className="text-xs font-bold uppercase text-emerald-700">{s("successfulEmails")}</p>
+                      <p className="mt-1 text-2xl font-bold text-emerald-900">{deliverySummary.sent}</p>
+                    </div>
+                    <div className="rounded-xl bg-rose-50 p-4">
+                      <p className="text-xs font-bold uppercase text-rose-700">{s("failedEmails")}</p>
+                      <p className="mt-1 text-2xl font-bold text-rose-900">{deliverySummary.failed}</p>
+                    </div>
+                  </div>
+                )}
+                {deliveryLoading ? (
+                  <p className="text-sm text-slate-500">{t("common:loading")}</p>
+                ) : deliveryItems.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic">{s("noEmailHistory")}</p>
+                ) : (
+                  <div className="max-h-96 space-y-2 overflow-auto">
+                    {deliveryItems.slice(0, 30).map((item) => (
+                      <article key={`${item.kind}-${item.id}`} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-slate-800">
+                            {item.action} · {item.module}
+                            {typeof item.ok === "boolean" ? (item.ok ? ` · ${s("deliverySent")}` : ` · ${s("deliveryFailed")}`) : ""}
+                          </p>
+                          {item.createdAt && (
+                            <time className="text-xs text-slate-500" dateTime={item.createdAt}>
+                              {new Date(item.createdAt).toLocaleString()}
+                            </time>
+                          )}
+                        </div>
+                        <p className="mt-1 break-words text-xs text-slate-600">{item.details}</p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
             </motion.div>
           )}
         </Surface>
