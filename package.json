@@ -11,6 +11,7 @@
     "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "docker:dev:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
     "docker:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile edge up -d",
+    "docker:prune": "docker system prune -a --volumes -f",
     "lint": "tsc --noEmit",
     "test:security": "tsx tests/security.test.ts && tsx tests/mfa-totp.test.ts",
     "test:onboarding": "tsx tests/onboarding-admission.test.ts",
