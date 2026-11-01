@@ -19,7 +19,7 @@ test.describe("syllabus calendar alignment", () => {
   test("teacher: syllabus builder references academic calendar", async ({ page }) => {
     await login(page, "teacher@yoursms.com");
     await page.goto("/demo-school/curriculum");
-    await page.getByRole("button", { name: /syllabus/i }).click();
+    await page.getByRole("button", { name: "Syllabus plans", exact: true }).click();
     await page
       .getByRole("button", { name: /submit syllabus|fill syllabus|new syllabus/i })
       .first()

@@ -12,7 +12,7 @@ test.describe("landing page", () => {
   test("landing loads with hero, capabilities, and register CTA", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.locator("h1")).toContainText(/Gnet/i);
+    await expect(page.locator("h1")).toContainText(/operating system for modern schools/i);
     await expect(page.locator("#capabilities")).toBeVisible();
     await expect(page.locator("#campus")).toBeVisible();
     await expect(page.locator("#modules")).toHaveCount(0);

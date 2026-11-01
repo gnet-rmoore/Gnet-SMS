@@ -108,7 +108,10 @@ async function seedDemo() {
 
   const school = await prisma.school.upsert({
     where: { slug: DEMO_SCHOOL_SLUG },
-    update: {},
+    update: {
+      planCode: "ENTERPRISE",
+      billingStatus: "COMP",
+    },
     create: {
       name: "Demo International School",
       slug: DEMO_SCHOOL_SLUG,
@@ -117,6 +120,8 @@ async function seedDemo() {
       timezone: "Europe/London",
       contactEmail: "info@demoschool.com",
       status: "ACTIVE",
+      planCode: "ENTERPRISE",
+      billingStatus: "COMP",
       onboardingComplete: true,
     },
   });
