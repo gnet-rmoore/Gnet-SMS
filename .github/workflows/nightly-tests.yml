@@ -65,6 +65,7 @@ jobs:
             sleep 5
           done
           exit 1
+<<<<<<< HEAD
       - name: Wait for API Gateway auth endpoint
         run: |
           for i in $(seq 1 24); do
@@ -72,6 +73,17 @@ jobs:
             sleep 5
           done
           echo "API gateway auth not ready (2min wait exhausted)"
+=======
+
+      - name: Wait for API Gateway auth readiness
+        run: |
+          for i in $(seq 1 180); do
+            if curl -sf http://localhost:8081/api/auth/login >/dev/null 2>&1; then exit 0; fi
+            sleep 5
+          done
+          echo "API gateway not ready for auth (15min wait exhausted)"
+          exit 1
+>>>>>>> 36f2d82c58e129115df14632a9f88c3fc19d7b75
       - run: npm run test:e2e
         env:
           E2E_ENABLED: "1"
