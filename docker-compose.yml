@@ -188,6 +188,9 @@ services:
       # Seed runs on every boot; the seed is idempotent and only creates the
       # Super Admin if none exists. Set RUN_SEED=false to disable.
       RUN_SEED: ${RUN_SEED:-true}
+      # Optional demo school + persona users (schooladmin@, teacher@, …).
+      # OFF by default (production stays clean); CI/nightly sets SEED_DEMO=true.
+      SEED_DEMO: ${SEED_DEMO:-false}
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@yoursms.com}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
     volumes:
