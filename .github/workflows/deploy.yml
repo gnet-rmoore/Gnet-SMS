@@ -97,10 +97,18 @@ jobs:
                 set -e
                 cd '${DIR}'
                 dc() { docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge \"\$@\"; }
-                git pull --ff-only
                 echo '--- disk before deploy ---'
                 df -h / || true
-                docker image prune -f || true
+                # Free non-image space first: Docker GC can fail on a 100% full disk.
+                sudo -n find /var/lib/docker/containers -name '*-json.log' -size +100M -exec truncate -s 0 {} \; 2>/dev/null || true
+                sudo -n journalctl --vacuum-size=200M 2>/dev/null || true
+                docker builder prune -af || true
+                docker image prune -af || true
+                git pull --ff-only
+                echo '--- production cleanup (automatic) ---'
+                if ! bash scripts/cleanup-production.sh; then
+                  echo '::warning::Production disk is still low after cleanup - check the host'
+                fi
                 dc pull
                 if ! dc up -d; then
                   echo '=== compose ps ==='
@@ -111,8 +119,8 @@ jobs:
                   docker inspect --format '{{json .State}}' gnet-sms-academic-1 || true
                   exit 1
                 fi
-                docker image prune -f || true
-                docker image prune -af --filter until=168h || true
+                docker image prune -af || true
+                docker builder prune -af || true
                 echo '--- disk after deploy ---'
                 df -h / || true
               "

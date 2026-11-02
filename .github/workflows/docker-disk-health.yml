@@ -45,31 +45,11 @@ jobs:
               "${USER}@${HOST}" "
                 set -e
                 cd '${DIR}'
-                dc() { docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge \"\$@\"; }
-
-                echo '=== Disk before ==='
-                df -h /
-                free_pct=\$(df -P / | awk 'NR==2 {gsub(\"%\", \"\", \$5); print 100 - \$5}')
-                echo \"Free: \${free_pct}%\"
-
-                if [ \"\$free_pct\" -ge 30 ]; then
-                  echo 'Disk healthy (>= 30% free) - no cleanup needed'
-                  exit 0
-                fi
-
-                echo 'Disk below 30% free - reclaiming space (volumes are preserved)'
-                if dc ps --status running --services 2>/dev/null | grep -qx identity; then
-                  dc exec -T identity sh -c 'ls -1t /app/backups/*.sql 2>/dev/null | tail -n +8 | xargs -r rm -f' || true
-                fi
-                docker image prune -f || true
-                docker builder prune -f --filter until=168h || true
-
-                echo '=== Disk after ==='
-                df -h /
-                after_pct=\$(df -P / | awk 'NR==2 {gsub(\"%\", \"\", \$5); print 100 - \$5}')
-                echo \"Free after: \${after_pct}%\"
-                if [ \"\$after_pct\" -lt 10 ]; then
-                  echo \"::error::Production disk still only \${after_pct}% free after cleanup\"
+                git pull --ff-only || true
+                if [ ! -f scripts/cleanup-production.sh ]; then
+                  echo '::error::scripts/cleanup-production.sh not found on the host - run a deploy first'
                   exit 1
                 fi
+                echo '=== Running production cleanup ==='
+                bash scripts/cleanup-production.sh
               "

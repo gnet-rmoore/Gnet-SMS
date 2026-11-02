@@ -1,128 +1,14 @@
-
-Skip to content
-
-    gnet-rmoore
-    Gnet-SMS
-
-Repository navigation
-
-    Code
-    Issues
-    Pull requests
-    Agents
-    Actions
-    Projects
-    Wiki
-    Security and quality
-    Insights
-    Settings
-
-Nightly test coverage
-11 | } #70
-
-    All jobs
-    Run details
-
-Playwright persona smoke
-failed 7 minutes ago in 6m 15s
-1s
-Current runner version: '2.338.2'
-Runner Image Provisioner
-Operating System
-Runner Image
-GITHUB_TOKEN Permissions
-Secret source: Actions
-Cache mode: write
-Prepare workflow directory
-Prepare all required actions
-Getting action download info
-Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
-Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
-Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
-Complete job name: Playwright persona smoke
-2s
-Run actions/checkout@v4
-Syncing repository: gnet-rmoore/Gnet-SMS
-Getting Git version info
-Temporarily overriding HOME='/home/runner/work/_temp/61520223-a058-47d8-a914-6e0aae5af1d2' before making global git config changes
-Adding repository directory to the temporary git global config as a safe directory
-/usr/bin/git config --global --add safe.directory /home/runner/work/Gnet-SMS/Gnet-SMS
-Deleting the contents of '/home/runner/work/Gnet-SMS/Gnet-SMS'
-Initializing the repository
-Disabling automatic garbage collection
-Setting up auth
-Fetching the repository
-Determining the checkout info
-/usr/bin/git sparse-checkout disable
-/usr/bin/git config --local --unset-all extensions.worktreeConfig
-Checking out the ref
-/usr/bin/git log -1 --format=%H
-8505e37a5c7d8dd2e941fc265f22434248766227
-7s
-Run actions/setup-node@v4
-Attempting to download 20...
-(node:2100) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-linux-x64.tar.gz
-Extracting ...
-/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/b50e3d91-a271-46f6-b51f-6b3b5b0d61dc -f /home/runner/work/_temp/5b937d6a-e946-42c2-8582-ce239faa1277
-Adding to the cache ...
-Environment details
-/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
-/home/runner/.npm
-Cache hit for: node-cache-Linux-x64-npm-1fa71caecd0f5417d27b92b0016687c921e6bf14e15409a6d3751318e4c5f9b5
-(node:2100) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
-Received 62914560 of 162749967 (38.7%), 60.0 MBs/sec
-Received 162749967 of 162749967 (100.0%), 95.7 MBs/sec
-Cache Size: ~155 MB (162749967 B)
-/usr/bin/tar -xf /home/runner/work/_temp/35026ec5-bf0c-43c1-b2b0-aadd1ff362f1/cache.tzst -P -C /home/runner/work/Gnet-SMS/Gnet-SMS --use-compress-program unzstd
-Cache restored successfully
-Cache restored from key: node-cache-Linux-x64-npm-1fa71caecd0f5417d27b92b0016687c921e6bf14e15409a6d3751318e4c5f9b5
-1m 12s
 Run echo "Disk before cleanup:"
 Disk before cleanup:
-Filesystem       Size  Used Avail Use% Mounted on
-/dev/root        145G   60G   85G  42% /
-tmpfs            7.9G   84K  7.9G   1% /dev/shm
-tmpfs            3.2G 1016K  3.2G   1% /run
-tmpfs            5.0M     0  5.0M   0% /run/lock
-efivarfs         128M   32K  128M   1% /sys/firmware/efi/efivars
-/dev/nvme0n1p16  881M   85M  735M  11% /boot
-/dev/nvme0n1p15  105M  6.2M   99M   6% /boot/efi
-tmpfs            1.6G   12K  1.6G   1% /run/user/1001
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       145G   60G   85G  42% /
+tmpfs           7.9G   84K  7.9G   1% /dev/shm
+tmpfs           3.2G 1020K  3.2G   1% /run
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/sda16      881M   85M  735M  11% /boot
+/dev/sda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           1.6G   12K  1.6G   1% /run/user/1001
 Deleted Images:
-untagged: ghcr.io/github/gh-aw-firewall/api-proxy:latest
-untagged: ghcr.io/github/gh-aw-firewall/api-proxy@sha256:e2c27ef4403bda921331fd3be5da297fd2865fcf42e2b2aba7d6b4c34073acdd
-deleted: sha256:71caee3604972299d996a9c87483a1bb84369ff1dab8c800316d15f1cb0c9e61
-deleted: sha256:789c2a2b2c063655a7f6c13b82934f39afeed54257138594b529489b6fcb7c94
-deleted: sha256:14eba9f178f1e276f8a9b7664e5a803cc578f4684f72b824fec5bca635c11e75
-deleted: sha256:c2f642dcf6292ed22153725fd7c229315fddcb23d4a5c0eb9deed9a3c4ccc0fb
-deleted: sha256:36d1b8f9812f2f678bf4cc66132a098bde11fd0493e40c02f1354a098cd902a1
-deleted: sha256:bfd101081e2f6c7190b29b6d498b6a5b4766a4de72a44a15f6baf12d4a4ab290
-deleted: sha256:6c3b20d5616c1291bc7f7b8f1999c36a2bff64936edb20166c27c8f532cda710
-deleted: sha256:2abfdf42e5895f6f43ac9be242b79f394969232c3a45752e9ab19176080824e5
-deleted: sha256:05f7e360b5197e889cc7c4d9b24ad3aabacfda741f3d449071edfc4be67a3be6
-deleted: sha256:746727b9775f2fb76310b9d7db58175622b85bd9dd68af0599c4445c82ce2483
-deleted: sha256:7a3ba98e7e42c55e732a38661d60ee2de373b0896590e3bdc598097fe91fe7ae
-deleted: sha256:060f91b0872de59eb67f7d745908a0c0caa9309f3094c9c91bf9f484a42955ca
-deleted: sha256:f80bf75f16280363a2e032582f2fc16d27432c5f8b723df782b6bcbfb7e27924
-deleted: sha256:9ac373ada57ffc27dcc3394207b9ad1d5c5f01c043a8a5402696532556e352da
-deleted: sha256:2f861ab5a2cf99d08875a9f545a2471c19e91c93769c3a3cc7175c530a3970ec
-deleted: sha256:352b00e6763d6ebaab8cb99a3bac61fc65a5a1ff5cb48d539a0c353574d7f03a
-untagged: ghcr.io/github/gh-aw-mcpg:latest
-untagged: ghcr.io/github/gh-aw-mcpg@sha256:9c7f242f6dec2d7d7b55d4c9e07872d59b85377c6cb3de46c915a5d1ffb91442
-deleted: sha256:adada59dc2eb63475d1f06d3b2c975d2e50ed858007ac5283bf508391e5f7041
-deleted: sha256:9561da157f3318daea7aecb5753fbf1b9a08f11a5aa196e4acf885d183d679ba
-deleted: sha256:f9e4fd9ace9f49b24939125d3172311294b8db0ca6d5c3933d4553e7e38562e7
-deleted: sha256:e7fe6216fb621a5883dafaaed72af6b4d9218ab06c7b1cf16590092393ad315c
-deleted: sha256:ead5e88d3b34a4addd1a39e8dd4786fc6c5f06a67bfda3813ffbbf802f9020a5
-deleted: sha256:3fccb58823e210b8e26f60e33dc6464c62c41047ac58df29df7ad85fd5f29b7f
-deleted: sha256:076fa2779acee36fe423d7a96b35f9ee3669e369097ee039acf59e96197fcb84
-deleted: sha256:f4be26f88c84ae4994b8f72039b3a31e4177c1676751f4e51521cb99f00ba7ee
-deleted: sha256:3b0abdfd3c94e7bc73093f7488b4d6e7b164dfdf43193edaa6ba8df32def333a
-deleted: sha256:afa44dee9a0a5460f9bb4c303a6a93d323ad0d0decbf8f3dddea61b2ea31a06c
-deleted: sha256:b120877a8c6acddb44283da821e1eb98ad3ba9dba9954b6a89510661576ec1db
-deleted: sha256:a1ab8e74cca4db0e2c77a634e30586adfd4cf1e081268545aa8b185df216d11c
 untagged: ghcr.io/github/gh-aw-firewall/squid:latest
 untagged: ghcr.io/github/gh-aw-firewall/squid@sha256:acc55719d3816ebba2af7393d13bc72c690ddedf4e3ec74340104e3e0bda6b4d
 deleted: sha256:ceba3de0cc73ccb8d76055b6f4ff404a1f556c398b0c85038c5016f005d11bcb
@@ -133,7 +19,6 @@ deleted: sha256:4f0183f634b4b9589f0d4ebbaa3c4fea25289e3888913b3404267afccb81751b
 deleted: sha256:2cf336166cfb412c1393d59cec3dc02407b9a0e7c1b0e6a5dfef1b03473270a0
 deleted: sha256:17b0094a813d97c34ca729739326189c9afdd4610bc44d121b69608ca549051f
 deleted: sha256:8ccd9236e1fc745540569864e5e03aa2976fda968ebc44d2bfbe7a2a2cc3824c
-deleted: sha256:74d97c428c51a828f9051a7a40a53ff1fc99e54fc30323ce36760701b0b7f711
 untagged: ghcr.io/dependabot/dependabot-updater-core:latest
 untagged: ghcr.io/dependabot/dependabot-updater-core@sha256:82243f9dd22d1586d11ec6719395c10e6f266cfaf338a0380d09c62873805ac8
 deleted: sha256:dae9747fa7601367bda9ad43f082b018a2f9cebb0f7935a5fafe064248a6b4da
@@ -192,876 +77,293 @@ deleted: sha256:7f73eafc455b691b504d4d3c3f3c7be90e135c1d0ba4988b2cac29579cd6b567
 deleted: sha256:32a12b65383df6b6553c8d59f691675ca1980f8cec9c51cce163c3c8f7665a41
 deleted: sha256:5217b01660b515ac25ea055a8bd04a20790c7d6bd6085374b59b9081283911af
 deleted: sha256:7223ea1323e8c1159ec17f07d35acc27bdd1cc2bc3ed425b44ef21dac9915db0
-
+untagged: ghcr.io/github/gh-aw-firewall/api-proxy:latest
+untagged: ghcr.io/github/gh-aw-firewall/api-proxy@sha256:e2c27ef4403bda921331fd3be5da297fd2865fcf42e2b2aba7d6b4c34073acdd
+deleted: sha256:71caee3604972299d996a9c87483a1bb84369ff1dab8c800316d15f1cb0c9e61
+deleted: sha256:789c2a2b2c063655a7f6c13b82934f39afeed54257138594b529489b6fcb7c94
+deleted: sha256:14eba9f178f1e276f8a9b7664e5a803cc578f4684f72b824fec5bca635c11e75
+deleted: sha256:c2f642dcf6292ed22153725fd7c229315fddcb23d4a5c0eb9deed9a3c4ccc0fb
+deleted: sha256:36d1b8f9812f2f678bf4cc66132a098bde11fd0493e40c02f1354a098cd902a1
+deleted: sha256:bfd101081e2f6c7190b29b6d498b6a5b4766a4de72a44a15f6baf12d4a4ab290
+deleted: sha256:6c3b20d5616c1291bc7f7b8f1999c36a2bff64936edb20166c27c8f532cda710
+deleted: sha256:2abfdf42e5895f6f43ac9be242b79f394969232c3a45752e9ab19176080824e5
+deleted: sha256:05f7e360b5197e889cc7c4d9b24ad3aabacfda741f3d449071edfc4be67a3be6
+deleted: sha256:746727b9775f2fb76310b9d7db58175622b85bd9dd68af0599c4445c82ce2483
+deleted: sha256:7a3ba98e7e42c55e732a38661d60ee2de373b0896590e3bdc598097fe91fe7ae
+deleted: sha256:060f91b0872de59eb67f7d745908a0c0caa9309f3094c9c91bf9f484a42955ca
+deleted: sha256:f80bf75f16280363a2e032582f2fc16d27432c5f8b723df782b6bcbfb7e27924
+deleted: sha256:9ac373ada57ffc27dcc3394207b9ad1d5c5f01c043a8a5402696532556e352da
+deleted: sha256:2f861ab5a2cf99d08875a9f545a2471c19e91c93769c3a3cc7175c530a3970ec
+deleted: sha256:352b00e6763d6ebaab8cb99a3bac61fc65a5a1ff5cb48d539a0c353574d7f03a
+untagged: ghcr.io/github/gh-aw-mcpg:latest
+untagged: ghcr.io/github/gh-aw-mcpg@sha256:9c7f242f6dec2d7d7b55d4c9e07872d59b85377c6cb3de46c915a5d1ffb91442
+deleted: sha256:adada59dc2eb63475d1f06d3b2c975d2e50ed858007ac5283bf508391e5f7041
+deleted: sha256:9561da157f3318daea7aecb5753fbf1b9a08f11a5aa196e4acf885d183d679ba
+deleted: sha256:f9e4fd9ace9f49b24939125d3172311294b8db0ca6d5c3933d4553e7e38562e7
+deleted: sha256:e7fe6216fb621a5883dafaaed72af6b4d9218ab06c7b1cf16590092393ad315c
+deleted: sha256:ead5e88d3b34a4addd1a39e8dd4786fc6c5f06a67bfda3813ffbbf802f9020a5
+deleted: sha256:3fccb58823e210b8e26f60e33dc6464c62c41047ac58df29df7ad85fd5f29b7f
+deleted: sha256:076fa2779acee36fe423d7a96b35f9ee3669e369097ee039acf59e96197fcb84
+deleted: sha256:f4be26f88c84ae4994b8f72039b3a31e4177c1676751f4e51521cb99f00ba7ee
+deleted: sha256:3b0abdfd3c94e7bc73093f7488b4d6e7b164dfdf43193edaa6ba8df32def333a
+deleted: sha256:afa44dee9a0a5460f9bb4c303a6a93d323ad0d0decbf8f3dddea61b2ea31a06c
+deleted: sha256:b120877a8c6acddb44283da821e1eb98ad3ba9dba9954b6a89510661576ec1db
+deleted: sha256:a1ab8e74cca4db0e2c77a634e30586adfd4cf1e081268545aa8b185df216d11c
+deleted: sha256:74d97c428c51a828f9051a7a40a53ff1fc99e54fc30323ce36760701b0b7f711
 Total reclaimed space: 2.488GB
 Total:	0B
 Total reclaimed space: 0B
 Disk after cleanup:
-Filesystem       Size  Used Avail Use% Mounted on
-/dev/root        145G   39G  106G  27% /
-tmpfs            7.9G   84K  7.9G   1% /dev/shm
-tmpfs            3.2G 1016K  3.2G   1% /run
-tmpfs            5.0M     0  5.0M   0% /run/lock
-efivarfs         128M   32K  128M   1% /sys/firmware/efi/efivars
-/dev/nvme0n1p16  881M   85M  735M  11% /boot
-/dev/nvme0n1p15  105M  6.2M   99M   6% /boot/efi
-tmpfs            1.6G   12K  1.6G   1% /run/user/1001
-17s
-Run npm ci
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'commander@15.0.0',
-npm warn EBADENGINE   required: { node: '>=22.12.0' },
-npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
-npm warn EBADENGINE }
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'nanoid@6.0.2',
-npm warn EBADENGINE   required: { node: '^22 || ^24 || >=26' },
-npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
-npm warn EBADENGINE }
-npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
-
-> gnet-sms@0.0.0 postinstall
-> tsx prisma/setup-provider.ts
-
-[PRISMA SETUP] PostgreSQL-only mode
-[PRISMA SETUP] DATABASE_URL unset or non-Postgres — using generate placeholder. Runtime requires a real postgresql:// URL.
-[PRISMA SETUP] Regenerating Prisma Client...
-Prisma schema loaded from prisma/schema.prisma
-
-✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 606ms
-
-Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
-
-Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
-
-[PRISMA SETUP] Prisma Client generated successfully!
-
-added 782 packages, and audited 783 packages in 17s
-
-119 packages are looking for funding
-  run `npm fund` for details
-
-63 vulnerabilities (3 low, 25 moderate, 32 high, 3 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-To address all issues possible (including breaking changes), run:
-  npm audit fix --force
-
-Some issues need review, and may require choosing
-a different dependency.
-
-Run `npm audit` for details.
-20s
-Run npx playwright install chromium --with-deps
-Installing dependencies...
-Switching to root user to install dependencies...
-Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
-Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
-Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
-Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
-Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
-Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
-Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [617 kB]
-Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [682 kB]
-Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1408 kB]
-Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [311 kB]
-Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1708 kB]
-Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [343 kB]
-Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1813 kB]
-Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [412 kB]
-Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [14.3 kB]
-Get:16 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1146 kB]
-Get:17 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [231 kB]
-Get:18 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1223 kB]
-Get:19 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [246 kB]
-Fetched 10.5 MB in 1s (11.6 MB/s)
-Reading package lists...
-Reading package lists...
-Building dependency tree...
-Reading state information...
-libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
-libasound2t64 set to manually installed.
-libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
-libatk-bridge2.0-0t64 set to manually installed.
-libatk1.0-0t64 is already the newest version (2.52.0-1build1).
-libatk1.0-0t64 set to manually installed.
-libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
-libatspi2.0-0t64 set to manually installed.
-libcairo2 is already the newest version (1.18.0-3build1).
-libcairo2 set to manually installed.
-libcups2t64 is already the newest version (2.4.7-1.2ubuntu7.14).
-libcups2t64 set to manually installed.
-libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
-libdbus-1-3 set to manually installed.
-libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.2).
-libdrm2 set to manually installed.
-libgbm1 is already the newest version (25.2.8-0ubuntu0.24.04.4).
-libgbm1 set to manually installed.
-libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.10).
-libglib2.0-0t64 set to manually installed.
-libnspr4 is already the newest version (2:4.35-1.1build1).
-libnspr4 set to manually installed.
-libnss3 is already the newest version (2:3.98-1ubuntu0.3).
-libnss3 set to manually installed.
-libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
-libpango-1.0-0 set to manually installed.
-libx11-6 is already the newest version (2:1.8.7-1ubuntu0.1).
-libx11-6 set to manually installed.
-libxcb1 is already the newest version (1.15-1ubuntu2).
-libxcb1 set to manually installed.
-libxcomposite1 is already the newest version (1:0.4.5-1build3).
-libxcomposite1 set to manually installed.
-libxdamage1 is already the newest version (1:1.1.6-1build1).
-libxdamage1 set to manually installed.
-libxext6 is already the newest version (2:1.3.4-1build2).
-libxext6 set to manually installed.
-libxfixes3 is already the newest version (1:6.0.0-2build1).
-libxfixes3 set to manually installed.
-libxkbcommon0 is already the newest version (1.6.0-1build1).
-libxkbcommon0 set to manually installed.
-libxrandr2 is already the newest version (2:1.5.2-2build1).
-libxrandr2 set to manually installed.
-xvfb is already the newest version (2:21.1.12-1ubuntu1.9).
-fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
-libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
-libfontconfig1 set to manually installed.
-libfreetype6 is already the newest version (2.13.2+dfsg-1ubuntu0.2).
-libfreetype6 set to manually installed.
-fonts-liberation is already the newest version (1:2.1.5-3).
-fonts-liberation set to manually installed.
-The following additional packages will be installed:
-  xfonts-encodings xfonts-utils
-Recommended packages:
-  fonts-ipafont-mincho fonts-tlwg-loma
-The following NEW packages will be installed:
-  fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
-  fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
-  xfonts-utils
-0 upgraded, 9 newly installed, 0 to remove and 6 not upgraded.
-Need to get 21.1 MB of archives.
-After this operation, 79.5 MB of additional disk space will be used.
-Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
-Get:2 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
-Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
-Get:4 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
-Get:5 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
-Get:6 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
-Get:7 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-encodings all 1:1.0.5-0ubuntu2 [578 kB]
-Get:8 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-utils amd64 1:7.7+6build3 [94.4 kB]
-Get:9 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 xfonts-cyrillic all 1:1.0.5+nmu1 [384 kB]
-Get:10 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-scalable all 1:1.0.3-1.3 [304 kB]
-Fetched 21.1 MB in 1s (27.5 MB/s)
-Selecting previously unselected package fonts-ipafont-gothic.
-(Reading database ... 
-(Reading database ... 5%
-(Reading database ... 10%
-(Reading database ... 15%
-(Reading database ... 20%
-(Reading database ... 25%
-(Reading database ... 30%
-(Reading database ... 35%
-(Reading database ... 40%
-(Reading database ... 45%
-(Reading database ... 50%
-(Reading database ... 55%
-(Reading database ... 60%
-(Reading database ... 65%
-(Reading database ... 70%
-(Reading database ... 75%
-(Reading database ... 80%
-(Reading database ... 85%
-(Reading database ... 90%
-(Reading database ... 95%
-(Reading database ... 100%
-(Reading database ... 215504 files and directories currently installed.)
-Preparing to unpack .../0-fonts-ipafont-gothic_00303-21ubuntu1_all.deb ...
-Unpacking fonts-ipafont-gothic (00303-21ubuntu1) ...
-Selecting previously unselected package fonts-freefont-ttf.
-Preparing to unpack .../1-fonts-freefont-ttf_20211204+svn4273-2_all.deb ...
-Unpacking fonts-freefont-ttf (20211204+svn4273-2) ...
-Selecting previously unselected package fonts-tlwg-loma-otf.
-Preparing to unpack .../2-fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb ...
-Unpacking fonts-tlwg-loma-otf (1:0.7.3-1) ...
-Selecting previously unselected package fonts-unifont.
-Preparing to unpack .../3-fonts-unifont_1%3a15.1.01-1build1_all.deb ...
-Unpacking fonts-unifont (1:15.1.01-1build1) ...
-Selecting previously unselected package fonts-wqy-zenhei.
-Preparing to unpack .../4-fonts-wqy-zenhei_0.9.45-8_all.deb ...
-Unpacking fonts-wqy-zenhei (0.9.45-8) ...
-Selecting previously unselected package xfonts-encodings.
-Preparing to unpack .../5-xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb ...
-Unpacking xfonts-encodings (1:1.0.5-0ubuntu2) ...
-Selecting previously unselected package xfonts-utils.
-Preparing to unpack .../6-xfonts-utils_1%3a7.7+6build3_amd64.deb ...
-Unpacking xfonts-utils (1:7.7+6build3) ...
-Selecting previously unselected package xfonts-cyrillic.
-Preparing to unpack .../7-xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb ...
-Unpacking xfonts-cyrillic (1:1.0.5+nmu1) ...
-Selecting previously unselected package xfonts-scalable.
-Preparing to unpack .../8-xfonts-scalable_1%3a1.0.3-1.3_all.deb ...
-Unpacking xfonts-scalable (1:1.0.3-1.3) ...
-Setting up fonts-wqy-zenhei (0.9.45-8) ...
-Setting up fonts-freefont-ttf (20211204+svn4273-2) ...
-Setting up fonts-tlwg-loma-otf (1:0.7.3-1) ...
-Setting up xfonts-encodings (1:1.0.5-0ubuntu2) ...
-Setting up fonts-ipafont-gothic (00303-21ubuntu1) ...
-update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
-Setting up fonts-unifont (1:15.1.01-1build1) ...
-Setting up xfonts-utils (1:7.7+6build3) ...
-Setting up xfonts-cyrillic (1:1.0.5+nmu1) ...
-Setting up xfonts-scalable (1:1.0.3-1.3) ...
-Processing triggers for man-db (2.12.0-4build2) ...
-Not building database; man-db/auto-update is not 'true'.
-Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
-
-Running kernel seems to be up-to-date.
-
-No services need to be restarted.
-
-No containers need to be restarted.
-
-No user sessions are running outdated binaries.
-
-No VM guests are running outdated hypervisor (qemu) binaries on this host.
-Downloading Chrome for Testing 149.0.7827.55 (playwright chromium v1228) from https://cdn.playwright.dev/builds/cft/149.0.7827.55/linux64/chrome-linux64.zip
-|                                                                                |   0% of 177 MiB
-|■■■■■■■■                                                                        |  10% of 177 MiB
-|■■■■■■■■■■■■■■■■                                                                |  20% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 177 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 177 MiB
-Chrome for Testing 149.0.7827.55 (playwright chromium v1228) downloaded to /home/runner/.cache/ms-playwright/chromium-1228
-Downloading FFmpeg (playwright ffmpeg v1011) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
-|                                                                                |   0% of 2.3 MiB
-|■■■■■■■■                                                                        |  10% of 2.3 MiB
-|■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
-FFmpeg (playwright ffmpeg v1011) downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1011
-Downloading Chrome Headless Shell 149.0.7827.55 (playwright chromium-headless-shell v1228) from https://cdn.playwright.dev/builds/cft/149.0.7827.55/linux64/chrome-headless-shell-linux64.zip
-|                                                                                |   0% of 114.2 MiB
-|■■■■■■■■                                                                        |  10% of 114.2 MiB
-|■■■■■■■■■■■■■■■■                                                                |  20% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 114.2 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 114.2 MiB
-Chrome Headless Shell 149.0.7827.55 (playwright chromium-headless-shell v1228) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1228
-2m 32s
-Run docker compose up -d --build
-time="2026-11-01T07:21:09Z" level=warning msg="The \"RECEIPT_HMAC_SECRET\" variable is not set. Defaulting to a blank string."
-time="2026-11-01T07:21:09Z" level=warning msg="The \"MFA_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
-time="2026-11-01T07:21:09Z" level=warning msg="The \"RECEIPT_HMAC_SECRET\" variable is not set. Defaulting to a blank string."
- minio Pulling 
- minio-init Pulling 
- redis Pulling 
- postgres Pulling 
- db-roles Pulling 
- 7d0737898ab0 Pulling fs layer 
- 381791658085 Pulling fs layer 
- aadb085c98c4 Pulling fs layer 
- 468bab5a2c7a Pulling fs layer 
- 44982c185c39 Pulling fs layer 
- f16f3632c3df Pulling fs layer 
- 86a524b3dc0f Pulling fs layer 
- 468bab5a2c7a Waiting 
- 44982c185c39 Waiting 
- 534f713e5447 Pulling fs layer 
- 564e16acbe7c Pulling fs layer 
- f16f3632c3df Waiting 
- 86a524b3dc0f Waiting 
- 534f713e5447 Waiting 
- 564e16acbe7c Waiting 
- 759efa4719c9 Pulling fs layer 
- a239ec2b8fe1 Pulling fs layer 
- cef7ad5a05c6 Pulling fs layer 
- 1ea868e596ec Pulling fs layer 
- 759efa4719c9 Waiting 
- ae75cb664c8f Pulling fs layer 
- 4f4fb700ef54 Pulling fs layer 
- a239ec2b8fe1 Waiting 
- e25d07126ba7 Pulling fs layer 
- cef7ad5a05c6 Waiting 
- ae75cb664c8f Waiting 
- 1ea868e596ec Waiting 
- 4f4fb700ef54 Waiting 
- e25d07126ba7 Waiting 
- 1b644c6f3b1d Pulling fs layer 
- 1b644c6f3b1d Waiting 
- 7b229517ed22 Pulling fs layer 
- 768bbab50810 Pulling fs layer 
- d982e6c592c4 Pulling fs layer 
- a735dce41235 Pulling fs layer 
- 42065dcfea93 Pulling fs layer 
- f121f7f3dec1 Pulling fs layer 
- 7ea8819886f9 Pulling fs layer 
- d3f6cab92edc Pulling fs layer 
- 911527e7800c Pulling fs layer 
- 22df74fd5323 Pulling fs layer 
- 9f477227db48 Pulling fs layer 
- f121f7f3dec1 Waiting 
- 7ea8819886f9 Waiting 
- d3f6cab92edc Waiting 
- 911527e7800c Waiting 
- 22df74fd5323 Waiting 
- 9f477227db48 Waiting 
- 7b229517ed22 Waiting 
- 768bbab50810 Waiting 
- d982e6c592c4 Waiting 
- a735dce41235 Waiting 
- 42065dcfea93 Waiting 
- 7b229517ed22 Pulling fs layer 
- 768bbab50810 Pulling fs layer 
- d982e6c592c4 Pulling fs layer 
- a735dce41235 Pulling fs layer 
- 42065dcfea93 Pulling fs layer 
- f121f7f3dec1 Pulling fs layer 
- 768bbab50810 Waiting 
- 7ea8819886f9 Pulling fs layer 
- 7b229517ed22 Waiting 
- a735dce41235 Waiting 
- d3f6cab92edc Pulling fs layer 
- 911527e7800c Pulling fs layer 
- d982e6c592c4 Waiting 
- f121f7f3dec1 Waiting 
- 22df74fd5323 Pulling fs layer 
- 9f477227db48 Pulling fs layer 
- 42065dcfea93 Waiting 
- 9f477227db48 Waiting 
- d3f6cab92edc Waiting 
- 911527e7800c Waiting 
- 22df74fd5323 Waiting 
- 7ea8819886f9 Waiting 
- aadb085c98c4 Downloading [======>                                            ]  16.38kB/126.9kB
- 381791658085 Downloading [>                                                  ]  32.13kB/1.637MB
- aadb085c98c4 Downloading [==================================================>]  126.9kB/126.9kB
- aadb085c98c4 Download complete 
- 7d0737898ab0 Downloading [>                                                  ]  81.92kB/7.266MB
- 381791658085 Verifying Checksum 
- 381791658085 Download complete 
- 7d0737898ab0 Verifying Checksum 
- 7d0737898ab0 Download complete 
- 7d0737898ab0 Extracting [>                                                  ]   98.3kB/7.266MB
- 7d0737898ab0 Extracting [=================================>                 ]  4.915MB/7.266MB
- 468bab5a2c7a Downloading [>                                                  ]    407kB/39.45MB
- 44982c185c39 Downloading [>                                                  ]    114kB/11.19MB
- f16f3632c3df Downloading [>                                                  ]  32.13kB/2.402MB
- 7d0737898ab0 Extracting [==================================================>]  7.266MB/7.266MB
- 7d0737898ab0 Extracting [==================================================>]  7.266MB/7.266MB
- 44982c185c39 Verifying Checksum 
- 44982c185c39 Download complete 
- f16f3632c3df Verifying Checksum 
- f16f3632c3df Download complete 
- 7d0737898ab0 Pull complete 
- 381791658085 Extracting [=>                                                 ]  32.77kB/1.637MB
- 381791658085 Extracting [==================================================>]  1.637MB/1.637MB
- 381791658085 Extracting [==================================================>]  1.637MB/1.637MB
- 468bab5a2c7a Downloading [============================================>      ]  35.25MB/39.45MB
- 468bab5a2c7a Verifying Checksum 
- 468bab5a2c7a Download complete 
- 86a524b3dc0f Downloading [====>                                              ]  16.38kB/180.3kB
- 86a524b3dc0f Verifying Checksum 
- 86a524b3dc0f Download complete 
- 534f713e5447 Downloading [==============>                                    ]    3.5kB/11.87kB
- 534f713e5447 Download complete 
- 564e16acbe7c Downloading [==================================================>]     490B/490B
- 564e16acbe7c Verifying Checksum 
- 564e16acbe7c Download complete 
- 759efa4719c9 Downloading [>                                                  ]  48.55kB/3.625MB
- a239ec2b8fe1 Downloading [==================================================>]     950B/950B
- a239ec2b8fe1 Verifying Checksum 
- a239ec2b8fe1 Download complete 
- 759efa4719c9 Downloading [==================================================>]  3.625MB/3.625MB
- 759efa4719c9 Verifying Checksum 
- 759efa4719c9 Download complete 
- 759efa4719c9 Extracting [>                                                  ]  65.54kB/3.625MB
- cef7ad5a05c6 Downloading [>                                                  ]    3.5kB/198.7kB
- cef7ad5a05c6 Downloading [==================================================>]  198.7kB/198.7kB
- cef7ad5a05c6 Download complete 
- 759efa4719c9 Extracting [===>                                               ]  262.1kB/3.625MB
- 1ea868e596ec Downloading [>                                                  ]  130.5kB/12.42MB
- ae75cb664c8f Downloading [==================================================>]     100B/100B
- ae75cb664c8f Verifying Checksum 
- ae75cb664c8f Download complete 
- 1ea868e596ec Verifying Checksum 
- 1ea868e596ec Download complete 
- 4f4fb700ef54 Downloading [==================================================>]      32B/32B
- 4f4fb700ef54 Verifying Checksum 
- 4f4fb700ef54 Download complete 
- 759efa4719c9 Extracting [==================================================>]  3.625MB/3.625MB
- e25d07126ba7 Downloading [==================================================>]     601B/601B
- e25d07126ba7 Verifying Checksum 
- e25d07126ba7 Download complete 
- 7b229517ed22 Downloading [>                                                  ]  48.55kB/3.853MB
- 7b229517ed22 Downloading [>                                                  ]  48.55kB/3.853MB
- 1b644c6f3b1d Downloading [>                                                  ]  536.9kB/57.17MB
- 7b229517ed22 Verifying Checksum 
- 7b229517ed22 Download complete 
- 7b229517ed22 Download complete 
- 7b229517ed22 Extracting [>                                                  ]  65.54kB/3.853MB
- 7b229517ed22 Extracting [>                                                  ]  65.54kB/3.853MB
- 759efa4719c9 Pull complete 
- 1b644c6f3b1d Downloading [===================================>               ]  41.02MB/57.17MB
- 768bbab50810 Downloading [==================================================>]     968B/968B
- 768bbab50810 Verifying Checksum 
- 768bbab50810 Download complete 
- 768bbab50810 Verifying Checksum 
- 768bbab50810 Download complete 
- 1b644c6f3b1d Verifying Checksum 
- 1b644c6f3b1d Download complete 
- 7b229517ed22 Extracting [===>                                               ]  262.1kB/3.853MB
- 7b229517ed22 Extracting [===>                                               ]  262.1kB/3.853MB
- a239ec2b8fe1 Extracting [==================================================>]     950B/950B
- a239ec2b8fe1 Extracting [==================================================>]     950B/950B
- d982e6c592c4 Downloading [>                                                  ]  15.79kB/900kB
- d982e6c592c4 Downloading [>                                                  ]  15.79kB/900kB
- 1b644c6f3b1d Extracting [>                                                  ]  557.1kB/57.17MB
- d982e6c592c4 Downloading [==================================================>]    900kB/900kB
- d982e6c592c4 Verifying Checksum 
- d982e6c592c4 Download complete 
- d982e6c592c4 Verifying Checksum 
- d982e6c592c4 Download complete 
- 7b229517ed22 Extracting [==============================================>    ]  3.604MB/3.853MB
- 7b229517ed22 Extracting [==============================================>    ]  3.604MB/3.853MB
- 7b229517ed22 Extracting [==================================================>]  3.853MB/3.853MB
- 7b229517ed22 Extracting [==================================================>]  3.853MB/3.853MB
- 7b229517ed22 Extracting [==================================================>]  3.853MB/3.853MB
- 7b229517ed22 Extracting [==================================================>]  3.853MB/3.853MB
- 1b644c6f3b1d Extracting [====>                                              ]  5.571MB/57.17MB
- a735dce41235 Downloading [==================================================>]     173B/173B
- a735dce41235 Verifying Checksum 
- a735dce41235 Download complete 
- a735dce41235 Downloading [==================================================>]     173B/173B
- a735dce41235 Verifying Checksum 
- a735dce41235 Download complete 
- 42065dcfea93 Verifying Checksum 
- 42065dcfea93 Downloading [==================================================>]     116B/116B
- 42065dcfea93 Download complete 
- 42065dcfea93 Verifying Checksum 
- 42065dcfea93 Download complete 
- f121f7f3dec1 Downloading [>                                                  ]  534.1kB/111.3MB
- f121f7f3dec1 Downloading [>                                                  ]  534.1kB/111.3MB
- 1b644c6f3b1d Extracting [==========>                                        ]   11.7MB/57.17MB
- 7ea8819886f9 Downloading [==================>                                ]  3.502kB/9.671kB
- 7ea8819886f9 Downloading [==================================================>]  9.671kB/9.671kB
- 7ea8819886f9 Verifying Checksum 
- 7ea8819886f9 Download complete 
- 7ea8819886f9 Downloading [==================>                                ]  3.502kB/9.671kB
- 7ea8819886f9 Verifying Checksum 
- 7ea8819886f9 Download complete 
- f121f7f3dec1 Downloading [================>                                  ]  36.33MB/111.3MB
- f121f7f3dec1 Downloading [================>                                  ]  36.33MB/111.3MB
- 1b644c6f3b1d Extracting [==============>                                    ]  16.15MB/57.17MB
- d3f6cab92edc Downloading [==================================================>]     130B/130B
- d3f6cab92edc Downloading [==================================================>]     130B/130B
- d3f6cab92edc Verifying Checksum 
- d3f6cab92edc Download complete 
- d3f6cab92edc Verifying Checksum 
- d3f6cab92edc Download complete 
- f121f7f3dec1 Downloading [====================>                              ]  45.96MB/111.3MB
- f121f7f3dec1 Downloading [====================>                              ]  45.96MB/111.3MB
- 7b229517ed22 Pull complete 
- 7b229517ed22 Pull complete 
- 1b644c6f3b1d Extracting [==============>                                    ]  16.71MB/57.17MB
- 911527e7800c Downloading [==================================================>]     169B/169B
- 911527e7800c Verifying Checksum 
- 911527e7800c Download complete 
- 911527e7800c Verifying Checksum 
- 911527e7800c Download complete 
- f121f7f3dec1 Downloading [========================================>          ]  89.76MB/111.3MB
- f121f7f3dec1 Downloading [========================================>          ]  89.76MB/111.3MB
- 22df74fd5323 Downloading [============================>                      ]  3.502kB/6.108kB
- 22df74fd5323 Downloading [==================================================>]  6.108kB/6.108kB
- 22df74fd5323 Verifying Checksum 
- 22df74fd5323 Download complete 
- 22df74fd5323 Downloading [============================>                      ]  3.502kB/6.108kB
- 22df74fd5323 Downloading [==================================================>]  6.108kB/6.108kB
- 22df74fd5323 Verifying Checksum 
- 22df74fd5323 Download complete 
- 1b644c6f3b1d Extracting [===============>                                   ]  17.83MB/57.17MB
- f121f7f3dec1 Verifying Checksum 
- f121f7f3dec1 Download complete 
- f121f7f3dec1 Verifying Checksum 
- f121f7f3dec1 Download complete 
- 1b644c6f3b1d Extracting [================>                                  ]  18.94MB/57.17MB
- 9f477227db48 Download complete 
- 9f477227db48 Download complete 
- 768bbab50810 Extracting [==================================================>]     968B/968B
- 768bbab50810 Extracting [==================================================>]     968B/968B
- 768bbab50810 Extracting [==================================================>]     968B/968B
- 768bbab50810 Extracting [==================================================>]     968B/968B
- 1b644c6f3b1d Extracting [======================>                            ]  26.18MB/57.17MB
- 1b644c6f3b1d Extracting [=========================>                         ]  28.97MB/57.17MB
- 1b644c6f3b1d Extracting [==============================>                    ]  34.54MB/57.17MB
- 1b644c6f3b1d Extracting [==================================>                ]  39.55MB/57.17MB
- 1b644c6f3b1d Extracting [======================================>            ]  44.01MB/57.17MB
- 1b644c6f3b1d Extracting [========================================>          ]  46.79MB/57.17MB
- 1b644c6f3b1d Extracting [============================================>      ]  50.69MB/57.17MB
- 1b644c6f3b1d Extracting [===============================================>   ]  54.03MB/57.17MB
- 1b644c6f3b1d Extracting [=================================================> ]  56.26MB/57.17MB
- 768bbab50810 Pull complete 
- 768bbab50810 Pull complete 
- 1b644c6f3b1d Extracting [==================================================>]  57.17MB/57.17MB
- d982e6c592c4 Extracting [=>                                                 ]  32.77kB/900kB
- d982e6c592c4 Extracting [=>                                                 ]  32.77kB/900kB
- 1b644c6f3b1d Pull complete 
- d982e6c592c4 Extracting [==============>                                    ]  262.1kB/900kB
- d982e6c592c4 Extracting [==============>                                    ]  262.1kB/900kB
- d982e6c592c4 Extracting [==================================================>]    900kB/900kB
- d982e6c592c4 Extracting [==================================================>]    900kB/900kB
- d982e6c592c4 Extracting [==================================================>]    900kB/900kB
- d982e6c592c4 Extracting [==================================================>]    900kB/900kB
- minio-init Pulled 
- d982e6c592c4 Pull complete 
- a239ec2b8fe1 Pull complete 
- d982e6c592c4 Pull complete 
- 381791658085 Pull complete 
- a735dce41235 Extracting [==================================================>]     173B/173B
- a735dce41235 Extracting [==================================================>]     173B/173B
- a735dce41235 Extracting [==================================================>]     173B/173B
- a735dce41235 Extracting [==================================================>]     173B/173B
- aadb085c98c4 Extracting [============>                                      ]  32.77kB/126.9kB
- aadb085c98c4 Extracting [==================================================>]  126.9kB/126.9kB
- cef7ad5a05c6 Extracting [========>                                          ]  32.77kB/198.7kB
- cef7ad5a05c6 Extracting [==================================================>]  198.7kB/198.7kB
- aadb085c98c4 Pull complete 
- a735dce41235 Pull complete 
- a735dce41235 Pull complete 
- 42065dcfea93 Extracting [==================================================>]     116B/116B
- 42065dcfea93 Extracting [==================================================>]     116B/116B
- 42065dcfea93 Extracting [==================================================>]     116B/116B
- 468bab5a2c7a Extracting [>                                                  ]    426kB/39.45MB
- 42065dcfea93 Pull complete 
- 42065dcfea93 Pull complete 
- f121f7f3dec1 Extracting [>                                                  ]  557.1kB/111.3MB
- f121f7f3dec1 Extracting [>                                                  ]  557.1kB/111.3MB
- cef7ad5a05c6 Extracting [==================================================>]  198.7kB/198.7kB
- 468bab5a2c7a Extracting [========>                                          ]  6.816MB/39.45MB
- f121f7f3dec1 Extracting [=>                                                 ]  2.785MB/111.3MB
- f121f7f3dec1 Extracting [=>                                                 ]  2.785MB/111.3MB
- 468bab5a2c7a Extracting [================>                                  ]  13.21MB/39.45MB
- f121f7f3dec1 Extracting [=====>                                             ]   11.7MB/111.3MB
- f121f7f3dec1 Extracting [=====>                                             ]   11.7MB/111.3MB
- 468bab5a2c7a Extracting [============================>                      ]  22.15MB/39.45MB
- f121f7f3dec1 Extracting [=========>                                         ]  21.17MB/111.3MB
- f121f7f3dec1 Extracting [=========>                                         ]  21.17MB/111.3MB
- 468bab5a2c7a Extracting [======================================>            ]  30.24MB/39.45MB
- f121f7f3dec1 Extracting [=============>                                     ]  30.64MB/111.3MB
- f121f7f3dec1 Extracting [=============>                                     ]  30.64MB/111.3MB
- 468bab5a2c7a Extracting [=================================================> ]  39.19MB/39.45MB
- 468bab5a2c7a Extracting [==================================================>]  39.45MB/39.45MB
- f121f7f3dec1 Extracting [=================>                                 ]  39.55MB/111.3MB
- f121f7f3dec1 Extracting [=================>                                 ]  39.55MB/111.3MB
- f121f7f3dec1 Extracting [======================>                            ]  50.14MB/111.3MB
- f121f7f3dec1 Extracting [======================>                            ]  50.14MB/111.3MB
- f121f7f3dec1 Extracting [==========================>                        ]  57.93MB/111.3MB
- f121f7f3dec1 Extracting [==========================>                        ]  57.93MB/111.3MB
- f121f7f3dec1 Extracting [==============================>                    ]  66.85MB/111.3MB
- f121f7f3dec1 Extracting [==============================>                    ]  66.85MB/111.3MB
- f121f7f3dec1 Extracting [==================================>                ]  77.43MB/111.3MB
- f121f7f3dec1 Extracting [==================================>                ]  77.43MB/111.3MB
- f121f7f3dec1 Extracting [====================================>              ]  81.33MB/111.3MB
- f121f7f3dec1 Extracting [====================================>              ]  81.33MB/111.3MB
- f121f7f3dec1 Extracting [=====================================>             ]  83.56MB/111.3MB
- f121f7f3dec1 Extracting [=====================================>             ]  83.56MB/111.3MB
- f121f7f3dec1 Extracting [=======================================>           ]  88.01MB/111.3MB
- f121f7f3dec1 Extracting [=======================================>           ]  88.01MB/111.3MB
- f121f7f3dec1 Extracting [==========================================>        ]  93.59MB/111.3MB
- f121f7f3dec1 Extracting [==========================================>        ]  93.59MB/111.3MB
- f121f7f3dec1 Extracting [============================================>      ]  98.04MB/111.3MB
- f121f7f3dec1 Extracting [============================================>      ]  98.04MB/111.3MB
- f121f7f3dec1 Extracting [==============================================>    ]  104.2MB/111.3MB
- f121f7f3dec1 Extracting [==============================================>    ]  104.2MB/111.3MB
- f121f7f3dec1 Extracting [==================================================>]  111.3MB/111.3MB
- f121f7f3dec1 Extracting [==================================================>]  111.3MB/111.3MB
- cef7ad5a05c6 Pull complete 
- 1ea868e596ec Extracting [>                                                  ]  131.1kB/12.42MB
- 1ea868e596ec Extracting [==================>                                ]  4.719MB/12.42MB
- 1ea868e596ec Extracting [==================================================>]  12.42MB/12.42MB
- 1ea868e596ec Pull complete 
- 468bab5a2c7a Pull complete 
- f121f7f3dec1 Pull complete 
- f121f7f3dec1 Pull complete 
- 7ea8819886f9 Extracting [==================================================>]  9.671kB/9.671kB
- 7ea8819886f9 Extracting [==================================================>]  9.671kB/9.671kB
- 7ea8819886f9 Extracting [==================================================>]  9.671kB/9.671kB
- 7ea8819886f9 Extracting [==================================================>]  9.671kB/9.671kB
- ae75cb664c8f Extracting [==================================================>]     100B/100B
- ae75cb664c8f Extracting [==================================================>]     100B/100B
- 44982c185c39 Extracting [>                                                  ]  131.1kB/11.19MB
- 7ea8819886f9 Pull complete 
- 7ea8819886f9 Pull complete 
- ae75cb664c8f Pull complete 
- d3f6cab92edc Extracting [==================================================>]     130B/130B
- d3f6cab92edc Extracting [==================================================>]     130B/130B
- d3f6cab92edc Extracting [==================================================>]     130B/130B
- d3f6cab92edc Extracting [==================================================>]     130B/130B
- 4f4fb700ef54 Extracting [==================================================>]      32B/32B
- 4f4fb700ef54 Extracting [==================================================>]      32B/32B
- 4f4fb700ef54 Pull complete 
- d3f6cab92edc Pull complete 
- d3f6cab92edc Pull complete 
- e25d07126ba7 Extracting [==================================================>]     601B/601B
- e25d07126ba7 Extracting [==================================================>]     601B/601B
- 911527e7800c Extracting [==================================================>]     169B/169B
- 911527e7800c Extracting [==================================================>]     169B/169B
- 911527e7800c Extracting [==================================================>]     169B/169B
- 911527e7800c Pull complete 
- 911527e7800c Pull complete 
- e25d07126ba7 Pull complete 
- 22df74fd5323 Extracting [==================================================>]  6.108kB/6.108kB
- 22df74fd5323 Extracting [==================================================>]  6.108kB/6.108kB
- 22df74fd5323 Extracting [==================================================>]  6.108kB/6.108kB
- redis Pulled 
- 44982c185c39 Extracting [==============================>                    ]  6.816MB/11.19MB
- 22df74fd5323 Pull complete 
- 22df74fd5323 Pull complete 
- 9f477227db48 Extracting [==================================================>]     183B/183B
- 9f477227db48 Extracting [==================================================>]     183B/183B
- 9f477227db48 Extracting [==================================================>]     183B/183B
- 9f477227db48 Extracting [==================================================>]     183B/183B
- 9f477227db48 Pull complete 
- 9f477227db48 Pull complete 
- db-roles Pulled 
- postgres Pulled 
- 44982c185c39 Extracting [==================================================>]  11.19MB/11.19MB
- 44982c185c39 Pull complete 
- f16f3632c3df Extracting [>                                                  ]  32.77kB/2.402MB
- f16f3632c3df Extracting [==================================================>]  2.402MB/2.402MB
- f16f3632c3df Pull complete 
- 86a524b3dc0f Extracting [=========>                                         ]  32.77kB/180.3kB
- 86a524b3dc0f Extracting [==================================================>]  180.3kB/180.3kB
- 86a524b3dc0f Extracting [==================================================>]  180.3kB/180.3kB
- 86a524b3dc0f Pull complete 
- 534f713e5447 Extracting [==================================================>]  11.87kB/11.87kB
- 534f713e5447 Extracting [==================================================>]  11.87kB/11.87kB
- 534f713e5447 Pull complete 
- 564e16acbe7c Extracting [==================================================>]     490B/490B
- 564e16acbe7c Extracting [==================================================>]     490B/490B
- 564e16acbe7c Pull complete 
- minio Pulled 
-#1 [internal] load local bake definitions
-#1 reading from stdin 3.64kB done
-#1 DONE 0.0s
-
-#2 [finance internal] load build definition from Dockerfile
-#2 transferring dockerfile: 1.69kB 0.0s done
-#2 DONE 0.1s
-
-#3 [staff internal] load build definition from Dockerfile
-#3 transferring dockerfile: 1.43kB 0.0s done
-#3 DONE 0.1s
-
-#4 [identity internal] load build definition from Dockerfile
-#4 transferring dockerfile: 1.83kB 0.0s done
-#4 DONE 0.1s
-
-#5 [campus internal] load build definition from Dockerfile
-#5 transferring dockerfile: 1.37kB 0.0s done
-#5 DONE 0.1s
-
-#6 [ops internal] load build definition from Dockerfile
-#6 transferring dockerfile: 1.40kB 0.0s done
-#6 DONE 0.1s
-
-#7 [frontend-spa internal] load build definition from Dockerfile.frontend
-#7 transferring dockerfile: 1.54kB 0.0s done
-#7 DONE 0.1s
-
-#8 [classroom internal] load build definition from Dockerfile
-#8 transferring dockerfile: 1.49kB 0.0s done
-#8 DONE 0.1s
-
-#9 [api-gateway internal] load build definition from Dockerfile
-#9 transferring dockerfile: 834B 0.0s done
-#9 DONE 0.1s
-
-#10 [comms internal] load build definition from Dockerfile
-#10 transferring dockerfile: 1.43kB 0.0s done
-#10 DONE 0.1s
-
-#11 [lifecycle internal] load build definition from Dockerfile
-#11 transferring dockerfile: 1.49kB 0.0s done
-#11 DONE 0.1s
-
-#12 [academic internal] load build definition from Dockerfile
-#12 transferring dockerfile: 1.47kB 0.0s done
-#12 DONE 0.1s
-
-#13 [academic internal] load metadata for docker.io/library/node:20-alpine
-#13 ...
-
-#14 [auth] library/nginx:pull token for registry-1.docker.io
-#14 DONE 0.0s
-
-#15 [auth] library/node:pull token for registry-1.docker.io
-#15 DONE 0.0s
-
-#16 [frontend-spa internal] load metadata for docker.io/library/nginx:1.25.5-alpine
-#16 DONE 0.8s
-
-#13 [academic internal] load metadata for docker.io/library/node:20-alpine
-#13 DONE 0.8s
-
-#17 [campus internal] load .dockerignore
-#17 transferring context: 74B done
-#17 DONE 0.0s
-
-#18 [frontend-spa internal] load .dockerignore
-#18 transferring context: 506B done
-#18 DONE 0.0s
-
-#19 [staff internal] load .dockerignore
-#19 transferring context: 74B done
-#19 DONE 0.0s
-
-#20 [academic internal] load .dockerignore
-#20 transferring context: 74B done
-#20 DONE 0.0s
-
-#21 [finance internal] load .dockerignore
-#21 transferring context: 74B done
-#21 DONE 0.0s
-
-#22 [ops internal] load .dockerignore
-#22 transferring context: 74B done
-#22 DONE 0.0s
-
-#23 [lifecycle internal] load .dockerignore
-#23 transferring context: 74B done
-#23 DONE 0.0s
-
-#24 [api-gateway internal] load .dockerignore
-#24 transferring context: 75B done
-#24 DONE 0.0s
-
-#25 [classroom internal] load .dockerignore
-#25 transferring context: 74B done
-#25 DONE 0.0s
-
-#26 [identity internal] load .dockerignore
-#26 transferring context: 69B done
-#26 DONE 0.0s
-
-#27 [comms internal] load .dockerignore
-#27 transferring context: 74B done
-#27 DONE 0.0s
-
-#28 [staff internal] load build context
-#28 transferring context: 148.66kB 0.0s done
-#28 DONE 0.1s
-
-#29 [campus internal] load build context
-#29 transferring context: 128.28kB 0.0s done
-#29 DONE 0.1s
-
-#30 [ops internal] load build context
-#30 transferring context: 125.10kB done
-#30 DONE 0.0s
-
-#31 [finance internal] load build context
-#31 transferring context: 420.95kB 0.0s done
-#31 DONE 0.0s
-
-#32 [lifecycle builder  1/10] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-#32 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 done
-#32 ...
-
-#33 [academic internal] load build context
-#33 transferring context: 975.10kB 0.0s done
-#33 DONE 0.1s
-
-#34 [classroom internal] load build context
-#34 transferring context: 240.96kB 0.0s done
-#34 DONE 0.1s
-
-#35 [comms internal] load build context
-#35 transferring context: 152.91kB done
-#35 DONE 0.0s
-
-#36 [api-gateway internal] load build context
-#36 transferring context: 73.24kB done
-#36 DONE 0.1s
-
-#37 [lifecycle internal] load build context
-#37 transferring context: 248.36kB 0.0s done
-#37 DONE 0.1s
-
-#38 [identity internal] load build context
-#38 transferring context: 648.13kB 0.0s done
-#38 DONE 0.1s
-
-#32 [lifecycle builder  1/10] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-#32 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 0B / 43.23MB 0.1s
-#32 sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122 0B / 1.26MB 0.1s
-#32 sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 7.67kB / 7.67kB done
-#32 sha256:afdf98210b07b586eb71fa22ba2e432e058e4cd1304d31ed60888755b8c865fb 1.72kB / 1.72kB done
-#32 sha256:11cedc39e663e7c5d5cb9cc77a461a0d2adc25537b94e6831a6108f09cb2001b 6.52kB / 6.52kB done
-#32 sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 0B / 3.86MB 0.1s
-#32 extracting sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb
-#32 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 7.34MB / 43.23MB 0.2s
-#32 sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 3.86MB / 3.86MB 0.1s done
-#32 extracting sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 0.1s done
-#32 sha256:fff4e2c1b189bf87d63ad8bd07f7f4eb288d6f2b6a07a8bb44c60e8c075d2096 0B / 445B 0.2s
-#32 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 43.23MB / 43.23MB 0.4s
-#32 sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122 1.26MB / 1.26MB 0.2s done
-#32 extracting sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb 0.1s done
-#32 sha256:fff4e2c1b189bf87d63ad8bd07f7f4eb288d6f2b6a07a8bb44c60e8c075d2096 445B / 445B 0.2s done
-#32 ...
-
-#39 [frontend-spa internal] load build context
-#39 transferring context: 101.14MB 0.4s done
-#39 DONE 0.6s
-
-#32 [lifecycle builder  1/10] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
-#32 sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 43.23MB / 43.23MB 0.6s done
-#32 extracting sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287
-#32 extracting sha256:4feea04c154301db6f4a496efa397b3db96603b1c009c797cfdde77bea8b3287 0.9s done
-#32 extracting sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122
-#32 extracting sha256:b2cbbfe903b0821005780971ddc5892edcc4ce74c5a48d82e1d2b382edac3122 0.0s done
-#32 extracting sha256:fff4e2c1b189bf87d63ad8bd07f7f4eb288d6f2b6a07a8bb44c60e8c075d2096 done
-#32 DONE 2.5s
-
-#40 [lifecycle builder  2/10] WORKDIR /app
-#40 DONE 0.0s
-
-#41 [frontend-spa builder 3/6] COPY package.json package-lock.json ./
-#41 DONE 0.0s
-
-#42 [finance builder  3/10] RUN apk add --no-cache openssl
-#42 ...
-
-#43 [api-gateway stage-1 3/7] RUN addgroup -S gateway && adduser -S gateway -G gateway
-#43 DONE 0.4s
-
-#44 [api-gateway stage-1 4/7] COPY package.json package-lock.json* ./
-#44 DONE 0.1s
-
-#45 [api-gateway stage-1 5/7] RUN npm install --omit=dev && chown -R gateway:gateway /app
-#45 ...
-
-0s
-0s
-1m 38s
-0s
-2s
-0s
-0s
-0s
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       145G   39G  106G  27% /
+tmpfs           7.9G   84K  7.9G   1% /dev/shm
+tmpfs           3.2G 1012K  3.2G   1% /run
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/sda16      881M   85M  735M  11% /boot
+/dev/sda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           1.6G   12K  1.6G   1% /run/user/1001
+
+
+
+
+Here is the result of the command I ran on the server:
+
+ubuntu@ip-172-26-15-38:~$ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       155G  155G     0 100% /
+ubuntu@ip-172-26-15-38:~$ docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          358       18        161.1GB   -1.233e+09B (0%)
+Containers      17        15        737.3kB   45.06kB (6%)
+Local Volumes   7         7         76.12MB   0B (0%)
+Build Cache     202       0         9.592GB   9.592GB
+ubuntu@ip-172-26-15-38:~$ docker image prune -f
+
+
+Error response from daemon: gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+gc failed
+ubuntu@ip-172-26-15-38:~$
+ubuntu@ip-172-26-15-38:~$
+ubuntu@ip-172-26-15-38:~$ docker image prune -af --filter "until=168h"
+Deleted Images:
+untagged: gnet-sms-api-gateway:latest
+deleted: sha256:cad1560d91793af8891ce1f77a2ad8f6c5f72d78eb6ac0269986f4478ffdb0f3
+deleted: sha256:d2862cc760a13a70330ed86731b2ff2db86733fef6a10db2ad898e7ca61573a8
+deleted: sha256:b217d23ace89a5f362407c8bbc1c8cebd7e84ab6426a11a3fa11a145e46dcd2f
+untagged: gnet-sms-campus:latest
+deleted: sha256:9105d4ca8511f0e1ad71aed279a14229059a9cb293ac6526553d0af8e6108aae
+deleted: sha256:a404fe30553cf5d4a36b4e4ad16d8d497a96f458658fb3c1af4f96260a3ef1b5
+deleted: sha256:562910eebb90b0f6177687b653822d7746b940166b6b36c491b9197e19e4eecd
+untagged: gnet-sms-comms:latest
+deleted: sha256:c09b53bf07f1e0871e454d27787233c90e925a2562e5884411a92932a9a11a71
+deleted: sha256:6b9b941198294d5714473198de939fd6a775f518b209e897546dfcc877ea0350
+deleted: sha256:7fad29ae074c2a9ac32a41645cd24f1d4612b26a3dd15cdc6f9dd5af801fe588
+untagged: gnet-sms-finance:latest
+deleted: sha256:912c9f050fb4bdeb6b173a5139510704e546b1baaef511cb11ed6e3bd149468e
+deleted: sha256:4c20928ee56d957d58f93e52ebe3a4f12f318b85bd0cefec3ddd4b5aabb41d64
+deleted: sha256:e839eb0d5f2431ee5c5697fbbe1ee6ac297adfdbdbd15947016be4c606d94acb
+untagged: gnet-sms-frontend-spa:latest
+deleted: sha256:5e2402aafbf57c2e905e4f160656a2bd919656004ae4c1705c48b75ec39c6422
+deleted: sha256:48999640313f775abb21fbf3cbd21b9ab11aa91cc5bc5af7e42d515ec8ca5e2e
+deleted: sha256:5b7da01bfb80b96d2e488a9f054f6058b7d515a9c9bbfa9a040a781bc3306fee
+untagged: gnet-sms-ops:latest
+deleted: sha256:2f3990dc2e49eb275422759bdb94f46e77dbaecdf80db85381de345688fc7a1a
+deleted: sha256:659d913942dc2640f7f9be001f096b29767fae0491de594f1364c0fb13e32736
+deleted: sha256:3e89f58287b2c34a23078983ed2f936c8b0294b5bf36c654b1fd9a6ccf1c3c0b
+untagged: gnet-sms-staff:latest
+deleted: sha256:ba7433e9652e55c71b7b3c337e2313de5fb46ab3dd7e55d8079c46570ced5c21
+deleted: sha256:92e9ec9db2b2efbf7fcd50ad8f0d7b1bd2ae058d95036a4270ebf68c8802f5a2
+deleted: sha256:6e4037a674a831b171d0ce652a095ac35907ff57db55090a78ad5184d15b0a90
+untagged: gnet-sms-academic:latest
+deleted: sha256:168b0975940253641160733a05bf7725b60a6a7c9f37aa9df5e994e20f0b18e1
+deleted: sha256:fd51d4123a7d322f58ba397faa67b46b3d50c6108c8d0fcb5bcc4200b78d12d8
+deleted: sha256:848deab0015f5f6f878b8b457e1ab13bf225e2df2284068389f201e4df9c5b74
+untagged: gnet-sms-identity:latest
+deleted: sha256:6398edef9e16885b961ae6b4be77fd608a16b9570eb59e7b4e7fa9015d6e9cbe
+deleted: sha256:911a0978d7647c53399ecc8513abfa3a4338f287492b9f58db4373b2a66b4bcd
+deleted: sha256:620528c8e151f8f6f47177b183767c147454f12408badd1df3896a809a57b4ce
+untagged: gnet-sms-classroom:latest
+deleted: sha256:8a9bff04770551eed99fec457292d0207a51c84aa529ab426294a70caf1f19d2
+deleted: sha256:65a273757f41c2e23f671bf370fd853a96f1d02ffbe7ff3f98d46fca085b4710
+deleted: sha256:041aa534f0e98940fe2578bdefab0e9a8ef2fcf0aeb26a11dbe4a512de89cfbf
+untagged: gnet-sms-lifecycle:latest
+deleted: sha256:ede500d47fb13e62ba33e0d65cfdf4d8f14df1d445082e54166644dc38b296db
+deleted: sha256:828bae068f8af73f30c56440d8dbe81ab81737e533c94000c0a7e2d159b7a79a
+deleted: sha256:d8ddefaeb390999481d632f0686463b5d9390c1fe59a34eff4bc282359f2dd32
+untagged: hello-world:latest
+deleted: sha256:5e23090353324d887c48ad5e5c56d294eab81588df9605b07d1afe895f9cc8f8
+deleted: sha256:d1a8d0a4eeb63aff09f5f34d4d80505e0ba81905f36158cc3970d8e07179e59e
+deleted: sha256:8e752a1cddeafc02597e756f4a0ec96e29f63ac4bc4af87682daf3f1de843bb7
+
+Total reclaimed space: 197.8kB
+ubuntu@ip-172-26-15-38:~$ docker image prune -af --filter "until=168h"
+Total reclaimed space: 0B
+ubuntu@ip-172-26-15-38:~$ sudo journalctl --vacuum-size=200M
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@cd8c0e491991452391191771182cc067-0000000000000001-00065db2d8156757.journal (64.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/user-1000@d06ea0a86688412f92cf6b272fd55c6d-00000000000004be-00065db433a029b3.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000000001-00065f39eda2dc11.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000001041-00065f39ee32ba97.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000002081-00065f39eec1aaa8.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000002f2e-00065f39ef565f72.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000003f6e-00065f39efe5fac1.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000004e1f-00065f39f07a5794.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000005e5f-00065f39f10933ff.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000006ea0-00065f39f19934de.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000007d4f-00065f39f22db317.journal (8.0M).
+Deleted archived journal /var/log/journal/ec27d22c0b90527d424b47046f555fa3/system@79abf65f914a4e3eb343014ebf7d0fd5-0000000000008d8f-00065f39f2bc9df5.journal (8.0M).
+Vacuuming done, freed 152.0M of archived journals from /var/log/journal/ec27d22c0b90527d424b47046f555fa3.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+ubuntu@ip-172-26-15-38:~$ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       155G   19G  137G  12% /
+ubuntu@ip-172-26-15-38:~$

@@ -28,7 +28,7 @@ jobs:
           sudo rm -rf /usr/local/share/boost || true
           docker image prune -a --force || true
           docker builder prune -a --force || true
-          docker system prune -a --volumes --force || true
+          docker system prune -a --force || true
           echo "Disk after cleanup:"
           df -h
       - run: npm ci
@@ -87,7 +87,7 @@ jobs:
           sudo rm -rf /usr/local/share/boost || true
           docker image prune -a --force || true
           docker builder prune -a --force || true
-          docker system prune -a --volumes --force || true
+          docker system prune -a --force || true
           echo "Disk after cleanup:"
           df -h
       - run: npm ci

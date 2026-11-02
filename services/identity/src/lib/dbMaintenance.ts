@@ -36,7 +36,10 @@ import {
 
 const BACKUPS_DIR = process.env.BACKUPS_DIR || path.join(process.cwd(), "backups");
 const RETENTION = Number(process.env.BACKUP_RETENTION || 7);
-const MIN_FREE_BYTES = Math.max(0, Number(process.env.BACKUP_MIN_FREE_MB || 512)) * 1024 * 1024;
+const MIN_FREE_MB_RAW = Number(process.env.BACKUP_MIN_FREE_MB ?? 512);
+const MIN_FREE_MB =
+  Number.isFinite(MIN_FREE_MB_RAW) && MIN_FREE_MB_RAW >= 0 ? MIN_FREE_MB_RAW : 512;
+const MIN_FREE_BYTES = MIN_FREE_MB * 1024 * 1024;
 const S3_BUCKET = process.env.S3_BACKUP_BUCKET || process.env.S3_BUCKET || "sms-backups";
 const S3_PREFIX = "database-backups/";
 const S3_REGION = process.env.S3_REGION || "us-east-1";
@@ -309,7 +312,9 @@ export const dbMaintenance = {
     const uploadedToCloud = await uploadToCloud(filePath, name);
     const overflow = await pruneLocal();
     // Only drop cloud copies once the new dump is safely written + uploaded.
-    await pruneCloud([...preOverflow, ...overflow]);
+    if (uploadedToCloud) {
+      await pruneCloud([...preOverflow, ...overflow]);
+    }
 
     return {
       name,
