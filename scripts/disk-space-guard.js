@@ -48,9 +48,10 @@ try {
   } else {
     console.log(`❌ FAIL: Only ${freePercentage}% free, need at least ${THRESHOLD_PCT}%`);
     console.log('----------------------------------------');
-    console.log('Run cleanup:');
-    console.log('  docker system prune -a --volumes');
-    console.log('  OR: npm run docker:prune');
+    console.log('Run cleanup (never prunes volumes - that would delete PostgreSQL data):');
+    console.log('  docker image prune -f');
+    console.log('  docker builder prune -f');
+    console.log('  bash scripts/cleanup-production.sh   # on the server');
     console.log('----------------------------------------');
     process.exit(1);
   }

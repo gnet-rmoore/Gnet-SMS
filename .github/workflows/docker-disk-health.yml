@@ -1,74 +1,75 @@
-name: Docker Disk Health Monitor
+name: Production Disk Health Monitor
 
 on:
   schedule:
     - cron: '0 4 * * *'  # 4 AM UTC daily
-  workflow_dispatch:  # Allow manual trigger from UI
+  workflow_dispatch:
 
 jobs:
-  check-disk-and-prune:
+  check-production-disk:
+    name: Check and reclaim disk on the Lightsail host
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
-      - name: Show disk usage before check
+      - name: Verify SSH secrets
+        env:
+          HOST: ${{ secrets.LIGHTSAIL_HOSTNAME }}
+          USER: ${{ secrets.LIGHTSAIL_SSH_USER }}
+          KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          DIR: ${{ secrets.LIGHTSAIL_DEPLOY_DIR }}
         run: |
-          echo "========================================"
-          echo " Docker Disk Health Check"
-          echo "========================================"
-          echo "Date: $(date -u)"
-          echo ""
-          df -h .
-          echo ""
-          echo "Free percentage (used% inverted):"
-          df -h . | tail -1 | awk '{print 100 - $5 "%"}'
+          set -euo pipefail
+          for v in HOST USER KEY DIR; do
+            [ -n "${!v}" ] || { echo "::error::secret for $v is empty or unset"; exit 1; }
+          done
 
-      - name: Check disk threshold (30%)
-        id: disk-check
+      - name: Check disk and prune safely over SSH
+        env:
+          DIR: ${{ secrets.LIGHTSAIL_DEPLOY_DIR }}
+          HOST: ${{ secrets.LIGHTSAIL_HOSTNAME }}
+          USER: ${{ secrets.LIGHTSAIL_SSH_USER }}
+          KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
         run: |
-          USED_PCT=$(df -h . | tail -1 | awk '{print $5}' | tr -d '%')
-          FREE_PCT=$((100 - USED_PCT))
-          echo "Disk usage: ${USED_PCT}% used, ${FREE_PCT}% free"
-          echo "Threshold: 30% free minimum"
-          echo "free-pct=${FREE_PCT}" >> $GITHUB_OUTPUT
-          echo "used-pct=${USED_PCT}" >> $GITHUB_OUTPUT
-          if [ "$FREE_PCT" -lt 30 ]; then
-            echo "⚠️  Disk below 30% threshold - will prune"
-            echo "will-prune=true" >> $GITHUB_OUTPUT
-          else
-            echo "✅ Disk OK: ${FREE_PCT}% free (above 30% threshold)"
-            echo "will-prune=false" >> $GITHUB_OUTPUT
-          fi
+          set -euo pipefail
+          HOST="$(printf '%s' "$HOST" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          USER="$(printf '%s' "$USER" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          DIR="$(printf '%s' "$DIR" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/lightsail.pem
+          chmod 600 ~/.ssh/lightsail.pem
 
-      - name: Prune Docker (if below threshold)
-        if: steps.disk-check.outputs.will-prune == 'true'
-        run: |
-          echo "🗑️  Starting Docker prune (removing unused images/volumes)..."
-          docker system prune -a --volumes --force
-          echo "✅ Prune complete"
-          echo ""
-          echo "Disk usage after prune:"
-          df -h .
+          ssh -i ~/.ssh/lightsail.pem \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o BatchMode=yes \
+              "${USER}@${HOST}" "
+                set -e
+                cd '${DIR}'
+                dc() { docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge \"\$@\"; }
 
-      - name: Publish disk health summary
-        if: always()
-        run: |
-          echo "========================================"
-          echo " Docker Disk Health Check Complete"
-          echo "========================================"
-          FREE_PCT=$(df -h . | tail -1 | awk '{print 100 - $5 "%"}')
-          echo ""
-          echo "========================================"
-          echo "   FINAL SUMMARY"
-          echo "========================================"
-          echo " Free space: ${FREE_PCT}"
-          echo " Threshold:  30% minimum"
-          echo ""
-          if [ "$(echo $FREE_PCT | tr -d '%')" -ge 30 ]; then
-            echo "✅ STATUS: Disk health OK"
-          else
-            echo "⚠️  STATUS: Disk below threshold - manual cleanup may be needed"
-          fi
-          echo "========================================"
-          echo " Check complete: $(date -u)"
-          echo "========================================"
+                echo '=== Disk before ==='
+                df -h /
+                free_pct=\$(df -P / | awk 'NR==2 {gsub(\"%\", \"\", \$5); print 100 - \$5}')
+                echo \"Free: \${free_pct}%\"
+
+                if [ \"\$free_pct\" -ge 30 ]; then
+                  echo 'Disk healthy (>= 30% free) - no cleanup needed'
+                  exit 0
+                fi
+
+                echo 'Disk below 30% free - reclaiming space (volumes are preserved)'
+                if dc ps --status running --services 2>/dev/null | grep -qx identity; then
+                  dc exec -T identity sh -c 'ls -1t /app/backups/*.sql 2>/dev/null | tail -n +8 | xargs -r rm -f' || true
+                fi
+                docker image prune -f || true
+                docker builder prune -f --filter until=168h || true
+
+                echo '=== Disk after ==='
+                df -h /
+                after_pct=\$(df -P / | awk 'NR==2 {gsub(\"%\", \"\", \$5); print 100 - \$5}')
+                echo \"Free after: \${after_pct}%\"
+                if [ \"\$after_pct\" -lt 10 ]; then
+                  echo \"::error::Production disk still only \${after_pct}% free after cleanup\"
+                  exit 1
+                fi
+              "

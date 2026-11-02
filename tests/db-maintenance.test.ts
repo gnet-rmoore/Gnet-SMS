@@ -12,6 +12,7 @@ import {
   buildPgEnv,
   buildOptimizeSql,
   summarizeMaintenanceStatus,
+  classifyBackupFailure,
   DB_MAINTENANCE_SCHEMAS,
   DEFAULT_BACKUP_RETENTION,
 } from "../services/identity/src/domain/dbMaintenance.ts";
@@ -114,6 +115,25 @@ assert(buildOptimizeSql() === "VACUUM (ANALYZE);", "optimize runs VACUUM (ANALYZ
 for (const s of ["identity", "academic", "finance", "ops", "campus"]) {
   assert((DB_MAINTENANCE_SCHEMAS as readonly string[]).includes(s), `schema ${s} is maintained`);
 }
+
+// --- classifyBackupFailure ---------------------------------------------------
+const enospc = classifyBackupFailure(
+  'pg_dump: error: connection to server at "postgres" failed: FATAL: could not write init file'
+);
+assert(enospc?.code === "BACKUP_NO_SPACE", "init-file write failure maps to no-space");
+assert(enospc?.status === 507, "no-space error uses 507");
+assert(enospc?.message.includes("disk is full"), "no-space message is actionable");
+
+const enospcRaw = classifyBackupFailure("pg_dump: error: No space left on device");
+assert(enospcRaw?.code === "BACKUP_NO_SPACE", "raw ENOSPC text maps to no-space");
+
+const unreachable = classifyBackupFailure(
+  'pg_dump: error: connection to server at "postgres" (172.18.0.3), port 5432 failed: Connection refused'
+);
+assert(unreachable?.code === "BACKUP_DB_UNREACHABLE", "connection refusal maps to unreachable");
+assert(unreachable?.status === 503, "unreachable DB uses 503");
+
+assert(classifyBackupFailure("pg_dump: error: permission denied for table users") === null, "unknown errors are not reclassified");
 
 // --- summarizeMaintenanceStatus ---------------------------------------------
 const ready = summarizeMaintenanceStatus({

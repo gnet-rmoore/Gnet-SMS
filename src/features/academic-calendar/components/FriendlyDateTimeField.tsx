@@ -42,10 +42,9 @@ export function FriendlyDateTimeField({
         return;
       }
     } catch {
-      // Fall through
+      // Fall through to focus (never call click(): it would re-enter this handler)
     }
     el.focus();
-    el.click();
   };
 
   return (
@@ -79,9 +78,10 @@ export function FriendlyDateTimeField({
           min={min}
           max={max}
           tabIndex={-1}
+          onClick={openPicker}
           onChange={(e) => onChange(e.target.value)}
-          className="absolute left-0 top-0 h-px w-px opacity-0 overflow-hidden"
-          aria-hidden="true"
+          aria-label={label}
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
         />
       </div>
       {error ? (

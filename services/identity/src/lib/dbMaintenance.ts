@@ -28,12 +28,15 @@ import {
   pruneOldest,
   buildOptimizeSql,
   summarizeMaintenanceStatus,
+  classifyBackupFailure,
+  formatBytes,
   type ParsedDatabaseUrl,
   type MaintenanceStatus,
 } from "../domain/dbMaintenance";
 
 const BACKUPS_DIR = process.env.BACKUPS_DIR || path.join(process.cwd(), "backups");
 const RETENTION = Number(process.env.BACKUP_RETENTION || 7);
+const MIN_FREE_BYTES = Math.max(0, Number(process.env.BACKUP_MIN_FREE_MB || 512)) * 1024 * 1024;
 const S3_BUCKET = process.env.S3_BACKUP_BUCKET || process.env.S3_BUCKET || "sms-backups";
 const S3_PREFIX = "database-backups/";
 const S3_REGION = process.env.S3_REGION || "us-east-1";
@@ -174,13 +177,39 @@ async function listLocalNames(): Promise<string[]> {
   }
 }
 
-async function pruneLocal() {
+async function pruneLocal(keep = RETENTION) {
   const names = await listLocalNames();
-  const overflow = pruneOldest(names, RETENTION);
+  const overflow = pruneOldest(names, keep);
   await Promise.all(
     overflow.map((name) => fsp.unlink(path.join(BACKUPS_DIR, name)).catch(() => undefined))
   );
   return overflow;
+}
+
+/**
+ * Free bytes on the filesystem holding `dir`, or null when the platform does
+ * not expose statfs. Used to fail before a dump rather than crashing Postgres
+ * with a full PGDATA volume (the server shares the Docker host disk).
+ */
+async function availableBytes(dir: string): Promise<number | null> {
+  try {
+    const stats = await fsp.statfs(dir);
+    return Number(stats.bavail) * Number(stats.bsize);
+  } catch {
+    return null;
+  }
+}
+
+function noSpaceError(dir: string, free: number | null): Error {
+  const freeLabel = free === null ? "unknown" : formatBytes(free);
+  return Object.assign(
+    new Error(
+      `Not enough free disk space to create a backup (${freeLabel} free in ${dir}, ` +
+        `need at least ${formatBytes(MIN_FREE_BYTES)}). Delete old backups or run ` +
+        `'docker image prune -f' on the server, then try again.`
+    ),
+    { status: 507, code: "BACKUP_NO_SPACE" }
+  );
 }
 
 async function pruneCloud(names: string[]) {
@@ -237,6 +266,21 @@ export const dbMaintenance = {
   async runBackup(): Promise<BackupResult> {
     const parsed = parsedMaintenanceUrl();
     await ensureDir();
+
+    // The backups volume shares the host disk with PGDATA, so a dump must not
+    // start when the disk is already nearly full. If space is tight, free one
+    // retention slot first (keeping the newest backups); otherwise leave the
+    // existing set alone until the new dump succeeds.
+    const preOverflow: string[] = [];
+    let free = await availableBytes(BACKUPS_DIR);
+    if (free !== null && free < MIN_FREE_BYTES) {
+      preOverflow.push(...(await pruneLocal(Math.max(1, RETENTION - 1))));
+      free = await availableBytes(BACKUPS_DIR);
+    }
+    if (free !== null && free < MIN_FREE_BYTES) {
+      throw noSpaceError(BACKUPS_DIR, free);
+    }
+
     const now = new Date();
     const name = backupFileName(now);
     const filePath = path.join(BACKUPS_DIR, name);
@@ -251,6 +295,10 @@ export const dbMaintenance = {
     const { code, stderr } = await runCommand("pg_dump", args, buildPgEnv(parsed));
     if (code !== 0) {
       await fsp.unlink(filePath).catch(() => undefined);
+      const mapped = classifyBackupFailure(stderr);
+      if (mapped) {
+        throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+      }
       throw Object.assign(new Error(`pg_dump failed: ${stderr.slice(0, 500) || "unknown error"}`), {
         status: 500,
         code: "BACKUP_FAILED",
@@ -260,7 +308,8 @@ export const dbMaintenance = {
     const stat = await fsp.stat(filePath);
     const uploadedToCloud = await uploadToCloud(filePath, name);
     const overflow = await pruneLocal();
-    await pruneCloud(overflow);
+    // Only drop cloud copies once the new dump is safely written + uploaded.
+    await pruneCloud([...preOverflow, ...overflow]);
 
     return {
       name,

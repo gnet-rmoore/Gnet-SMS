@@ -101,6 +101,22 @@ assert(
   "requires a positive whole-number duration"
 );
 assert(
+  Object.keys(
+    validateScheduleExamForm({ ...validForm, paperDueAt: "" }, period, component)
+  ).length === 0,
+  "paper deadline is optional (empty is valid)"
+);
+assert(
+  Object.keys(
+    validateScheduleExamForm(
+      { ...validForm, paperDueAt: "", gradeSubmissionDeadline: "" },
+      period,
+      component
+    )
+  ).length === 0,
+  "paper deadline and grade deadline can both be omitted"
+);
+assert(
   Boolean(
     validateScheduleExamForm(
       { ...validForm, paperDueAt: "2026-02-10T10:00" },

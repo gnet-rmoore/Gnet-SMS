@@ -17,16 +17,19 @@ echo " Free space: ${CURRENT_GB} used, ${CURRENT_PCT}% used"
 echo " Threshold:  ${THRESHOLD}% minimum free"
 echo "========================================="
 
-if [ "$CURRENT_PCT" -ge "$THRESHOLD" ]; then
+if [ "$CURRENT_PCT" -le "$((100 - THRESHOLD))" ]; then
   FREE_PCT=$((100 - CURRENT_PCT))
   echo "✅ OK: ${FREE_PCT}% free space available"
   echo "-----------------------------------------"
   exit 0
 else
-  echo "❌ FAIL: Only ${CURRENT_PCT}% used, need at least ${THRESHOLD}% free"
+  FREE_PCT=$((100 - CURRENT_PCT))
+  echo "❌ FAIL: Only ${FREE_PCT}% free, need at least ${THRESHOLD}% free"
   echo "-----------------------------------------"
-  echo "Run cleanup: docker system prune -a --volumes"
-  echo "Or: npm run docker:prune"
+  echo "Run cleanup (never prunes volumes - that would delete PostgreSQL data):"
+  echo "  docker image prune -f"
+  echo "  docker builder prune -f"
+  echo "  bash scripts/cleanup-production.sh   # on the server"
   echo "-----------------------------------------"
   exit 1
 fi

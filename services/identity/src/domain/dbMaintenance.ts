@@ -118,6 +118,45 @@ export function buildOptimizeSql(): string {
   return "VACUUM (ANALYZE);";
 }
 
+export type BackupFailure = {
+  code: string;
+  status: number;
+  message: string;
+};
+
+/**
+ * Map a pg_dump stderr tail onto an actionable API error.
+ *
+ * A full disk on the Postgres host surfaces as `No space left on device` and
+ * `could not write init file`; without this mapping the Super Admin only sees a
+ * generic "pg_dump failed" and has no idea cleanup is required.
+ */
+export function classifyBackupFailure(stderr: string): BackupFailure | null {
+  const text = stderr || "";
+  if (
+    /no space left on device/i.test(text) ||
+    /could not write init file/i.test(text) ||
+    /disk (is )?full/i.test(text) ||
+    /\bENOSPC\b/i.test(text)
+  ) {
+    return {
+      code: "BACKUP_NO_SPACE",
+      status: 507,
+      message:
+        "Database backup failed: the server disk is full. Free space on the PostgreSQL host " +
+        "(delete old backups and run 'docker image prune -f') and try again.",
+    };
+  }
+  if (/could not connect|connection to server|connection refused/i.test(text)) {
+    return {
+      code: "BACKUP_DB_UNREACHABLE",
+      status: 503,
+      message: "Database backup failed: could not connect to PostgreSQL. Check that the database is running.",
+    };
+  }
+  return null;
+}
+
 export type MaintenanceStatusInput = {
   urlConfigured: boolean;
   urlValid: boolean;

@@ -192,7 +192,15 @@ export function ScheduleExamModal({
         </div>
       }
     >
-      <form id="schedule-exam-form" onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
+      {/* Custom validation below renders visible messages; native validation
+          would silently block submit on hidden/empty fields (e.g. the optional
+          paper deadline when its max is earlier than a previously picked value). */}
+      <form
+        id="schedule-exam-form"
+        noValidate
+        onSubmit={handleSubmit}
+        className="p-6 sm:p-8 space-y-5"
+      >
         <div className="space-y-1.5">
           <label htmlFor="exam-period" className={fieldLabel}>
             {t("exams.scheduleModal.academicPeriod")}

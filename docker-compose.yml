@@ -1,5 +1,14 @@
+# Rotate container logs so they cannot fill the host disk (which also
+# hosts PostgreSQL's data volume and the database backups volume).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   postgres:
+    logging: *default-logging
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: sms
@@ -19,6 +28,7 @@ services:
   # Applies schemas + per-service roles on every up (idempotent). Needed because
   # initdb.d only runs on empty volumes. One Postgres cluster — not 8 databases.
   db-roles:
+    logging: *default-logging
     image: postgres:16-alpine
     restart: "on-failure"
     environment:
@@ -44,6 +54,7 @@ services:
         condition: service_healthy
 
   redis:
+    logging: *default-logging
     image: redis:7-alpine
     # Redis is internal-only: not published to host
     ports: []
@@ -56,6 +67,7 @@ services:
       retries: 10
 
   minio:
+    logging: *default-logging
     image: elestio/minio:latest
     command: server /data --console-address ":9001"
     environment:
@@ -77,6 +89,7 @@ services:
 
   # Browser uploads need CORS + public GET (banner images, admission docs, receipts).
   minio-init:
+    logging: *default-logging
     image: bitnamilegacy/minio-client:latest
     depends_on:
       minio:
@@ -94,6 +107,7 @@ services:
   #   docker compose --profile monolith up -d sms-api
   # and set api-gateway DISABLE_MONOLITH=false + MONOLITH_URL.
   sms-api:
+    logging: *default-logging
     profiles: ["monolith"]
     build:
       context: .
@@ -129,6 +143,7 @@ services:
         condition: service_healthy
 
   identity:
+    logging: *default-logging
     build:
       context: ./services/identity
       dockerfile: Dockerfile
@@ -143,6 +158,8 @@ services:
       DATABASE_MAINTENANCE_URL: ${DATABASE_MAINTENANCE_URL:-postgresql://sms:sms@postgres:5432/sms_db}
       BACKUPS_DIR: /app/backups
       BACKUP_RETENTION: ${BACKUP_RETENTION:-7}
+      # Refuse to start a dump (and crash Postgres with ENOSPC) below this.
+      BACKUP_MIN_FREE_MB: ${BACKUP_MIN_FREE_MB:-512}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET}
@@ -204,6 +221,7 @@ services:
         condition: service_healthy
 
   lifecycle:
+    logging: *default-logging
     build:
       context: ./services/lifecycle
       dockerfile: Dockerfile
@@ -248,6 +266,7 @@ services:
         condition: service_completed_successfully
 
   ops:
+    logging: *default-logging
     build:
       context: ./services/ops
       dockerfile: Dockerfile
@@ -269,6 +288,7 @@ services:
         condition: service_completed_successfully
 
   staff:
+    logging: *default-logging
     build:
       context: ./services/staff
       dockerfile: Dockerfile
@@ -298,6 +318,7 @@ services:
         condition: service_started
 
   classroom:
+    logging: *default-logging
     build:
       context: ./services/classroom
       dockerfile: Dockerfile
@@ -332,6 +353,7 @@ services:
         condition: service_completed_successfully
 
   academic:
+    logging: *default-logging
     build:
       context: ./services/academic
       dockerfile: Dockerfile
@@ -369,6 +391,7 @@ services:
         condition: service_started
 
   finance:
+    logging: *default-logging
     build:
       context: ./services/finance
       dockerfile: Dockerfile
@@ -409,6 +432,7 @@ services:
         condition: service_completed_successfully
 
   comms:
+    logging: *default-logging
     build:
       context: ./services/comms
       dockerfile: Dockerfile
@@ -434,6 +458,7 @@ services:
         condition: service_started
 
   campus:
+    logging: *default-logging
     build:
       context: ./services/campus
       dockerfile: Dockerfile
@@ -457,6 +482,7 @@ services:
         condition: service_started
 
   api-gateway:
+    logging: *default-logging
     build:
       context: ./services/gateway
       dockerfile: Dockerfile
@@ -492,6 +518,7 @@ services:
       - campus
 
   frontend-spa:
+    logging: *default-logging
     build:
       context: .
       dockerfile: Dockerfile.frontend
@@ -504,6 +531,7 @@ services:
   # Usage: ACME_EMAIL=you@example.com docker compose --profile edge up -d edge
   # Point PLATFORM_CNAME_TARGET / PLATFORM_EDGE_HOSTNAME at this host; CNAMEs → here.
   edge:
+    logging: *default-logging
     profiles: ["edge"]
     image: caddy:2.8-alpine
     ports:
@@ -523,6 +551,7 @@ services:
 
 # Optional: ClamAV REST API for virus scanning (enable with --profile clamav)
   clamav:
+    logging: *default-logging
     profiles: ["clamav"]
     image: ghcr.io/tnmunro/clamav-rest:latest
     ports:
