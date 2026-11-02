@@ -107,6 +107,7 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   "staff-tasks": "staff",
   "staff-attendance": "staff",
   payrolls: "staff",
+  "payroll-templates": "staff",
   fees: "finance",
   "fee-templates": "finance",
   "fee-payment-txns": "finance",
@@ -226,7 +227,14 @@ export function resolveUpstream(method: string, path: string): string | null {
     return urlFor("classroom");
   }
   if (hasAnyPrefix(path, ["/api/applications", "/api/attendance"])) return urlFor("lifecycle");
-  if (hasAnyPrefix(path, ["/api/leave-requests", "/api/staff-tasks", "/api/payrolls"])) {
+  if (
+    hasAnyPrefix(path, [
+      "/api/leave-requests",
+      "/api/staff-tasks",
+      "/api/payrolls",
+      "/api/payroll-templates",
+    ])
+  ) {
     return urlFor("staff");
   }
   if (hasPrefix(path, "/api/fees") || path === "/api/my-fees" || path === "/api/my-fee-payment-txns") {

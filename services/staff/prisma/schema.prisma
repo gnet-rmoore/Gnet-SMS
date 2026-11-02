@@ -130,3 +130,41 @@ model Payroll {
   @@index([schoolId])
   @@schema("staff")
 }
+
+/// Named recurring payroll roster. Running it creates a Payroll row per line
+/// for the target month/year, skipping staff who already have a record.
+model PayrollTemplate {
+  id           String    @id @default(uuid())
+  schoolId     String // Identity.School.id (no FK)
+  name         String
+  description  String?
+  isActive     Boolean   @default(true)
+  createdBy    String? // Identity.User.id (no FK)
+  lastRunMonth Int?
+  lastRunYear  Int?
+  lastRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  items        PayrollTemplateItem[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@schema("staff")
+}
+
+model PayrollTemplateItem {
+  id          String          @id @default(uuid())
+  templateId  String
+  userId      String // Identity.User.id (no FK)
+  basicSalary Float
+  allowances  Float           @default(0)
+  deductions  Float           @default(0)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  template    PayrollTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, userId])
+  @@index([templateId])
+  @@schema("staff")
+}

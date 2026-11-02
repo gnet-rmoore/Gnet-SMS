@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 import { LandingCta } from "./Reveal";
 import { landingEase } from "../motion";
 
-const HERO_IMAGE = "/marketing/front-images/hero-section-image.jpg";
+const HERO_IMAGE = "/marketing/optimized/hero-section-1920.webp";
+const HERO_SRCSET =
+  "/marketing/optimized/hero-section-768.webp 768w, /marketing/optimized/hero-section-1280.webp 1280w, /marketing/optimized/hero-section-1920.webp 1920w";
 
 /**
  * Full-bleed campus photo hero — headline + CTAs over a readable gradient overlay.
@@ -42,7 +44,11 @@ export function Hero() {
         ) : null}
         <img
           src={HERO_IMAGE}
+          srcSet={HERO_SRCSET}
+          sizes="100vw"
           alt=""
+          width={1920}
+          height={1280}
           fetchPriority="high"
           decoding="async"
           onLoad={() => setImageLoaded(true)}

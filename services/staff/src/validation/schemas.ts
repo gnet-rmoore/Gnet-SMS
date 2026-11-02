@@ -13,6 +13,39 @@ export const payrollCreateSchema = z.object({
   notes: z.string().optional(),
 });
 
+const payrollTemplateLineSchema = z.object({
+  userId: z.string().min(1),
+  basicSalary: z.coerce.number().nonnegative(),
+  allowances: z.coerce.number().nonnegative().optional(),
+  deductions: z.coerce.number().nonnegative().optional(),
+  notes: z.string().optional(),
+});
+
+export const payrollTemplateCreateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional(),
+  lines: z.array(payrollTemplateLineSchema).min(1).max(1000),
+});
+
+export const payrollTemplateUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+  isActive: z.boolean().optional(),
+  lines: z.array(payrollTemplateLineSchema).min(1).max(1000).optional(),
+});
+
+export const payrollTemplateFromPayrollsSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional(),
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2000),
+});
+
+export const payrollTemplateRunSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2000),
+});
+
 export const staffTaskCreateSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),

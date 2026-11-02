@@ -7,6 +7,8 @@ export const STAFF_ENTITLEMENT_RULES: EntitlementRule[] = [
   { pattern: /^\/api\/staff-tasks/, feature: "staff" },
   { pattern: /^\/api\/schools\/[^/]+\/staff-attendance/, feature: "staff" },
   { pattern: /^\/api\/schools\/[^/]+\/payrolls/, feature: "payroll" },
+  { pattern: /^\/api\/schools\/[^/]+\/payroll-templates/, feature: "payroll" },
   { pattern: /^\/api\/payrolls/, feature: "payroll" },
+  { pattern: /^\/api\/payroll-templates/, feature: "payroll" },
   { pattern: /^\/api\/users\/[^/]+\/payrolls/, feature: "payroll" },
 ];

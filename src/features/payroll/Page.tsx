@@ -1,15 +1,21 @@
 import React, { useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { ClipboardList, Wallet } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { usePayrollQuery } from "./hooks/usePayrollQuery";
+import { usePayrollTemplatesQuery } from "./hooks/usePayrollTemplatesQuery";
 import { payrollApi } from "./api";
 import { CreatePayrollModal } from "./components/CreatePayrollModal";
 import { EditPayrollModal } from "./components/EditPayrollModal";
 import { RecordsTab } from "./components/RecordsTab";
 import { PayslipDrawer } from "./components/PayslipDrawer";
 import { PayrollChrome } from "./components/PayrollChrome";
-import type { PayrollFormData, PayrollRecord } from "./types";
+import { TemplatesTab } from "./components/TemplatesTab";
+import { TemplateEditorModal } from "./components/TemplateEditorModal";
+import { CreateTemplateFromPayrollModal } from "./components/CreateTemplateFromPayrollModal";
+import { RunTemplateModal } from "./components/RunTemplateModal";
+import type { PayrollFormData, PayrollRecord, PayrollTemplate } from "./types";
 import { confirmAction } from "../../lib/swal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import {
@@ -67,11 +73,23 @@ export const Payroll = () => {
     pageSize: filters.pageSize,
   });
 
+  const {
+    templates,
+    loading: templatesLoading,
+    refreshing: templatesRefreshing,
+    refetchAll: refetchTemplates,
+  } = usePayrollTemplatesQuery();
+
   const refetchPayroll = async () => {
     await invalidate();
     await refetchAll();
   };
 
+  const [activeTab, setActiveTab] = useState<"records" | "templates">("records");
+  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+  const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<PayrollTemplate | null>(null);
+  const [runningTemplate, setRunningTemplate] = useState<PayrollTemplate | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -236,6 +254,81 @@ export const Payroll = () => {
     }
   };
 
+  const handleCreateTemplateFromPayrolls = async (data: {
+    name: string;
+    description: string;
+    month: number;
+    year: number;
+  }) => {
+    if (!school?.id) {
+      showToast(t("payroll.toast.sessionMissing"), "error");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await payrollApi.createPayrollTemplateFromPayrolls(school.id, data);
+      setIsCreateTemplateOpen(false);
+      await refetchTemplates();
+      showToast(t("payroll.templates.toast.created"), "success");
+    } catch (err: any) {
+      showToast(err?.message || t("payroll.templates.toast.createFailed"), "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateTemplate = async (data: {
+    name: string;
+    description: string;
+    lines: Array<{
+      userId: string;
+      basicSalary: number;
+      allowances: number;
+      deductions: number;
+      notes?: string | null;
+    }>;
+    isActive?: boolean;
+  }) => {
+    if (!editingTemplate) return;
+    setSubmitting(true);
+    try {
+      await payrollApi.updatePayrollTemplate(editingTemplate.id, data);
+      setIsTemplateEditorOpen(false);
+      setEditingTemplate(null);
+      await refetchTemplates();
+      showToast(t("payroll.templates.toast.updated"), "success");
+    } catch (err: any) {
+      showToast(err?.message || t("payroll.templates.toast.updateFailed"), "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (template: PayrollTemplate) => {
+    const ok = await confirmAction({
+      title: t("payroll.templates.confirm.removeTitle"),
+      text: t("payroll.templates.confirm.removeText", { name: template.name }),
+      confirmText: t("payroll.templates.confirm.removeConfirm"),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await payrollApi.deletePayrollTemplate(template.id);
+      await refetchTemplates();
+      showToast(t("payroll.templates.toast.removed"), "info");
+    } catch (err: any) {
+      showToast(err?.message || t("payroll.templates.toast.deleteFailed"), "error");
+    }
+  };
+
+  const handleTemplateRunComplete = async (month: number, year: number) => {
+    setActiveTab("records");
+    if (month !== selectedMonth) setSelectedMonth(month);
+    if (year !== selectedYear) setSelectedYear(year);
+    await Promise.all([refetchPayroll(), refetchTemplates()]);
+    showToast(t("payroll.templates.toast.ran"), "success");
+  };
+
   const openEdit = (record: PayrollRecord) => {
     setSelectedRecord(record);
     const parsed = parsePayrollNotes(record.notes);
@@ -336,7 +429,11 @@ export const Payroll = () => {
 
       <PayrollChrome
         isFinanceAdmin={isFinanceAdmin}
-        loading={loading || refreshing}
+        loading={
+          activeTab === "records"
+            ? loading || refreshing
+            : templatesLoading || templatesRefreshing
+        }
         onAdd={() => {
           resetForm();
           setIsCreateModalOpen(true);
@@ -344,7 +441,11 @@ export const Payroll = () => {
         onExportCsv={handleExportCsv}
         onRefresh={async () => {
           try {
-            await refetchPayroll();
+            if (activeTab === "templates") {
+              await refetchTemplates();
+            } else {
+              await refetchPayroll();
+            }
             showToast(t("payroll.toast.refreshed"), "info");
           } catch (err: any) {
             showToast(err?.message || t("payroll.toast.refreshFailed"), "error");
@@ -353,29 +454,75 @@ export const Payroll = () => {
         recordCount={total}
         title={t("payroll.title")}
         subtitle={t("payroll.subtitle")}
+        showAdd={activeTab === "records"}
+        showExport={activeTab === "records"}
       />
 
-      <RecordsTab
-        filteredPayrolls={filteredPayrolls}
-        handleDeletePayroll={handleDeletePayroll}
-        handleMarkPaid={handleMarkPaid}
-        handleMarkUnpaid={handleMarkUnpaid}
-        isFinanceAdmin={isFinanceAdmin}
-        loading={loading}
-        openDetail={openDetail}
-        openEdit={openEdit}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        setSelectedMonth={setSelectedMonth}
-        setSelectedYear={setSelectedYear}
-        staffList={staff}
-        filterFields={filterFields}
-        filters={filters}
-        savedViewsScope={school?.id ? `${school.id}:payroll` : undefined}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-      />
+      <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-100 border border-slate-200/70 w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab("records")}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors inline-flex items-center gap-2 ${
+            activeTab === "records"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Wallet className="w-4 h-4" />
+          {t("payroll.tabs.records")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("templates")}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors inline-flex items-center gap-2 ${
+            activeTab === "templates"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          {t("payroll.tabs.templates")}
+        </button>
+      </div>
+
+      {activeTab === "records" ? (
+        <RecordsTab
+          filteredPayrolls={filteredPayrolls}
+          handleDeletePayroll={handleDeletePayroll}
+          handleMarkPaid={handleMarkPaid}
+          handleMarkUnpaid={handleMarkUnpaid}
+          isFinanceAdmin={isFinanceAdmin}
+          loading={loading}
+          openDetail={openDetail}
+          openEdit={openEdit}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          setSelectedMonth={setSelectedMonth}
+          setSelectedYear={setSelectedYear}
+          staffList={staff}
+          filterFields={filterFields}
+          filters={filters}
+          savedViewsScope={school?.id ? `${school.id}:payroll` : undefined}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+        />
+      ) : (
+        <TemplatesTab
+          templates={templates}
+          loading={templatesLoading}
+          refreshing={templatesRefreshing}
+          canManage={isFinanceAdmin}
+          onCreate={() => setIsCreateTemplateOpen(true)}
+          onEdit={(template) => {
+            setEditingTemplate(template);
+            setIsTemplateEditorOpen(true);
+          }}
+          onDelete={handleDeleteTemplate}
+          onRun={setRunningTemplate}
+          onRefresh={() => refetchTemplates()}
+        />
+      )}
 
       <AnimatePresence>
         {isCreateModalOpen && (
@@ -399,6 +546,46 @@ export const Payroll = () => {
             setFormData={setFormData}
             setIsEditModalOpen={setIsEditModalOpen}
             submitting={submitting}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isCreateTemplateOpen && (
+          <CreateTemplateFromPayrollModal
+            defaultMonth={selectedMonth}
+            defaultYear={selectedYear}
+            submitting={submitting}
+            onClose={() => setIsCreateTemplateOpen(false)}
+            onSubmit={handleCreateTemplateFromPayrolls}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isTemplateEditorOpen && editingTemplate && (
+          <TemplateEditorModal
+            template={editingTemplate}
+            staffList={staff}
+            submitting={submitting}
+            onClose={() => {
+              setIsTemplateEditorOpen(false);
+              setEditingTemplate(null);
+            }}
+            onSubmit={handleUpdateTemplate}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {runningTemplate && (
+          <RunTemplateModal
+            template={runningTemplate}
+            staffList={staff}
+            defaultMonth={selectedMonth}
+            defaultYear={selectedYear}
+            onClose={() => setRunningTemplate(null)}
+            onComplete={handleTemplateRunComplete}
           />
         )}
       </AnimatePresence>

@@ -275,10 +275,7 @@ export const schoolRegistrationService = {
       settings.requireRegistrationEmailConfirm
     );
     if (!row.emailConfirmedAt && requireConfirm) {
-      // Soft: allow approve but warn via notes; still require confirm in production default
-      if (process.env.NODE_ENV === "production") {
-        throw Object.assign(new Error("Applicant email not confirmed"), { status: 400 });
-      }
+      throw Object.assign(new Error("Applicant email not confirmed"), { status: 400 });
     }
 
     const provisioned = await provisionSchool(

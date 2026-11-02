@@ -19,17 +19,17 @@ export function CtaBand() {
           className="relative overflow-hidden rounded-[28px] shadow-[0_24px_60px_rgb(15,23,42,0.18)] sm:rounded-[32px]"
         >
           <motion.img
-            src="/marketing/hero-campus.jpg"
+            src="/marketing/optimized/cta-campus-1280.webp"
+            srcSet="/marketing/optimized/cta-campus-960.webp 960w, /marketing/optimized/cta-campus-1280.webp 1280w"
+            sizes="(min-width: 1024px) 1152px, 90vw"
             alt=""
-            aria-hidden
             loading="lazy"
             decoding="async"
             initial={{ scale: 1.08 }}
             whileInView={{ scale: 1 }}
             viewport={revealViewport}
             transition={{ duration: 1.1, ease: landingEase }}
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
+            className="absolute inset-0 h-full w-full object-cover object-center" />
           <div className="absolute inset-0 bg-slate-950/85" />
           <div className="absolute inset-0 bg-gradient-to-br from-blue-950/55 via-transparent to-slate-950/50" />
           <div className="landing-grain absolute inset-0 opacity-30" aria-hidden />

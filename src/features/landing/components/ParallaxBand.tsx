@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { LandingCta } from "./Reveal";
 import { landingEase } from "../motion";
 
-const PARALLAX_IMAGE = "/marketing/parallax-campus.jpg";
+const PARALLAX_IMAGE = "/marketing/optimized/parallax-campus-1280.webp";
+const PARALLAX_SRCSET =
+  "/marketing/optimized/parallax-campus-1280.webp 1280w, /marketing/optimized/parallax-campus-1920.webp 1920w";
 
 /**
  * Mid-page full-bleed campus band with scroll parallax.

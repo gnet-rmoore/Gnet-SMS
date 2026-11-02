@@ -3,14 +3,30 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 /** User-provided campus / student photos for the login backdrop slideshow */
 export const LOGIN_SLIDES = [
-  "/marketing/front-images/pexels-mickael-ange-konan-2156070331-34526413.jpg",
-  "/marketing/front-images/pexels-finix-photographer-826467311-32733730.jpg",
-  "/marketing/front-images/pexels-workman-19344119.jpg",
-  "/marketing/front-images/pexels-gabriel-joe-amuzu-842963358-37456293.jpg",
+  {
+    src: "/marketing/optimized/login-01-1920.webp",
+    srcSet:
+      "/marketing/optimized/login-01-640.webp 640w, /marketing/optimized/login-01-1280.webp 1280w, /marketing/optimized/login-01-1920.webp 1920w",
+  },
+  {
+    src: "/marketing/optimized/login-02-1920.webp",
+    srcSet:
+      "/marketing/optimized/login-02-640.webp 640w, /marketing/optimized/login-02-1280.webp 1280w, /marketing/optimized/login-02-1920.webp 1920w",
+  },
+  {
+    src: "/marketing/optimized/login-03-1920.webp",
+    srcSet:
+      "/marketing/optimized/login-03-640.webp 640w, /marketing/optimized/login-03-1280.webp 1280w, /marketing/optimized/login-03-1920.webp 1920w",
+  },
+  {
+    src: "/marketing/optimized/login-04-1920.webp",
+    srcSet:
+      "/marketing/optimized/login-04-640.webp 640w, /marketing/optimized/login-04-1280.webp 1280w, /marketing/optimized/login-04-1920.webp 1920w",
+  },
 ] as const;
 
 const SLIDE_MS = 7000;
-const FADE_S = 1.25;
+const FADE_S = 0.9;
 
 type LoginBackgroundProps = {
   className?: string;
@@ -21,11 +37,12 @@ export function LoginBackground({ className }: LoginBackgroundProps) {
   const [index, setIndex] = React.useState(0);
 
   React.useEffect(() => {
-    LOGIN_SLIDES.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, []);
+    const next = LOGIN_SLIDES[(index + 1) % LOGIN_SLIDES.length];
+    const img = new Image();
+    img.src = next.src;
+    img.srcset = next.srcSet;
+    img.sizes = "100vw";
+  }, [index]);
 
   React.useEffect(() => {
     if (reduceMotion) return;
@@ -35,17 +52,19 @@ export function LoginBackground({ className }: LoginBackgroundProps) {
     return () => window.clearInterval(id);
   }, [reduceMotion]);
 
-  const src = LOGIN_SLIDES[index];
+  const slide = LOGIN_SLIDES[index];
 
   return (
     <div className={className} aria-hidden>
       <div className="absolute inset-0 overflow-hidden bg-slate-950">
         {reduceMotion ? (
           <img
-            src={LOGIN_SLIDES[0]}
+            src={LOGIN_SLIDES[0].src}
+            srcSet={LOGIN_SLIDES[0].srcSet}
+            sizes="100vw"
             alt=""
-            width={1024}
-            height={682}
+            width={1920}
+            height={1280}
             fetchPriority="high"
             decoding="async"
             className="h-full w-full object-cover object-center"
@@ -53,21 +72,20 @@ export function LoginBackground({ className }: LoginBackgroundProps) {
         ) : (
           <AnimatePresence initial={false} mode="sync">
             <motion.img
-              key={src}
-              src={src}
+              key={slide.src}
+              src={slide.src}
+              srcSet={slide.srcSet}
+              sizes="100vw"
               alt=""
-              width={1024}
-              height={682}
+              width={1920}
+              height={1280}
               fetchPriority={index === 0 ? "high" : "low"}
               decoding="async"
               className="absolute inset-0 h-full w-full object-cover object-center"
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1.12 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{
-                opacity: { duration: FADE_S, ease: [0.22, 1, 0.36, 1] },
-                scale: { duration: SLIDE_MS / 1000 + FADE_S, ease: "linear" },
-              }}
+              transition={{ duration: FADE_S, ease: [0.22, 1, 0.36, 1] }}
             />
           </AnimatePresence>
         )}

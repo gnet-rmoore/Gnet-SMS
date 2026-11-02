@@ -13,6 +13,9 @@ export type PayrollChromeProps = {
   recordCount: number;
   title?: string;
   subtitle?: string;
+  showAdd?: boolean;
+  showExport?: boolean;
+  addLabel?: string;
 };
 
 export function PayrollChrome({
@@ -24,6 +27,9 @@ export function PayrollChrome({
   recordCount,
   title,
   subtitle,
+  showAdd = true,
+  showExport = true,
+  addLabel,
 }: PayrollChromeProps) {
   const { t } = useTranslation("pages");
 
@@ -58,24 +64,26 @@ export function PayrollChrome({
           <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
         </button>
 
-        <button
-          type="button"
-          onClick={onExportCsv}
-          disabled={recordCount === 0}
-          className="px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          {t("payroll.exportCsv")}
-        </button>
+        {showExport && (
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={recordCount === 0}
+            className="px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {t("payroll.exportCsv")}
+          </button>
+        )}
 
-        {isFinanceAdmin && (
+        {isFinanceAdmin && showAdd && (
           <button
             type="button"
             onClick={onAdd}
             className="px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            {t("payroll.addPayroll")}
+            {addLabel ?? t("payroll.addPayroll")}
           </button>
         )}
       </div>

@@ -6,8 +6,11 @@ import { useTranslation } from "react-i18next";
 import { Reveal } from "./Reveal";
 import { fadeUp, revealViewport, landingSpring } from "../motion";
 
-const MOSAIC_SRC = "/marketing/front-images/split-grid-image.jpg";
-const DETAIL_SRC = "/marketing/front-images/split-grid-image.jpg";
+const MOSAIC_SRC = "/marketing/optimized/split-grid-1400.webp";
+const DETAIL_SRC = MOSAIC_SRC;
+const MOSAIC_SRCSET =
+  "/marketing/optimized/split-grid-640.webp 640w, /marketing/optimized/split-grid-1024.webp 1024w, /marketing/optimized/split-grid-1400.webp 1400w";
+const MOSAIC_SIZES = "(min-width: 1024px) 620px, 92vw";
 
 type MosaicTile = {
   /** Position/size as % of mosaic box */
@@ -86,7 +89,11 @@ function MosaicPane({ tile }: { tile: MosaicTile }) {
         {!loaded ? <div className="absolute inset-0 animate-pulse bg-slate-200/80" aria-hidden /> : null}
         <img
           src={DETAIL_SRC}
+          srcSet={MOSAIC_SRCSET}
+          sizes={MOSAIC_SIZES}
           alt=""
+          width={1400}
+          height={936}
           loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}
@@ -121,7 +128,11 @@ function MosaicPane({ tile }: { tile: MosaicTile }) {
       >
         <img
           src={MOSAIC_SRC}
+          srcSet={MOSAIC_SRCSET}
+          sizes={MOSAIC_SIZES}
           alt=""
+          width={1400}
+          height={936}
           loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}

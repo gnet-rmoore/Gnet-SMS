@@ -23,6 +23,13 @@ export const resourceLoaders = {
     });
     return row?.schoolId;
   },
+  payrollTemplate: async (req: any) => {
+    const row = await prisma.payrollTemplate.findUnique({
+      where: { id: req.params.id },
+      select: { schoolId: true },
+    });
+    return row?.schoolId;
+  },
   /** payrollRoutes uses resourceLoaders.user (monolith reuses the same loader
    *  name for GET /api/users/:userId/payrolls) — resolve via the Payroll rows
    *  themselves since staff doesn't own User. */

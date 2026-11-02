@@ -33,4 +33,18 @@ export const payrollApi = {
     api.get(
       `/api/schools/${schoolId}/staff-attendance/summary?userId=${encodeURIComponent(userId)}&year=${year}&month=${month}`
     ),
+  fetchPayrollTemplates: (schoolId: string) =>
+    api.get(`/api/schools/${schoolId}/payroll-templates`),
+  createPayrollTemplate: (schoolId: string, data: unknown) =>
+    api.post(`/api/schools/${schoolId}/payroll-templates`, data),
+  createPayrollTemplateFromPayrolls: (schoolId: string, data: unknown) =>
+    api.post(`/api/schools/${schoolId}/payroll-templates/from-payrolls`, data),
+  updatePayrollTemplate: (id: string, data: unknown) =>
+    api.put(`/api/payroll-templates/${id}`, data),
+  deletePayrollTemplate: (id: string) =>
+    api.delete(`/api/payroll-templates/${id}`),
+  previewPayrollTemplate: (id: string, month: number, year: number) =>
+    api.get(`/api/payroll-templates/${id}/preview?month=${month}&year=${year}`),
+  runPayrollTemplate: (id: string, month: number, year: number) =>
+    api.post(`/api/payroll-templates/${id}/run`, { month, year }),
 };
