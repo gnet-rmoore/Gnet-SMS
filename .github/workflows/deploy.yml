@@ -3,12 +3,22 @@ name: Deploy GNET SMS
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'production-docs/**'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     name: Build, push, deploy
     runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,10 +43,15 @@ jobs:
             dir="${pair%%:*}"
             name="${pair##*:}"
             image="$HUB/gnet-sms-${name}:${TAG}"
-            docker build -t "$image" -f "services/${dir}/Dockerfile" "services/${dir}"
+            cache="$HUB/gnet-sms-${name}:latest"
+            docker pull "$cache" || true
+            docker build \
+              --build-arg BUILDKIT_INLINE_CACHE=1 \
+              --cache-from "$cache" \
+              -t "$image" -f "services/${dir}/Dockerfile" "services/${dir}"
             docker push "$image"
-            docker tag "$image" "$HUB/gnet-sms-${name}:latest"
-            docker push "$HUB/gnet-sms-${name}:latest"
+            docker tag "$image" "$cache"
+            docker push "$cache"
           done
 
       - name: Build and push frontend image
@@ -46,10 +61,15 @@ jobs:
           set -euo pipefail
           HUB="${{ secrets.DOCKERHUB_USERNAME }}"
           image="$HUB/gnet-sms-frontend-spa:${TAG}"
-          docker build -t "$image" -f Dockerfile.frontend .
+          cache="$HUB/gnet-sms-frontend-spa:latest"
+          docker pull "$cache" || true
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$cache" \
+            -t "$image" -f Dockerfile.frontend .
           docker push "$image"
-          docker tag "$image" "$HUB/gnet-sms-frontend-spa:latest"
-          docker push "$HUB/gnet-sms-frontend-spa:latest"
+          docker tag "$image" "$cache"
+          docker push "$cache"
 
       - name: Deploy on Lightsail
         env:
@@ -78,6 +98,9 @@ jobs:
                 cd '${DIR}'
                 dc() { docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.hub.yml --profile edge \"\$@\"; }
                 git pull --ff-only
+                echo '--- disk before deploy ---'
+                df -h / || true
+                docker image prune -f || true
                 dc pull
                 if ! dc up -d; then
                   echo '=== compose ps ==='
@@ -88,6 +111,10 @@ jobs:
                   docker inspect --format '{{json .State}}' gnet-sms-academic-1 || true
                   exit 1
                 fi
+                docker image prune -f || true
+                docker image prune -af --filter until=168h || true
+                echo '--- disk after deploy ---'
+                df -h / || true
               "
 
       - name: Health check
