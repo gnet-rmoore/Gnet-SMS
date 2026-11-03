@@ -392,10 +392,10 @@ export const GUIDE_TRACKS: Record<string, GuideTrackDef> = {
         visitPaths: ["roles"],
       }),
       step("admin_calendar", "nav_spotlight", {
-        route: "academic-calendar",
-        anchorId: "nav-academic-calendar",
-        navCapability: "nav.academic-calendar",
-        visitPaths: ["academic-calendar"],
+        route: "settings/academic-calendar",
+        anchorId: "nav-settings-academic-calendar",
+        navCapability: "nav.settings/academic-calendar",
+        visitPaths: ["settings/academic-calendar"],
       }),
       step("admin_staff", "nav_spotlight", {
         route: "staff",
@@ -419,10 +419,10 @@ export const GUIDE_TRACKS: Record<string, GuideTrackDef> = {
     steps: [
       step("ops_intro", "intro"),
       step("ops_leave", "nav_spotlight", {
-        route: "leave-approvals",
-        anchorId: "nav-leave-approvals",
-        navCapability: "nav.leave-approvals",
-        visitPaths: ["leave-approvals"],
+        route: "leave-approval",
+        anchorId: "nav-leave-approval",
+        navCapability: "nav.leave-approval",
+        visitPaths: ["leave-approval"],
       }),
       step("ops_maintenance", "nav_spotlight", {
         route: "maintenance",

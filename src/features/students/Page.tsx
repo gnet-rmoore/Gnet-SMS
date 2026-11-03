@@ -40,6 +40,7 @@ const emptyStudent = {
   gender: "MALE",
   parentName: "",
   parentPhone: "",
+  parentEmail: "",
   gradeLevelId: "",
   classroomId: "",
   feeCohort: "NEW",
@@ -52,13 +53,14 @@ const studentDraftFields = [
   "gender",
   "parentName",
   "parentPhone",
+  "parentEmail",
   "gradeLevelId",
   "classroomId",
   "feeCohort",
 ] as const;
 
 function hasStudentDraftContent(value: typeof emptyStudent) {
-  return ["name", "email", "dob", "parentName", "parentPhone", "gradeLevelId", "classroomId"]
+  return ["name", "email", "dob", "parentName", "parentPhone", "parentEmail", "gradeLevelId", "classroomId"]
     .some((key) => String(value[key as keyof typeof emptyStudent] || "").trim());
 }
 
@@ -152,6 +154,9 @@ export const Students = () => {
     email: string;
     temporaryPassword: string;
     name: string;
+    parentEmail?: string | null;
+    parentTemporaryPassword?: string;
+    parentLinkFailed?: boolean;
   } | null>(null);
   const enrollmentDraftKey =
     school?.id && user?.id
@@ -279,6 +284,9 @@ export const Students = () => {
         email: data.email,
         temporaryPassword: data.temporaryPassword,
         name: data.name,
+        parentEmail: data.parentEmail,
+        parentTemporaryPassword: data.parentTemporaryPassword,
+        parentLinkFailed: data.parentLinkFailed,
       });
       clearEnrollmentDraft();
       setNewStudent({ ...emptyStudent });

@@ -16,7 +16,14 @@ export type EnrollStudentModalProps = {
   setIsModalOpen?: (open: boolean) => void;
   setNewStudent?: (v: any) => void;
   /** Shown after successful enroll — one-time password panel */
-  credentials?: { email: string; temporaryPassword: string; name: string } | null;
+  credentials?: {
+    email: string;
+    temporaryPassword: string;
+    name: string;
+    parentEmail?: string | null;
+    parentTemporaryPassword?: string;
+    parentLinkFailed?: boolean;
+  } | null;
   onDone?: () => void;
   classrooms?: any[];
   onClose?: () => void;
@@ -42,9 +49,9 @@ export function EnrollStudentModal({
   gradeLevelsLoading = false,
 }: EnrollStudentModalProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const [copied, setCopied] = useState<"email" | "password" | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const copyText = async (text: string, key: "email" | "password") => {
+  const copyText = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(key);
@@ -140,6 +147,74 @@ export function EnrollStudentModal({
                 )}
               </button>
             </div>
+
+            {credentials.parentEmail ? (
+              <div className="space-y-3 border-t border-slate-200 pt-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {t("pages:students.parentCredentialsSection")}
+                </p>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={fieldLabel}>{t("common:email")}</p>
+                    <p className="font-mono text-sm font-bold text-slate-900 mt-1 truncate">
+                      {credentials.parentEmail}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(credentials.parentEmail!, "parent-email")
+                    }
+                    className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors shrink-0"
+                    title={t("pages:students.copyEmail")}
+                  >
+                    {copied === "parent-email" ? (
+                      <Check className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+
+                {credentials.parentTemporaryPassword ? (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={fieldLabel}>{t("common:temporaryPassword")}</p>
+                      <p className="font-mono text-sm font-bold text-slate-900 mt-1">
+                        {credentials.parentTemporaryPassword}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(
+                          credentials.parentTemporaryPassword!,
+                          "parent-password"
+                        )
+                      }
+                      className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors shrink-0"
+                      title={t("pages:students.copyPassword")}
+                    >
+                      {copied === "parent-password" ? (
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 font-medium">
+                    {t("pages:students.parentExistingPassword")}
+                  </p>
+                )}
+
+                {credentials.parentLinkFailed ? (
+                  <p className="text-xs font-bold text-amber-700">
+                    {t("pages:students.parentLinkFailed")}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <p className="text-xs text-slate-500 font-medium">
@@ -402,6 +477,27 @@ export function EnrollStudentModal({
                 className={fieldInput}
                 placeholder={t("pages:students.parentPhonePlaceholder")}
               />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <label className={fieldLabel}>
+                {t("pages:students.parentEmail")}{" "}
+                <span className="normal-case font-medium">({t("common:optional")})</span>
+              </label>
+              <input
+                type="email"
+                value={newStudent.parentEmail || ""}
+                onChange={(e) =>
+                  setNewStudent?.({
+                    ...newStudent,
+                    parentEmail: e.target.value,
+                  })
+                }
+                className={fieldInput}
+                placeholder={t("pages:students.parentEmailPlaceholder")}
+              />
+              <p className="text-xs text-slate-500 font-medium">
+                {t("pages:students.parentEmailHint")}
+              </p>
             </div>
           </div>
         </div>

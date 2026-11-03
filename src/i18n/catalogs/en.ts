@@ -1295,6 +1295,15 @@ export const enPages = {
     parentGuardian: "Parent / guardian",
     parentName: "Parent name",
     parentPhone: "Parent phone",
+    parentEmail: "Parent email",
+    parentEmailPlaceholder: "parent@example.com",
+    parentEmailHint:
+      "Add a parent email to create and share a parent login for this student.",
+    parentCredentialsSection: "Parent account credentials",
+    parentExistingPassword:
+      "A parent account already existed for this email. Its password was not changed.",
+    parentLinkFailed:
+      "The parent account was created but could not be linked to this student. Contact support to complete the link.",
     editTitle: "Edit student",
     editSubtitle: "Update directory details for this student.",
     updated: "Student updated",

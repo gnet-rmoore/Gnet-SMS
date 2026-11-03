@@ -1,5 +1,12 @@
 import type { NavSection } from "../../constants/navByRole";
 
+/** e.g. /demo/attendance → nav-attendance */
+export function guideIdFromTo(to: string): string | undefined {
+  const parts = to.split("/").filter(Boolean);
+  if (parts.length < 2) return undefined;
+  return `nav-${parts.slice(1).join("-")}`;
+}
+
 export function isNavActive(pathname: string, to: string) {
   if (to === "/super-admin") return pathname === "/super-admin" || pathname === "/super-admin/";
   if (pathname === to) return true;

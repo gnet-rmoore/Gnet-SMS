@@ -1,6 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
@@ -15,11 +15,16 @@ import {
   X,
 } from "lucide-react";
 import { useGuide } from "./GuideProvider";
-import { pathMatchesVisit, type GuideStepDef } from "./catalog";
+import type { GuideStepDef } from "./catalog";
 import { resolveGuideHowTo } from "./guideHowTo";
+import { findGuideAnchor, revealGuideAnchor } from "./anchorBridge";
 import { cn } from "../../lib/cn";
 
-/** Anchor rect with live re-measure (resize, scroll, layout shifts). */
+/**
+ * Anchor rect with live re-measure. Before measuring we ask the app shell to
+ * reveal the anchor (expand its sidebar section, scroll it into view), so a
+ * link that is deep in the sidebar never ends up off-screen.
+ */
 function useAnchorRect(anchorId?: string) {
   const [rect, setRect] = React.useState<DOMRect | null>(null);
 
@@ -28,7 +33,7 @@ function useAnchorRect(anchorId?: string) {
       setRect(null);
       return;
     }
-    const el = document.querySelector(`[data-guide-id="${anchorId}"]`);
+    const el = findGuideAnchor(anchorId);
     if (el) setRect(el.getBoundingClientRect());
     else setRect(null);
   }, [anchorId]);
@@ -38,29 +43,79 @@ function useAnchorRect(anchorId?: string) {
       setRect(null);
       return;
     }
+
+    let disposed = false;
     let frame = 0;
+    let interval = 0;
+    let observer: ResizeObserver | null = null;
+
     const schedule = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(measure);
     };
-    measure();
+
+    const bind = (el: HTMLElement) => {
+      observer?.disconnect();
+      if (typeof ResizeObserver !== "undefined") {
+        observer = new ResizeObserver(schedule);
+        observer.observe(el);
+      }
+      measure();
+    };
+
+    const start = async () => {
+      setRect(null);
+      const el = await revealGuideAnchor(anchorId);
+      if (disposed) return;
+      if (el) bind(el);
+      interval = window.setInterval(measure, 350);
+    };
+
+    void start();
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
-    const id = window.setInterval(measure, 350);
-    const el = document.querySelector(`[data-guide-id="${anchorId}"]`);
-    const observer =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
-    if (el && observer) observer.observe(el);
+
     return () => {
+      disposed = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
-      window.clearInterval(id);
+      window.clearInterval(interval);
       observer?.disconnect();
     };
   }, [anchorId, measure]);
 
   return rect;
+}
+
+type ViewportSize = { width: number; height: number };
+
+function readViewport(): ViewportSize {
+  if (typeof window === "undefined") return { width: 1024, height: 768 };
+  const vv = window.visualViewport;
+  return {
+    width: Math.min(window.innerWidth, vv?.width ?? window.innerWidth),
+    height: Math.min(window.innerHeight, vv?.height ?? window.innerHeight),
+  };
+}
+
+function useViewportSize() {
+  const [size, setSize] = React.useState<ViewportSize>(readViewport);
+
+  React.useEffect(() => {
+    const onChange = () => setSize(readViewport());
+    const vv = window.visualViewport;
+    window.addEventListener("resize", onChange);
+    vv?.addEventListener("resize", onChange);
+    vv?.addEventListener("scroll", onChange);
+    return () => {
+      window.removeEventListener("resize", onChange);
+      vv?.removeEventListener("resize", onChange);
+      vv?.removeEventListener("scroll", onChange);
+    };
+  }, []);
+
+  return size;
 }
 
 function useIsMobile() {
@@ -79,13 +134,15 @@ function useIsMobile() {
 
 const CARD_MAX_W = 384;
 const EDGE_GAP = 14;
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function GuideHost() {
   const { t } = useTranslation("pages");
   const navigate = useNavigate();
-  const location = useLocation();
   const reduceMotion = useReducedMotion();
   const isMobile = useIsMobile();
+  const viewport = useViewportSize();
   const {
     tourOpen,
     steps,
@@ -94,49 +151,75 @@ export function GuideHost() {
     meta,
     basePath,
     markStep,
+    setActiveStep,
     dismissTour,
     completeGuide,
     nextStep,
   } = useGuide();
 
   const [index, setIndex] = React.useState(0);
+  const [cardHeight, setCardHeight] = React.useState(0);
   const dialogRef = React.useRef<HTMLDivElement>(null);
   const previousFocus = React.useRef<HTMLElement | null>(null);
+  const initialized = React.useRef(false);
 
+  // Initialize once per tour opening. Later transitions own the index; deriving
+  // it from `firstIncompleteStep` on every update was what skipped steps.
   React.useEffect(() => {
-    if (!tourOpen || !steps.length) return;
-    const activeId = progress?.activeStepId || nextStep?.id;
-    const i = Math.max(0, steps.findIndex((s) => s.id === activeId));
+    if (!tourOpen) {
+      initialized.current = false;
+      return;
+    }
+    if (initialized.current || !steps.length) return;
+    initialized.current = true;
+    const activeStatus = progress?.activeStepId
+      ? progress?.steps?.[progress.activeStepId]
+      : undefined;
+    const activeId =
+      progress?.activeStepId && activeStatus !== "done" && activeStatus !== "skipped"
+        ? progress.activeStepId
+        : nextStep?.id;
+    const i = steps.findIndex((s) => s.id === activeId);
     setIndex(i >= 0 ? i : 0);
   }, [tourOpen, steps, progress?.activeStepId, nextStep?.id]);
 
+  React.useEffect(() => {
+    if (index >= steps.length) setIndex(Math.max(0, steps.length - 1));
+  }, [index, steps.length]);
+
   const step: GuideStepDef | undefined = steps[index];
-  const rect = useAnchorRect(step?.type === "nav_spotlight" ? step.anchorId : undefined);
+  const anchorId = !isMobile ? step?.anchorId : undefined;
+  const rect = useAnchorRect(anchorId);
+
+  // Keep the card height in sync so placement can use the real size.
+  React.useLayoutEffect(() => {
+    const el = dialogRef.current;
+    setCardHeight(el?.offsetHeight ?? 0);
+  }, [index, tourOpen, step?.id]);
 
   React.useEffect(() => {
-    if (!tourOpen || !step?.visitPaths) return;
-    if (pathMatchesVisit(location.pathname, step.visitPaths)) {
-      const st = progress?.steps?.[step.id];
-      if (st !== "done") void markStep(step.id, "done");
-    }
-  }, [location.pathname, tourOpen, step, progress?.steps, markStep]);
+    const el = dialogRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setCardHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [index, tourOpen, step?.id]);
 
   const isLast = index >= steps.length - 1;
   const isIntro = step?.type === "intro";
   const isCompletion = step?.type === "completion";
-  const focusableSelector =
-    'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
   const goNext = React.useCallback(async () => {
     if (!step) return;
-    await markStep(step.id, "done");
     if (isLast || isCompletion) {
       await completeGuide();
       return;
     }
     const next = steps[index + 1];
+    // Move the UI immediately; persistence is optimistic in the background.
     setIndex(index + 1);
     if (next?.route && basePath) navigate(`${basePath}/${next.route}`);
+    void markStep(step.id, "done", next?.id ?? null);
   }, [step, isLast, isCompletion, markStep, completeGuide, steps, index, basePath, navigate]);
 
   const goBack = React.useCallback(() => {
@@ -144,51 +227,81 @@ export function GuideHost() {
     const prev = steps[index - 1];
     setIndex(index - 1);
     if (prev?.route && basePath) navigate(`${basePath}/${prev.route}`);
-  }, [index, steps, basePath, navigate]);
+    void setActiveStep(prev?.id ?? null);
+  }, [index, steps, basePath, navigate, setActiveStep]);
 
   const goSkip = React.useCallback(async () => {
     if (!step) return;
-    await markStep(step.id, "skipped");
-    if (isLast) {
+    if (isLast || isCompletion) {
       await completeGuide();
       return;
     }
+    const next = steps[index + 1];
     setIndex(index + 1);
-  }, [step, isLast, markStep, completeGuide, index]);
+    if (next?.route && basePath) navigate(`${basePath}/${next.route}`);
+    void markStep(step.id, "skipped", next?.id ?? null);
+  }, [
+    step,
+    isLast,
+    isCompletion,
+    markStep,
+    completeGuide,
+    steps,
+    index,
+    basePath,
+    navigate,
+  ]);
 
   const goThere = React.useCallback(() => {
     if (step?.route && basePath) navigate(`${basePath}/${step.route}`);
-  }, [step, basePath, navigate]);
+    if (step) void setActiveStep(step.id);
+  }, [step, basePath, navigate, setActiveStep]);
 
-  // Focus trap + restore + keyboard shortcuts
+  const goNextRef = React.useRef(goNext);
+  const goBackRef = React.useRef(goBack);
+  const dismissRef = React.useRef(dismissTour);
+  React.useEffect(() => {
+    goNextRef.current = goNext;
+    goBackRef.current = goBack;
+    dismissRef.current = dismissTour;
+  }, [goNext, goBack, dismissTour]);
+
+  // Focus trap + restore + keyboard shortcuts (stable across step changes).
+  // Keep keyboard focus inside the dialog when the step changes.
+  React.useEffect(() => {
+    if (!tourOpen || index === 0) return;
+    const id = window.setTimeout(() => dialogRef.current?.focus(), 50);
+    return () => window.clearTimeout(id);
+  }, [index, tourOpen]);
+
   React.useEffect(() => {
     if (!tourOpen) return;
     previousFocus.current = document.activeElement as HTMLElement | null;
     const id = window.setTimeout(() => {
       const root = dialogRef.current;
       if (!root) return;
-      root.querySelector<HTMLElement>(focusableSelector)?.focus();
+      root.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
     }, 50);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        void dismissTour(false);
+        void dismissRef.current(false);
         return;
       }
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        void goNext();
+        void goNextRef.current();
         return;
       }
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        goBack();
+        goBackRef.current();
         return;
       }
       if (e.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(focusableSelector)
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       ).filter((el) => el.offsetParent !== null || el === document.activeElement);
       if (!focusable.length) return;
       const first = focusable[0];
@@ -207,7 +320,7 @@ export function GuideHost() {
       window.removeEventListener("keydown", onKey);
       previousFocus.current?.focus?.();
     };
-  }, [tourOpen, dismissTour, goNext, goBack, focusableSelector]);
+  }, [tourOpen]);
 
   if (!tourOpen || !track || !step) return null;
 
@@ -227,26 +340,49 @@ export function GuideHost() {
         transition: { duration: 0.2, ease: "easeOut" as const },
       };
 
+  const cardWidth = Math.min(CARD_MAX_W, Math.max(240, viewport.width - EDGE_GAP * 2));
+  const viewportMaxCardHeight = Math.max(220, viewport.height - EDGE_GAP * 2);
+  const measuredCardHeight = cardHeight || 360;
+  const effectiveCardHeight = Math.min(measuredCardHeight, viewportMaxCardHeight);
   const clampedLeft = (r: DOMRect) =>
-    Math.min(Math.max(EDGE_GAP, r.left), window.innerWidth - CARD_MAX_W - EDGE_GAP);
+    Math.min(
+      Math.max(EDGE_GAP, r.left),
+      Math.max(EDGE_GAP, viewport.width - cardWidth - EDGE_GAP)
+    );
 
   const placementStyle: React.CSSProperties = (() => {
     if (isMobile) return {};
-    if (!rect) return { top: "16%", left: "50%", transform: "translateX(-50%)" };
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const placeAbove = spaceBelow < 340 && rect.top > spaceBelow;
-    return placeAbove
-      ? { bottom: window.innerHeight - rect.top + EDGE_GAP, left: clampedLeft(rect) }
-      : { top: rect.bottom + EDGE_GAP, left: clampedLeft(rect) };
+    if (!rect) {
+      return {
+        top: Math.max(EDGE_GAP, Math.round(viewport.height * 0.16)),
+        left: Math.max(EDGE_GAP, Math.round((viewport.width - cardWidth) / 2)),
+        maxHeight: viewportMaxCardHeight,
+      };
+    }
+    const spaceBelow = viewport.height - rect.bottom - EDGE_GAP;
+    const spaceAbove = rect.top - EDGE_GAP;
+    const placeAbove = spaceBelow < effectiveCardHeight && spaceAbove > spaceBelow;
+    const desiredTop = placeAbove
+      ? rect.top - EDGE_GAP - effectiveCardHeight
+      : rect.bottom + EDGE_GAP;
+    const top = Math.min(
+      Math.max(EDGE_GAP, desiredTop),
+      Math.max(EDGE_GAP, viewport.height - effectiveCardHeight - EDGE_GAP)
+    );
+    return {
+      top,
+      left: clampedLeft(rect),
+      maxHeight: Math.max(220, viewport.height - top - EDGE_GAP),
+    };
   })();
 
   const coach = (
     <motion.div
-      key="coach"
+      key={step.id}
       ref={dialogRef}
       {...motionProps}
       className={cn(
-        "z-[80] flex max-h-[calc(100dvh-1.5rem)] w-[min(100vw-1.5rem,24rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-12px_rgb(15,23,42,0.35)]",
+        "z-[80] flex max-h-[calc(100dvh-1.5rem)] w-[min(100vw-1.5rem,24rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-12px_rgb(15,23,42,0.35)] outline-none",
         isMobile ? "fixed inset-x-3 bottom-3" : "fixed"
       )}
       style={placementStyle}
@@ -254,6 +390,7 @@ export function GuideHost() {
       aria-modal="true"
       aria-labelledby="guide-coach-title"
       aria-describedby="guide-coach-body"
+      tabIndex={-1}
     >
       {isMobile ? (
         <div className="flex justify-center pt-2.5" aria-hidden>
@@ -261,7 +398,7 @@ export function GuideHost() {
         </div>
       ) : null}
 
-      <div className="overflow-y-auto p-5">
+      <div className="overflow-y-auto p-5" aria-live="polite">
         {/* Progress segments */}
         <div className="flex items-center gap-1" aria-hidden>
           {steps.map((s, i) => (
@@ -422,7 +559,7 @@ export function GuideHost() {
     <AnimatePresence>
       {tourOpen ? (
         <>
-          {rect && !isMobile ? (
+          {rect && !isMobile && rect.bottom > 0 && rect.top < viewport.height ? (
             <div
               key="spotlight"
               className="pointer-events-none fixed z-[70] rounded-2xl ring-2 ring-indigo-400/90 transition-[top,left,width,height] duration-200"

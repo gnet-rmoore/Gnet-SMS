@@ -31,15 +31,30 @@ import type { AppLocale } from "../i18n/locales";
 import { cn } from "../lib/cn";
 import {
   AppSidebar,
+  guideIdFromTo,
   isNavActive,
   sectionContainsActive,
   readSidebarMode,
   writeSidebarMode,
 } from "./sidebar";
-import { GuideProvider } from "../features/platform-guide/GuideProvider";
+import { GuideProvider, useGuideOptional } from "../features/platform-guide/GuideProvider";
 import { GuideHost } from "../features/platform-guide/GuideHost";
 import { ContinueGuideChip } from "../features/platform-guide/ContinueGuideChip";
+import {
+  registerGuideAnchorRevealer,
+  scrollGuideAnchorIntoView,
+  waitForGuideAnchor,
+} from "../features/platform-guide/anchorBridge";
 import { GradebookBackgroundSyncRunner } from "../features/gradebook/components/GradebookBackgroundSyncRunner";
+
+/** Lets the shell react to the guide opening (e.g. expand the icon rail). */
+function GuideTourStateBridge({ onChange }: { onChange: (open: boolean) => void }) {
+  const guide = useGuideOptional();
+  React.useEffect(() => {
+    onChange(Boolean(guide?.tourOpen));
+  }, [guide?.tourOpen, onChange]);
+  return null;
+}
 
 export function Layout({ children }: { children?: React.ReactNode }) {
   const { t, i18n } = useTranslation(["nav", "common"]);
@@ -86,6 +101,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
   const profileDropdownRef = React.useRef<HTMLDivElement>(null);
   const { data: navBadges = {} } = useNavBadges();
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
+  const [guideTourOpen, setGuideTourOpen] = React.useState(false);
   const refreshedSession = React.useRef(false);
 
   React.useEffect(() => {
@@ -276,6 +292,24 @@ export function Layout({ children }: { children?: React.ReactNode }) {
 
   const navItems = React.useMemo(() => flattenNavSections(navSections), [navSections]);
 
+  // The guide asks the shell to reveal a sidebar target before measuring it.
+  React.useEffect(() => {
+    return registerGuideAnchorRevealer(async (anchorId) => {
+      const section = navSections.find((s) =>
+        s.items.some((item) => guideIdFromTo(item.to) === anchorId)
+      );
+      if (section) {
+        setOpenSections(() => {
+          const next: Record<string, boolean> = {};
+          for (const s of navSections) next[s.id] = s.id === section.id;
+          return next;
+        });
+      }
+      const el = await waitForGuideAnchor(anchorId);
+      return scrollGuideAnchorIntoView(el);
+    });
+  }, [navSections]);
+
   const translateNavKey = React.useCallback(
     (key: string) =>
       t(key.startsWith("sections.") || key.startsWith("items.") ? key : `items.${key}`, {
@@ -345,6 +379,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
 
   return (
     <GuideProvider>
+    <GuideTourStateBridge onChange={setGuideTourOpen} />
     <div className="flex min-h-screen bg-slate-100">
       <AnimatePresence>
         {mobileNavOpen && !isDesktop ? (
@@ -370,7 +405,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
         translateLabel={translateNavKey}
         emptyNavLabel={t("noNavForRole", { ns: "common", defaultValue: "No navigation for this role." })}
         isDesktop={isDesktop}
-        desktopCollapsed={desktopCollapsed}
+        desktopCollapsed={desktopCollapsed && !guideTourOpen}
         mobileOpen={mobileNavOpen}
         brand={{
           logoUrl: role === "SUPER_ADMIN" ? platformLogoUrl : school?.logoUrl,

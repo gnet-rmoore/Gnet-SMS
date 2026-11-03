@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { NavBadge } from "../../features/notifications/components/NavBadge";
 import { cn } from "../../lib/cn";
+import { guideIdFromTo } from "./navUtils";
 
 type SidebarLeafProps = {
   to: string;
@@ -13,13 +14,6 @@ type SidebarLeafProps = {
   nested?: boolean;
   onNavigate?: () => void;
 };
-
-/** e.g. /demo/attendance → nav-attendance */
-function guideIdFromTo(to: string): string | undefined {
-  const parts = to.split("/").filter(Boolean);
-  if (parts.length < 2) return undefined;
-  return `nav-${parts.slice(1).join("-")}`;
-}
 
 export function SidebarLeaf({
   to,

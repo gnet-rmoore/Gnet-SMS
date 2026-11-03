@@ -27,7 +27,12 @@ type GuideContextValue = {
   setTourOpen: (open: boolean) => void;
   basePath: string;
   refresh: () => Promise<void>;
-  markStep: (id: string, status: "done" | "skipped" | "todo") => Promise<void>;
+  markStep: (
+    id: string,
+    status: "done" | "skipped" | "todo",
+    activeStepId?: string | null
+  ) => Promise<void>;
+  setActiveStep: (id: string | null) => Promise<void>;
   startTour: (fromStepId?: string) => Promise<void>;
   dismissTour: (permanent?: boolean) => Promise<void>;
   restart: () => Promise<void>;
@@ -132,8 +137,15 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
   }, [loading, track?.id, location.search]);
 
   const markStep = React.useCallback(
-    async (id: string, status: "done" | "skipped" | "todo") => {
-      const res = await patchGuideProgress({ markStep: { id, status } });
+    async (
+      id: string,
+      status: "done" | "skipped" | "todo",
+      activeStepId?: string | null
+    ) => {
+      const res = await patchGuideProgress({
+        markStep: { id, status },
+        ...(activeStepId !== undefined ? { activeStepId } : {}),
+      });
       setProgress(res.progress);
       setTrackId(res.trackId);
       if (res.meta) setMeta(res.meta);
@@ -141,11 +153,29 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const setActiveStep = React.useCallback(async (id: string | null) => {
+    const res = await patchGuideProgress({ activeStepId: id });
+    setProgress(res.progress);
+    setTrackId(res.trackId);
+    if (res.meta) setMeta(res.meta);
+  }, []);
+
   const startTour = React.useCallback(
     async (fromStepId?: string) => {
+      const resume = progress?.activeStepId
+        ? steps.find((s) => s.id === progress.activeStepId)
+        : undefined;
+      const resumeStatus = resume ? progress?.steps?.[resume.id] : undefined;
+      const resumeIsOpen = Boolean(resume && resumeStatus !== "done" && resumeStatus !== "skipped");
+      const targetId =
+        fromStepId ||
+        (resumeIsOpen ? resume?.id : undefined) ||
+        firstIncompleteStep(steps, progress)?.id ||
+        steps[0]?.id ||
+        null;
       const res = await patchGuideProgress({
         status: "IN_PROGRESS",
-        activeStepId: fromStepId || firstIncompleteStep(steps, progress)?.id || steps[0]?.id || null,
+        activeStepId: targetId,
         sendWelcomeTip: true,
       });
       setProgress(res.progress);
@@ -207,6 +237,7 @@ export function GuideProvider({ children }: { children: React.ReactNode }) {
     basePath,
     refresh,
     markStep,
+    setActiveStep,
     startTour,
     dismissTour,
     restart,

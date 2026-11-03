@@ -20,6 +20,18 @@ import {
 import { emailAuthService } from "./emailAuthService";
 import { assertStudentQuota, assertStaffQuota } from "../lib/quotaEnforcement";
 
+function withParentEmail<T extends { parents?: Array<{ parent: { email: string } }> }>(row: T) {
+  const { parents, ...rest } = row;
+  return {
+    ...rest,
+    parentEmail: parents?.[0]?.parent.email ?? null,
+  };
+}
+
+function generateTemporaryPassword(prefix: string) {
+  return `${prefix}@${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+}
+
 async function assertPasswordForSchool(schoolId: string | null | undefined, password: string) {
   if (!password) return;
   let policy = DEFAULT_SECURITY_POLICY;
@@ -86,18 +98,23 @@ export const userService = {
       parentName: true,
       parentPhone: true,
       mustChangePassword: true,
+      parents: {
+        select: { parent: { select: { email: true } } },
+        take: 1,
+      },
     } as const;
     if (opts?.unpaged) {
-      const items = await prisma.user.findMany({
+      const rows = await prisma.user.findMany({
         where,
         select,
         orderBy: { createdAt: "desc" },
       });
+      const items = rows.map(withParentEmail);
       return { items, total: items.length, page: 1, pageSize: items.length };
     }
     const page = Math.max(1, Number(opts?.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(opts?.pageSize) || 50));
-    const [total, items] = await Promise.all([
+    const [total, rows] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
@@ -107,7 +124,7 @@ export const userService = {
         take: pageSize,
       }),
     ]);
-    return { items, total, page, pageSize };
+    return { items: rows.map(withParentEmail), total, page, pageSize };
   },
 
   async createStudent(schoolId: string, data: any) {
@@ -121,6 +138,7 @@ export const userService = {
       address,
       parentName,
       parentPhone,
+      parentEmail,
       gradeLevelId,
       feeCohort,
     } = data;
@@ -133,6 +151,17 @@ export const userService = {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const normalizedParentEmail =
+      typeof parentEmail === "string" && parentEmail.trim() !== ""
+        ? parentEmail.trim().toLowerCase()
+        : null;
+    if (normalizedParentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedParentEmail)) {
+      throw new Error("Parent email is invalid");
+    }
+    if (normalizedParentEmail === normalizedEmail) {
+      throw new Error("Parent email must be different from the student email");
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -140,12 +169,25 @@ export const userService = {
       throw new Error("User with this email already exists");
     }
 
+    if (normalizedParentEmail) {
+      const existingParent = await prisma.user.findUnique({
+        where: { email: normalizedParentEmail },
+        select: { role: true, schoolId: true },
+      });
+      if (existingParent && existingParent.role !== "PARENT") {
+        throw new Error("Parent email belongs to a non-parent account");
+      }
+      if (existingParent?.schoolId && existingParent.schoolId !== schoolId) {
+        throw new Error("Parent email belongs to another school");
+      }
+    }
+
     await assertStudentQuota(schoolId);
 
     const temporaryPassword =
       typeof password === "string" && password.trim().length >= 8
         ? password.trim()
-        : `St@${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+        : generateTemporaryPassword("St");
 
     const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
     const cohort =
@@ -189,7 +231,44 @@ export const userService = {
       },
     });
 
-    return { ...user, temporaryPassword };
+    let linkedParentEmail: string | null = null;
+    let parentTemporaryPassword: string | undefined;
+    let parentCreated = false;
+    let parentLinkFailed = false;
+
+    if (normalizedParentEmail) {
+      const parentPassword = generateTemporaryPassword("Pa");
+      const parentUser = await this.findOrCreateUser({
+        email: normalizedParentEmail,
+        name: parentName?.trim() || normalizedParentEmail,
+        role: "PARENT",
+        schoolId,
+        password: parentPassword,
+        phone: parentPhone?.trim() || null,
+        sendWelcomeEmail: true,
+      });
+      if (parentUser.role !== "PARENT") {
+        throw new Error("Parent email belongs to a non-parent account");
+      }
+      linkedParentEmail = parentUser.email;
+      parentCreated = parentUser.created === true;
+      parentTemporaryPassword = parentCreated ? parentPassword : undefined;
+      try {
+        await this.createParentLink(parentUser.id, user.id);
+      } catch (err: any) {
+        parentLinkFailed = true;
+        console.warn("[identity] parent-student link failed:", err?.message || err);
+      }
+    }
+
+    return {
+      ...user,
+      temporaryPassword,
+      parentEmail: linkedParentEmail,
+      parentTemporaryPassword,
+      parentCreated,
+      parentLinkFailed,
+    };
   },
 
   async getStaff(
