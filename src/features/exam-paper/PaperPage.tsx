@@ -293,7 +293,7 @@ export default function ExamPaperPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
+    <div className="max-w-7xl mx-auto space-y-8 w-full min-w-0 pb-16">
       <PageToast toast={toast} />
       {examId ? (
         <ImportQuestionsModal
