@@ -891,8 +891,11 @@ export const onlineExamService = {
         duration: exam.duration,
         maxViolations: exam.maxViolations,
         showResultsImmediately: exam.showResultsImmediately,
-        proctorLevel: "MONITOR",
-        kioskConfig: parseKioskConfig(null, exam.maxViolations),
+        proctorLevel: "SCREEN_VIEW",
+        kioskConfig: {
+          ...parseKioskConfig(null, exam.maxViolations),
+          requireScreenShare: true,
+        },
       },
       questions: sampleQuestions().map((q) => stripCorrectFromQuestion(q, false)),
     };

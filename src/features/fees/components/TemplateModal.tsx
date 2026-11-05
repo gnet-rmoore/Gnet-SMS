@@ -33,6 +33,17 @@ export function TemplateModal({
   const { t } = useTranslation(["pages", "common"]);
   const scopeMode = templateForm.scopeMode || "SCHOOL";
 
+  React.useEffect(() => {
+    const defaultForm = {
+      name: "Generic Billing Template",
+      type: "OTHER",
+      amount: 0,
+      description: "",
+      customType: "",
+    };
+    setTemplateForm({ ...defaultForm, ...templateForm });
+  }, []);
+
   return (
     <FeatureModalShell
       eyebrow={t("pages:fees.billingEyebrow")}

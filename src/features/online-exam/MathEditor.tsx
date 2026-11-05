@@ -8,6 +8,7 @@
 import React from "react";
 import {
   Sigma,
+  SquareFunction,
   ImagePlus,
   PenTool,
   Eye,
@@ -19,7 +20,10 @@ import {
 import { useTranslation } from "react-i18next";
 import { RichContent } from "./RichContent";
 import { SketchPad } from "./SketchPad";
+import { applyEquation, findMathExpressionAt, type EquationEdit } from "./mathEquation";
 import { isSafeImageUrl } from "./richText";
+
+const EquationDialog = React.lazy(() => import("./EquationDialog"));
 
 type Item = { label: string; latex: string; display?: boolean };
 type Group = { name: string; items: Item[] };
@@ -150,8 +154,51 @@ export function MathEditor({
   const [imageError, setImageError] = React.useState("");
   const [drawOpen, setDrawOpen] = React.useState(false);
   const [preview, setPreview] = React.useState(false);
+  const [equationOpen, setEquationOpen] = React.useState(false);
+  const [equationEdit, setEquationEdit] = React.useState<EquationEdit | null>(null);
 
   const m = (k: string) => t(`onlineExams.author.math.${k}`);
+
+  const openEquation = () => {
+    const ta = taRef.current;
+    const start = ta ? ta.selectionStart : value.length;
+    const end = ta ? ta.selectionEnd : value.length;
+    setEquationEdit(findMathExpressionAt(value, start, end));
+    setEquationOpen(true);
+    setPaletteOpen(false);
+    setImageOpen(false);
+  };
+
+  const closeEquation = () => {
+    setEquationOpen(false);
+    setEquationEdit(null);
+    requestAnimationFrame(() => taRef.current?.focus());
+  };
+
+  const applyEquationToEditor = (latex: string, display: boolean) => {
+    const ta = taRef.current;
+    const start = equationEdit ? equationEdit.start : ta?.selectionStart ?? value.length;
+    const end = equationEdit ? equationEdit.end : ta?.selectionEnd ?? value.length;
+    const result = applyEquation(value, {
+      start,
+      end,
+      latex,
+      display,
+      padDisplay: !equationEdit,
+    });
+    onChange(result.value);
+    setEquationOpen(false);
+    setEquationEdit(null);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      ta.focus();
+      try {
+        ta.setSelectionRange(result.end, result.end);
+      } catch {
+        /* ignore */
+      }
+    });
+  };
 
   const insertRaw = React.useCallback(
     (text: string, selectFrom?: number, selectTo?: number) => {
@@ -255,6 +302,15 @@ export function MathEditor({
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={openEquation}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-200"
+        >
+          <SquareFunction className="w-4 h-4" />
+          {m("equation.button")}
+        </button>
 
         <button
           type="button"
@@ -372,6 +428,34 @@ export function MathEditor({
           )}
         </div>
       )}
+
+      {equationOpen ? (
+        <React.Suspense fallback={null}>
+          <EquationDialog
+            initialLatex={equationEdit?.latex ?? ""}
+            initialDisplay={equationEdit?.display ?? false}
+            mode={equationEdit ? "edit" : "insert"}
+            onClose={closeEquation}
+            onApply={applyEquationToEditor}
+            labels={{
+              title: m("equation.title"),
+              editTitle: m("equation.editTitle"),
+              subtitle: m("equation.subtitle"),
+              insert: m("equation.insert"),
+              update: m("equation.update"),
+              inline: m("equation.inline"),
+              block: m("equation.block"),
+              latex: m("equation.latex"),
+              latexHint: m("equation.latexHint"),
+              preview: m("equation.preview"),
+              keyboard: m("equation.keyboard"),
+              cancel: m("equation.cancel"),
+              empty: m("equation.empty"),
+              placeholder: m("equation.placeholder"),
+            }}
+          />
+        </React.Suspense>
+      ) : null}
 
       <SketchPad
         open={drawOpen}

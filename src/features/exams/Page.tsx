@@ -445,7 +445,10 @@ export const Exams = () => {
                           className="p-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-colors flex items-center gap-2"
                           title={t("exams.editExam")}
                         >
-                          <Pencil className="w-4 h-4" /> {t("exams.editExam")}
+                          <Pencil className="w-4 h-4" />
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {t("exams.editExam")}
+                          </span>
                         </button>
                       )}
                     </div>

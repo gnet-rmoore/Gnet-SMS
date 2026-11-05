@@ -81,6 +81,7 @@ export const FEE_TYPES = [
   { value: "TRANSPORT", label: "Transport" },
   { value: "ENTRANCE", label: "Entrance" },
   { value: "OTHER", label: "Other" },
+  { value: "CUSTOM", label: "Custom" },
 ] as const;
 
 export const PAYMENT_METHODS = [

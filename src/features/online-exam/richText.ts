@@ -104,16 +104,24 @@ function matchImage(src: string, i: number): { alt: string; src: string; end: nu
   return { alt: src.slice(i + 2, altEnd), src: url, end: urlEnd + 1 };
 }
 
-/** Split rich text into ordered segments. Never throws. */
-export function parseRichContent(input: string): RichSegment[] {
+export type RichSegmentWithRange = RichSegment & { start: number; end: number };
+
+/** Split rich text into ordered segments with source offsets. Never throws. */
+export function parseRichContentWithRanges(input: string): RichSegmentWithRange[] {
   const src = String(input ?? "");
-  const segments: RichSegment[] = [];
+  const segments: RichSegmentWithRange[] = [];
   let buffer = "";
+  let bufferStart = 0;
   let i = 0;
 
-  const flush = () => {
+  const append = (next: string) => {
+    if (!buffer) bufferStart = i;
+    buffer += next;
+  };
+
+  const flush = (end: number) => {
     if (buffer) {
-      segments.push({ type: "text", value: buffer });
+      segments.push({ type: "text", value: buffer, start: bufferStart, end });
       buffer = "";
     }
   };
@@ -121,7 +129,7 @@ export function parseRichContent(input: string): RichSegment[] {
   while (i < src.length) {
     // Escaped dollar sign -> literal.
     if (src[i] === "\\" && src[i + 1] === "$") {
-      buffer += "$";
+      append("$");
       i += 2;
       continue;
     }
@@ -130,16 +138,16 @@ export function parseRichContent(input: string): RichSegment[] {
       if (src[i + 1] === "$") {
         const m = matchDelimited(src, i, "$$", "$$");
         if (m) {
-          flush();
-          segments.push({ type: "math", value: m.value, display: true });
+          flush(i);
+          segments.push({ type: "math", value: m.value, display: true, start: i, end: m.end });
           i = m.end;
           continue;
         }
       } else {
         const m = matchInlineDollar(src, i);
         if (m && m.value.trim()) {
-          flush();
-          segments.push({ type: "math", value: m.value, display: false });
+          flush(i);
+          segments.push({ type: "math", value: m.value, display: false, start: i, end: m.end });
           i = m.end;
           continue;
         }
@@ -149,15 +157,15 @@ export function parseRichContent(input: string): RichSegment[] {
     if (src[i] === "\\") {
       const disp = matchDelimited(src, i, "\\[", "\\]");
       if (disp) {
-        flush();
-        segments.push({ type: "math", value: disp.value, display: true });
+        flush(i);
+        segments.push({ type: "math", value: disp.value, display: true, start: i, end: disp.end });
         i = disp.end;
         continue;
       }
       const inl = matchDelimited(src, i, "\\(", "\\)");
       if (inl) {
-        flush();
-        segments.push({ type: "math", value: inl.value, display: false });
+        flush(i);
+        segments.push({ type: "math", value: inl.value, display: false, start: i, end: inl.end });
         i = inl.end;
         continue;
       }
@@ -166,19 +174,32 @@ export function parseRichContent(input: string): RichSegment[] {
     if (src[i] === "!") {
       const img = matchImage(src, i);
       if (img) {
-        flush();
-        segments.push({ type: "image", alt: img.alt, src: img.src });
+        flush(i);
+        segments.push({ type: "image", alt: img.alt, src: img.src, start: i, end: img.end });
         i = img.end;
         continue;
       }
     }
 
-    buffer += src[i];
+    append(src[i]);
     i += 1;
   }
 
-  flush();
+  flush(src.length);
   return segments;
+}
+
+/** Split rich text into ordered segments. Never throws. */
+export function parseRichContent(input: string): RichSegment[] {
+  return parseRichContentWithRanges(input).map((segment) => {
+    if (segment.type === "math") {
+      return { type: "math", value: segment.value, display: segment.display };
+    }
+    if (segment.type === "image") {
+      return { type: "image", alt: segment.alt, src: segment.src };
+    }
+    return { type: "text", value: segment.value };
+  });
 }
 
 /** Plain-text projection (for previews, list snippets, accessibility). */

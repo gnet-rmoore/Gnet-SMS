@@ -7,7 +7,6 @@ import {
   Clock3,
   Eye,
   Loader2,
-  MonitorUp,
   Pencil,
   Play,
   RotateCcw,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { onlineExamApi, type KioskConfig, type ProctorLevel } from "./api";
 import {
+  ExamRulesBlock,
   IntroFacts,
   PrevNextButtons,
   QuestionPalette,
@@ -470,12 +470,12 @@ export default function OnlineExamPreviewPage() {
 
   if (phase === "intro") {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-start sm:items-center justify-center px-4 py-5 sm:px-6 sm:py-8 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="max-w-lg w-full rounded-[32px] border border-slate-800 bg-slate-900 p-8 space-y-6"
+          className="max-w-lg w-full rounded-[32px] border border-slate-800 bg-slate-900 p-5 sm:p-8 space-y-4 sm:space-y-6"
         >
           <div className="flex items-center gap-3">
             <div className="shrink-0 rounded-2xl overflow-hidden bg-white p-1.5 border border-slate-800">
@@ -485,10 +485,10 @@ export default function OnlineExamPreviewPage() {
               <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 truncate">
                 {school?.name}
               </p>
-              <h1 className="text-2xl font-extrabold tracking-tight font-dashboard truncate">
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-dashboard truncate">
                 {examTitle}
               </h1>
-              <p className="text-slate-400 text-sm">{t("onlineExams.take.secureIntro")}</p>
+              <p className="text-slate-400 text-xs sm:text-sm">{t("onlineExams.take.secureIntro")}</p>
             </div>
           </div>
 
@@ -496,7 +496,7 @@ export default function OnlineExamPreviewPage() {
             <ShieldAlert className="w-4 h-4" /> {t("onlineExams.preview.badge")}
           </p>
 
-          <p className="text-sm text-slate-300">
+          <p className="text-xs sm:text-sm text-slate-300">
             {isSample
               ? t("onlineExams.preview.introSample")
               : isDemo
@@ -519,33 +519,14 @@ export default function OnlineExamPreviewPage() {
             screenShareReady={screenSharing}
           />
 
-          <ul className="text-sm text-slate-300 space-y-2 list-disc pl-5">
-            {kioskConfig.requireFullscreen && <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>}
-            {needsScreenConsent && (
-              <li className="flex items-start gap-2">
-                <MonitorUp className="w-4 h-4 mt-0.5 shrink-0 text-indigo-300" />
-                {t("onlineExams.take.secureBullets.screenShare")}
-              </li>
-            )}
-            <li>
-              {t("onlineExams.take.secureBullets.violations", {
-                suffix:
-                  kioskConfig.maxViolations > 0
-                    ? t("onlineExams.take.secureBullets.violationsSuffix", {
-                        max: kioskConfig.maxViolations,
-                      })
-                    : "",
-              })}
-            </li>
-            <li>{t("onlineExams.take.secureBullets.timer")}</li>
-          </ul>
-
-          <p className="text-xs text-slate-500 border border-slate-800 rounded-2xl p-4 leading-relaxed">
-            {t("onlineExams.take.lockdownLimitations")}
-          </p>
+          <ExamRulesBlock
+            requireFullscreen={kioskConfig.requireFullscreen}
+            needsScreenConsent={needsScreenConsent}
+            maxViolations={kioskConfig.maxViolations}
+          />
 
           {exam?.instructions && (
-            <p className="text-sm text-slate-400 border border-slate-800 rounded-2xl p-4">
+            <p className="text-xs sm:text-sm text-slate-400 border border-slate-800 rounded-2xl p-3 sm:p-4">
               {exam.instructions}
             </p>
           )}

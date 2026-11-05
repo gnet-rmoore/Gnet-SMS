@@ -362,14 +362,80 @@ export function IntroFacts({
     });
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
       {facts.map((f) => (
-        <div key={f.label} className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2.5">
+        <div key={f.label} className="rounded-xl border border-slate-800 bg-slate-950/60 px-2.5 py-2 sm:px-3 sm:py-2.5">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{f.label}</p>
           <p className="text-sm font-extrabold text-slate-100 font-mono truncate">{f.value}</p>
         </div>
       ))}
     </div>
+  );
+}
+
+export function ExamRules({
+  requireFullscreen,
+  needsScreenConsent,
+  maxViolations,
+}: {
+  requireFullscreen: boolean;
+  needsScreenConsent: boolean;
+  maxViolations: number;
+}) {
+  const { t } = useTranslation(["pages"]);
+  return (
+    <div className="space-y-3">
+      <ul className="text-xs sm:text-sm text-slate-300 space-y-1.5 list-disc pl-5">
+        {requireFullscreen && <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>}
+        {needsScreenConsent && (
+          <li className="flex items-start gap-2">
+            <MonitorUp className="w-4 h-4 mt-0.5 shrink-0 text-indigo-300" />
+            {t("onlineExams.take.secureBullets.screenShare")}
+          </li>
+        )}
+        <li>
+          {t("onlineExams.take.secureBullets.violations", {
+            suffix:
+              maxViolations > 0
+                ? t("onlineExams.take.secureBullets.violationsSuffix", {
+                    max: maxViolations,
+                  })
+                : "",
+          })}
+        </li>
+        <li>{t("onlineExams.take.secureBullets.timer")}</li>
+      </ul>
+      <p className="text-xs text-slate-500 border border-slate-800 rounded-2xl p-3 sm:p-4 leading-relaxed">
+        {t("onlineExams.take.lockdownLimitations")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Keeps the exam rules visible on larger screens but tucks them behind a
+ * collapsible summary on phones, where the pre-flight screen was too tall.
+ */
+export function ExamRulesBlock(props: {
+  requireFullscreen: boolean;
+  needsScreenConsent: boolean;
+  maxViolations: number;
+}) {
+  const { t } = useTranslation(["pages"]);
+  return (
+    <>
+      <div className="hidden sm:block">
+        <ExamRules {...props} />
+      </div>
+      <details className="sm:hidden rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-300">
+          {t("onlineExams.take.rulesTitle")}
+        </summary>
+        <div className="pt-3">
+          <ExamRules {...props} />
+        </div>
+      </details>
+    </>
   );
 }
 

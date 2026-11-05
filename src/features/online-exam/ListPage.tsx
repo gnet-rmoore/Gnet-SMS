@@ -196,13 +196,6 @@ export default function OnlineExamsListPage() {
                       <Eye className="w-4 h-4" />
                       {t("onlineExams.preview.testThisExam")}
                     </Link>
-                    <Link
-                      to={`/${school?.slug}/online-exams/${exam.id}/proctor`}
-                      className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-3 font-bold text-indigo-700 hover:bg-indigo-100 shrink-0"
-                    >
-                      <Play className="w-4 h-4" />
-                      Test Live View (Demo)
-                    </Link>
                   </div>
                 )}
                 {isStudent && exam.canBeginOnline !== false && (

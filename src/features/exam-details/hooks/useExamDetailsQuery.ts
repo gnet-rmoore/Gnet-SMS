@@ -9,13 +9,21 @@ export function useExamDetailsQuery(examId: string | undefined) {
     enabled: Boolean(examId),
     queryFn: async () => {
       if (!examId) throw new Error("Missing exam");
-      const [exam, grades, submissionsSummary, teacherClassrooms] = await Promise.all([
-        examDetailsApi.fetchExam(examId),
-        examDetailsApi.fetchGrades(examId),
+      const exam = await examDetailsApi.fetchExam(examId);
+      const [submissionsSummary, teacherClassrooms] = await Promise.allSettled([
         examDetailsApi.fetchSubmissionsSummary(examId),
         examDetailsApi.fetchTeacherClassrooms(examId),
       ]);
-      return { exam, grades: Array.isArray(grades) ? grades : [], submissionsSummary, teacherClassrooms };
+      return {
+        exam,
+        grades: [],
+        submissionsSummary:
+          submissionsSummary.status === "fulfilled" ? submissionsSummary.value : null,
+        teacherClassrooms:
+          teacherClassrooms.status === "fulfilled" && Array.isArray(teacherClassrooms.value)
+            ? teacherClassrooms.value
+            : [],
+      };
     },
   });
 
