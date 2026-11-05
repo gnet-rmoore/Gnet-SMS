@@ -65,11 +65,9 @@ const OnlineExams = lazy(() => import("./pages/School/OnlineExams").then((m) => 
 const QuestionBank = lazy(() =>
   import("./pages/School/QuestionBank").then((m) => ({ default: m.QuestionBank }))
 );
+import ExamPaperPreviewPage from "./features/exam-paper/PreviewPage";
 const OnlineExamAuthor = lazy(() =>
   import("./pages/School/OnlineExamAuthor").then((m) => ({ default: m.OnlineExamAuthor }))
-);
-const ExamPaperPreview = lazy(() =>
-  import("../features/exam-paper/PreviewPage").then((m) => ({ default: m.ExamPaperPreviewPage }))
 );
 const OnlineExamTake = lazy(() =>
   import("./pages/School/OnlineExamTake").then((m) => ({ default: m.OnlineExamTake }))
@@ -464,7 +462,7 @@ export default function App() {
                     path="exam-paper-preview"
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
-                        <ExamPaperPreview />
+                        <ExamPaperPreviewPage />
                       </ProtectedRoute>
                     }
                   />

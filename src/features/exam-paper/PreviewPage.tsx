@@ -105,7 +105,7 @@ export default function ExamPaperPreviewPage() {
                 </div>
               )}
               {q.type === "TRUE_FALSE" && (
-                <select readOnly disabled className="rounded-xl border border-slate-200 px-3 py-2 bg-white">
+                <select disabled className="rounded-xl border border-slate-200 px-3 py-2 bg-white">
                   <option value="true">{t("onlineExams.author.correctTrue")}</option>
                   <option value="false">{t("onlineExams.author.correctFalse")}</option>
                 </select>
