@@ -68,6 +68,9 @@ const QuestionBank = lazy(() =>
 const OnlineExamAuthor = lazy(() =>
   import("./pages/School/OnlineExamAuthor").then((m) => ({ default: m.OnlineExamAuthor }))
 );
+const ExamPaperPreview = lazy(() =>
+  import("../features/exam-paper/PreviewPage").then((m) => ({ default: m.ExamPaperPreviewPage }))
+);
 const OnlineExamTake = lazy(() =>
   import("./pages/School/OnlineExamTake").then((m) => ({ default: m.OnlineExamTake }))
 );
@@ -454,6 +457,14 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
                         <ExamPaper />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="exam-paper-preview"
+                    element={
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"]}>
+                        <ExamPaperPreview />
                       </ProtectedRoute>
                     }
                   />
