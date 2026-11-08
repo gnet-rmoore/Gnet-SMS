@@ -64,7 +64,6 @@ export function ApiKeysSettingsCard({ schoolId, enabled, showToast }: Props) {
           secret: row.secret,
           keyPrefix: row.keyPrefix,
           name: row.name,
-          keyType: row.keyType,
         });
       }
       setFreshSecret(row.secret || null);

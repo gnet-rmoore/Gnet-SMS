@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { SMS_SHADOW_SURFACE } from "../../../components/ui";
 import { cn } from "../../../lib/cn";
 import { maskApiKey } from "../../../lib/schoolApiKeySession";
+import { loadSchoolApiKeyForSession } from "../../lib/schoolApiKeySession";
 import type { ApiDocEndpoint } from "../catalog";
 import { hasUnresolvedPathParams } from "../catalog";
 import { MethodBadge } from "./MethodBadge";
@@ -55,9 +56,11 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
     selected,
     resolvedPath,
     autoRunToken = 0,
+    mode,
   },
   ref
 ) {
+  const storedKey = loadSchoolApiKeyForSession(selected?.schoolId || "");
   const { t } = useTranslation(["pages", "common"]);
   const [authMode, setAuthMode] = React.useState<LiveRequestAuthMode>(
     apiKey && apiAccess ? "apiKey" : "session"

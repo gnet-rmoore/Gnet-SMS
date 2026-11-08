@@ -19,6 +19,23 @@ export const settingsApi = {
     schoolId: string,
     payload: { receiptTemplates: Partial<Record<string, string>> }
   ) => api.patch(`/api/schools/${schoolId}/receipt-template`, payload),
+  fetchNotificationPrefs: (schoolId: string) =>
+    api.get(`/api/schools/${schoolId}/notification-prefs`),
+  updateNotificationPrefs: (
+    schoolId: string,
+    preferences: {
+      eventKey: string;
+      emailEnabled: boolean;
+      inAppEnabled: boolean;
+      label?: string | null;
+      description?: string | null;
+    }[],
+    removeEventKeys: string[]
+  ) =>
+    api.post(`/api/schools/${schoolId}/notification-prefs`, {
+      preferences,
+      removeEventKeys,
+    }),
   fetchGradeLegends: (schoolId: string) => api.get(`/api/schools/${schoolId}/grade-legends`),
   createGradeLegend: (schoolId: string, data: unknown) => api.post(`/api/schools/${schoolId}/grade-legends`, data),
   updateGradeLegend: (schoolId: string, id: string, data: unknown) => api.patch(`/api/schools/${schoolId}/grade-legends/${id}`, data),

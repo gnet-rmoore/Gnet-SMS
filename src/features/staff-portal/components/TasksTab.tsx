@@ -4,7 +4,8 @@ import {
   ClipboardList,
   Search,
   Filter,
-  User
+  User,
+  Plus
 } from "lucide-react";
 import { formatSafe } from "../utils/dateHelpers";
 import { motion } from "motion/react";
@@ -43,6 +44,7 @@ export function TasksTab({
   setTaskSearch,
   taskPriorityFilter,
   taskSearch,
+  onCreateTask,
 }: TasksTabProps) {
   const { t } = useTranslation(["pages", "common"]);
 

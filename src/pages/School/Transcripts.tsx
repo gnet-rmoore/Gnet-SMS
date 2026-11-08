@@ -417,7 +417,7 @@ export const Transcripts = () => {
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setShowPreviewDemo(true)}
                 disabled={loading}
               >

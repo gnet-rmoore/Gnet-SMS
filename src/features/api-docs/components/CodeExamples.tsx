@@ -186,7 +186,7 @@ puts JSON.parse(response.body)`
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(example.code);
-                const btn = event.currentTarget;
+                const btn = event.currentTarget as HTMLButtonElement;
                 btn.innerHTML = `<Check className="w-3.5 h-3.5 text-emerald-600" />`;
                 setTimeout(() => {
                   btn.innerHTML = `<Copy className="w-3.5 h-3.5" />`;
