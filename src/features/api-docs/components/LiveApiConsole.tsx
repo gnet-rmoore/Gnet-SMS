@@ -60,7 +60,7 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
   },
   ref
 ) {
-  const storedKey = loadSchoolApiKeyForSession(selected?.schoolId || "");
+  const storedKey = loadSchoolApiKeyForSession(schoolId);
   const { t } = useTranslation(["pages", "common"]);
   const [authMode, setAuthMode] = React.useState<LiveRequestAuthMode>(
     apiKey && apiAccess ? "apiKey" : "session"

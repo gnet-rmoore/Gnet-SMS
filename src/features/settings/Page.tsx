@@ -661,16 +661,7 @@ export const Settings = () => {
     if (!school?.id) return;
     setSaving(true);
     try {
-      const rows = await settingsApi.updateNotificationPrefs(school.id, {
-        preferences: notificationPrefs.map((p) => ({
-          eventKey: p.eventKey,
-          emailEnabled: p.emailEnabled,
-          inAppEnabled: p.inAppEnabled,
-          label: p.label ?? null,
-          description: p.description ?? null,
-        })),
-        removeEventKeys: pendingNotificationRemovals,
-      });
+      const rows = await settingsApi.updateNotificationPrefs(school.id, notificationPrefs, pendingNotificationRemovals);
       if (Array.isArray(rows)) {
         setNotificationPrefs(mergeNotificationPrefsFromApi(rows));
         setPendingNotificationRemovals([]);
