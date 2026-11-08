@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
-import { useSchools } from "../../store/schoolsStore";
 import { PageShell, SMS_SHADOW_SURFACE, fieldControlClass } from "../../components/ui";
 import { cn } from "../../lib/cn";
 import { hasEntitlement } from "../../lib/entitlements";
@@ -31,6 +30,7 @@ import {
 import { MethodBadge } from "./components/MethodBadge";
 import { LiveApiConsole } from "./components/LiveApiConsole";
 import { AuthReferencePanel } from "./components/AuthReferencePanel";
+import CodeExamples from "./components/CodeExamples";
 import type { LiveRequestAuthMode } from "../runLiveRequest";
 
 type SelectedRef = {
@@ -42,7 +42,6 @@ export function SchoolApiDocsPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { slug } = useParams();
   const { school, entitlements, accessToken } = useAuthStore();
-  const { schools } = useSchools();
   const [q, setQ] = useState("");
   const [activeSection, setActiveSection] = useState(SCHOOL_API_DOC_SECTIONS[0]?.id || "school");
   const [selected, setSelected] = useState<SelectedRef | null>(null);
@@ -54,7 +53,7 @@ export function SchoolApiDocsPage() {
 
   const apiAccess = hasEntitlement(entitlements, "api_access");
   const schoolId = school?.id || "";
-  const isSuperAdmin = school?.role === "SUPER_ADMIN";
+  // No super admin check needed - school object doesn't have role property
 
   const refreshStoredKey = useCallback(() => {
     setStoredKey(schoolId ? loadSchoolApiKeyForSession(schoolId) : null);
@@ -103,7 +102,7 @@ export function SchoolApiDocsPage() {
     : "";
 
   const authReady =
-    Boolean(storedKey?.secret && apiAccess && storedKey.keyType === mode) ||
+    Boolean(storedKey?.secret && apiAccess && storedKey?.secret?.startsWith(mode === "sandbox" ? "gnet_sandbox_" : "gnet_live_")) ||
     Boolean(accessToken);
 
   const copyText = async (text: string, id: string) => {
