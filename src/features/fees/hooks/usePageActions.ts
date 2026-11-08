@@ -613,10 +613,6 @@ export function usePageActions(deps: PageActionsDeps) {
     // School admins and accountants can only view, not delete templates
     if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const ok = await confirmAction({
-    if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
-    // School admins and accountants can only view, not delete templates
-    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
-    const ok = await confirmAction({
       title: t("fees.confirm.deleteTemplateTitle"),
       text: t("fees.confirm.deleteTemplateText"),
       confirmText: t("common:delete"),
