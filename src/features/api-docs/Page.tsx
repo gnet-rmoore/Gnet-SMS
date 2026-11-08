@@ -192,7 +192,7 @@ export function SchoolApiDocsPage() {
                 {t("apiDocs.heroSandboxMode", { mode })}</span>
             </div>
           </div>
-          {isSuperAdmin || apiAccess ? (
+          {apiAccess ? (
             <div className="flex items-center gap-2">
               <select
                 value={mode}

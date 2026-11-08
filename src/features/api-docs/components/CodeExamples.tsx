@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, Globe, Terminal } from "lucide-react";
 import { cn } from "../../lib/cn";
@@ -9,7 +9,7 @@ type CodeExample = {
   description: string;
 };
 
-export function CodeExamples({ mode }: { mode: "sandbox" | "production" }) {
+export default function CodeExamples({ mode }: { mode: "sandbox" | "production" }) {
   const { t } = useTranslation(["pages", "common"]);
 
   const examples: CodeExample[] = [

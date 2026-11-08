@@ -49,6 +49,7 @@ function statusTone(status: number): string {
 export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function LiveApiConsole(
   {
     slug,
+    schoolId,
     apiAccess,
     apiKey,
     apiKeyLabel,
