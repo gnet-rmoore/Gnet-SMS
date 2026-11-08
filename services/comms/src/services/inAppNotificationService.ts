@@ -36,8 +36,8 @@ export const inAppNotificationService = {
           schoolId: input.schoolId,
           userId: input.userId,
           eventKey: input.eventKey,
-          title: input.title.slice(0, 200),
-          body: input.body.slice(0, 2000),
+          title: String(input.title || "").slice(0, 200),
+          body: String(input.body || "").slice(0, 2000),
           href: input.href ? String(input.href).slice(0, 500) : null,
           meta: input.meta ? JSON.stringify(input.meta).slice(0, 4000) : null,
         },
@@ -68,9 +68,17 @@ export const inAppNotificationService = {
     let created = 0;
     let skipped = 0;
     for (const input of inputs) {
-      const row = await this.create(input);
-      if (row) created++;
-      else skipped++;
+      try {
+        const row = await this.create(input);
+        if (row) created++;
+        else skipped++;
+      } catch (err: any) {
+        skipped++;
+        console.warn(
+          "[comms] createMany item failed:",
+          err?.message || err
+        );
+      }
     }
     return { created, skipped };
   },
@@ -82,16 +90,27 @@ export const inAppNotificationService = {
       limit?: number;
       offset?: number;
       schoolId?: string;
+      /** Case-insensitive search over title and body. */
+      q?: string;
       /** When true, return `{ items, total, page, pageSize }` instead of a bare array. */
       paged?: boolean;
     }
   ) {
     const limit = Math.min(Math.max(opts?.limit || 30, 1), 100);
     const offset = Math.max(0, opts?.offset || 0);
+    const q = opts?.q?.trim();
     const where = {
       userId,
       ...(opts?.schoolId ? { schoolId: opts.schoolId } : {}),
       ...(opts?.unreadOnly ? { readAt: null } : {}),
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: "insensitive" as const } },
+              { body: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
     };
 
     if (opts?.paged) {
@@ -135,7 +154,6 @@ export const inAppNotificationService = {
         ...(schoolId ? { schoolId } : {}),
       },
       select: { eventKey: true, href: true },
-      take: 500,
     });
     const badges: Record<string, number> = {};
     for (const row of rows) {

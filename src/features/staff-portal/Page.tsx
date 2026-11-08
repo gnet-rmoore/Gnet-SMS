@@ -363,6 +363,35 @@ export const StaffPortal = () => {
     }
   };
 
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    priority: "NORMAL",
+    dueDate: "",
+    assignedTo: user?.name || "",
+  });
+
+  const handleCreateTask = async () => {
+    const title = window.prompt("Enter task title:", "");
+    if (!title?.trim()) return;
+    setShowCreateTaskModal(false);
+    try {
+      await staffPortalApi.createTask(school.id, {
+        title: title.trim(),
+        description: "",
+        priority: "NORMAL",
+        dueDate: "",
+        assignedTo: user?.name || "",
+      });
+      fetchData();
+      showToast(t("staffPortal.toast.taskCreated"), "success");
+      setNewTask({ title: "", description: "", priority: "NORMAL", dueDate: "", assignedTo: user?.name || "" });
+    } catch (err: any) {
+      await alertError(t("staffPortal.errors.taskCreateFailed"), err?.message || t("staffPortal.errors.taskCreateFailedHint"));
+    }
+  };
+
   const handleAcknowledgeAnnouncement = async (id: string) => {
     try {
       setAcknowledgingId(id);
@@ -541,6 +570,7 @@ export const StaffPortal = () => {
                 setTaskSearch={setTaskSearch}
                 taskPriorityFilter={taskPriorityFilter}
                 taskSearch={taskSearch}
+                onCreateTask={handleCreateTask}
               />
             )}
 

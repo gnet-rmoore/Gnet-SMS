@@ -7,6 +7,8 @@ export const notificationsApi = {
     page?: number;
     pageSize?: number;
     schoolId?: string;
+    /** Case-insensitive search over title/body (server-side). */
+    q?: string;
     /** Request `{ items, total, page, pageSize }` envelope. */
     paged?: boolean;
   }) => {
@@ -16,6 +18,7 @@ export const notificationsApi = {
     if (opts?.page) q.set("page", String(opts.page));
     if (opts?.pageSize) q.set("pageSize", String(opts.pageSize));
     if (opts?.schoolId) q.set("schoolId", opts.schoolId);
+    if (opts?.q?.trim()) q.set("q", opts.q.trim());
     if (opts?.paged) q.set("paged", "true");
     const qs = q.toString();
     return api.get(`/api/notifications${qs ? `?${qs}` : ""}`);

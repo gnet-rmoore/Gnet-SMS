@@ -204,6 +204,16 @@ export function computeTeacherSlotAvailability(input: SlotAvailabilityInput): Te
         )
       : undefined;
     const busyNow = target ? profile.busyPeriodIds.has(input.schedulePeriodId) : false;
+    const busyEntry =
+      overlap ||
+      (busyNow
+        ? input.entries.find(
+            (e) =>
+              e.teacherId === teacher.id &&
+              e.dayOfWeek === input.dayOfWeek &&
+              e.schedulePeriodId === input.schedulePeriodId
+          )
+        : undefined);
 
     let gapBeforeMin: number | null = null;
     let gapAfterMin: number | null = null;
@@ -247,13 +257,13 @@ export function computeTeacherSlotAvailability(input: SlotAvailabilityInput): Te
       teacherId: teacher.id,
       teacherName: teacher.name || "",
       status,
-      busyWith: overlap
+      busyWith: busyEntry
         ? {
-            classroomId: overlap.classroomId,
-            classroomName: overlap.classroomName || "",
-            subjectName: overlap.subjectName || null,
-            startTime: periodById.get(overlap.schedulePeriodId)?.startTime || "",
-            endTime: periodById.get(overlap.schedulePeriodId)?.endTime || "",
+            classroomId: busyEntry.classroomId,
+            classroomName: busyEntry.classroomName || "",
+            subjectName: busyEntry.subjectName || null,
+            startTime: periodById.get(busyEntry.schedulePeriodId)?.startTime || "",
+            endTime: periodById.get(busyEntry.schedulePeriodId)?.endTime || "",
           }
         : null,
       lessonsThatDay: profile.lessons,

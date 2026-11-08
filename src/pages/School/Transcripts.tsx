@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { format, parseISO } from "date-fns";
 import { UserAvatar } from "../../components/UserAvatar";
 import { PageShell, PageHeader, Button, DataTable, dataTableClass } from "../../components/ui";
+import { FeatureModalShell, fieldInput, fieldLabel } from "../academics-shared/FeatureModalShell";
 import { useAuthStore } from "../../store/authStore";
 import {
   TRANSCRIPT_TEMPLATE_OPTIONS,
@@ -98,6 +99,8 @@ export const Transcripts = () => {
   const [statusFilter, setStatusFilter] = useState<string>("APPROVED");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  const [showPreviewDemo, setShowPreviewDemo] = useState(false);
+
   const [prepareFor, setPrepareFor] = useState<StudentOption | null>(null);
   const [templateKey, setTemplateKey] = useState("classic");
   const [academicYear, setAcademicYear] = useState(defaultAcademicYear());
@@ -109,6 +112,45 @@ export const Transcripts = () => {
   const [reviewComment, setReviewComment] = useState("");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+
+  const previewRecords = useMemo(() => [
+    {
+      subjectName: "Mathematics",
+      subjectCode: "MATH-101",
+      term: "Fall 2025",
+      score: 92,
+      letter: "A",
+      points: 4,
+      credits: 1,
+    },
+    {
+      subjectName: "English Literature",
+      subjectCode: "ENG-201",
+      term: "Fall 2025",
+      score: 88,
+      letter: "B+",
+      points: 3,
+      credits: 1,
+    },
+    {
+      subjectName: "Physics",
+      subjectCode: "PHY-101",
+      term: "Fall 2025",
+      score: 76,
+      letter: "C",
+      points: 4,
+      credits: 1,
+    },
+    {
+      subjectName: "History",
+      subjectCode: "HIS-101",
+      term: "Fall 2025",
+      score: 95,
+      letter: "A",
+      points: 3,
+      credits: 1,
+    },
+  ], []);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -368,10 +410,20 @@ export const Transcripts = () => {
           title={t("transcripts.title")}
           subtitle={t("transcripts.subtitle")}
           actions={
-            <Button type="button" variant="secondary" onClick={() => void load()} disabled={loading}>
-              <RotateCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              {tr("refresh")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="secondary" onClick={() => void load()} disabled={loading}>
+                <RotateCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                {tr("refresh")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPreviewDemo(true)}
+                disabled={loading}
+              >
+                {tr("previewDemo")}
+              </Button>
+            </div>
           }
         />
       </div>
@@ -1050,6 +1102,133 @@ export const Transcripts = () => {
                       {tr("returnTranscript")}
                     </>
                   )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPreviewDemo && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">Demo Transcript - Class of 2026</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">
+                      Academic Year: 2025/2026 · Template: Classic
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPreviewDemo(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+                <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                      <tr>
+                        <th className="px-4 py-3 font-black uppercase tracking-wider">Subject</th>
+                        <th className="px-4 py-3 font-black uppercase tracking-wider">Term</th>
+                        <th className="px-4 py-3 text-center font-black uppercase tracking-wider">Score</th>
+                        <th className="px-4 py-3 text-center font-black uppercase tracking-wider">Grade</th>
+                        <th className="px-4 py-3 text-center font-black uppercase tracking-wider">Points</th>
+                        <th className="px-4 py-3 text-right font-black uppercase tracking-wider">Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {(previewRecords || []).length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-10 text-center text-slate-400 font-semibold">
+                            {t("noRecords")}
+                          </td>
+                        </tr>
+                      ) : (
+                        (previewRecords || []).map((row, index) => (
+                          <tr key={`${row.subjectName}-${row.term}-${index}`} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-3">
+                              <p className="font-bold text-slate-800">{row.subjectName}</p>
+                              {row.subjectCode && (
+                                <p className="text-[11px] text-slate-400 font-black uppercase tracking-wider">
+                                  {row.subjectCode}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 font-semibold">{row.term}</td>
+                            <td className="px-4 py-3 text-center font-mono font-bold text-slate-700">
+                              {row.score === null ? "—" : `${row.score}%`}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-black">
+                                {row.letter}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center font-mono font-bold text-slate-600">
+                              {row.points.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-slate-600">
+                              {row.credits}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="rounded-2xl border border-slate-100 p-4 space-y-1.5">
+                    <p className="font-black text-slate-400 uppercase tracking-wider text-[11px]">
+                      {t("detailGpa")}
+                    </p>
+                    <p className="text-base font-black text-slate-800 mt-1">3.84</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 p-4 space-y-1.5">
+                    <p className="font-black text-slate-400 uppercase tracking-wider text-[11px]">
+                      {t("studentGradeAverage")}
+                    </p>
+                    <p className="text-base font-black text-slate-800 mt-1">85%</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <p className="font-black text-slate-400 uppercase tracking-wider text-[11px]">
+                    {t("workflowTitle")}
+                  </p>
+                  <p className="text-slate-600 font-semibold">
+                    {t("preparedByLabel")}: John Smith
+                  </p>
+                  <p className="text-slate-600 font-semibold">
+                    {t("submittedOnLabel")}: May 30, 2026
+                  </p>
+                  <p className="text-slate-600 font-semibold">
+                    {t("reviewedByLabel")}: Jane Doe
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                <Button type="button" variant="ghost" onClick={() => setShowPreviewDemo(false)}>
+                  {t("common:close")}
+                </Button>
+                <Button type="button" variant="secondary">
+                  {t("downloadPdf")}
                 </Button>
               </div>
             </motion.div>

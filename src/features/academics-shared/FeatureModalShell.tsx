@@ -12,6 +12,8 @@ type Props = {
   footer?: React.ReactNode;
   maxWidthClass?: string;
   wide?: boolean;
+  /** Fill the viewport instead of a centered card (long editors). */
+  fullscreen?: boolean;
 };
 
 /** Shared Executive Slate modal chrome for Curriculum / Classrooms. */
@@ -24,11 +26,18 @@ export function FeatureModalShell({
   footer,
   maxWidthClass,
   wide,
+  fullscreen,
 }: Props) {
   const width = maxWidthClass || (wide ? "max-w-3xl" : "max-w-lg");
 
   const modal = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+    <div
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[100] flex items-stretch justify-stretch"
+          : "fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+      }
+    >
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -42,7 +51,11 @@ export function FeatureModalShell({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 15 }}
         transition={{ duration: 0.2 }}
-        className={`relative w-full ${width} bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] overflow-hidden flex flex-col max-h-[90dvh]`}
+        className={`relative w-full ${
+          fullscreen
+            ? "max-w-none h-[100dvh] max-h-[100dvh] rounded-none border-0"
+            : `${width} rounded-[32px] border border-slate-200 max-h-[90dvh]`
+        } bg-white border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] overflow-hidden flex flex-col`}
       >
         <div className="bg-gradient-to-br from-slate-950 to-slate-900 px-6 py-5 text-white flex items-start justify-between gap-4 shrink-0 sm:px-8 sm:py-6">
           <div className="min-w-0 space-y-1">

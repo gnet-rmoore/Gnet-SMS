@@ -2,12 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, RotateCcw, Loader2, FileText } from "lucide-react";
+import { CheckCircle2, RotateCcw, Loader2, FileText, Eye } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { examPaperApi } from "./api";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError, confirmAction } from "../../lib/swal";
 import { format } from "date-fns";
+import { FeatureModalShell } from "../academics-shared/FeatureModalShell";
+import ExamPaperPreviewPage from "./PreviewPage";
 
 export default function ExamPaperReviewPage() {
   const { t } = useTranslation(["pages", "common"]);
@@ -89,6 +91,12 @@ export default function ExamPaperReviewPage() {
     }
   };
 
+  const previewPaper = async (pkg: any) => {
+    const { school } = useAuthStore();
+    if (!school?.id) return;
+    void window.open(`/${school.slug}/exams/${pkg.examId}/paper-preview`, "_blank");
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
       <PageToast toast={toast} />
@@ -157,6 +165,14 @@ export default function ExamPaperReviewPage() {
                 >
                   {t("examPaper.openPaper")}
                 </Link>
+                <button
+                  type="button"
+                  disabled={busyId === pkg.id}
+                  onClick={() => void previewPaper(pkg)}
+                  className="inline-flex items-center gap-2 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl text-sm py-2.5 px-4 disabled:opacity-60"
+                >
+                  <Eye className="w-4 h-4" /> {t("examPaper.preview")}
+                </button>
                 <button
                   type="button"
                   disabled={busyId === pkg.id}

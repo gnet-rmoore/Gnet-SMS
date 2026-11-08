@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { classScheduleApi } from "./api";
 import { downloadScheduleWeekPdf, entriesToPdfCells } from "./lib/schedulePdf";
+import { academicYearLabel } from "../academics-shared/calendar/selectors";
 import {
   cellKey,
   DAY_LABELS,
@@ -36,6 +37,7 @@ export function MySchedulePage() {
   const [loading, setLoading] = useState(true);
   const [bell, setBell] = useState<BellScheduleDto | null>(null);
   const [entries, setEntries] = useState<TimetableEntryDto[]>([]);
+  const [academicYear, setAcademicYear] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -48,6 +50,10 @@ export function MySchedulePage() {
         const bells = asArray<BellScheduleDto>(
           await classScheduleApi.listBellSchedules(schoolId).catch(() => [])
         );
+        const calendar = await classScheduleApi
+          .fetchAcademicCalendar(schoolId)
+          .catch(() => null);
+        setAcademicYear(academicYearLabel(calendar as any));
         const active = bells.find((b) => b.isActive) || bells[0] || null;
         setBell(active);
         const params: Record<string, string> = {};
@@ -87,7 +93,7 @@ export function MySchedulePage() {
       showToast(t("classSchedule.toast.pdfNoBell"), "info");
       return;
     }
-    downloadScheduleWeekPdf({
+    void downloadScheduleWeekPdf({
       classroomName:
         user?.role === "TEACHER"
           ? t("classSchedule.myClassesLabel", { name: user.name || t("common:teacher") })
@@ -98,6 +104,8 @@ export function MySchedulePage() {
       periods,
       cells: entriesToPdfCells(entries),
       schoolName,
+      academicYear: academicYear || undefined,
+      logoUrl: school?.logoUrl,
     });
   };
 

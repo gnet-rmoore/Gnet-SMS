@@ -96,13 +96,13 @@ export function EnrollmentPage() {
   // Paged student fetching
   const studentFilterFields: FilterFieldDef[] = useMemo(
     () => [
-      {
+{
         key: "gradeLevelId",
-        label: t("common:gradeLevel"),
+        label: t("pages:students.selectGradeLevel"),
         type: "enum",
         primary: true,
-        allLabel: t("common:allGradeLevels"),
-        options: availableGrades.map((g) => ({ value: g.id, label: g.name })),
+        allLabel: "All Grade Levels",
+        options: [],
       },
     ],
     [t, availableGrades]

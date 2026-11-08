@@ -16,6 +16,8 @@ function sendError(res: Response, error: any, fallback: string) {
   const status = error.status || 500;
   const body: Record<string, unknown> = { error: error.message || fallback };
   if (error.conflicts) body.conflicts = error.conflicts;
+  if (error.code) body.code = error.code;
+  if (error.entries != null) body.entries = error.entries;
   return res.status(status).json(body);
 }
 
@@ -92,7 +94,13 @@ export const scheduleController = {
       const user = userFromReq(req);
       if (!user) return res.status(401).json({ error: "Unauthorized" });
       const periods = Array.isArray(req.body) ? req.body : req.body?.periods;
-      const row = await scheduleService.replacePeriods(user, req.params.id, periods || []);
+      const force = Boolean(req.body?.force);
+      const row = await scheduleService.replacePeriods(
+        user,
+        req.params.id,
+        periods || [],
+        { force }
+      );
       return res.json(row);
     } catch (error: any) {
       return sendError(res, error, "Failed to update bell periods");

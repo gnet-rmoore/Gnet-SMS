@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { HelpCircle, NotebookPen, Plus, RefreshCw } from "lucide-react";
+import { HelpCircle, NotebookPen, Plus, RefreshCw, Upload } from "lucide-react";
 
 type Props = {
   isReviewer: boolean;
@@ -9,6 +9,8 @@ type Props = {
   onRefresh: () => void;
   onNew: () => void;
   showNew: boolean;
+  onImport?: () => void;
+  showImport?: boolean;
   showHelp?: boolean;
   onToggleHelp?: () => void;
   title?: string;
@@ -22,6 +24,8 @@ export function LessonPlansChrome({
   onRefresh,
   onNew,
   showNew,
+  onImport,
+  showImport,
   showHelp,
   onToggleHelp,
   title,
@@ -73,6 +77,16 @@ export function LessonPlansChrome({
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           {t("lessonPlans.chrome.refresh")}
         </button>
+        {showImport && onImport && (
+          <button
+            type="button"
+            onClick={onImport}
+            className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50"
+          >
+            <Upload className="w-4 h-4" />
+            {t("lessonPlans.chrome.import", { defaultValue: "Import" })}
+          </button>
+        )}
         {showNew && (
           <button
             type="button"

@@ -11,17 +11,16 @@ import {
   ArrowRight,
   Shield,
   Terminal,
+  Settings,
+  CloudDownload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
+import { useSchools } from "../../store/schoolsStore";
 import { PageShell, SMS_SHADOW_SURFACE, fieldControlClass } from "../../components/ui";
 import { cn } from "../../lib/cn";
 import { hasEntitlement } from "../../lib/entitlements";
-import {
-  loadSchoolApiKeyForSession,
-  SCHOOL_API_KEY_SAVED_EVENT,
-  type StoredSchoolApiKey,
-} from "../../lib/schoolApiKeySession";
+import { loadSchoolApiKeyForSession, SCHOOL_API_KEY_SAVED_EVENT, type StoredSchoolApiKey } from "../../lib/schoolApiKeySession";
 import {
   SCHOOL_API_DOC_SECTIONS,
   resolveSchoolApiPath,
@@ -32,6 +31,7 @@ import {
 import { MethodBadge } from "./components/MethodBadge";
 import { LiveApiConsole } from "./components/LiveApiConsole";
 import { AuthReferencePanel } from "./components/AuthReferencePanel";
+import type { LiveRequestAuthMode } from "../runLiveRequest";
 
 type SelectedRef = {
   sectionId: string;
@@ -42,16 +42,19 @@ export function SchoolApiDocsPage() {
   const { t } = useTranslation(["pages", "common"]);
   const { slug } = useParams();
   const { school, entitlements, accessToken } = useAuthStore();
+  const { schools } = useSchools();
   const [q, setQ] = useState("");
   const [activeSection, setActiveSection] = useState(SCHOOL_API_DOC_SECTIONS[0]?.id || "school");
   const [selected, setSelected] = useState<SelectedRef | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [storedKey, setStoredKey] = useState<StoredSchoolApiKey | null>(null);
   const [autoRunToken, setAutoRunToken] = useState(0);
+  const [mode, setMode] = useState<"sandbox" | "production">("sandbox");
+  const [storedKey, setStoredKey] = useState<StoredSchoolApiKey | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
 
   const apiAccess = hasEntitlement(entitlements, "api_access");
   const schoolId = school?.id || "";
+  const isSuperAdmin = school?.role === "SUPER_ADMIN";
 
   const refreshStoredKey = useCallback(() => {
     setStoredKey(schoolId ? loadSchoolApiKeyForSession(schoolId) : null);
@@ -99,7 +102,9 @@ export function SchoolApiDocsPage() {
     ? resolveSchoolApiPath(selected.endpoint.path, schoolId || ":schoolId", selected.endpoint.pathParams)
     : "";
 
-  const authReady = Boolean(storedKey?.secret && apiAccess) || Boolean(accessToken);
+  const authReady =
+    Boolean(storedKey?.secret && apiAccess && storedKey.keyType === mode) ||
+    Boolean(accessToken);
 
   const copyText = async (text: string, id: string) => {
     try {
@@ -183,16 +188,29 @@ export function SchoolApiDocsPage() {
                   {t("apiDocs.heroSessionReady")}
                 </span>
               ) : null}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+                <CloudDownload className="w-3.5 h-3.5 shrink-0" />
+                {t("apiDocs.heroSandboxMode", { mode })}</span>
             </div>
           </div>
-          {apiAccess && slug ? (
-            <Link
-              to={`/${slug}/settings?tab=API_KEYS`}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 sm:py-2.5 text-sm font-bold hover:bg-indigo-700 transition-colors shrink-0"
-            >
-              <Key className="w-4 h-4" />
-              {t("apiDocs.manageKeys")}
-            </Link>
+          {isSuperAdmin || apiAccess ? (
+            <div className="flex items-center gap-2">
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as "sandbox" | "production")}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 min-w-[140px]"
+              >
+                <option value="sandbox">{t("apiDocs.modeSandbox")}</option>
+                <option value="production">{t("apiDocs.modeProduction")}</option>
+              </select>
+              <Link
+                to={`/${slug}/settings?tab=API_KEYS`}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 sm:py-2.5 text-sm font-bold hover:bg-indigo-700 transition-colors shrink-0"
+              >
+                <Key className="w-4 h-4" />
+                {t("apiDocs.manageKeys")}
+              </Link>
+            </div>
           ) : null}
         </div>
       </motion.header>
@@ -345,6 +363,7 @@ export function SchoolApiDocsPage() {
                       onCopy={() => void copyText(resolved, rowId)}
                       onTry={() => pickEndpoint(visibleSection.id, ep)}
                       t={t}
+                      mode={mode}
                     />
                   );
                 })}
@@ -391,7 +410,20 @@ export function SchoolApiDocsPage() {
             selected={selected?.endpoint ?? null}
             resolvedPath={resolvedSelectedPath}
             autoRunToken={autoRunToken}
+            mode={mode}
           />
+        </div>
+      </div>
+
+      <div className="lg:col-span-7 space-y-4 min-w-0 order-1 lg:order-none">
+        <div className={cn(cardShell, "p-4 sm:p-6")}>
+          <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
+            {t("apiDocs.codeExamplesTitle")}
+          </h3>
+          <p className="text-sm text-slate-500 mb-4">
+            {t("apiDocs.codeExamplesSubtitle")}
+          </p>
+          <CodeExamples mode={mode} />
         </div>
       </div>
     </PageShell>
@@ -425,6 +457,7 @@ function EndpointRow({
   onCopy,
   onTry,
   t,
+  mode,
 }: {
   ep: ApiDocEndpoint;
   resolved: string;
@@ -433,6 +466,7 @@ function EndpointRow({
   onCopy: () => void;
   onTry: () => void;
   t: (key: string) => string;
+  mode: "sandbox" | "production";
 }) {
   return (
     <div

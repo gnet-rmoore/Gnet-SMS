@@ -269,24 +269,30 @@ export const scheduleService = {
   ) {
     if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
     const name = (input.name || "Default bell schedule").trim() || "Default bell schedule";
-    const row = await prisma.bellSchedule.create({
-      data: {
-        schoolId: user.schoolId,
-        schoolYearId: input.schoolYearId || null,
-        name,
-        isActive: true,
-        createdById: user.id,
-        periods:
-          input.withDefaults === false
-            ? undefined
-            : {
-                create: DEFAULT_BELL_PERIODS.map((p) => ({
-                  schoolId: user.schoolId,
-                  ...p,
-                })),
-              },
-      },
-      include: { periods: { orderBy: { orderIndex: "asc" } } },
+    const row = await prisma.$transaction(async (tx) => {
+      await tx.bellSchedule.updateMany({
+        where: { schoolId: user.schoolId, isActive: true },
+        data: { isActive: false },
+      });
+      return tx.bellSchedule.create({
+        data: {
+          schoolId: user.schoolId,
+          schoolYearId: input.schoolYearId || null,
+          name,
+          isActive: true,
+          createdById: user.id,
+          periods:
+            input.withDefaults === false
+              ? undefined
+              : {
+                  create: DEFAULT_BELL_PERIODS.map((p) => ({
+                    schoolId: user.schoolId,
+                    ...p,
+                  })),
+                },
+        },
+        include: { periods: { orderBy: { orderIndex: "asc" } } },
+      });
     });
     return mapBell(row);
   },
@@ -340,7 +346,8 @@ export const scheduleService = {
       startTime: string;
       endTime: string;
       orderIndex?: number;
-    }>
+    }>,
+    opts?: { force?: boolean }
   ) {
     if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
     const bell = await prisma.bellSchedule.findFirst({
@@ -368,6 +375,34 @@ export const scheduleService = {
         conflicts: overlaps,
         code: "PERIOD_OVERLAP",
       });
+    }
+
+    const seenPeriodNumbers = new Set<number>();
+    const seenOrderIndexes = new Set<number>();
+    periods.forEach((p, i) => {
+      const periodNumber = Number(p.periodNumber) || i + 1;
+      if (seenPeriodNumbers.has(periodNumber)) {
+        throw httpError(`Duplicate period number: ${periodNumber}`, 400);
+      }
+      seenPeriodNumbers.add(periodNumber);
+      const orderIndex = p.orderIndex ?? i;
+      if (seenOrderIndexes.has(orderIndex)) {
+        throw httpError(`Duplicate period order index: ${orderIndex}`, 400);
+      }
+      seenOrderIndexes.add(orderIndex);
+    });
+
+    const existingEntries = await prisma.timetableEntry.count({
+      where: { bellScheduleId, schoolId: user.schoolId },
+    });
+    if (existingEntries > 0 && !opts?.force) {
+      throw Object.assign(
+        httpError(
+          `Replacing periods will remove ${existingEntries} scheduled timetable entries. Confirm to continue.`,
+          409
+        ),
+        { code: "PERIODS_IN_USE", entries: existingEntries }
+      );
     }
 
     const row = await prisma.$transaction(async (tx) => {
@@ -477,6 +512,8 @@ export const scheduleService = {
       }>;
       /** When true, also merge existing DB entries outside the payload (full-school check). */
       includeExisting?: boolean;
+      /** Existing rows for these classrooms are being replaced and must be ignored. */
+      excludeClassroomIds?: string[];
     }
   ): Promise<{ ok: boolean; conflicts: ScheduleConflict[] }> {
     if (!this.canWrite(user.role, user.capabilities)) throw httpError("Forbidden", 403);
@@ -511,7 +548,9 @@ export const scheduleService = {
           (e) => `${e.classroomId}|${e.dayOfWeek}|${e.schedulePeriodId}`
         )
       );
+      const excluded = new Set(input.excludeClassroomIds || []);
       for (const row of existing) {
+        if (excluded.has(row.classroomId)) continue;
         const key = `${row.classroomId}|${row.dayOfWeek}|${row.schedulePeriodId}`;
         if (payloadKeys.has(key)) continue;
         candidates.push({
@@ -568,6 +607,21 @@ export const scheduleService = {
       if (!e.classroomId || !e.teacherId) {
         throw httpError("classroomId and teacherId are required", 400);
       }
+      if (input.classroomId && e.classroomId !== input.classroomId) {
+        throw httpError(
+          "All entries must belong to the classroom being saved",
+          400
+        );
+      }
+    }
+
+    const seenSlots = new Set<string>();
+    for (const e of entries) {
+      const key = `${e.classroomId}|${e.dayOfWeek}|${e.schedulePeriodId}`;
+      if (seenSlots.has(key)) {
+        throw httpError("Duplicate timetable slot for the same class, day, and period", 400);
+      }
+      seenSlots.add(key);
     }
 
     if (!input.skipConflictCheck) {
@@ -579,29 +633,17 @@ export const scheduleService = {
           dayOfWeek: e.dayOfWeek,
           schedulePeriodId: e.schedulePeriodId,
         })),
-        includeExisting: !input.classroomId,
+        includeExisting: Boolean(input.classroomId),
+        excludeClassroomIds: input.classroomId ? [input.classroomId] : undefined,
       });
-      // When scoped to one classroom, still check teacher conflicts vs rest of school
-      if (input.classroomId) {
-        const withExisting = await this.validateTimetable(user, {
-          bellScheduleId: input.bellScheduleId,
-          entries: entries.map((e) => ({
-            classroomId: e.classroomId,
-            teacherId: e.teacherId,
-            dayOfWeek: e.dayOfWeek,
-            schedulePeriodId: e.schedulePeriodId,
-          })),
-          includeExisting: true,
-        });
-        const blocking = withExisting.conflicts.filter(
-          (c) => c.code === "TEACHER_DOUBLE" || c.code === "CLASSROOM_DOUBLE"
-        );
-        if (blocking.length) {
-          throw Object.assign(httpError("Schedule conflicts", 409), { conflicts: blocking });
-        }
-      } else if (!validation.ok) {
+      const blocking = input.classroomId
+        ? validation.conflicts.filter(
+            (c) => c.code === "TEACHER_DOUBLE" || c.code === "CLASSROOM_DOUBLE"
+          )
+        : validation.conflicts;
+      if (blocking.length) {
         throw Object.assign(httpError("Schedule conflicts", 409), {
-          conflicts: validation.conflicts,
+          conflicts: blocking,
         });
       }
     }
@@ -624,6 +666,9 @@ export const scheduleService = {
     for (const tid of teacherIds) {
       const t = teachers.get(tid);
       if (!t) throw httpError(`Teacher not found: ${tid}`, 400);
+      if (t.schoolId && t.schoolId !== user.schoolId) {
+        throw httpError(`User ${t.name || tid} does not belong to this school`, 400);
+      }
       if (t.role && t.role !== "TEACHER") {
         throw httpError(`User ${t.name || tid} is not a TEACHER`, 400);
       }
@@ -639,6 +684,11 @@ export const scheduleService = {
           })
         : [];
     const subjectById = new Map(subjects.map((s) => [s.id, s]));
+    for (const subjectId of subjectIds) {
+      if (!subjectById.has(subjectId)) {
+        throw httpError(`Subject not found in this school: ${subjectId}`, 400);
+      }
+    }
 
     const effectiveFrom = (input.effectiveFrom || "").trim();
     const effectiveTo = (input.effectiveTo || "").trim();
@@ -647,6 +697,9 @@ export const scheduleService = {
     }
     if (effectiveTo && !/^\d{4}-\d{2}-\d{2}$/.test(effectiveTo)) {
       throw httpError("effectiveTo must be YYYY-MM-DD", 400);
+    }
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      throw httpError("effectiveFrom must be on or before effectiveTo", 400);
     }
 
     const replaceClassroomId = input.classroomId;

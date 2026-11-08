@@ -16,6 +16,7 @@ import { PageShell, PageHeader, Surface, Button, SelectField, TextField, MatrixS
 import { useAuthStore } from "../../store/authStore";
 import { FeatureModalShell } from "../academics-shared/FeatureModalShell";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
+import { confirmAction } from "../../lib/swal";
 import { classScheduleApi } from "./api";
 import { canEditClassSchedule } from "./access";
 import { downloadScheduleWeekPdf } from "./lib/schedulePdf";
@@ -265,6 +266,15 @@ export function ClassSchedulePage() {
 
   const saveGrid = async () => {
     if (!canEdit || !bell || !classroomId || !schoolId) return;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      showToast(
+        t("classSchedule.toast.effectiveRangeInvalid", {
+          defaultValue: "Effective start date must be on or before the end date.",
+        }),
+        "error"
+      );
+      return;
+    }
     if (yearBounds) {
       const outside =
         (effectiveFrom && (effectiveFrom < yearBounds.start || effectiveFrom > yearBounds.end)) ||
@@ -357,12 +367,21 @@ export function ClassSchedulePage() {
 
   const downloadPdf = () => {
     if (!bell || !selectedClassroom) return;
-    downloadScheduleWeekPdf({
+    const academicYear = yearBounds
+      ? (() => {
+          const startYear = new Date(`${yearBounds.start}T12:00:00`).getFullYear();
+          const endYear = new Date(`${yearBounds.end}T12:00:00`).getFullYear();
+          return startYear === endYear ? String(startYear) : `${startYear}-${endYear}`;
+        })()
+      : undefined;
+    void downloadScheduleWeekPdf({
       classroomName: selectedClassroom.name,
       bellName: bell.name,
       periods: bell.periods || [],
       cells: draft,
       schoolName,
+      academicYear,
+      logoUrl: school?.logoUrl,
       effectiveFrom,
       effectiveTo,
     });
@@ -384,12 +403,31 @@ export function ClassSchedulePage() {
 
   const saveBellPeriods = async () => {
     if (!canEdit || !bell) return;
+    const payload = periodDraft.map((p, i) => ({ ...p, orderIndex: i }));
     setSaving(true);
     try {
-      const updated = await classScheduleApi.replacePeriods(
-        bell.id,
-        periodDraft.map((p, i) => ({ ...p, orderIndex: i }))
-      );
+      let updated: BellScheduleDto;
+      try {
+        updated = await classScheduleApi.replacePeriods(bell.id, payload);
+      } catch (err: any) {
+        if (err?.code !== "PERIODS_IN_USE") throw err;
+        const ok = await confirmAction({
+          title: t("classSchedule.confirm.replacePeriodsTitle", {
+            defaultValue: "Replace bell periods?",
+          }),
+          text: t("classSchedule.confirm.replacePeriodsText", {
+            count: Number(err?.response?.data?.entries) || 0,
+            defaultValue:
+              "This will remove existing scheduled lessons tied to the current periods. Continue?",
+          }),
+          confirmText: t("common:continue", { defaultValue: "Continue" }),
+          danger: true,
+        });
+        if (!ok) return;
+        updated = await classScheduleApi.replacePeriods(bell.id, payload, {
+          force: true,
+        });
+      }
       setBell(updated);
       setDraft({});
       setEntries([]);

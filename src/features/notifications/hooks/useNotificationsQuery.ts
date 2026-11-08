@@ -87,6 +87,7 @@ export function useNotificationsPaged(opts: {
         limit: opts.pageSize,
         unreadOnly: opts.unreadOnly,
         schoolId,
+        q: opts.q,
         paged: true,
       });
       const items = (Array.isArray(data?.items)
@@ -95,21 +96,11 @@ export function useNotificationsPaged(opts: {
           ? data
           : []) as InAppNotification[];
       const total = Number(data?.total ?? items.length) || 0;
-      const q = (opts.q || "").trim().toLowerCase();
-      const filtered = q
-        ? items.filter(
-            (n) =>
-              (n.title || "").toLowerCase().includes(q) ||
-              (n.body || "").toLowerCase().includes(q)
-          )
-        : items;
       return {
-        items: filtered,
-        total: q ? filtered.length : total,
+        items,
+        total,
         page: Number(data?.page) || opts.page,
         pageSize: Number(data?.pageSize) || opts.pageSize,
-        /** Search is client-side on the current page when `q` is set. */
-        searchScoped: Boolean(q),
       };
     },
   });

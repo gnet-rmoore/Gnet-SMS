@@ -1,11 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { BookOpen, Key, Plus, Trash2, Copy, Check, RefreshCw, Terminal } from "lucide-react";
+import { BookOpen, Key, Plus, Trash2, Copy, Check, RefreshCw, Terminal, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { confirmAction } from "../../../lib/swal";
-import { saveSchoolApiKeyForSession } from "../../../lib/schoolApiKeySession";
+import { saveSchoolApiKeyForSession, type StoredSchoolApiKey } from "../../../lib/schoolApiKeySession";
 import { settingsApi, type SchoolApiKeyRow } from "../api";
 import { fieldInput, fieldLabel } from "../../academics-shared/FeatureModalShell";
 
@@ -26,6 +26,7 @@ export function ApiKeysSettingsCard({ schoolId, enabled, showToast }: Props) {
   const [freshSecret, setFreshSecret] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [showDocs, setShowDocs] = React.useState(true);
+  const [mode, setMode] = React.useState<"sandbox" | "production">("sandbox");
 
   const loadKeys = React.useCallback(async () => {
     if (!schoolId || !enabled) {
@@ -57,12 +58,13 @@ export function ApiKeysSettingsCard({ schoolId, enabled, showToast }: Props) {
     }
     setCreating(true);
     try {
-      const row = await settingsApi.createApiKey(schoolId, name);
+      const row = await settingsApi.createApiKey(schoolId, name, mode);
       if (row.secret) {
         saveSchoolApiKeyForSession(schoolId, {
           secret: row.secret,
           keyPrefix: row.keyPrefix,
           name: row.name,
+          keyType: row.keyType,
         });
       }
       setFreshSecret(row.secret || null);
@@ -217,6 +219,14 @@ export function ApiKeysSettingsCard({ schoolId, enabled, showToast }: Props) {
             className={fieldInput}
           />
         </div>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "sandbox" | "production")}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 min-w-[140px]"
+        >
+          <option value="sandbox">{t("apiDocs.modeSandbox")}</option>
+          <option value="production">{t("apiDocs.modeProduction")}</option>
+        </select>
         <button
           type="button"
           disabled={creating}
@@ -270,4 +280,4 @@ export function ApiKeysSettingsCard({ schoolId, enabled, showToast }: Props) {
       <p className="text-xs text-slate-500">{t("settings.apiKeysTab.usageHint")}</p>
     </motion.div>
   );
-};
+}

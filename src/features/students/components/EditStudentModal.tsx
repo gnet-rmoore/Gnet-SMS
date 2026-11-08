@@ -4,8 +4,10 @@ import {
   FeatureModalShell,
   fieldInput,
   fieldLabel,
+  cardShell,
 } from "../../academics-shared/FeatureModalShell";
 import { StudentPhotoEditor } from "../../../components/StudentPhotoEditor";
+import { CheckCircle2, Clock } from "lucide-react";
 
 export type EditStudentModalProps = {
   editStudent?: any;
@@ -25,6 +27,14 @@ export function EditStudentModal({
   submitting,
 }: EditStudentModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+
+  const studentName = editStudent?.name || "";
+  const studentEmail = editStudent?.email || "";
+  const studentDob = editStudent?.dob || "";
+  const studentGender = editStudent?.gender || "MALE";
+  const studentGradeLevel = editStudent?.gradeLevelId;
+  const studentFeeCohort = editStudent?.feeCohort || "NEW";
+  const studentIsActive = editStudent?.isActive;
 
   return (
     <FeatureModalShell
@@ -46,7 +56,7 @@ export function EditStudentModal({
             type="submit"
             form="edit-student-form"
             disabled={submitting}
-            className="flex-[2] py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+            className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
           >
             {submitting ? t("common:saving") : t("common:saveChanges")}
           </button>
@@ -56,135 +66,112 @@ export function EditStudentModal({
       <form
         id="edit-student-form"
         onSubmit={handleUpdate}
-        className="p-6 sm:p-8 space-y-6"
+        className="space-y-8"
       >
-        {editStudent.id ? (
-          <div className="flex justify-center pb-2">
-            <StudentPhotoEditor
-              userId={editStudent.id}
-              name={editStudent.name}
-              photoUrl={editStudent.photoUrl}
-              size="lg"
-              onPhotoChange={(photoUrl) =>
-                setEditStudent?.({ ...editStudent, photoUrl })
-              }
-            />
+        <div className="grid grid-cols-12 gap-6 items-start">
+          <div className="col-span-6">
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <div className="flex items-center gap-3 mb-4">
+                <StudentPhotoEditor
+                  userId={editStudent?.id}
+                  name={studentName}
+                  photoUrl={editStudent?.photoUrl}
+                  size="xl"
+                />
+                <div>
+                  <h2 className="font-black text-slate-900 truncate">{studentName}</h2>
+                  <p className="text-sm text-slate-500 font-medium">
+                    {studentEmail}
+                  </p>
+                  {studentGradeLevel && (
+                    <p className="text-xs text-slate-400">
+                      {t("pages:students.gradeLevel")}: {studentGradeLevel}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    {t("common:dateOfBirth")}
+                  </label>
+                  <input
+                    type="date"
+                    value={studentDob}
+                    onChange={(e) =>
+                      setEditStudent?.({ ...editStudent, dob: e.target.value })
+                    }
+                    className={fieldInput}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    {t("common:gender")}
+                  </label>
+                  <select
+                    value={studentGender}
+                    onChange={(e) =>
+                      setEditStudent?.({ ...editStudent, gender: e.target.value })
+                    }
+                    className={fieldInput}
+                  >
+                    <option value="MALE">{t("common:male")}</option>
+                    <option value="FEMALE">{t("common:female")}</option>
+                    <option value="OTHER">{t("common:other")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  {t("pages:students.feeCohort")}
+                </label>
+                <select
+                  value={studentFeeCohort}
+                  onChange={(e) =>
+                    setEditStudent?.({ ...editStudent, feeCohort: e.target.value })
+                  }
+                  className={fieldInput}
+                >
+                  <option value="NEW">{t("pages:students.newStudent")}</option>
+                  <option value="RETURNING">{t("pages:students.returningStudent")}</option>
+                </select>
+              </div>
+            </div>
           </div>
-        ) : null}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:fullName")}</label>
-            <input
-              type="text"
-              value={editStudent.name}
-              onChange={(e) =>
-                setEditStudent?.({ ...editStudent, name: e.target.value })
-              }
-              className={fieldInput}
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:email")}</label>
-            <input
-              type="email"
-              value={editStudent.email}
-              onChange={(e) =>
-                setEditStudent?.({ ...editStudent, email: e.target.value })
-              }
-              className={fieldInput}
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:dateOfBirth")}</label>
-            <input
-              type="date"
-              value={editStudent.dob}
-              onChange={(e) =>
-                setEditStudent?.({ ...editStudent, dob: e.target.value })
-              }
-              className={fieldInput}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:gender")}</label>
-            <select
-              value={editStudent.gender}
-              onChange={(e) =>
-                setEditStudent?.({ ...editStudent, gender: e.target.value })
-              }
-              className={fieldInput}
-            >
-              <option value="MALE">{t("common:male")}</option>
-              <option value="FEMALE">{t("common:female")}</option>
-              <option value="OTHER">{t("common:other")}</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:gradeLevel")}</label>
-            <select
-              value={editStudent.gradeLevelId || ""}
-              onChange={(e) =>
-                setEditStudent?.({
-                  ...editStudent,
-                  gradeLevelId: e.target.value,
-                })
-              }
-              className={fieldInput}
-            >
-              <option value="">{t("pages:students.selectGradeLevel")}</option>
-              {gradeLevels.map((gl: any) => (
-                <option key={gl.id} value={gl.id}>
-                  {gl.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("pages:students.feeCohort")}</label>
-            <select
-              value={editStudent.feeCohort || "NEW"}
-              onChange={(e) =>
-                setEditStudent?.({
-                  ...editStudent,
-                  feeCohort: e.target.value,
-                })
-              }
-              className={fieldInput}
-            >
-              <option value="NEW">{t("pages:students.newStudent")}</option>
-              <option value="RETURNING">{t("pages:students.returningStudent")}</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className={fieldLabel}>{t("common:status")}</label>
-            <select
-              value={editStudent.isActive ? "true" : "false"}
-              onChange={(e) =>
-                setEditStudent?.({
-                  ...editStudent,
-                  isActive: e.target.value === "true",
-                })
-              }
-              className={fieldInput}
-            >
-              <option value="true">{t("common:active")}</option>
-              <option value="false">{t("common:inactive")}</option>
-            </select>
+
+          <div className="col-span-6">
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {t("common:status")}
+              </label>
+              <select
+                value={studentIsActive ? "true" : "false"}
+                onChange={(e) =>
+                  setEditStudent?.({
+                    ...editStudent,
+                    isActive: e.target.value === "true",
+                  })
+                }
+                className={fieldInput}
+              >
+                <option value="true">{t("common:active")}</option>
+                <option value="false">{t("common:inactive")}</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-100 space-y-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {t("pages:students.parentGuardian")}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className={fieldLabel}>{t("pages:students.parentName")}</label>
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-6">
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {t("pages:students.parentName")}
+              </label>
               <input
                 type="text"
-                value={editStudent.parentName || ""}
+                value={editStudent?.parentName || ""}
                 onChange={(e) =>
                   setEditStudent?.({
                     ...editStudent,
@@ -194,11 +181,16 @@ export function EditStudentModal({
                 className={fieldInput}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className={fieldLabel}>{t("pages:students.parentPhone")}</label>
+          </div>
+
+          <div className="col-span-6">
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {t("pages:students.parentPhone")}
+              </label>
               <input
                 type="tel"
-                value={editStudent.parentPhone || ""}
+                value={editStudent?.parentPhone || ""}
                 onChange={(e) =>
                   setEditStudent?.({
                     ...editStudent,
@@ -207,6 +199,33 @@ export function EditStudentModal({
                 }
                 className={fieldInput}
               />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12">
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {t("common:gradeLevel")}
+              </label>
+              <select
+                value={studentGradeLevel || ""}
+                onChange={(e) =>
+                  setEditStudent?.({
+                    ...editStudent,
+                    gradeLevelId: e.target.value,
+                  })
+                }
+                className={fieldInput}
+              >
+                <option value="">{t("pages:students.selectGradeLevel")}</option>
+                {gradeLevels.map((gl: any) => (
+                  <option key={gl.id} value={gl.id}>
+                    {gl.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

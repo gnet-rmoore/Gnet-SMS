@@ -136,6 +136,7 @@ export function QuestionBankEditorModal({
         eyebrow={q("title")}
         onClose={onClose}
         wide
+        fullscreen
         maxWidthClass="max-w-6xl"
         footer={
           <div className="flex justify-end gap-2">

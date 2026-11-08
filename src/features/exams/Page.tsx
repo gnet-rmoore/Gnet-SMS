@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Layers,
   Pencil,
+  FileSearch,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -24,6 +25,7 @@ import { useAcademicCalendarQuery } from "../academic-calendar/hooks/useAcademic
 import { ScheduleExamModal } from "./components/ScheduleExamModal";
 import { ExamScheduleModal } from "./components/ExamScheduleModal";
 import { EditExamModal } from "./components/EditExamModal";
+import { GradeReleasePreviewModal } from "./components/GradeReleasePreviewModal";
 import { examsApi } from "./api";
 import {
   emptyScheduleForm,
@@ -52,6 +54,8 @@ export const Exams = () => {
   const [submitting, setSubmitting] = React.useState(false);
   const [scheduleExam, setScheduleExam] = React.useState<Exam | null>(null);
   const [showEditModal, setShowEditModal] = React.useState(false);
+  const [showReleasePreview, setShowReleasePreview] = React.useState(false);
+  const [previewExam, setPreviewExam] = React.useState<Exam | null>(null);
   const [editExamForm, setEditExamForm] = React.useState<Partial<Exam>>({});
   const [editExamId, setEditExamId] = React.useState<string>("");
 
@@ -356,6 +360,18 @@ export const Exams = () => {
             onSave={handleEditSave}
           />
         )}
+        <GradeReleasePreviewModal
+          open={showReleasePreview}
+          onClose={() => {
+            setShowReleasePreview(false);
+            setPreviewExam(null);
+          }}
+          schoolName={school?.name}
+          address={school?.address || ""}
+          templateId={school?.gradeSheetTemplate}
+          examTitle={previewExam?.title}
+          examDate={previewExam?.startDate}
+        />
       </AnimatePresence>
 
       {loading ? (
@@ -410,6 +426,24 @@ export const Exams = () => {
                       {canSchedule && (
                         <button
                           type="button"
+                          onClick={() => {
+                            setPreviewExam(exam);
+                            setShowReleasePreview(true);
+                          }}
+                          className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors flex items-center gap-2"
+                          title={t("exams.previewTitle", {
+                            defaultValue: "Preview gradesheet",
+                          })}
+                        >
+                          <FileSearch className="w-4 h-4" />
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {t("exams.previewShort", { defaultValue: "Preview" })}
+                          </span>
+                        </button>
+                      )}
+                      {canSchedule && (
+                        <button
+                          type="button"
                           onClick={() =>
                             handleToggleRelease(
                               exam.id,
@@ -438,11 +472,11 @@ export const Exams = () => {
                           </span>
                         </button>
                       )}
-                      { ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "") && (
+                      {["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(user?.role || "") && (
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(exam)}
-                          className="p-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-colors flex items-center gap-2"
+                          className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors flex items-center gap-2"
                           title={t("exams.editExam")}
                         >
                           <Pencil className="w-4 h-4" />

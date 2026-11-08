@@ -128,6 +128,7 @@ export function LessonPlanBuilder({
       subtitle={b("subtitle")}
       onClose={onClose}
       wide
+      fullscreen
       maxWidthClass="max-w-7xl"
       footer={
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">

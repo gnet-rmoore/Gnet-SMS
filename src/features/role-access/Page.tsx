@@ -56,7 +56,7 @@ export function RoleAccessPage() {
   const filters = useListFilters({
     fields: filterFields,
     syncUrl: tab === "users",
-    defaultPageSize: 50,
+    defaultPageSize: 10,
   });
 
   const catalog = useMemo(() => buildRoleCatalog(), []);

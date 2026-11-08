@@ -12,6 +12,8 @@ export type ApiDocEndpoint = {
   pathParams?: Record<string, string>;
   /** Suggested query string for the live console. */
   defaultQuery?: string;
+  /** Key type required: "sandbox" or "production" */
+  keyType?: "sandbox" | "production";
 };
 
 export type ApiDocSection = {
@@ -238,15 +240,111 @@ export const SCHOOL_API_DOC_SECTIONS: ApiDocSection[] = [
     ],
   },
   {
-    id: "logistics",
-    titleKey: "logistics.title",
-    descriptionKey: "logistics.description",
+    id: "sandbox",
+    titleKey: "sandbox.title",
+    descriptionKey: "sandbox.description",
     endpoints: [
-      { method: "GET", path: "/api/schools/:schoolId/security-logs", summaryKey: "securityLogs", apiKeyGet: true },
-      { method: "GET", path: "/api/schools/:schoolId/vehicles", summaryKey: "vehicles", apiKeyGet: true },
-      { method: "GET", path: "/api/schools/:schoolId/transport/routes", summaryKey: "transportRoutes", apiKeyGet: true },
-      { method: "GET", path: "/api/schools/:schoolId/work-orders", summaryKey: "workOrders", apiKeyGet: true },
-      { method: "GET", path: "/api/schools/:schoolId/inventory", summaryKey: "inventory", apiKeyGet: true },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId",
+        summaryKey: "schoolProfile",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/stats",
+        summaryKey: "schoolStats",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/students",
+        summaryKey: "students",
+        apiKeyGet: true,
+        keyType: "sandbox",
+        defaultQuery: "limit=10&offset=0",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/attendance",
+        summaryKey: "studentAttendance",
+        apiKeyGet: true,
+        keyType: "sandbox",
+        defaultQuery: "date=2026-01-15",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/cafeteria/menus",
+        summaryKey: "cafeteriaMenus",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/library/items",
+        summaryKey: "libraryItems",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/clinic/visits",
+        summaryKey: "clinicVisits",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/hostel/buildings",
+        summaryKey: "hostelBuildings",
+        apiKeyGet: true,
+        keyType: "sandbox",
+      },
+    ],
+  },
+  {
+    id: "production",
+    titleKey: "production.title",
+    descriptionKey: "production.description",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId",
+        summaryKey: "schoolProfile",
+        apiKeyGet: true,
+        keyType: "production",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/fees",
+        summaryKey: "fees",
+        apiKeyGet: true,
+        keyType: "production",
+        defaultQuery: "limit=10",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/finance/summary",
+        summaryKey: "financeSummary",
+        apiKeyGet: true,
+        keyType: "production",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/gradebook/component-grades",
+        summaryKey: "componentGrades",
+        apiKeyGet: true,
+        keyType: "production",
+      },
+      {
+        method: "GET",
+        path: "/api/schools/:schoolId/exams",
+        summaryKey: "exams",
+        apiKeyGet: true,
+        keyType: "production",
+      },
     ],
   },
 ];

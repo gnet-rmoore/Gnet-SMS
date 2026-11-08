@@ -31,8 +31,13 @@ export const classScheduleApi = {
       startTime: string;
       endTime: string;
       orderIndex?: number;
-    }>
-  ) => api.put(`/api/bell-schedules/${id}/periods`, { periods }) as Promise<BellScheduleDto>,
+    }>,
+    opts?: { force?: boolean }
+  ) =>
+    api.put(`/api/bell-schedules/${id}/periods`, {
+      periods,
+      force: Boolean(opts?.force),
+    }) as Promise<BellScheduleDto>,
 
   listTimetable: (schoolId: string, params?: Record<string, string>) => {
     const qs = new URLSearchParams(params || {}).toString();

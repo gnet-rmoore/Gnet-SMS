@@ -6,20 +6,61 @@ type DraftLike = {
   teacherName: string;
 };
 
+async function loadImageData(
+  url?: string | null
+): Promise<{ dataUrl: string; format: "PNG" | "JPEG" } | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    if (!dataUrl.startsWith("data:image/")) return null;
+    return {
+      dataUrl,
+      format: dataUrl.includes("image/png") ? "PNG" : "JPEG",
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Landscape weekly timetable PDF for one classroom. */
-export function downloadScheduleWeekPdf(opts: {
+export async function downloadScheduleWeekPdf(opts: {
   classroomName: string;
   bellName: string;
   periods: SchedulePeriodDto[];
   /** Map of `${day}|${periodId}` → cell */
   cells: Record<string, DraftLike>;
   schoolName?: string;
+  academicYear?: string;
+  logoUrl?: string | null;
   effectiveFrom?: string;
   effectiveTo?: string;
 }) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
   const margin = 12;
   let y = margin;
+
+  const logo = await loadImageData(opts.logoUrl);
+  if (logo) {
+    try {
+      const props = doc.getImageProperties(logo.dataUrl);
+      const maxW = 22;
+      const maxH = 16;
+      const ratio = Math.min(maxW / props.width, maxH / props.height);
+      const w = props.width * ratio;
+      const h = props.height * ratio;
+      doc.addImage(logo.dataUrl, logo.format, 297 - margin - w, margin, w, h);
+    } catch {
+      /* logo is optional */
+    }
+  }
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -31,6 +72,7 @@ export function downloadScheduleWeekPdf(opts: {
   doc.setTextColor(80);
   const meta = [
     opts.schoolName,
+    opts.academicYear ? `Academic year ${opts.academicYear}` : null,
     opts.bellName,
     opts.effectiveFrom || opts.effectiveTo
       ? `Effective ${opts.effectiveFrom || "…"} → ${opts.effectiveTo || "open"}`

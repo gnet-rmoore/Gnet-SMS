@@ -26,8 +26,11 @@ export function appBaseUrl(): string {
 }
 
 export function buildNotificationEmail(input: Pick<NotificationEmailInput, "title" | "body" | "href">) {
-  const link = input.href
-    ? `${appBaseUrl()}/${String(input.href).replace(/^\//, "")}`
+  const rawHref = input.href ? String(input.href) : "";
+  const link = rawHref
+    ? /^https?:\/\//i.test(rawHref)
+      ? rawHref
+      : `${appBaseUrl()}/${rawHref.replace(/^\//, "")}`
     : null;
   const text = link ? `${input.body}\n\nView in SMS: ${link}` : input.body;
   const html = `<p>${escapeHtml(input.body)}</p>${

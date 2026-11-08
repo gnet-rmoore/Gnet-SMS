@@ -4,7 +4,8 @@ import { apiKeyService } from "../services/apiKeyService";
 export const apiKeyController = {
   async list(req: Request, res: Response) {
     try {
-      const keys = await apiKeyService.list(String(req.params.schoolId || ""));
+      const keyType = req.query.keyType as "sandbox" | "production" | undefined;
+      const keys = await apiKeyService.list(String(req.params.schoolId || ""), keyType);
       res.json(keys);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to list API keys" });
@@ -14,10 +15,12 @@ export const apiKeyController = {
   async create(req: Request, res: Response) {
     try {
       const user = (req as any).user;
+      const keyType = (req.query.keyType as "sandbox" | "production") || "sandbox";
       const row = await apiKeyService.create(
         String(req.params.schoolId || ""),
         String(req.body?.name || ""),
         user?.id || "unknown",
+        keyType,
         req
       );
       res.status(201).json(row);
@@ -42,7 +45,7 @@ export const apiKeyController = {
   async verifyInternal(req: Request, res: Response) {
     try {
       const key = String(req.body?.key || req.headers["x-api-key"] || "");
-      const result = await apiKeyService.verify(key);
+      const result = await apiKeyService.verify(key, String(req.params.schoolId || ""));
       res.json(result);
     } catch (err: any) {
       res.status(err.status || 401).json({ error: err.message, code: err.code, feature: err.feature });

@@ -35,6 +35,7 @@ type Props = {
   resolvedPath: string;
   /** Increment to auto-send the current GET request (e.g. after Try live). */
   autoRunToken?: number;
+  mode?: "sandbox" | "production";
 };
 
 function statusTone(status: number): string {
@@ -76,8 +77,11 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
     setResult(null);
   }, [selected, resolvedPath]);
 
-  const canUseApiKey = Boolean(apiAccess && apiKey);
-  const authReady = authMode === "apiKey" ? canUseApiKey : Boolean(accessToken);
+  const canUseApiKey = Boolean(apiAccess && apiKey && storedKey?.keyType === mode);
+  const authReady = authMode === "apiKey"
+    ? storedKey?.secret?.startsWith(mode === "sandbox" ? "gnet_sandbox_" : "gnet_live_") &&
+      apiAccess
+    : Boolean(accessToken);
   const unresolvedParams = hasUnresolvedPathParams(resolvedPath);
   const canSend =
     authReady &&
@@ -95,13 +99,14 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
 
   const headerPreview = React.useMemo(() => {
     if (authMode === "apiKey" && apiKey) {
-      return `X-API-Key: ${maskApiKey(apiKey)}`;
+      const prefix = apiKey.startsWith("gnet_sandbox_") ? "sandbox" : "production";
+      return `X-API-Key: ${maskApiKey(apiKey)} (${prefix})`;
     }
     if (accessToken) {
       return "Authorization: Bearer eyJ… (your session)";
     }
     return t("apiDocs.playground.noAuth");
-  }, [authMode, apiKey, accessToken, t]);
+  }, [authMode, apiKey, accessToken, t, mode]);
 
   const run = React.useCallback(async () => {
     if (!selected || !authReady || selected.method !== "GET") return;
@@ -151,7 +156,7 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
 
   const authSummary =
     authMode === "apiKey" && apiKey
-      ? maskApiKey(apiKey)
+      ? `${maskApiKey(apiKey)} (${mode})`
       : accessToken
         ? t("apiDocs.playground.sessionAuto")
         : t("apiDocs.playground.noAuth");
@@ -241,7 +246,7 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
           {apiKeyLabel ? <p className="text-xs text-slate-500 truncate">{apiKeyLabel}</p> : null}
           {authMode === "apiKey" && !canUseApiKey && slug ? (
             <p className="text-xs text-amber-800 pt-1 leading-relaxed">
-              {t("apiDocs.playground.createKeyHint")}{" "}
+              {t("apiDocs.playground.createKeyHint", { mode })}{" "}
               <Link
                 to={`/${slug}/settings?tab=API_KEYS`}
                 className="font-bold text-indigo-600 hover:text-indigo-700"

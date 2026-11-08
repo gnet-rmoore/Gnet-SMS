@@ -45,6 +45,8 @@ export const staffPortalApi = {
     api.post(`/api/schools/${schoolId}/leave-requests`, data),
   getTasks: (schoolId: string, assignedTo?: string) =>
     api.get(`/api/schools/${schoolId}/staff-tasks${assignedTo ? `?assignedTo=${assignedTo}` : ""}`),
+  createTask: (schoolId: string, data: { title: string; description?: string; priority?: string; dueDate?: string; assignedTo?: string }) =>
+    api.post(`/api/schools/${schoolId}/staff-tasks`, data),
   updateTaskStatus: (id: string, status: string) =>
     api.patch(`/api/staff-tasks/${id}`, { status }),
   getAnnouncements: (schoolId: string, role?: string) =>

@@ -18,6 +18,7 @@ export type TasksTabProps = {
   setTaskSearch?: any;
   taskPriorityFilter?: any;
   taskSearch?: any;
+  onCreateTask?: any;
   [key: string]: any;
 };
 
@@ -89,6 +90,20 @@ export function TasksTab({
                         })}
                       </div>
                     </div>
+
+                    {/* Create Task button */}
+                    {onCreateTask && (
+                      <div className="ml-3">
+                        <button
+                          type="button"
+                          onClick={onCreateTask}
+                          className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          {t("staffPortal.tasks.createTask")}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Task Columns based on status */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

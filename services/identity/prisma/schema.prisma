@@ -440,12 +440,14 @@ model PlatformPlan {
   @@schema("identity")
 }
 
-/// Machine-to-machine API keys for schools with `api_access` entitlement.
+/// Machine-to-machine API keys for schools.
 model SchoolApiKey {
   id         String    @id @default(uuid())
   schoolId   String
   name       String
-  /// Display prefix, e.g. gnet_live_abcd
+  /// Key type: sandbox or production
+  keyType    String    @default("sandbox")
+  /// Display prefix, e.g. gnet_sandbox_abcd or gnet_live_abcd
   keyPrefix  String
   keyHash    String
   createdBy  String
@@ -455,7 +457,7 @@ model SchoolApiKey {
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  @@index([schoolId, revokedAt])
+  @@index([schoolId, keyType, revokedAt])
   @@index([keyPrefix])
   @@schema("identity")
 }

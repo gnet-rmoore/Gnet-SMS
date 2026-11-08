@@ -21,6 +21,7 @@ export const inAppNotificationController = {
         limit,
         offset,
         schoolId,
+        q: (req.query.q as string) || undefined,
         paged: wantsPage,
       });
       res.json(rows);
@@ -64,7 +65,7 @@ export const inAppNotificationController = {
   async markAllRead(req: Request, res: Response) {
     const user = (req as any).user;
     try {
-      const schoolId = req.body?.schoolId || user.schoolId;
+      const schoolId = user.schoolId || req.body?.schoolId;
       const result = await inAppNotificationService.markAllRead(user.id, schoolId);
       res.json(result);
     } catch (err: any) {

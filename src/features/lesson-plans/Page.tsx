@@ -18,6 +18,7 @@ import { WeekStrip } from "./components/WeekStrip";
 import { WeekBoard } from "./components/WeekBoard";
 import { LessonPlanList } from "./components/LessonPlanList";
 import { LessonPlanBuilder } from "./components/LessonPlanBuilder";
+import { LessonPlanImportModal } from "./components/LessonPlanImportModal";
 import { LessonPlanDetail } from "./components/LessonPlanDetail";
 import { TemplatesPanel } from "./components/TemplatesPanel";
 import { SyllabusUnitPicker } from "./components/SyllabusUnitPicker";
@@ -114,6 +115,26 @@ export function LessonPlansPage() {
   const [submitting, setSubmitting] = useState(false);
   const [processing, setProcessing] = useState(false);
 
+  const importLookups = useMemo(
+    () => ({
+      subjects: (builderSubjects as any[]).map((subject) => ({
+        id: String(subject.id),
+        name: String(subject.name || ""),
+      })),
+      gradeLevels: (builderGradeLevels as any[]).map((grade) => ({
+        id: String(grade.id),
+        name: String(grade.name || ""),
+      })),
+      classrooms: (builderClassrooms as any[]).map((room) => ({
+        id: String(room.id),
+        name: String(room.name || ""),
+        subjectId: room.subjectId || null,
+        gradeLevelId: room.gradeLevelId || null,
+      })),
+    }),
+    [builderSubjects, builderGradeLevels, builderClassrooms]
+  );
+
   const [tab, setTab] = useState<Tab>(isReviewer ? "pending" : "mine");
   const [weekStart, setWeekStart] = useState(() => weekStartOf(todayIso()));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -169,6 +190,7 @@ export function LessonPlansPage() {
   );
 
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<LessonPlanForm>(() => emptyForm(todayIso()));
   const [draftRestored, setDraftRestored] = useState(false);
@@ -681,6 +703,8 @@ export function LessonPlansPage() {
         }}
         onNew={openNew}
         showNew={Boolean(user)}
+        onImport={() => setImportOpen(true)}
+        showImport={Boolean(user)}
         showHelp={showHelp}
         onToggleHelp={() => setShowHelp((v) => !v)}
         title={t("lessonPlans.title")}
@@ -835,6 +859,23 @@ export function LessonPlansPage() {
           ) : null}
         </>
       )}
+
+      <AnimatePresence>
+        {importOpen && school?.id && user?.id && (
+          <LessonPlanImportModal
+            open={importOpen}
+            schoolId={school.id}
+            teacherId={user.id}
+            teacherName={user.name || "Teacher"}
+            lookups={importLookups}
+            onClose={() => setImportOpen(false)}
+            onImported={async () => {
+              setTab("mine");
+              await load();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {builderOpen && (
