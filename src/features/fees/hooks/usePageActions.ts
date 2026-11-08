@@ -317,7 +317,8 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleSingleInvoiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdminOrAccountant) return showToast(t("fees.toast.permissionDenied"), "error");
+    // School admins and accountants can only view, not create invoices
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
     if (!invoiceForm.studentId) return showToast(t("fees.toast.selectStudent"), "error");
     if (user?.role === "ACCOUNTANT" && !invoiceForm.templateId) {
@@ -371,6 +372,8 @@ export function usePageActions(deps: PageActionsDeps) {
     } = {}
   ) => {
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not collect payments
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const confirmStale = Boolean(opts.confirmStale);
     if (!confirmStale && opts.amount === undefined) {
       const ok = await confirmAction({
@@ -422,6 +425,8 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleVoidFee = async (feeId: string) => {
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not void fees
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const ok = await confirmAction({
       title: t("fees.confirm.voidTitle"),
       text: t("fees.confirm.voidText"),
@@ -445,6 +450,8 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleWriteOffFee = async (feeId: string) => {
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not write off fees
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const ok = await confirmAction({
       title: t("fees.confirm.writeOffTitle"),
       text: t("fees.confirm.writeOffText"),
@@ -481,6 +488,8 @@ export function usePageActions(deps: PageActionsDeps) {
   const handleBulkCollect = async () => {
     if (selectedInvoices.length === 0) return;
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not bulk collect
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const ok = await confirmAction({
       title: t("fees.confirm.bulkCollectTitle"),
       text: t(
@@ -545,6 +554,8 @@ export function usePageActions(deps: PageActionsDeps) {
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not create templates
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const parsedAmount = parseFloat(templateForm.amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return showToast(t("fees.toast.invalidAmount"), "error");
@@ -597,24 +608,14 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
-  const openEditTemplate = (templ: FeeTemplate) => {
-    setTemplateForm({
-      id: templ.id,
-      name: templ.name || "",
-      type: templ.type || "TUITION",
-      amount: String(templ.amount ?? ""),
-      description: templ.description || "",
-      scopeMode: templ.scopeMode || "SCHOOL",
-      gradeLevelId: templ.gradeLevelId || "",
-      divisionId: templ.divisionId || "",
-      cohort: templ.cohort || "ALL",
-      schoolYearKey: templ.schoolYearKey || "",
-    });
-    setShowTemplateModal(true);
-  };
-
   const handleDeleteTemplate = async (id: string) => {
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not delete templates
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
+    const ok = await confirmAction({
+    if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not delete templates
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const ok = await confirmAction({
       title: t("fees.confirm.deleteTemplateTitle"),
       text: t("fees.confirm.deleteTemplateText"),
@@ -634,6 +635,8 @@ export function usePageActions(deps: PageActionsDeps) {
   const handleRunBatchBilling = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
+    // School admins and accountants can only view, not run batch billing
+    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     setBatchResultSummary(null);
 
     if ((batchForm.mode || "CLASSROOM") === "TEMPLATE") {
@@ -852,7 +855,7 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
-  const handleExportLedgerPDF = () => {
+const handleExportLedgerPDF = () => {
     try {
       const doc = new jsPDF({
         orientation: "landscape",
@@ -861,10 +864,22 @@ export function usePageActions(deps: PageActionsDeps) {
       });
       doc.setFillColor(79, 70, 229);
       doc.rect(0, 0, 297, 8, "F");
-
+  
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      doc.text(school?.name || t("fees.ledger.school"), 15, 22);
+      // Add school name
+      const schoolName = school?.name || t("fees.ledger.school");
+      doc.text(schoolName, 15, 22);
+      // Add school address and contact
+      const schoolAddress = school?.address || "";
+      const schoolContact = school?.contactEmail || school?.contactPhone || "";
+      if (schoolAddress) {
+        doc.setFontSize(10);
+        doc.text(schoolAddress, 15, 30);
+      }
+      if (schoolContact) {
+        doc.text(schoolContact, 15, 38);
+      }
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.text(t("fees.export.ledgerTitle"), 15, 28);
