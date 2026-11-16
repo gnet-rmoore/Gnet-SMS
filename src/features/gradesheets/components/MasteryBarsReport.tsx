@@ -1,259 +1,103 @@
 import React from "react";
 import type { GradeSheetData } from "../types";
-import { fmtNum, masteryTier } from "../assembleGradeSheet";
+import { fmtNum } from "../assembleGradeSheet";
 import { gradeSheetDensityClass } from "../density";
-import { GradeSheetSig } from "./GradeSheetSig";
 import "../styles/mastery.css";
 
-type Props = {
-  data: GradeSheetData;
-  compact?: boolean;
-};
+function bandFor(p: number | null, legend: GradeSheetData["legend"]) {
+  if (p == null) return undefined;
+  return legend.find((b) => Math.round(p) >= b.min && Math.round(p) <= b.max);
+}
+function tier(p: number | null, legend: GradeSheetData["legend"]) {
+  if (p == null) return "#b7bdcc";
+  const L = [...legend].sort((a, b) => b.min - a.min);
+  const i = L.findIndex((b) => Math.round(p) >= b.min && Math.round(p) <= b.max);
+  if (i < 0 || L.length < 2) return p >= 85 ? "var(--m4)" : p >= 70 ? "var(--m3)" : p >= 50 ? "var(--m2)" : "var(--m1)";
+  const r = i / (L.length - 1);
+  return r === 0 ? "var(--m4)" : r <= 0.25 ? "var(--m3)" : r < 1 ? "var(--m2)" : "var(--m1)";
+}
 
+type Props = { data: GradeSheetData; compact?: boolean };
 export function MasteryBarsReport({ data, compact }: Props) {
-  const { school, term, student, subjects, summary, attendance, remarks } = data;
+  const { school, term, student, columns, legend, subjects, summary, attendance, remarks } = data;
   const density = gradeSheetDensityClass(subjects.length);
-  const attPct = attendance.percentage;
-  const absentPct =
-    attPct != null ? Math.max(0, Math.round((100 - attPct) * 10) / 10) : null;
+  const avg = summary.average ?? summary.percentage;
+  const R = 13.5, C = 2 * Math.PI * R, off = avg == null ? C : C * (1 - Math.min(avg, 100) / 100);
+  const att: React.ReactNode = attendance && attendance.total
+    ? <span>{fmtNum(attendance.present, "-")} <em>of {fmtNum(attendance.total, "-")} days</em></span>
+    : "-";
+  const key = legend.map((b) => <span key={b.letter}><i style={{ background: tier((b.min + b.max) / 2, legend) }} />{b.letter} {b.min}-{b.max}</span>);
+  const sigs = (data.signatures?.teacher || data.signatures?.principal)
+    ? [
+        { role: "Class educator", name: data.signatures?.teacher?.name, imageUrl: data.signatures?.teacher?.signatureUrl },
+        { role: "Principal", name: data.signatures?.principal?.name, imageUrl: data.signatures?.principal?.signatureUrl },
+      ]
+    : [{ role: "Class educator" }, { role: "Principal" }];
 
   return (
     <div className={`gs-mastery ${density}`.trim()} id="grade-sheet" data-page-size="A4">
       <div className="stage" style={compact ? { padding: 0 } : undefined}>
-        <div className="sheet">
-          <div className="topbar">
-            <div className="brand">
-              <div className="logo-mark">{school.crestInitials}</div>
-              <div>
-                <div className="school-name">{school.name}</div>
-                <div className="school-meta">{school.address}</div>
+        <section className="sheet">
+          <header className="band">
+            <div className="id">
+              <div className="logo">{school.logoUrl ? <img src={school.logoUrl} alt="" /> : school.crestInitials}</div>
+              <div><h1>{school.name || "-"}</h1><p>{[school.address, school.phone || school.contact].filter(Boolean).join("  •  ") || "-"}</p></div>
+            </div>
+            <div className="rep"><h2>Learner progress report</h2><p>{term.periodLabel || term.examName || "-"}, {term.schoolYear || term.academicYear || "-"}</p></div>
+          </header>
+          <div className="main">
+            <div className="hero">
+              <div className="ring">
+                <svg viewBox="0 0 30 30">
+                  <circle cx="15" cy="15" r={R} fill="none" stroke="#e6e9f2" strokeWidth="2.6" />
+                  <circle cx="15" cy="15" r={R} fill="none" stroke={tier(avg ?? null, legend)} strokeWidth="2.6" strokeLinecap="round" strokeDasharray={C.toFixed(2)} strokeDashoffset={off.toFixed(2)} />
+                </svg>
+                <div><b>{fmtNum(avg)}{avg == null ? "" : "%"}</b><small>Overall average</small></div>
+              </div>
+              <div className="who">
+                <h3>{student.name || "-"}</h3>
+                <div className="chips">
+                  <span>Class <b>{student.classLabel || "-"}</b></span>
+                  <span>Grade <b>{student.gradeLevel || student.classLabel || "-"}</b></span>
+                  <span>ID <b>{student.id || student.admissionNo || "-"}</b></span>
+                </div>
               </div>
             </div>
-            <div className="doc-meta">
-              <span className="pill">Performance Report</span>
-              <div className="term">
-                {term.label.includes(term.examName)
-                  ? term.label
-                  : `${term.label} · ${term.examName}`}
-              </div>
+            <div className="stats">
+              <div className="stat"><span>Position in class</span><b>{summary.rank != null ? summary.rank : "-"}{summary.rank != null && summary.classSize ? <span> <em>of {summary.classSize}</em></span> : null}</b></div>
+              <div className="stat"><span>GPA</span><b>{fmtNum(summary.gpa, "-")}</b></div>
+              <div className="stat"><span>Days present</span><b>{att}</b></div>
             </div>
-          </div>
-
-          <div className="identity">
-            <div className="avatar">
-              Student
-              <br />
-              Photo
-            </div>
-            <div className="identity-grid">
-              <div>
-                <div className="id-label">Student</div>
-                <div className="id-value">{student.name}</div>
-              </div>
-              <div>
-                <div className="id-label">Admission No.</div>
-                <div className="id-value">{student.admissionNo}</div>
-              </div>
-              <div>
-                <div className="id-label">Class</div>
-                <div className="id-value">{student.classLabel}</div>
-              </div>
-              <div>
-                <div className="id-label">Guardian</div>
-                <div className="id-value">{student.guardian}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="kpi-row">
-            <div className="kpi accent">
-              <div className="k-label">Overall Average</div>
-              <div className="k-value">
-                {fmtNum(summary.percentage)}
-                {summary.percentage != null ? <small>%</small> : null}
-              </div>
-              <div className="k-sub">
-                Grade {summary.overallGrade}
-                {summary.gpa != null ? ` · GPA ${fmtNum(summary.gpa)}` : ""}
-              </div>
-            </div>
-            <div className="kpi">
-              <div className="k-label">Class Rank</div>
-              <div className="k-value" style={{ fontSize: summary.rank === "—" ? 16 : 24 }}>
-                {summary.rank}
-              </div>
-              <div className="k-sub">Position in class</div>
-            </div>
-            <div className="kpi">
-              <div className="k-label">Attendance</div>
-              <div className="k-value">
-                {fmtNum(attendance.percentage)}
-                {attendance.percentage != null ? <small>%</small> : null}
-              </div>
-              <div className="k-sub">
-                {attendance.present != null && attendance.total != null
-                  ? `${attendance.present} of ${attendance.total} days`
-                  : "—"}
-              </div>
-            </div>
-            <div className="kpi">
-              <div className="k-label">Conduct</div>
-              <div className="k-value" style={{ fontSize: 16 }}>
-                {summary.conduct}
-              </div>
-              <div className="k-sub">{summary.promotionStatus}</div>
-            </div>
-          </div>
-
-          <div className="section-heading">
-            <h2>Subject Performance ({subjects.length})</h2>
-            <div className="legend">
-              <span>
-                <span className="dot student" />
-                Student score
-              </span>
-              <span>
-                <span className="dot avg" />
-                Class average
-              </span>
-            </div>
-          </div>
-
-          <div className="subject-list">
-            {subjects.map((s) => {
-              const score = Math.min(100, Math.max(0, s.obtained));
-              const avgVal = s.classAvg != null ? Math.min(100, Math.max(0, s.classAvg)) : 0;
-              return (
-                <div
-                  key={s.name}
-                  className="subject-row"
-                  style={
-                    {
-                      ["--score" as string]: score,
-                      ["--avg" as string]: avgVal,
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="subj-name">{s.name}</div>
-                  <div className="subj-score">{fmtNum(s.obtained)}</div>
-                  <div
-                    className="bar-track"
-                    style={
-                      {
-                        ["--score" as string]: score,
-                        ["--avg" as string]: avgVal,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <div className="bar-fill" />
-                    {s.classAvg != null ? <div className="bar-avg-marker" /> : null}
+            <div className="sec"><h4>Subject mastery</h4><span>{columns.map((c) => `${c.code} ${fmtNum(c.weightPct, "0")}%`).join("  •  ")}</span></div>
+            <div>
+              {subjects.length ? subjects.map((s) => {
+                const b = bandFor(s.total, legend);
+                const letter = s.letter ?? b?.letter ?? "-";
+                const remark = s.remark ?? b?.remark ?? s.code ?? "";
+                const parts = columns.filter((c) => s.scores?.[c.code] != null).map((c) => <span key={c.code}>{c.code} <b>{fmtNum(s.scores[c.code] as number, "0")}</b></span>);
+                return (
+                  <div className="subj" key={s.code || s.name}>
+                    <div className="nm">{s.name}<small>{remark || "\u00A0"}</small></div>
+                    <div><div className="bar"><i style={{ width: `${s.total == null ? 0 : Math.min(s.total, 100)}%`, background: tier(s.total, legend) }} /></div>{parts.length ? <div className="parts">{parts}</div> : null}</div>
+                    <div className="sc">{fmtNum(s.total)}%</div>
+                    <div className="pill" style={{ background: tier(s.total, legend) }}>{letter}</div>
                   </div>
-                  <div className={`subj-grade ${masteryTier(s.grade)}`}>{s.grade}</div>
-                  <div className="subj-remark">{s.remark || "—"}</div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="closing-block">
-          <div className="two-col">
-            <div className="panel">
-              <div className="panel-title">International Grading Scale</div>
-              <div className="scale-grid">
-                <div className="scale-chip">
-                  <div className="g" style={{ color: "var(--mint)" }}>
-                    A
-                  </div>
-                  <div className="r">90–100</div>
-                </div>
-                <div className="scale-chip">
-                  <div className="g" style={{ color: "var(--indigo)" }}>
-                    B
-                  </div>
-                  <div className="r">75–89</div>
-                </div>
-                <div className="scale-chip">
-                  <div className="g" style={{ color: "var(--indigo)" }}>
-                    C
-                  </div>
-                  <div className="r">60–74</div>
-                </div>
-                <div className="scale-chip">
-                  <div className="g" style={{ color: "var(--amber)" }}>
-                    D
-                  </div>
-                  <div className="r">50–59</div>
-                </div>
-                <div className="scale-chip">
-                  <div className="g" style={{ color: "var(--rose)" }}>
-                    U
-                  </div>
-                  <div className="r">&lt;50</div>
-                </div>
-              </div>
+                );
+              }) : <div className="empty">No released grades for this period yet.</div>}
             </div>
-            <div className="panel">
-              <div className="panel-title">Attendance Breakdown</div>
-              <div className="att-row">
-                <div className="att-label" style={{ width: 60 }}>
-                  Present
-                </div>
-                <div className="att-bar">
-                  <div
-                    className="att-bar-fill"
-                    style={{ width: attPct != null ? `${attPct}%` : "0%" }}
-                  />
-                </div>
-                <div className="att-value">{fmtNum(attendance.present)}</div>
-              </div>
-              <div className="att-row">
-                <div className="att-label" style={{ width: 60 }}>
-                  Absent
-                </div>
-                <div className="att-bar">
-                  <div
-                    className="att-bar-fill"
-                    style={{
-                      width: absentPct != null ? `${absentPct}%` : "0%",
-                      background: "var(--rose)",
-                    }}
-                  />
-                </div>
-                <div className="att-value">{fmtNum(attendance.absent)}</div>
-              </div>
+            {key.length ? <div className="legend">{key}</div> : null}
+            <div className="notes">
+              <div className="note"><h5>Class educator</h5><p>{remarks.educator || remarks.teacher || "-"}</p></div>
+              <div className="note"><h5>Principal</h5><p>{remarks.principal || "-"}</p></div>
             </div>
+            <footer className="foot">
+              {sigs.map((g, i) => (
+                <div className="sig" key={i}><div className="ln">{g.imageUrl ? <img src={g.imageUrl} alt="" /> : null}</div>{g.name ? <b>{g.name}</b> : null}{g.role}</div>
+              ))}
+              <div className="issued">Issued {data.issuedOn || term.issueDate || "-"}</div>
+            </footer>
           </div>
-
-          <div className="remark-cards">
-            <div className="remark-card">
-              <div className="who">Class Teacher</div>
-              <p>{remarks.teacher || "—"}</p>
-            </div>
-            <div className="remark-card">
-              <div className="who">Principal</div>
-              <p>{remarks.principal || "—"}</p>
-            </div>
-          </div>
-
-          <div className="signatures">
-            <GradeSheetSig
-              role="Class Teacher"
-              name={data.signatures?.teacher?.name}
-              signatureUrl={data.signatures?.teacher?.signatureUrl}
-            />
-            <GradeSheetSig
-              role="Principal"
-              name={data.signatures?.principal?.name}
-              signatureUrl={data.signatures?.principal?.signatureUrl}
-            />
-            <GradeSheetSig role="Parent / Guardian" />
-          </div>
-
-          <div className="footer-note">
-            Next term begins {term.nextTermStart} · Issued {term.issueDate} · {school.name}
-          </div>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

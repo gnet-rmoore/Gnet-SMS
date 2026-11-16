@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
   assembleReportCardPayload,
   InternationalReportCard,
@@ -132,8 +132,6 @@ export function renderTemplatePreview(
           { sub: "Chemistry", tot: 77, q: "Q2" },
           { sub: "French", tot: 68, q: "Q3" },
           { sub: "Literature", tot: 80, q: "Q4" },
-          { sub: "Religious Education", tot: 86, q: "Q1" },
-          { sub: "Agriculture", tot: 72, q: "Q2" },
         ]
       : [
           { sub: "Mathematics", tot: 86, q: "Q1" },
@@ -141,6 +139,7 @@ export function renderTemplatePreview(
           { sub: "Physics", tot: 93, q: "Q1" },
           { sub: "Chemistry", tot: 77, q: "Q1" },
           { sub: "Biology", tot: 85, q: "Q1" },
+          { sub: "History", tot: 81, q: "Q1" },
         ];
     const intlGrades = mockData.map((item, i) => ({
       id: String(i + 1),
@@ -151,7 +150,7 @@ export function renderTemplatePreview(
         name: item.sub,
         code: item.sub.slice(0, 3).toUpperCase(),
       },
-      classroom: { name: "Grade 10 — Section A" },
+      classroom: { name: "Grade 10 · Section A" },
       examComponent: isWisteria ? { shortCode: item.q } : undefined,
     }));
     const previewPeriods = isWisteria
@@ -176,7 +175,8 @@ export function renderTemplatePreview(
           school={{
             name: schoolName || "International Academy",
             address: address || "Global Campus",
-            brandColor: isWisteria ? "#0f766e" : undefined,
+            brandColor: opts?.brandColor || (isWisteria ? "#0f766e" : undefined),
+            logoUrl: opts?.logoUrl || null,
           }}
           academicYearLabel="2025 - 2026"
           calendarPeriods={previewPeriods}

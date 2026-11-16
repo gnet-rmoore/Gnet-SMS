@@ -1,11 +1,48 @@
-import type { ReportCardRegion, ReportCardTemplateDef } from "./types";
+﻿import type { ReportCardRegion, ReportCardTemplateDef } from "./types";
 
 export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: "INTL_WISTERIA_GREEN",
     region: "INTL",
-    label: "Green academic quarterly",
-    description: "Dark-green bordered A4 with 1st–4th subject columns, attendance, and grading legend.",
+    label: "Wisteria Green Quarterly",
+    description:
+      "Fresh green academic report with period columns, attendance, grading scale, and teacher feedback — ideal for term/quarter progress.",
+    audience: "BOTH",
+    calendarAffinity: ["ANY"],
+    pages: ["GRADES"],
+    promotionScheme: "A_D",
+    branding: "SCHOOL_LOGO",
+  },
+  {
+    key: "INTL_WISTERIA_NAVY",
+    region: "INTL",
+    label: "Wisteria Navy Quarterly",
+    description:
+      "Structured navy-bordered quarterly report with clear subject grid, period averages, grading system, and comments panel.",
+    audience: "BOTH",
+    calendarAffinity: ["ANY"],
+    pages: ["GRADES"],
+    promotionScheme: "A_D",
+    branding: "SCHOOL_LOGO",
+  },
+  {
+    key: "INTL_STANDARD_TERM",
+    region: "INTL",
+    label: "Standard Term Summary",
+    description:
+      "Clean single-page term report with marks, grades, status, and remarks — a balanced choice for routine assessments.",
+    audience: "BOTH",
+    calendarAffinity: ["ANY"],
+    pages: ["GRADES"],
+    promotionScheme: "A_D",
+    branding: "SCHOOL_LOGO",
+  },
+  {
+    key: "INTL_EXECUTIVE",
+    region: "INTL",
+    label: "Executive Performance Brief",
+    description:
+      "Modern leadership-style brief highlighting strengths, focus areas, overall mean, and concise subject performance.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
     pages: ["GRADES"],

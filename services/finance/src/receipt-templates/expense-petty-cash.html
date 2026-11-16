@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html><html lang="{{locale}}" dir="{{dir}}"><head><meta charset="UTF-8"><title>{{title}} — {{receiptNumber}}</title>
+<style>
+@page{size:A4;margin:0}:root{--ink:#0f172a;--muted:#64748b;--faint:#94a3b8;--line:#e2e8f0;--brand:#0f766e;--void:#be123c}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:#f0fdfa;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:14mm 14mm 12mm;border-top:10px solid var(--brand)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px}.left{display:flex;gap:10px;align-items:center}.logo{width:34px;height:34px;object-fit:contain}.logo-fallback{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.name{font-size:13px;font-weight:800}.meta{font-size:10px;color:var(--muted)}.badge{background:#ecfeff;color:#155e75;border:1px solid #99f6e4;padding:5px 10px;border-radius:999px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+h1{font-size:16px;margin:14px 0 2px}.sub{font-size:10.5px;color:var(--muted);margin-bottom:12px}
+.hero{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px 14px}.k{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}.v{font-size:12px;font-weight:700}.amt{font-size:24px;font-weight:800;color:var(--brand)}
+.details{margin-top:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;font-size:11px}.d .k{display:inline;margin:0 6px 0 0;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:500}
+table{width:100%;border-collapse:collapse;margin-top:14px}th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);text-align:start;padding:8px 4px;border-bottom:1px solid var(--line)}td{font-size:12px;padding:9px 4px;border-bottom:1px solid #f1f5f9}.num{text-align:end}
+.total{display:flex;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--ink);font-weight:800}
+.words{margin-top:10px;font-size:11px;color:var(--muted)}
+.foot{margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end}.sig-line{width:150px;border-bottom:1px solid var(--ink);height:26px}.sig img{max-height:32px;max-width:150px;display:block;margin-bottom:6px}.sig-name{font-size:11px;font-weight:700;margin-top:6px}.sig-title{font-size:10px;color:var(--muted)}
+.verify{display:flex;gap:8px;align-items:flex-end;text-align:end}.verify-url{font-size:9px;color:var(--brand);word-break:break-all;max-width:200px}.qr{width:50px;height:50px}
+.void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:68px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 28px}
+.page.is-voided .void-stamp{display:block}
+</style></head><body>
+<div class="{{pageClass}}" style="--brand: {{brandColor}};">
+  <div class="void-stamp">{{t.voided}}</div>
+  <div class="head"><div class="left">{{#schoolLogoUrl}}<img class="logo" src="{{schoolLogoUrl}}" alt="" />{{/schoolLogoUrl}}{{^schoolLogoUrl}}<div class="logo-fallback" data-school-monogram="{{schoolName}}"></div>{{/schoolLogoUrl}}<div><div class="name">{{schoolName}}</div><div class="meta">{{schoolAddress}}</div></div></div><div style="text-align:end"><div class="badge">{{t.status}}</div>{{#hasCopyLabel}}<div class="meta" style="margin-top:6px">{{copyLabel}}</div>{{/hasCopyLabel}}</div></div>
+  <h1>{{title}}</h1><div class="sub">{{t.receiptNumber}} · {{t.issuedAt}} · {{t.reference}}</div>
+  <div class="hero"><div><div class="k">{{t.payee}}</div><div class="v">{{payeeName}}</div><div class="meta" style="margin-top:4px">{{t.payer}}</div></div><div style="text-align:end"><div class="k">{{t.total}}</div><div class="amt">{{amountDisplay}}</div></div></div>
+  {{#hasDetails}}<div class="details">{{#detailItems}}<div class="d"><span class="k">{{label}}</span><span class="v">{{value}}</span></div>{{/detailItems}}</div>{{/hasDetails}}
+  <table><thead><tr><th>{{t.description}}</th><th class="num">{{t.amount}}</th></tr></thead><tbody>{{#lineItems}}<tr><td>{{label}}</td><td class="num">{{currency}} {{amountFormatted}}</td></tr>{{/lineItems}}</tbody></table>
+  <div class="total"><span>{{t.total}}</span><span>{{amountDisplay}}</span></div>
+  <div class="words"><b>{{t.amountInWords}}:</b> {{amountInWords}}</div>
+  {{#hasNote}}<div class="words"><b>{{t.note}}:</b> {{note}}</div>{{/hasNote}}
+  <div class="words" style="margin-top:8px">{{t.receivedWithThanks}}</div>
+  <div class="foot"><div class="sig">{{#authorizedSignatureUrl}}<img src="{{authorizedSignatureUrl}}" alt="" />{{/authorizedSignatureUrl}}{{^authorizedSignatureUrl}}<div class="sig-line"></div>{{/authorizedSignatureUrl}}<div class="sig-name">{{authorizedSignerName}}</div><div class="sig-title">{{authorizedSignerTitle}}</div></div><div class="verify"><div><div class="k">{{t.verifyAuthenticity}}</div><div class="verify-url">{{verifyUrl}}</div><div class="meta">{{t.fingerprint}}</div></div>{{#qrDataUrl}}<img class="qr" src="{{qrDataUrl}}" alt="" />{{/qrDataUrl}}</div></div>
+</div>
+<script>document.querySelectorAll('[data-school-monogram]').forEach(function(e){var n=e.getAttribute('data-school-monogram')||'';e.textContent=(n.trim()[0]||'?').toUpperCase()});</script>
+</body></html>

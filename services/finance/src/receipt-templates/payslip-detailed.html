@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html><html lang="{{locale}}" dir="{{dir}}"><head><meta charset="UTF-8"><title>{{title}} — {{receiptNumber}}</title>
+<style>
+@page{size:A4;margin:0}:root{--ink:#0f172a;--muted:#475569;--faint:#94a3b8;--line:#dbe3ef;--brand:#1d4ed8;--void:#be123c}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:#eef2ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:210mm;min-height:297mm;margin:0 auto;background:#fff;overflow:hidden}
+.header{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;padding:14mm 16mm 12mm;display:flex;justify-content:space-between;gap:16px}
+.school{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:8px;padding:4px}.logo-fallback{width:42px;height:42px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:700}
+.name{font-size:15px;font-weight:800}.meta{font-size:10.5px;opacity:.85;margin-top:2px}
+.doc{text-align:end}.title{font-size:18px;font-weight:800;margin:0}.sub{font-size:10.5px;opacity:.9;line-height:1.6;margin-top:4px}
+.body{padding:14mm 16mm}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.k{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}.v{font-size:12.5px;font-weight:600}
+.details{margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 16px}.d{font-size:11.5px}.d .k{display:inline;margin:0 6px 0 0;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:500}
+table{width:100%;border-collapse:collapse;margin-top:16px;border:1px solid var(--line)}th{background:#f8fafc;text-align:start;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line)}td{padding:11px 12px;font-size:12.5px;border-bottom:1px solid #eef2f7}tr:last-child td{border-bottom:none}.num{text-align:end;font-variant-numeric:tabular-nums}
+.summary{margin-top:14px;display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.net{min-width:260px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;padding:12px 14px;text-align:end}.net .k{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#1d4ed8}.net .v{font-size:24px;font-weight:800;margin-top:4px}
+.words{font-size:11.5px;color:var(--muted);max-width:360px}
+.foot{margin-top:34px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}.sig-line{width:170px;border-bottom:1px solid var(--ink);height:30px}.sig img{max-height:38px;max-width:170px;display:block;margin-bottom:8px}.sig-name{font-size:11.5px;font-weight:700;margin-top:6px}.sig-title{font-size:10px;color:var(--muted)}
+.verify{display:flex;gap:10px;align-items:flex-end;text-align:end}.verify-url{font-size:9.5px;color:var(--brand);word-break:break-all;max-width:220px}.qr{width:56px;height:56px}.fp{font-size:9px;color:var(--faint);margin-top:4px}
+.void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:74px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 34px;border-radius:8px}
+.page.is-voided .void-stamp{display:block}
+</style></head><body>
+<div class="{{pageClass}}" style="--brand: {{brandColor}};">
+  <div class="void-stamp">{{t.voided}}</div>
+  <div class="header">
+    <div class="school">{{#schoolLogoUrl}}<img class="logo" src="{{schoolLogoUrl}}" alt="" />{{/schoolLogoUrl}}{{^schoolLogoUrl}}<div class="logo-fallback" data-school-monogram="{{schoolName}}"></div>{{/schoolLogoUrl}}<div><div class="name">{{schoolName}}</div><div class="meta">{{schoolAddress}}</div></div></div>
+    <div class="doc"><h1 class="title">{{title}}</h1><div class="sub">{{t.receiptNumber}}<br>{{t.issuedAt}}<br>{{t.status}} {{#hasCopyLabel}}· {{copyLabel}}{{/hasCopyLabel}}</div></div>
+  </div>
+  <div class="body">
+    <div class="grid">
+      <div class="card"><div class="k">{{t.payee}}</div><div class="v">{{payeeName}}</div></div>
+      <div class="card"><div class="k">{{t.payer}}</div><div class="v">{{payerName}}</div></div>
+      <div class="card"><div class="k">{{t.referenceLabel}}</div><div class="v" style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px">{{sourceRef}}</div></div>
+    </div>
+    {{#hasDetails}}<div class="details">{{#detailItems}}<div class="d"><span class="k">{{label}}</span><span class="v">{{value}}</span></div>{{/detailItems}}</div>{{/hasDetails}}
+    <table><thead><tr><th>{{t.description}}</th><th class="num">{{t.amount}}</th></tr></thead><tbody>{{#lineItems}}<tr><td>{{label}}</td><td class="num">{{currency}} {{amountFormatted}}</td></tr>{{/lineItems}}</tbody></table>
+    <div class="summary"><div class="words"><div class="k">{{t.amountInWords}}</div><div style="margin-top:4px;font-weight:500">{{amountInWords}}</div>{{#hasNote}}<div style="margin-top:8px"><b>{{t.note}}:</b> {{note}}</div>{{/hasNote}}<div style="margin-top:10px">{{t.receivedWithThanks}}</div></div><div class="net"><div class="k">{{t.total}}</div><div class="v">{{amountDisplay}}</div></div></div>
+    <div class="foot"><div class="sig">{{#authorizedSignatureUrl}}<img src="{{authorizedSignatureUrl}}" alt="" />{{/authorizedSignatureUrl}}{{^authorizedSignatureUrl}}<div class="sig-line"></div>{{/authorizedSignatureUrl}}<div class="sig-name">{{authorizedSignerName}}</div><div class="sig-title">{{authorizedSignerTitle}}</div></div><div class="verify"><div><div class="k">{{t.verifyAuthenticity}}</div><div class="verify-url">{{verifyUrl}}</div><div class="fp">{{t.fingerprint}}</div></div>{{#qrDataUrl}}<img class="qr" src="{{qrDataUrl}}" alt="" />{{/qrDataUrl}}</div></div>
+  </div>
+</div>
+<script>document.querySelectorAll('[data-school-monogram]').forEach(function(e){var n=e.getAttribute('data-school-monogram')||'';e.textContent=(n.trim()[0]||'?').toUpperCase()});</script>
+</body></html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modern Mastery – Learner Progress Report</title>
+<style>
+@page{size:A4;margin:0}
+:root{--ink:#111c33;--mute:#667089;--line:#e3e7f0;--bg:#f5f7fb;--brand:#2342d6;--brand2:#0f1f5c;
+--m4:#12946a;--m3:#2c6fe0;--m2:#d99100;--m1:#d4444f}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#d9dde7;font-family:Inter,'SF Pro Text','Segoe UI',system-ui,-apple-system,Arial,sans-serif;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{width:210mm;height:297mm;margin:8mm auto;background:#fff;display:flex;flex-direction:column;box-shadow:0 2px 18px rgba(20,30,60,.2);overflow:hidden}
+.band{background:var(--brand2);color:#fff;padding:9mm 12mm 16mm;display:flex;justify-content:space-between;align-items:center;gap:8mm}
+.id{display:flex;align-items:center;gap:4mm}
+.logo{width:14mm;height:14mm;border-radius:3.5mm;background:#fff;color:var(--brand2);display:grid;place-items:center;font-weight:800;font-size:13pt;overflow:hidden;flex:none}
+.logo img{width:100%;height:100%;object-fit:cover}
+.id h1{margin:0;font-size:14pt;font-weight:700;letter-spacing:-.2pt}
+.id p{margin:.8mm 0 0;font-size:7.8pt;color:#b9c3ee}
+.rep{text-align:right}
+.rep h2{margin:0;font-size:11pt;font-weight:600}
+.rep p{margin:.8mm 0 0;font-size:8pt;color:#b9c3ee}
+.main{padding:0 12mm;flex:1;display:flex;flex-direction:column}
+.hero{margin-top:-10mm;background:#fff;border:1px solid var(--line);border-radius:4mm;padding:5mm 6mm;display:flex;align-items:center;gap:7mm;box-shadow:0 6px 18px rgba(15,31,92,.12)}
+.ring{position:relative;width:30mm;height:30mm;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring div{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring b{font-size:17pt;font-weight:800;letter-spacing:-.5pt;line-height:1}
+.ring small{font-size:6.8pt;color:var(--mute);margin-top:.8mm}
+.who{flex:1;min-width:0}
+.who h3{margin:0;font-size:19pt;font-weight:800;letter-spacing:-.5pt;line-height:1.1}
+.chips{display:flex;flex-wrap:wrap;gap:1.6mm;margin-top:2.4mm}
+.chips span{font-size:7.8pt;background:var(--bg);border:1px solid var(--line);border-radius:10mm;padding:.9mm 2.6mm;color:var(--mute)}
+.chips b{color:var(--ink);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin:4mm 0 5mm}
+.stat{background:var(--bg);border-radius:3mm;padding:3mm 4mm}
+.stat span{display:block;font-size:7.6pt;color:var(--mute)}
+.stat b{font-size:14pt;font-weight:700;letter-spacing:-.3pt;font-variant-numeric:tabular-nums}
+.stat em{font-style:normal;font-size:8pt;color:var(--mute);font-weight:500}
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2mm}
+.sec h4{margin:0;font-size:10.5pt;font-weight:700}
+.sec span{font-size:7.6pt;color:var(--mute)}
+.subj{display:grid;grid-template-columns:38mm 1fr 14mm 10mm;align-items:center;gap:4mm;padding:2.4mm 0;border-top:1px solid var(--line)}
+.subj:last-child{border-bottom:1px solid var(--line)}
+.nm{font-size:9.3pt;font-weight:600;line-height:1.2}
+.nm small{display:block;font-size:7pt;font-weight:400;color:var(--mute)}
+.bar{height:2.2mm;border-radius:2mm;background:var(--bg);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:2mm}
+.parts{display:flex;gap:2.2mm;margin-top:1.3mm;font-size:6.8pt;color:var(--mute);flex-wrap:wrap}
+.parts b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.sc{font-size:10pt;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.pill{font-size:8.5pt;font-weight:800;text-align:center;border-radius:2mm;padding:.8mm 0;color:#fff}
+.empty{padding:9mm;text-align:center;color:var(--mute);font-size:9pt;border:1px dashed var(--line);border-radius:3mm}
+.legend{display:flex;flex-wrap:wrap;gap:1.6mm 4mm;margin-top:3.5mm;font-size:7.2pt;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:1.4mm}
+.legend i{width:2.4mm;height:2.4mm;border-radius:.7mm;display:inline-block}
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:5mm}
+.note{border-left:1mm solid var(--brand);background:var(--bg);border-radius:0 3mm 3mm 0;padding:2.8mm 4mm;min-height:19mm}
+.note h5{margin:0 0 1mm;font-size:8pt;font-weight:700}
+.note p{margin:0;font-size:8.4pt;line-height:1.45;color:#2b3550}
+.foot{margin-top:auto;padding:5mm 0 8mm;display:flex;align-items:flex-end;gap:8mm}
+.sig{flex:1;font-size:7.8pt;color:var(--mute)}
+.sig .ln{height:10mm;border-bottom:1px solid var(--ink);margin-bottom:1.2mm;display:flex;align-items:flex-end}
+.sig .ln img{max-height:9mm}
+.sig b{color:var(--ink);font-weight:600;display:block}
+.issued{font-size:7.4pt;color:var(--mute);text-align:right}
+.compact .band{padding:7mm 12mm 14mm}.compact .hero{padding:3.5mm 5mm}.compact .ring{width:24mm;height:24mm}.compact .ring b{font-size:14pt}.compact .stats{margin:3mm 0 3.5mm}.compact .subj{padding:1.5mm 0}
+.compact .notes{margin-top:3mm}.compact .note{min-height:13mm}.compact .foot{padding:3mm 0 6mm}
+.tight .parts{display:none}.tight .subj{padding:1.1mm 0}.tight .nm small{display:none}.tight .note{min-height:10mm}
+@media print{body{background:#fff}.sheet{margin:0;box-shadow:none}}
+</style>
+</head>
+<body>
+<div id="sheet-root"></div>
+<script>
+/* ---- Data contract: see GradeSheetData.ts. Any missing field renders as "—" (nothing is invented). ---- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=x=>x==null||x===''?'—':esc(x);
+const n=(x,d=1)=>x==null||isNaN(x)?'—':String(+Number(x).toFixed(d));
+const total=(s,cols)=>{if(s.total!=null)return s.total;let w=0,t=0;for(const c of cols){const x=s.scores&&s.scores[c.code];if(x!=null){t+=x*c.weightPct;w+=c.weightPct}}return w?t/w:null};
+const band=(p,lg)=>p==null?null:(lg||[]).find(b=>Math.round(p)>=b.min&&Math.round(p)<=b.max);
+/* Colour follows the school's legend: top band green, next blue, middle bands amber, lowest red. Without a legend: 85+/70+/50+/below. */
+const tier=(p,lg)=>{if(p==null)return '#b7bdcc';const L=[...(lg||[])].sort((a,b)=>b.min-a.min),i=L.findIndex(b=>Math.round(p)>=b.min&&Math.round(p)<=b.max);
+  if(i<0||L.length<2)return p>=85?'var(--m4)':p>=70?'var(--m3)':p>=50?'var(--m2)':'var(--m1)';
+  const r=i/(L.length-1);return r===0?'var(--m4)':r<=.25?'var(--m3)':r<1?'var(--m2)':'var(--m1)'};
+
+function renderGradeSheet(d,root=document.getElementById('sheet-root')){
+  const sc=d.school||{},tm=d.term||{},st=d.student||{},cols=d.columns||[],lg=d.legend||[],subs=d.subjects||[],sm=d.summary||{},at=d.attendance,rm=d.remarks||{};
+  const rows=subs.map(s=>({s,t:total(s,cols)}));
+  const avg=sm.average!=null?sm.average:(()=>{const a=rows.filter(r=>r.t!=null);return a.length?a.reduce((x,r)=>x+r.t,0)/a.length:null})();
+  const initials=(sc.name||'').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'—';
+  const R=13.5,C=2*Math.PI*R,off=avg==null?C:C*(1-Math.min(avg,100)/100);
+  const list=rows.length?rows.map(({s,t})=>{
+    const b=band(t,lg),letter=s.letter??(b&&b.letter),remark=s.remark??(b&&b.remark);
+    const parts=cols.filter(c=>s.scores&&s.scores[c.code]!=null).map(c=>`<span>${esc(c.code)} <b>${n(s.scores[c.code],0)}</b></span>`).join('');
+    return `<div class="subj"><div class="nm">${esc(s.name)}<small>${remark?esc(remark):(s.code?esc(s.code):'&nbsp;')}</small></div>
+      <div><div class="bar"><i style="width:${t==null?0:Math.min(t,100)}%;background:${tier(t,lg)}"></i></div>${parts?`<div class="parts">${parts}</div>`:''}</div>
+      <div class="sc">${n(t)}%</div><div class="pill" style="background:${tier(t,lg)}">${v(letter)}</div></div>`}).join('')
+    :`<div class="empty">No released grades for this period yet.</div>`;
+  const att=at&&at.total?`${n(at.present,0)} <em>of ${n(at.total,0)} days</em>`:'—';
+  const key=lg.map(b=>`<span><i style="background:${tier((b.min+b.max)/2,lg)}"></i>${esc(b.letter)} ${b.min}–${b.max}</span>`).join('');
+  const sigs=(d.signatures&&d.signatures.length?d.signatures:[{role:'Class educator'},{role:'Principal'}])
+    .map(g=>`<div class="sig"><div class="ln">${g.imageUrl?`<img src="${esc(g.imageUrl)}" alt="">`:''}</div>${g.name?`<b>${esc(g.name)}</b>`:''}${esc(g.role)}</div>`).join('');
+  root.innerHTML=`<section class="sheet">
+  <header class="band"><div class="id"><div class="logo">${sc.logoUrl?`<img src="${esc(sc.logoUrl)}" alt="">`:esc(initials)}</div>
+    <div><h1>${v(sc.name)}</h1><p>${[sc.address,sc.phone].filter(Boolean).map(esc).join(' • ')||'—'}</p></div></div>
+    <div class="rep"><h2>Learner progress report</h2><p>${v(tm.periodLabel)}, ${v(tm.schoolYear)}</p></div></header>
+  <div class="main">
+  <div class="hero"><div class="ring"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="${R}" fill="none" stroke="#e6e9f2" stroke-width="2.6"/>
+      <circle cx="15" cy="15" r="${R}" fill="none" stroke="${tier(avg,lg)}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/></svg>
+      <div><b>${n(avg)}${avg==null?'':'%'}</b><small>Overall average</small></div></div>
+    <div class="who"><h3>${v(st.name)}</h3><div class="chips"><span>Class <b>${v(st.className)}</b></span><span>Grade <b>${v(st.gradeLevel)}</b></span><span>ID <b>${v(st.id)}</b></span></div></div></div>
+  <div class="stats"><div class="stat"><span>Position in class</span><b>${sm.rank!=null?esc(sm.rank):'—'}${sm.rank!=null&&sm.classSize?` <em>of ${esc(sm.classSize)}</em>`:''}</b></div>
+    <div class="stat"><span>GPA</span><b>${n(sm.gpa,2)}</b></div><div class="stat"><span>Days present</span><b>${att}</b></div></div>
+  <div class="sec"><h4>Subject mastery</h4><span>${cols.length?cols.map(c=>`${esc(c.code)} ${n(c.weightPct,0)}%`).join(' • '):''}</span></div>
+  <div>${list}</div>
+  ${key?`<div class="legend">${key}</div>`:''}
+  <div class="notes"><div class="note"><h5>Class educator</h5><p>${v(rm.educator)}</p></div><div class="note"><h5>Principal</h5><p>${v(rm.principal)}</p></div></div>
+  <footer class="foot">${sigs}<div class="issued">Issued ${v(d.issuedOn)}</div></footer>
+  </div></section>`;
+}
+function fit(root){const sh=root.querySelector('.sheet');sh.classList.remove('compact','tight');
+  for(const c of ['compact','tight']){if(sh.scrollHeight<=sh.clientHeight+1)break;sh.classList.add(c)}}
+const _render=renderGradeSheet;
+renderGradeSheet=function(d,root=document.getElementById('sheet-root')){_render(d,root);fit(root)};
+window.renderGradeSheet=renderGradeSheet;
+
+/* ---- Sample data (fictional) – replaced when the host app sets window.__GRADESHEET_DATA__ ---- */
+const SAMPLE={school:{name:'Greenfield Academy',address:'12 Tubman Boulevard, Monrovia, Liberia',phone:'+231 77 000 0000'},
+term:{periodLabel:'First Term',schoolYear:'2026/2027'},student:{name:'Grace K. Johnson',id:'GA-2026-0142',className:'Grade 9 – A',gradeLevel:'Grade 9'},
+columns:[{code:'HW',name:'Homework',weightPct:20},{code:'QZ',name:'Quiz',weightPct:20},{code:'CW',name:'Classwork',weightPct:10},{code:'MID',name:'Midterm',weightPct:20},{code:'FIN',name:'Final',weightPct:30}],
+legend:[{min:90,max:100,letter:'A',remark:'Excellent'},{min:80,max:89,letter:'B',remark:'Very good'},{min:70,max:79,letter:'C',remark:'Good'},{min:60,max:69,letter:'D',remark:'Satisfactory'},{min:0,max:59,letter:'F',remark:'Needs improvement'}],
+subjects:[['Mathematics','MTH',[92,88,95,84,90]],['English Language','ENG',[85,90,88,78,82]],['General Science','SCI',[78,82,80,74,77]],['Social Studies','SOC',[88,84,90,81,86]],['Civics','CIV',[95,92,94,89,91]],['French','FRN',[70,66,72,64,68]],['Computer Studies','ICT',[96,94,98,90,93]],['Physical Education','PE',[98,95,100,92,96]]]
+ .map(([name,code,x])=>({name,code,scores:{HW:x[0],QZ:x[1],CW:x[2],MID:x[3],FIN:x[4]}})),
+summary:{rank:4,classSize:38,gpa:3.4},attendance:{present:58,total:62},
+remarks:{educator:'Grace works consistently and contributes thoughtfully in class. Extra practice in French vocabulary will lift her next result.',principal:null},
+signatures:[{role:'Class educator'},{role:'Principal'}],issuedOn:'16 November 2026'};
+renderGradeSheet(window.__GRADESHEET_DATA__||SAMPLE);
+</script>
+</body>
+</html>

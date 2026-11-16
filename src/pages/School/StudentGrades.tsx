@@ -33,6 +33,7 @@ export const StudentGrades = () => {
   const { studentId: paramStudentId } = useParams();
   const navigate = useNavigate();
   const { user, accessToken, school } = useAuthStore();
+  const slugPrefix = school?.slug ? `/${school.slug}` : "";
   const [grades, setGrades] = React.useState<GradeEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [studentName, setStudentName] = React.useState("");
@@ -244,7 +245,7 @@ export const StudentGrades = () => {
                       type="button"
                       variant="secondary"
                       size="compact"
-                      onClick={() => navigate(`/gradesheet/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
+                      onClick={() => navigate(`${slugPrefix}/gradesheet/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
                     >
                       <FileText className="w-4 h-4" />
                       Grade Sheet
@@ -253,7 +254,7 @@ export const StudentGrades = () => {
                       type="button"
                       variant="primary"
                       size="compact"
-                      onClick={() => navigate(`/report-card/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
+                      onClick={() => navigate(`${slugPrefix}/report-card/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
                       className="shadow-lg shadow-indigo-100"
                     >
                       <Award className="w-4 h-4" />

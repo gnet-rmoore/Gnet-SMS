@@ -16,11 +16,20 @@ import jsPDF from "jspdf";
 
 interface GradeEntry {
   id: string;
-  score: number;
+  score: number | null;
   status: string;
-  exam: { title: string; startDate: string };
+  examId?: string;
+  structureColumnId?: string | null;
+  exam?: { title: string; startDate: string };
+  examComponent?: {
+    shortCode?: string | null;
+    componentType?: string | null;
+    label?: string | null;
+    gradebookStructure?: string | null;
+    gradebookStructureCustom?: boolean | null;
+  } | null;
   subject: { name: string; code: string };
-  classroom: { name: string };
+  classroom?: { name: string } | null;
 }
 
 export const GradeSheet = () => {
@@ -31,6 +40,7 @@ export const GradeSheet = () => {
   const [legends, setLegends] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [studentName, setStudentName] = React.useState("");
+  const [studentProfile, setStudentProfile] = React.useState<any>(null);
   const [downloading, setDownloading] = React.useState(false);
 
   const studentId = paramStudentId || user?.id;
@@ -48,41 +58,57 @@ export const GradeSheet = () => {
     if (!studentId || !examId) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/students/${studentId}/grades`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (response.ok) {
-        const allGrades = await response.json();
-        const examGrades = allGrades.filter((g: any) => g.examId === examId);
-        setGrades(examGrades);
-      }
-
-      if (school?.id) {
-        const legRes = await fetch(`/api/schools/${school.id}/grade-legends`, {
+      const [gradesRes, legendsRes, profileRes] = await Promise.all([
+        fetch(`/api/students/${studentId}/grades`, {
           headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (legRes.ok) {
-          setLegends(await legRes.json());
-        }
-      }
+        }),
+        school?.id
+          ? fetch(`/api/schools/${school.id}/grade-legends`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+          : Promise.resolve(null),
+        paramStudentId && paramStudentId !== user?.id
+          ? fetch(`/api/users/${paramStudentId}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+          : Promise.resolve(null),
+      ]);
 
-      if (paramStudentId && paramStudentId !== user?.id) {
-        const userRes = await fetch(`/api/users/${paramStudentId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setStudentName(userData.name);
-        }
+      let examGrades: GradeEntry[] = [];
+      if (gradesRes.ok) {
+        const allGrades = await gradesRes.json();
+        examGrades = (Array.isArray(allGrades) ? allGrades : []).filter(
+          (g: any) => g.examId === examId
+        );
+      }
+      setGrades(examGrades);
+
+      if (legendsRes?.ok) {
+        setLegends(await legendsRes.json());
       } else {
-        setStudentName(user?.name || "");
+        setLegends([]);
       }
+
+      let profile: any = null;
+      if (profileRes?.ok) {
+        profile = await profileRes.json();
+      } else if (!paramStudentId || paramStudentId === user?.id) {
+        profile = user || null;
+      }
+      setStudentProfile(profile);
+      setStudentName(
+        profile?.name ||
+          profile?.fullName ||
+          (examGrades as any[])[0]?.student?.name ||
+          user?.name ||
+          ""
+      );
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
-  }, [studentId, examId, accessToken, user?.id, user?.name, paramStudentId, school?.id]);
+  }, [studentId, examId, accessToken, user, paramStudentId, school?.id]);
 
   React.useEffect(() => {
     fetchData();
@@ -246,13 +272,33 @@ export const GradeSheet = () => {
         <div className="min-w-min mx-auto">
           <GradeSheetTemplate
             studentName={studentName}
-            examTitle={grades[0].exam.title}
-            examDate={grades[0].exam.startDate}
-            grades={grades}
+            examTitle={grades[0]?.exam?.title || "Examination"}
+            examDate={grades[0]?.exam?.startDate || new Date().toISOString()}
+            grades={grades as any}
             school={school}
             templateId={templateKey}
             gradeLegends={legends}
             academicYearLabel={yearLabel || undefined}
+            admissionNo={
+              studentProfile?.admissionNo ||
+              studentProfile?.admissionNumber ||
+              studentProfile?.studentId ||
+              null
+            }
+            classLabel={
+              studentProfile?.className ||
+              studentProfile?.classLabel ||
+              studentProfile?.gradeLevel?.name ||
+              grades[0]?.classroom?.name ||
+              null
+            }
+            dob={studentProfile?.dob || studentProfile?.dateOfBirth || null}
+            guardian={
+              studentProfile?.parentName ||
+              studentProfile?.guardianName ||
+              studentProfile?.guardian ||
+              null
+            }
             signatures={{
               principal: officialSignatures.principal,
             }}

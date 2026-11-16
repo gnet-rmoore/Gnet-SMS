@@ -1730,6 +1730,7 @@ export const examService = {
       },
       include: {
         subject: { select: { id: true, name: true, code: true } },
+        classroom: { select: { id: true, name: true } },
         exam: { select: { id: true, title: true, startDate: true, isGradesReleased: true } },
         examComponent: {
           select: {
@@ -1751,6 +1752,7 @@ export const examService = {
       subjectId: r.subjectId,
       subject: r.subject,
       classId: r.classId,
+      classroom: r.classroom,
       score: r.score,
       status: r.status,
       examId: r.examId,
