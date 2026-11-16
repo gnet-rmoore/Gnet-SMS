@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { SMS_SHADOW_SURFACE } from "../../../components/ui";
 import { cn } from "../../../lib/cn";
 import { maskApiKey } from "../../../lib/schoolApiKeySession";
-import { loadSchoolApiKeyForSession } from "../../lib/schoolApiKeySession";
+import { loadSchoolApiKeyForSession } from "../../../lib/schoolApiKeySession";
 import type { ApiDocEndpoint } from "../catalog";
 import { hasUnresolvedPathParams } from "../catalog";
 import { MethodBadge } from "./MethodBadge";
