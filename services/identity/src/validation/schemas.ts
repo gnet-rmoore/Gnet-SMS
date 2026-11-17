@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { isKnownReceiptTemplateId } from "../lib/receiptTemplateIds";
 import {
+  isKnownReportCardTemplateId,
+  normalizeReportCardTemplateId,
+} from "../lib/reportCardTemplateIds";
+import {
   gradebookConfigSchema,
   normalizeCategories,
   validateGradebookConfigTotals,
@@ -118,7 +122,12 @@ export const schoolUpdateSchema = z
       .nullable()
       .optional(),
     gradeSheetTemplate: z.string(),
-    reportCardTemplate: z.string(),
+    reportCardTemplate: z
+      .string()
+      .transform(normalizeReportCardTemplateId)
+      .refine(isKnownReportCardTemplateId, {
+        message: "Invalid report card template id",
+      }),
     receiptTemplate: z.string().optional(),
     receiptTemplates: receiptTemplatesMapSchema.optional(),
     certificateTemplate: z.string(),

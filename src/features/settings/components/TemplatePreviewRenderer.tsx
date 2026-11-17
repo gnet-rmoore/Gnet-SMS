@@ -2,6 +2,11 @@
 import {
   assembleReportCardPayload,
   InternationalReportCard,
+  iprepProgressVariant,
+  IprepProgressReport,
+  IprepSemesterBooklet,
+  isIprepReportCardTemplate,
+  isIprepSemesterBookletTemplate,
   isLiberianReportCardTemplate,
   LiberianReportCardBooklet,
 } from "../../report-cards";
@@ -52,6 +57,69 @@ export function renderTemplatePreview(
           })}
           compact
         />
+      </div>
+    );
+  }
+
+  if (type === "REPORT" && isIprepReportCardTemplate(templateId)) {
+    const semester = isIprepSemesterBookletTemplate(templateId);
+    const subjects = [
+      { id: "m", name: "Mathematics", code: "MTH" },
+      { id: "e", name: "English Language", code: "ENG" },
+      { id: "s", name: "Science", code: "SCI" },
+      { id: "h", name: "World Studies", code: "WST" },
+      { id: "f", name: "French", code: "FRN" },
+      { id: "c", name: "Creative Arts", code: "CRT" },
+      { id: "p", name: "Physical Education", code: "PED" },
+      { id: "t", name: "Technology", code: "TEC" },
+    ] as const;
+    const columnKeys = semester
+      ? ["SEM1_P1", "SEM1_P2", "SEM1_P3", "SEM1_EX", "SEM2_P4", "SEM2_P5", "SEM2_P6", "SEM2_EX"]
+      : ["T1", "T2", "T3"];
+    const mockGrades = subjects.flatMap((subject, subjectIndex) =>
+      columnKeys.map((key, columnIndex) => ({
+        id: `${subject.id}-${key}`,
+        score: Math.max(58, Math.min(100, 86 + ((subjectIndex * 7 + columnIndex * 3) % 15) - 6)),
+        subject: { id: subject.id, name: subject.name, code: subject.code },
+        examComponent: { shortCode: key, label: key },
+        classroom: { name: "Grade 2" },
+      }))
+    );
+    const payload = assembleReportCardPayload({
+      templateKey: templateId,
+      school: {
+        name: schoolName || "Innovation Preparatory International Academy — IPREP",
+        address: address || "Education For The Future",
+        logoUrl: opts?.logoUrl || null,
+        brandColor: opts?.brandColor || null,
+        country: "Liberia",
+      },
+      student: {
+        id: "A22095",
+        name: "Mbumen Aelys-Shadya",
+        sex: "Female",
+        classLabel: "Grade 2",
+        gradeLevelLabel: "Grade 2",
+      },
+      academicYearLabel: "2025-2026",
+      grades: mockGrades,
+    });
+    payload.aggregates.classPosition = "1";
+    payload.aggregates.attendanceRate = 96;
+    return (
+      <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
+          A4 · 210 × 297 mm · actual print size
+        </p>
+        {semester ? (
+          <IprepSemesterBooklet payload={payload} preview />
+        ) : (
+          <IprepProgressReport
+            payload={payload}
+            variant={iprepProgressVariant(templateId)}
+            preview
+          />
+        )}
       </div>
     );
   }

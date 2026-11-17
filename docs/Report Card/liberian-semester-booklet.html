@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Liberian Semester Booklet</title>
+<style>
+@page{size:A4 portrait;margin:0}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:#dde1ea;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+:root{--ink:#14203d;--blue:#1b2f6b;--red:#b5232f;--mute:#5f6a82;--line:#cfd5e3;--soft:#f3f5fa}
+body{font-family:'Source Sans 3','Segoe UI',system-ui,Arial,sans-serif;font-size:9.5pt}
+.serif{font-family:'Source Serif 4',Georgia,serif}
+.frame{position:absolute;inset:9mm;border:1.2mm double var(--blue);padding:11mm 12mm;display:flex;flex-direction:column}
+.mono{display:grid;place-items:center;font-weight:800;color:var(--blue);border:.6mm solid var(--blue);border-radius:50%}
+.cv{align-items:center;text-align:center}.cv .gov{font-size:9pt;letter-spacing:2pt;text-transform:uppercase;color:var(--red);font-weight:700}.cv .gov span{display:block;color:var(--blue);font-size:8pt;letter-spacing:1.4pt}
+.cv .logo{width:38mm;height:38mm;object-fit:contain;margin:14mm 0 6mm;font-size:34pt}.cv h1{margin:0;font-size:25pt;color:var(--blue);line-height:1.15}.cv .ct{font-size:9pt;color:var(--mute);margin-top:2mm}
+.cv h2{margin:16mm 0 2mm;font-size:21pt;letter-spacing:.3pt}.cv .yr{display:inline-block;background:var(--blue);color:#fff;padding:1.6mm 7mm;border-radius:10mm;font-weight:700;letter-spacing:1pt}
+.card{margin-top:14mm;width:130mm;border:.4mm solid var(--blue);border-radius:2mm;text-align:left}.card div{display:flex;justify-content:space-between;padding:3mm 5mm;border-bottom:.2mm solid var(--line)}.card div:last-child{border:0}.card span{color:var(--mute)}.card b{font-size:11pt}
+.cv .ft{margin-top:auto;font-size:8pt;color:var(--mute)}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.6mm solid var(--blue);padding-bottom:3mm}.hd h3{margin:0;font-size:14pt;color:var(--blue)}.hd small{color:var(--mute)}.hd .rt{text-align:right}.hd .rt b{font-size:12pt}
+table{width:100%;border-collapse:collapse;margin-top:5mm;font-size:8.6pt}
+th{background:var(--blue);color:#fff;padding:1.6mm .8mm;font-weight:600;text-align:center;border:.2mm solid #fff}th.l,td.l{text-align:left;padding-left:2mm}
+th.g1{background:#223b86}th.g2{background:#7a1a24}td{padding:2.1mm .8mm;text-align:center;border:.2mm solid var(--line);font-variant-numeric:tabular-nums}
+td.l{font-weight:600}td.avg{background:var(--soft);font-weight:700}td.fail{color:var(--red);font-weight:700}td.empty{color:#b3b9c9}td.inc{color:#b26a00;font-weight:700}td.yr{background:#e8ecf7;font-weight:800}
+.compact td{padding:1.2mm .8mm}.tight td{padding:.6mm .8mm;font-size:8.2pt}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:6mm}.kp div{border:.3mm solid var(--line);border-top:1mm solid var(--blue);border-radius:1.5mm;padding:2.5mm 3mm}.kp span{display:block;font-size:7.4pt;color:var(--mute);text-transform:uppercase;letter-spacing:.4pt}.kp b{font-size:14pt}
+.note{margin-top:4mm;font-size:8pt;color:var(--mute)}.note i{color:var(--red);font-style:normal;font-weight:700}
+h4{margin:6mm 0 2mm;font-size:11pt;color:var(--blue);border-bottom:.3mm solid var(--line);padding-bottom:1mm}
+.lg td.k{font-weight:800;width:18mm}.lg td{text-align:left;padding:2mm 3mm}
+.pm{border:.4mm solid var(--blue);border-radius:2mm;padding:4mm 5mm;display:grid;grid-template-columns:1fr 1fr;gap:2.5mm 8mm}.pm span{display:block;font-size:7.4pt;color:var(--mute);text-transform:uppercase}.pm b{font-size:10.5pt}.pm .w{grid-column:span 2}
+.sg{flex:1;text-align:center;font-size:8pt;color:var(--mute)}.sg b{display:block;color:var(--ink);font-size:9pt}.sg .ln{height:13mm;border-bottom:.3mm solid var(--ink);margin-bottom:1.2mm;display:flex;align-items:flex-end;justify-content:center}.sg img{max-height:12mm}
+.sigs{display:flex;gap:8mm;margin-top:auto;padding-top:10mm}.gen{text-align:center;font-size:7.5pt;color:var(--mute);margin-top:4mm}
+
+.page{position:relative;width:210mm;height:297mm;margin:8mm auto;background:#fff;overflow:hidden;box-shadow:0 2px 18px rgba(20,30,60,.2);break-after:page}
+@media print{body{background:#fff}.page{margin:0;box-shadow:none}.page:last-child{break-after:auto}}
+</style></head><body><div id="root"></div>
+<script>
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=x=>x==null||x===''?'\u2014':esc(x);
+const n=(x,d=1)=>x==null||isNaN(x)?'\u2014':String(+Number(x).toFixed(d));
+const fmtDate=s=>{try{const d=new Date(s);return isNaN(d)?null:d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}catch(e){return null}};
+const letterOf=(p,lg)=>{if(p==null)return null;const r=Math.round(p),b=(lg||[]).find(b=>r>=b.min&&r<=b.max);return b?b.letter:null};
+const tone=(p,lg)=>p==null?'empty':(String(letterOf(p,lg)).toUpperCase()==='F'?'fail':'pass');
+const initials=s=>(s||'').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'\u2014';
+const humanize=s=>s?String(s).toLowerCase().replace(/_/g,' ').replace(/^\w/,c=>c.toUpperCase()):null;
+const cell=(s,k)=>(s.cells&&s.cells[k])||null;
+const groupsOf=cols=>{const g=[];cols.forEach(c=>{const m=/^(SEM\d)_/.exec(c.key),k=m?m[1]:'ALL';let x=g.find(y=>y.key===k);if(!x){x={key:k,cols:[]};g.push(x)}x.cols.push(c)});return g};
+const semName=k=>({SEM1:'First semester',SEM2:'Second semester'}[k]||null);
+const slots=d=>{const o=d.officialSignatures||{};return[['principal','Principal'],['registrar','Registrar'],['academic','Academic head']].map(([k,l])=>({label:l,name:(o[k]||{}).name,url:(o[k]||{}).signatureUrl}))};
+const sigHtml=(d,cls='sg')=>slots(d).map(s=>`<div class="${cls}"><div class="ln">${s.url?`<img src="${esc(s.url)}" alt="">`:''}</div>${s.name?`<b>${esc(s.name)}</b>`:'<b>&nbsp;</b>'}<span>${s.label}</span></div>`).join('');
+const logoHtml=(sc,cls='logo')=>sc.logoUrl?`<img class="${cls}" src="${esc(sc.logoUrl)}" alt="">`:`<div class="${cls} mono">${esc(initials(sc.name))}</div>`;
+const contact=sc=>[sc.address,sc.poBox&&('P.O. Box '+sc.poBox),sc.contactPhone,sc.contactEmail].filter(Boolean).map(esc).join(' \u00B7 ');
+const yearOf=s=>s.yearlyAvg!=null?s.yearlyAvg:s.average;
+const attendance=a=>a==null?'\u2014':n(a,0)+'%';
+function fit(sheet,levels){sheet.classList.remove(...levels);for(const c of levels){if(sheet.scrollHeight<=sheet.clientHeight+1)break;sheet.classList.add(c)}}
+function makeSample(kind){
+  const sem=kind==='sem',lg=[{letter:'A',min:90,max:100,detail:'Excellent',gpa:4},{letter:'B',min:80,max:89,detail:'Very good',gpa:3},{letter:'C',min:75,max:79,detail:'Good',gpa:2},{letter:'D',min:70,max:74,detail:'Fair',gpa:1},{letter:'F',min:0,max:69,detail:'Failing',gpa:0}];
+  const columns=sem?[['SEM1_P1','1st'],['SEM1_P2','2nd'],['SEM1_P3','3rd'],['SEM1_EX','Exam'],['SEM2_P4','4th'],['SEM2_P5','5th'],['SEM2_P6','6th'],['SEM2_EX','Exam']].map(([key,label])=>({key,label})):[['Q1','Quarter 1'],['Q2','Quarter 2'],['Q3','Quarter 3'],['Q4','Quarter 4']].map(([key,label])=>({key,label}));
+  const base=[['Mathematics','MTH',88],['English Language','ENG',82],['General Science','SCI',76],['Social Studies','SOC',91],['Civics','CIV',68],['French','FRN',84],['Computer Studies','ICT',93],['Physical Education','PE',79],['Literature','LIT',72]];
+  const mean=a=>{const x=a.filter(y=>y!=null);return x.length?x.reduce((p,c)=>p+c,0)/x.length:null};
+  const subjects=base.map(([name,code,b],i)=>{const cells={};columns.forEach((c,j)=>{let s=Math.max(40,Math.min(100,b+((i*7+j*3)%9)-3));if(i===4&&j===(sem?7:3))s=null;cells[c.key]={score:s}});
+    const g=k=>mean(columns.filter(c=>c.key.startsWith(k)).map(c=>cells[c.key].score));
+    const s1=sem?g('SEM1'):null,s2=sem?g('SEM2'):null,yr=sem?mean([s1,s2]):mean(columns.map(c=>cells[c.key].score));
+    return{subjectId:'s'+i,name,code,cells,sem1Avg:s1,sem2Avg:s2,yearlyAvg:sem?yr:null,average:yr,letter:letterOf(yr,lg),remark:(lg.find(x=>x.letter===letterOf(yr,lg))||{}).detail}});
+  const all=subjects.map(s=>s.average),gp=mean(subjects.map(s=>(lg.find(x=>x.letter===s.letter)||{}).gpa));
+  return{school:{name:'Greenfield Academy',address:'12 Tubman Boulevard, Monrovia',poBox:'1234',country:'Liberia',county:'Montserrado',district:'Greater Monrovia',contactPhone:'+231 77 000 0000',contactEmail:'office@greenfield.example'},
+    student:{id:'GA-2026-0142',name:'Grace K. Johnson',sex:'Female',classLabel:'Grade 9 \u2013 A',gradeLevelLabel:'Grade 9'},academicYear:{id:'ay1',label:'2026/2027'},
+    calendar:{patternType:sem?'SEMESTER':'FOUR_QUARTER'},columns,subjects,legend:lg.map(({letter,min,max,detail})=>({letter,min,max,detail})),
+    aggregates:{overallAverage:mean(all),gpa:gp,classPosition:'4th of 38',attendanceRate:96},
+    promotion:{outcome:'PROMOTED',toGrade:'Grade 10',conditionedSubjects:[],probationWeeks:null,remarks:'Promoted to the next grade. Keep up the consistent effort.',finalizedAt:'2027-06-24'},
+    templateKey:'SAMPLE',generatedAt:new Date().toISOString(),officialSignatures:{principal:{name:'Dr. A. Kamara'},registrar:{name:'M. Dennis'},academic:{name:'S. Brown'}}};
+}
+
+
+function render(d,root){
+ const sc=d.school||{},st=d.student||{},lg=d.legend||[],subs=d.subjects||[],ag=d.aggregates||{},pr=d.promotion,cols=d.columns||[],yr=(d.academicYear||{}).label,gs=groupsOf(cols);
+ const moe=(d.branding||'SCHOOL_LOGO')!=='SCHOOL_LOGO';
+ const head=`<tr><th class="l" rowspan="2">Subject</th>${gs.map((g,i)=>`<th class="g${i+1}" colspan="${g.cols.length+(g.key==='ALL'?0:1)}">${semName(g.key)||'Marks'}</th>`).join('')}<th rowspan="2">Yearly<br>average</th><th rowspan="2">Grade</th></tr>
+  <tr>${gs.map((g,i)=>g.cols.map(c=>`<th class="g${i+1}">${esc(c.label||c.roman)}</th>`).join('')+(g.key==='ALL'?'':`<th class="g${i+1}">Avg</th>`)).join('')}</tr>`;
+ const rows=subs.map(s=>`<tr><td class="l">${esc(s.name)}</td>${gs.map((g,i)=>g.cols.map(c=>{const x=cell(s,c.key),sc2=x&&x.score;return x&&x.incomplete?`<td class="inc">INC</td>`:`<td class="${tone(sc2,lg)}">${sc2==null?'\u2014':n(sc2,0)}</td>`}).join('')+(g.key==='ALL'?'':`<td class="avg ${tone(i?s.sem2Avg:s.sem1Avg,lg)}">${n(i?s.sem2Avg:s.sem1Avg)}</td>`)).join('')}<td class="yr ${tone(yearOf(s),lg)}">${n(yearOf(s))}</td><td class="${tone(yearOf(s),lg)}"><b>${v(s.letter??letterOf(yearOf(s),lg))}</b></td></tr>`).join('')||`<tr><td class="empty" colspan="${cols.length+5}" style="padding:12mm">No released grades for this period yet.</td></tr>`;
+ const lgr=lg.map(b=>`<tr><td class="k">${esc(b.letter)}</td><td>${b.min} \u2013 ${b.max}</td><td>${v(b.detail)}</td></tr>`).join('');
+ const pm=pr?`<div><span>Outcome</span><b>${v(humanize(pr.outcome))}</b></div><div><span>Promoted to</span><b>${v(pr.toGrade)}</b></div>
+  ${(pr.conditionedSubjects||[]).length?`<div class="w"><span>Conditioned subjects</span><b>${pr.conditionedSubjects.map(x=>esc(x.name||x)).join(', ')}</b></div>`:''}${pr.probationWeeks?`<div><span>Probation</span><b>${esc(pr.probationWeeks)} weeks</b></div>`:''}
+  <div class="w"><span>Remarks</span><b style="font-weight:500">${v(pr.remarks)}</b></div><div><span>Finalised</span><b>${v(fmtDate(pr.finalizedAt))}</b></div>`:`<div class="w"><span>Outcome</span><b>Not yet finalised</b></div>`;
+ root.innerHTML=`
+ <section class="page a4-portrait-sheet"><div class="frame cv">
+  <div class="gov">${moe?'Republic of Liberia<span>Ministry of Education</span>':''}</div>${logoHtml(sc)}
+  <h1 class="serif">${v(sc.name)}</h1><div class="ct">${esc(contact(sc))}</div>
+  <h2 class="serif">Learner Progress Report</h2><div class="yr">${v(yr)}</div>
+  <div class="card"><div><span>Learner</span><b>${v(st.name)}</b></div><div><span>Class</span><b>${v(st.classLabel)}</b></div><div><span>Grade level</span><b>${v(st.gradeLevelLabel)}</b></div><div><span>Learner ID</span><b>${v(st.id)}</b></div></div>
+  <div class="ft">${[sc.district,sc.county&&sc.county+' County',sc.country].filter(Boolean).map(esc).join(' \u00B7 ')}</div></div></section>
+ <section class="page a4-portrait-sheet"><div class="frame">
+  <div class="hd"><div><h3 class="serif">${v(st.name)}</h3><small>${v(st.classLabel)} \u00B7 ${v(yr)}</small></div><div class="rt"><b>${v(sc.name)}</b><br><small>Academic record</small></div></div>
+  <table id="gt"><thead>${head}</thead><tbody>${rows}</tbody></table>
+  <div class="kp"><div><span>Overall average</span><b>${n(ag.overallAverage)}</b></div><div><span>GPA</span><b>${n(ag.gpa,2)}</b></div><div><span>Class position</span><b>${v(ag.classPosition)}</b></div><div><span>Attendance</span><b>${attendance(ag.attendanceRate)}</b></div></div>
+  <div class="note">Scores shown in <i>red</i> fall in the failing band of the school's grading system. \u2014 means no released score.</div></div></section>
+ <section class="page a4-portrait-sheet"><div class="frame"><h4 style="margin-top:0">Grading system</h4>
+  <table class="lg"><thead><tr><th class="l">Grade</th><th class="l">Score range</th><th class="l">Meaning</th></tr></thead><tbody>${lgr}</tbody></table>
+  <h4>Promotion</h4><div class="pm">${pm}</div>
+  <div class="sigs">${sigHtml(d)}</div><div class="gen">Generated ${v(fmtDate(d.generatedAt))}</div></div></section>`;
+ const p=root.querySelector('.page:nth-child(2) .frame');p.classList.remove('compact','tight');for(const c of ['compact','tight']){if(p.scrollHeight<=p.clientHeight+1)break;p.classList.add(c)}
+}
+
+render(window.__REPORT_CARD_PAYLOAD__||makeSample('sem'),document.getElementById('root'));
+</script></body></html>

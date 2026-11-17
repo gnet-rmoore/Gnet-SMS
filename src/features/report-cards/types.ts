@@ -83,7 +83,7 @@ export type ReportCardPayload = {
   };
   columns: ReportCardColumn[];
   subjects: ReportCardSubjectRow[];
-  legend: Array<{ letter: string; min: number; max: number; detail?: string }>;
+  legend: Array<{ letter: string; min: number; max: number; detail?: string; gpa?: number }>;
   aggregates: {
     overallAverage: number | null;
     gpa: number | null;

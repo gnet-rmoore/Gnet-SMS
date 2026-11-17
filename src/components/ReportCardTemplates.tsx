@@ -4,6 +4,11 @@ import type { GradeLegendLike } from "../lib/gradeLegend";
 import {
   assembleReportCardPayload,
   InternationalReportCard,
+  iprepProgressVariant,
+  IprepProgressReport,
+  IprepSemesterBooklet,
+  isIprepReportCardTemplate,
+  isIprepSemesterBookletTemplate,
   isLiberianReportCardTemplate,
   LiberianReportCardBooklet,
   resolveReportCardTemplateKey,
@@ -34,6 +39,7 @@ interface ReportCardProps {
   gpa?: number | null;
   teacherComment?: string | null;
   studentId?: string;
+  studentSex?: string | null;
   academicYearLabel?: string;
   calendarPeriods?: IntlCalendarPeriod[] | null;
   preview?: boolean;
@@ -59,14 +65,16 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
   gpa = null,
   teacherComment = null,
   studentId = "",
+  studentSex = null,
   academicYearLabel,
   calendarPeriods = null,
   preview = false,
   officialSignatures = null,
 }) => {
-  if (isLiberianReportCardTemplate(templateId)) {
+  const resolvedTemplateKey = resolveReportCardTemplateKey(templateId);
+  const buildPayload = () => {
     const payload = assembleReportCardPayload({
-      templateKey: templateId,
+      templateKey: resolvedTemplateKey,
       school: {
         id: school?.id,
         name: school?.name || "School",
@@ -83,7 +91,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
       student: {
         id: studentId,
         name: studentName,
-        sex: null,
+        sex: studentSex,
         classLabel: grades[0]?.classroom?.name || "",
         gradeLevelLabel: grades[0]?.classroom?.name || "",
       },
@@ -97,12 +105,30 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
     if (classPosition != null) payload.aggregates.classPosition = classPosition;
     if (gpa != null) payload.aggregates.gpa = gpa;
     payload.officialSignatures = officialSignatures;
-    return <LiberianReportCardBooklet payload={payload} preview={preview} />;
+    return payload;
+  };
+
+  if (isIprepReportCardTemplate(resolvedTemplateKey)) {
+    const payload = buildPayload();
+    if (isIprepSemesterBookletTemplate(resolvedTemplateKey)) {
+      return <IprepSemesterBooklet payload={payload} preview={preview} />;
+    }
+    return (
+      <IprepProgressReport
+        payload={payload}
+        variant={iprepProgressVariant(resolvedTemplateKey)}
+        preview={preview}
+      />
+    );
+  }
+
+  if (isLiberianReportCardTemplate(resolvedTemplateKey)) {
+    return <LiberianReportCardBooklet payload={buildPayload()} preview={preview} />;
   }
 
   return (
     <InternationalReportCard
-      templateKey={resolveReportCardTemplateKey(templateId)}
+      templateKey={resolvedTemplateKey}
       studentName={studentName}
       examTitle={examTitle}
       examDate={examDate || new Date().toISOString()}

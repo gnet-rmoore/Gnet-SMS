@@ -40,7 +40,13 @@ export function signatureForLabel(
   ) {
     return sigs.academic || sigs.vpi || sigs.principal || null;
   }
-  if (l.includes("vpa") || l.includes("admin")) {
+  if (
+    l.includes("vpa") ||
+    l.includes("admin") ||
+    l.includes("general manager") ||
+    l.includes("co-founder") ||
+    l.includes("cofounder")
+  ) {
     return sigs.vpa || sigs.principal || null;
   }
   if (

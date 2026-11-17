@@ -10,7 +10,10 @@ import { api } from "../../services/api";
 import type { GradeLegendLike } from "../../lib/gradeLegend";
 import {
   getReportCardTemplateDef,
+  isIprepReportCardTemplate,
+  isIprepSemesterBookletTemplate,
   isLiberianReportCardTemplate,
+  resolveReportCardTemplateKey,
 } from "../../features/report-cards";
 import { useAcademicCalendarQuery } from "../../features/academic-calendar/hooks/useAcademicCalendarQuery";
 import { academicYearLabel as academicYearLabelFor } from "../../features/academics-shared/calendar/selectors";
@@ -39,9 +42,13 @@ export const ReportCard = () => {
   const [gradeLegends, setGradeLegends] = React.useState<GradeLegendLike[]>([]);
 
   const studentId = paramStudentId || user?.id;
-  const templateId = school?.reportCardTemplate || "TEMPLATE_1";
+  const rawTemplateId = school?.reportCardTemplate || "TEMPLATE_1";
+  const templateId = resolveReportCardTemplateKey(rawTemplateId);
   const templateDef = getReportCardTemplateDef(templateId);
   const liberian = isLiberianReportCardTemplate(templateId);
+  const iprepBooklet = isIprepSemesterBookletTemplate(templateId);
+  const liberianBifold = liberian && !iprepBooklet;
+  const useAllGrades = liberian || isIprepReportCardTemplate(templateId);
   const { calendar } = useAcademicCalendarQuery();
   const calendarPeriods = calendar?.periods ?? null;
   const academicYearLabel = academicYearLabelFor(calendar) || undefined;
@@ -60,8 +67,8 @@ export const ReportCard = () => {
       });
       if (response.ok) {
         const allGrades = await response.json();
-        // Liberian year booklet: all released grades; international: filter by exam when present
-        const next = liberian
+        // Liberian booklets and IPREP reports need all released grades; other cards filter by exam
+        const next = useAllGrades
           ? allGrades
           : examId
             ? allGrades.filter((g: GradeEntry) => g.examId === examId)
@@ -102,7 +109,7 @@ export const ReportCard = () => {
     user?.name,
     paramStudentId,
     school?.id,
-    liberian,
+    useAllGrades,
   ]);
 
   React.useEffect(() => {
@@ -143,12 +150,12 @@ export const ReportCard = () => {
     }
 
     try {
-      // Liberian bifolds: portrait A4 sheets; international: single A4 card
-      const sheetSel = liberian
+      // Liberian bifolds use their own sheets; IPREP booklet + international cards use .intl-a4-page
+      const sheetSel = liberianBifold
         ? ".a4-portrait-sheet, .grades-inside-spread, .grading-spread"
         : ".intl-a4-page, .report-card-sheet, #report-card > div, .report-card-page";
       let targets = Array.from(element.querySelectorAll(sheetSel)) as HTMLElement[];
-      if (liberian) {
+      if (liberianBifold) {
         targets = targets.filter(
           (n) => !(n.classList.contains("grades-sheet") && n.querySelector(".grades-inside-spread"))
         );
@@ -291,7 +298,7 @@ export const ReportCard = () => {
 
       <style
         dangerouslySetInnerHTML={{
-          __html: liberian
+          __html: liberianBifold
             ? `
         @media print {
           @page { size: A4 landscape; margin: 0; }
@@ -308,10 +315,12 @@ export const ReportCard = () => {
           .no-print { display: none !important; }
           body { background: white !important; padding: 0 !important; margin: 0 !important; }
           .max-w-\\[1000px\\] { max-width: none !important; margin: 0 !important; padding: 0 !important; }
-          #report-card { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; border-radius: 0 !important; }
-          .overflow-x-auto { overflow: visible !important; border: none !important; box-shadow: none !important; background: white !important; }
-        }
-      `,
+           #report-card { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; border-radius: 0 !important; }
+           .overflow-x-auto { overflow: visible !important; border: none !important; box-shadow: none !important; background: white !important; }
+           .iprep-semester-booklet .intl-a4-page { margin: 0 !important; box-shadow: none !important; break-after: page; }
+           .iprep-semester-booklet .intl-a4-page:last-of-type { break-after: auto; }
+         }
+       `,
         }}
       />
     </div>

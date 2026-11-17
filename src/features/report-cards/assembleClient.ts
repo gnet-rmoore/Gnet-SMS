@@ -6,6 +6,9 @@ import {
   LIBERIA_SENIOR_HIGH_SCALES,
   matchLiberiaColumnKey,
 } from "./liberiaLegend";
+import { IPREP_LEGEND_SCALES } from "./iprepLegend";
+import { isIprepProgressTemplate } from "./iprepTemplates";
+import { IPREP_TERM_COLUMNS, matchIprepTermKey } from "./iprepTermColumns";
 import { getReportCardTemplateDef, resolveReportCardTemplateKey } from "./registry";
 import type {
   AssembleReportCardInput,
@@ -59,13 +62,16 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
   const templateKey = resolveReportCardTemplateKey(input.templateKey);
   const def = getReportCardTemplateDef(templateKey);
   const useLiberia = def.region === "LR";
+  const useIprepTerms = isIprepProgressTemplate(templateKey);
 
   const legends =
     input.gradeLegends && input.gradeLegends.length > 0
       ? input.gradeLegends
       : useLiberia
         ? [{ category: "CLASS", scales: LIBERIA_SENIOR_HIGH_SCALES }]
-        : null;
+        : useIprepTerms
+          ? [{ category: "CLASS", scales: IPREP_LEGEND_SCALES }]
+          : null;
 
   const periodCols: ReportCardColumn[] = LIBERIA_PERIOD_COLUMNS.map((c) => ({
     key: c.key,
@@ -78,7 +84,9 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
   }));
   const columns: ReportCardColumn[] = useLiberia
     ? [...periodCols, ...examCols]
-    : [{ key: "SCORE", label: "Mark" }];
+    : useIprepTerms
+      ? IPREP_TERM_COLUMNS.map((c) => ({ key: c.key, label: c.label }))
+      : [{ key: "SCORE", label: "Mark" }];
 
   const bySubject = new Map<string, ReportCardSubjectRow>();
 
@@ -127,6 +135,19 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
           };
         }
       }
+    } else if (useIprepTerms) {
+      const colKey =
+        matchIprepTermKey(g.examComponent?.shortCode) ||
+        matchIprepTermKey(g.examComponent?.label) ||
+        IPREP_TERM_COLUMNS.find((c) => row.cells[c.key]?.score == null && !row.cells[c.key]?.incomplete)?.key ||
+        "T1";
+      if (row.cells[colKey]) {
+        row.cells[colKey] = {
+          score: incomplete ? null : score,
+          letter: incomplete ? "INC" : score != null ? letterFromScore(score, legends) : null,
+          incomplete,
+        };
+      }
     } else {
       row.cells.SCORE = {
         score: incomplete ? null : score,
@@ -142,7 +163,12 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
     const yearlyAvg = avg(
       [sem1Avg, sem2Avg].filter((a): a is number => typeof a === "number")
     );
-    const average = yearlyAvg ?? sem1Avg ?? sem2Avg;
+    const allScores = Object.values(row.cells)
+      .map((cell) => cell.score)
+      .filter((score): score is number => typeof score === "number");
+    const average = useLiberia
+      ? yearlyAvg ?? sem1Avg ?? sem2Avg
+      : avg(allScores);
     const scale = average != null ? scaleFromScore(average, legends) : null;
     return {
       ...row,
@@ -156,9 +182,12 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
   });
 
   const overallAverage = avg(
-    subjects.map((s) => s.yearlyAvg ?? s.average).filter((a): a is number => typeof a === "number")
+    subjects
+      .map((s) => (useLiberia ? s.yearlyAvg ?? s.average : s.average))
+      .filter((a): a is number => typeof a === "number")
   );
-  const gpaScales = pickLegendScales(legends);
+  const legendScales = pickLegendScales(legends);
+  const gpaScales = legendScales;
   let gpa: number | null = null;
   if (overallAverage != null) {
     const scale = gpaScales.find(
@@ -174,8 +203,8 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
 
   return {
     school: {
-      name: input.school.name || "School",
       ...input.school,
+      name: input.school.name || "School",
     },
     student: {
       ...input.student,
@@ -192,11 +221,12 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
     },
     columns,
     subjects,
-    legend: (useLiberia ? LIBERIA_SENIOR_HIGH_SCALES : pickLegendScales(legends)).map((s) => ({
+    legend: legendScales.map((s) => ({
       letter: s.gradeLetter,
       min: s.minScore,
       max: s.maxScore,
       detail: s.remark || undefined,
+      gpa: s.gpaPoints ?? undefined,
     })),
     aggregates: {
       overallAverage,

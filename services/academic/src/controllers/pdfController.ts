@@ -1,6 +1,9 @@
 import type { Request, Response } from "express";
 import { generatePDF } from "../lib/pdfService";
 import { getGradeSheetTemplateDef, resolveGradeSheetTemplateKey } from "../features/gradesheets";
+import { buildReportCardContext } from "../features/report-cards/context";
+import { renderReportCardHtml } from "../features/report-cards/htmlBuilder";
+import { resolveReportCardTemplateKey } from "../features/report-cards/registry";
 import prisma from "../lib/prisma";
 
 const GRADE_SHEET_TEMPLATES = {
@@ -101,7 +104,7 @@ function getGradeSheetHTML(
       </div>
       <div>
         <label>Template</label>
-        <span>${templateDef?.name || templateId}</span>
+        <span>${templateId}</span>
       </div>
     </div>
 
@@ -214,6 +217,31 @@ async function getGradeSheetData(examId: string, studentId: string, schoolId: st
   };
 }
 
+function sanitizeReportCardFilename(value: string): string {
+  return (
+    String(value || "")
+      .replace(/[\u0000-\u001F\u007F-\u009F"'\\/:*?<>|]/g, "_")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "") || "ReportCard.pdf"
+  );
+}
+
+function asciiReportCardFilename(value: string): string {
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x20-\x7E]/g, "_") || "ReportCard.pdf"
+  );
+}
+
+function rfc5987Filename(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+}
+
 export const pdfController = {
   async generateGradeSheetPDF(req: Request, res: Response) {
     const { examId, studentId } = req.params;
@@ -273,63 +301,26 @@ export const pdfController = {
 
     try {
       const schoolId = user.schoolId;
-      const school = await prisma.school.findUnique({ where: { id: schoolId } });
-      if (!school) throw new Error("School not found");
-
-      const exam = await prisma.exam.findUnique({ where: { id: examId } });
-      if (!exam) throw new Error("Exam not found");
-
-      const student = await prisma.user.findUnique({ where: { id: studentId } });
-      if (!student) throw new Error("Student not found");
-
-      const templateId = school.reportCardTemplate || "TEMPLATE_1";
-
-      // For report cards, we use the existing client-side template approach
-      // but render it server-side. This is a simplified version.
-      const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>${student.name} - Report Card</title>
-  <style>
-    body { font-family: Helvetica, Arial, sans-serif; margin: 0; padding: 20px; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .school-name { font-size: 24px; font-weight: bold; }
-    .exam-title { font-size: 18px; margin-top: 5px; }
-    .student-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 12px; }
-    th { background: #f0f0f0; }
-    @page { margin: 20mm; }
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="school-name">${school.name}</div>
-    <div class="exam-title">Report Card - ${exam.title}</div>
-  </div>
-  <div class="student-info">
-    <div><strong>Student:</strong> ${student.name}</div>
-    <div><strong>Exam:</strong> ${exam.title}</div>
-    <div><strong>Date:</strong> ${new Date(exam.startDate).toLocaleDateString()}</div>
-  </div>
-  <p>Report Card PDF generation - Server-side rendering</p>
-</body>
-</html>
-      `;
+      const payload = await buildReportCardContext(examId, studentId, schoolId);
+      const templateId = resolveReportCardTemplateKey(payload.templateKey);
+      const html = renderReportCardHtml(templateId, payload);
 
       const pdfBuffer = await generatePDF({
         html,
         format: "A4",
-        margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
+        margin: { top: "0", bottom: "0", left: "0", right: "0" },
         printBackground: true,
       });
 
-      const filename = `${student.name.replace(/\s+/g, "_")}_ReportCard_${exam.title.replace(/\s+/g, "_")}.pdf`;
+      const filename = sanitizeReportCardFilename(
+        `${payload.student.name}_ReportCard_${payload.academicYear.label}.pdf`
+      );
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${asciiReportCardFilename(filename)}"; filename*=UTF-8''${rfc5987Filename(filename)}`
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
       res.send(pdfBuffer);
     } catch (err: any) {
       console.error("[pdf] Report card PDF generation failed:", err);
