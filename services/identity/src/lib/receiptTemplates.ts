@@ -1,4 +1,8 @@
-import { resolveReceiptTemplateId } from "./receiptTemplateIds";
+import {
+  isKnownReceiptTemplateId,
+  resolveReceiptTemplateId,
+  type ReceiptTemplateId,
+} from "./receiptTemplateIds";
 
 export const RECEIPT_TYPE_KEYS = [
   "FEE_PAYMENT",
@@ -51,14 +55,20 @@ export function storageRoleKey(role: ReceiptTemplateRoleKey): ReceiptTemplateRol
   return role === "IT_ADMIN" ? "SCHOOL_ADMIN" : role;
 }
 
-export function defaultReceiptTemplates(legacySingle?: unknown): ReceiptTemplatesByType {
-  const fallback = resolveReceiptTemplateId(legacySingle);
-  return {
-    FEE_PAYMENT: fallback,
-    PAYSLIP: fallback,
-    EXPENSE: fallback,
-    TRANSACTION: fallback,
-  };
+export const DEFAULT_RECEIPT_TEMPLATES: ReceiptTemplatesByType = {
+  FEE_PAYMENT: "FEE_OFFICIAL_RECEIPT",
+  PAYSLIP: "PAYSLIP_EARNINGS_DEDUCTIONS",
+  EXPENSE: "EXPENSE_EXECUTIVE_VOUCHER",
+  TRANSACTION: "FEE_OFFICIAL_RECEIPT",
+};
+
+export function defaultReceiptTemplates(_legacySingle?: unknown): ReceiptTemplatesByType {
+  return { ...DEFAULT_RECEIPT_TEMPLATES };
+}
+
+function normalizeTemplate(value: unknown): ReceiptTemplateId | null {
+  if (!isKnownReceiptTemplateId(value)) return null;
+  return resolveReceiptTemplateId(value);
 }
 
 export function mergeReceiptTemplates(
@@ -69,9 +79,8 @@ export function mergeReceiptTemplates(
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return merged;
   const obj = raw as Record<string, unknown>;
   for (const key of RECEIPT_TYPE_KEYS) {
-    if (obj[key] != null && String(obj[key]).trim()) {
-      merged[key] = resolveReceiptTemplateId(obj[key]);
-    }
+    const id = normalizeTemplate(obj[key]);
+    if (id) merged[key] = id;
   }
   return merged;
 }
@@ -145,9 +154,8 @@ export function parseReceiptTemplatesByRole(
 function mergePartialTypeMap(raw: Record<string, unknown>): Partial<ReceiptTemplatesByType> {
   const partial: Partial<ReceiptTemplatesByType> = {};
   for (const key of RECEIPT_TYPE_KEYS) {
-    if (raw[key] != null && String(raw[key]).trim()) {
-      partial[key] = resolveReceiptTemplateId(raw[key]);
-    }
+    const id = normalizeTemplate(raw[key]);
+    if (id) partial[key] = id;
   }
   return partial;
 }
@@ -160,10 +168,10 @@ export function getReceiptTemplatesForRole(
   const storage = storageRoleKey(role);
   const bucket = byRole[storage];
   const allowed = RECEIPT_TYPES_FOR_ROLE[role];
-  const fallback = resolveReceiptTemplateId(legacySingle);
+  const defaults = defaultReceiptTemplates(legacySingle);
   const result: Partial<ReceiptTemplatesByType> = {};
   for (const typeKey of allowed) {
-    result[typeKey] = resolveReceiptTemplateId(bucket?.[typeKey] ?? fallback);
+    result[typeKey] = normalizeTemplate(bucket?.[typeKey]) ?? defaults[typeKey];
   }
   return result;
 }
@@ -175,22 +183,21 @@ export function resolveReceiptTemplateForIssue(
   legacySingle?: unknown
 ): string {
   const typeKey = String(type || "").toUpperCase() as ReceiptTypeKey;
-  if (!RECEIPT_TYPE_KEYS.includes(typeKey)) {
-    return resolveReceiptTemplateId(legacySingle);
-  }
+  const defaults = defaultReceiptTemplates(legacySingle);
+  if (!RECEIPT_TYPE_KEYS.includes(typeKey)) return defaults.FEE_PAYMENT;
 
   for (const role of RECEIPT_ISSUE_ROLE_ORDER[typeKey]) {
-    const storage = storageRoleKey(role);
-    const val = byRole[storage]?.[typeKey];
-    if (val) return resolveReceiptTemplateId(val);
+    const stored = byRole[storageRoleKey(role)]?.[typeKey];
+    const id = normalizeTemplate(stored);
+    if (id) return id;
   }
 
   if (legacyFlat && typeof legacyFlat === "object" && !Array.isArray(legacyFlat)) {
-    const flat = legacyFlat as Record<string, unknown>;
-    if (flat[typeKey]) return resolveReceiptTemplateId(flat[typeKey]);
+    const id = normalizeTemplate((legacyFlat as Record<string, unknown>)[typeKey]);
+    if (id) return id;
   }
 
-  return resolveReceiptTemplateId(legacySingle);
+  return defaults[typeKey];
 }
 
 export function mergeRoleReceiptTemplates(
@@ -203,8 +210,9 @@ export function mergeRoleReceiptTemplates(
   const nextBucket: Partial<ReceiptTemplatesByType> = { ...(existing[storage] || {}) };
   for (const [key, val] of Object.entries(patch)) {
     const typeKey = key as ReceiptTypeKey;
-    if (!allowed.has(typeKey) || val == null) continue;
-    nextBucket[typeKey] = resolveReceiptTemplateId(val);
+    if (!allowed.has(typeKey)) continue;
+    const id = normalizeTemplate(val);
+    if (id) nextBucket[typeKey] = id;
   }
   return { ...existing, [storage]: nextBucket };
 }

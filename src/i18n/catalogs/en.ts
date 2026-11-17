@@ -4357,7 +4357,7 @@ export const enPages = {
       "Four landscape Letter diplomas for graduating students. Uses your school logo, brand color, and address. Used on the Certificates page.",
     receiptTemplate: "Official receipt templates",
     receiptTemplateHint:
-      "Choose a layout for each receipt type — fee payments, payslips, expenses, and other transactions can use different templates.",
+      "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
     receiptTypeFeePayment: "Fee payment receipts",
     receiptTypeFeePaymentHint: "Issued when parents pay school fees or invoices are collected.",
     receiptTypePayslip: "Payslip receipts",

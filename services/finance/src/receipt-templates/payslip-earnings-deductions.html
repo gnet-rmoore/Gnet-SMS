@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="{{locale}}" dir="{{dir}}"><head><meta charset="UTF-8"><title>{{title}} — {{receiptNumber}}</title>
+<style>
+@page{size:A4;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--b:#1e293b;--t:#eef3f8;--void:#be123c}
+body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:210mm;min-height:297mm;margin:0 auto;padding:15mm 16mm;overflow:hidden}
+.row{display:flex;justify-content:space-between;gap:14px}
+.lg{display:flex;gap:11px;align-items:center}
+.mono{width:46px;height:46px;border-radius:10px;background:var(--b);color:#fff;font-weight:700;font-size:16px;display:grid;place-items:center;letter-spacing:.04em}
+.sn{font-weight:700;font-size:14.5px;line-height:1.2}.sa{color:#6b7686;font-size:11px;margin-top:2px}
+.l{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#6b7686;font-weight:700}
+.v{font-size:13px;font-weight:600;margin-top:2px}
+.doctitle{font-size:22px;font-weight:700;color:var(--b);text-align:right}
+.card{background:var(--t);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:20px}
+.card .k{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7686;margin-bottom:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;align-items:start}
+.sec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--b);margin:0 0 8px}
+table{width:100%;border-collapse:collapse}
+td{padding:9px 10px;border-bottom:1px solid #dfe4ea;font-size:12.5px}
+td.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{border:0;font-weight:700;border-top:2px solid #1b2430}
+.hero{background:var(--b);color:#fff;border-radius:12px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:24px}
+.hero .k{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.hero .big{font-size:32px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+.hero .w{font-size:11.5px;max-width:230px;opacity:.9;text-align:right}
+.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #1b2430;padding-top:6px;font-size:10.5px;color:#6b7686}
+.ft{position:absolute;left:16mm;right:16mm;bottom:13mm;display:flex;gap:14px;align-items:center;border-top:1px solid #dfe4ea;padding-top:12px;font-size:10px;color:#6b7686}
+.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #1b2430}
+.ft b{color:#1b2430}
+.void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:70px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 34px;border-radius:8px;z-index:5}
+.page.is-voided .void-stamp{display:block}
+@media print{body{background:#fff}}
+</style></head><body>
+<div class="{{pageClass}}">
+  <div class="void-stamp">{{t.voided}}</div>
+  <div class="row" style="align-items:flex-start">
+    <div class="lg">
+      {{#schoolLogoUrl}}<img class="mono" src="{{schoolLogoUrl}}" alt="" style="object-fit:contain;background:#fff">{{/schoolLogoUrl}}
+      {{^schoolLogoUrl}}<div class="mono" data-school-monogram="{{schoolName}}"></div>{{/schoolLogoUrl}}
+      <div><div class="sn">{{schoolName}}</div><div class="sa">{{schoolAddress}}</div></div>
+    </div>
+    <div><div class="doctitle">PAYSLIP</div><div class="sa" style="text-align:right">No. {{receiptNumber}}</div></div>
+  </div>
+  <div class="card">
+    <div><div class="k">Educator</div><div class="v">{{payeeName}}</div><div class="sa">{{categoryLabel}}</div></div>
+    <div><div class="k">Pay period</div><div class="v">{{periodLabel}}</div></div>
+    <div><div class="k">Pay date</div><div class="v">{{paidAtDisplay}}</div></div>
+    <div><div class="k">Method</div><div class="v">{{#hasMethod}}{{methodLabel}}{{/hasMethod}}{{^hasMethod}}&mdash;{{/hasMethod}}</div></div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="sec">Earnings</div>
+      <table>
+        {{#earnings}}<tr><td>{{label}}</td><td class="r">{{amountFormatted}}</td></tr>{{/earnings}}
+        <tr class="tot"><td>Gross earnings</td><td class="r">{{earningsTotalFormatted}}</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="sec">Deductions</div>
+      <table>
+        {{#deductions}}<tr><td>{{label}}</td><td class="r">{{amountFormatted}}</td></tr>{{/deductions}}
+        <tr><td>&nbsp;</td><td></td></tr>
+        <tr class="tot"><td>Total deductions</td><td class="r">{{deductionsTotalFormatted}}</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="hero">
+    <div><div class="k">Net pay</div><div class="big">{{amountDisplay}}</div></div>
+    <div class="w">{{amountInWords}}</div>
+  </div>
+  <div class="sig">
+    <div>Employee acknowledgement</div>
+    <div>Authorised signatory · {{authorizedSignerTitle}}</div>
+  </div>
+  <div class="ft">
+    {{#qrDataUrl}}<img class="qr" src="{{qrDataUrl}}" alt="">{{/qrDataUrl}}
+    <div><b>Confidential</b> · Verify at {{verifyLabel}}<br>Fingerprint {{fingerprint}} · Status: <b>{{statusLabelUpper}}</b></div>
+  </div>
+</div>
+<script>document.querySelectorAll('[data-school-monogram]').forEach(function(e){var n=(e.getAttribute('data-school-monogram')||'').trim().split(/\s+/);e.textContent=(n[0]||'S').charAt(0)+(n[1]||'').charAt(0)});</script>
+</body></html>

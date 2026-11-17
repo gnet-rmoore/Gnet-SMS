@@ -14,7 +14,7 @@ import {
   resolveReceiptTemplateForIssue,
   type ReceiptTemplateId,
 } from "../lib/receiptTemplateRegistry";
-import { monroviaAcademySampleInput } from "../lib/receiptContext";
+import { sampleInputForReceiptTemplate } from "../lib/receiptContext";
 import { putReceiptPdf, getReceiptPdfSignedUrl, getReceiptPdfObject, storageEnabled } from "../lib/receiptStorage";
 import { resolveReceiptLocale, tReceipt, type AppLocale } from "../i18n/receiptChrome";
 
@@ -37,6 +37,7 @@ export type IssueReceiptInput = {
   paymentMethod?: string | null;
   paidAt?: Date | null;
   studentName?: string | null;
+  studentDetail?: string | null;
   categoryLabel?: string | null;
   periodLabel?: string | null;
   balanceBefore?: number | null;
@@ -244,6 +245,7 @@ export const receiptService = {
         paymentMethod: input.paymentMethod || null,
         paidAt: input.paidAt ? input.paidAt.toISOString() : null,
         studentName: input.studentName || null,
+        studentDetail: input.studentDetail || null,
         categoryLabel: input.categoryLabel || null,
         periodLabel: input.periodLabel || null,
         balanceBefore: typeof input.balanceBefore === "number" ? input.balanceBefore : null,
@@ -308,6 +310,7 @@ export const receiptService = {
       paymentMethod: input.paymentMethod || null,
       paidAt: input.paidAt || null,
       studentName: input.studentName || null,
+      studentDetail: input.studentDetail || null,
       categoryLabel: input.categoryLabel || null,
       periodLabel: input.periodLabel || null,
       balanceBefore: typeof input.balanceBefore === "number" ? input.balanceBefore : null,
@@ -637,6 +640,11 @@ export const receiptService = {
     const school = await getIdentitySchool(fee.schoolId);
     const payer = txn.payerNameSnapshot || student;
     const cashier = txn.recordedBy ? (await getIdentityUser(txn.recordedBy))?.name || null : null;
+    const feeType = txn.feeTypeSnapshot || fee.templateNameSnapshot || fee.type || "Fee";
+    const methodLabel = txn.method
+      ? txn.method.charAt(0).toUpperCase() + txn.method.slice(1).toLowerCase()
+      : "Payment";
+    const billedAmount = txn.billedAmount ?? fee.amount;
     return this.issue({
       schoolId: fee.schoolId,
       type: "FEE_PAYMENT",
@@ -647,10 +655,9 @@ export const receiptService = {
       amount: txn.amount,
       currency: "USD",
       lineItems: [
-        { label: `${fee.type} — this payment`, amount: txn.amount },
+        { label: `${feeType} — billed`, amount: billedAmount },
         { label: "Previous balance owing", amount: txn.balanceBefore },
-        { label: "Balance owing after payment", amount: txn.balanceAfter },
-        { label: "Invoice billed total", amount: txn.billedAmount ?? fee.amount },
+        { label: `Amount paid (${methodLabel})`, amount: txn.amount },
       ],
       sourceRef: `Pay ${txn.id.slice(0, 8).toUpperCase()} · Inv ${fee.id.slice(0, 8).toUpperCase()}`,
       issuedBy: issuedBy || null,
@@ -658,8 +665,10 @@ export const receiptService = {
       paymentMethod: txn.method || null,
       paidAt: txn.paidAt || null,
       studentName: student,
-      categoryLabel: txn.feeTypeSnapshot || fee.templateNameSnapshot || fee.type || null,
+      categoryLabel: feeType,
       periodLabel: fee.schoolYearKey || null,
+      balanceBefore: txn.balanceBefore,
+      balanceAfter: txn.balanceAfter,
       note: txn.notes || null,
       cashierName: cashier,
     });
@@ -707,12 +716,16 @@ export const receiptService = {
     deductions: number;
     netSalary: number;
     currency?: string;
+    paidAt?: Date | null;
+    paymentMethod?: string | null;
     issuedBy?: string | null;
   }) {
     const monthName = new Date(data.year, data.month - 1, 1).toLocaleString("default", {
       month: "long",
     });
     const cashier = data.issuedBy ? (await getIdentityUser(data.issuedBy))?.name || null : null;
+    const paidAt = data.paidAt ?? new Date(data.year, data.month, 0, 12, 0, 0);
+    const paymentMethod = data.paymentMethod ?? "TRANSFER";
     return this.issue({
       schoolId: data.schoolId,
       type: "PAYSLIP",
@@ -730,6 +743,8 @@ export const receiptService = {
       ],
       sourceRef: `Payroll ${monthName} ${data.year}`,
       issuedBy: data.issuedBy || null,
+      paymentMethod,
+      paidAt,
       categoryLabel: "Payroll",
       periodLabel: `${monthName} ${data.year}`,
       cashierName: cashier,
@@ -745,7 +760,7 @@ export const receiptService = {
     templateId: ReceiptTemplateId | string | null | undefined,
     opts?: PreviewSampleOpts
   ): Promise<{ contentType: "text/html" | "application/pdf"; body: string | Buffer }> {
-    const sample = await buildPreviewSample(schoolId, opts);
+    const sample = await buildPreviewSample(schoolId, templateId, opts);
     const resolved = resolveReceiptTemplateId(templateId);
     if (isHtmlReceiptTemplate(resolved)) {
       const html = await renderReceiptPreviewHtml(templateId, sample);
@@ -766,9 +781,15 @@ type PreviewSampleOpts = {
   locale?: string | null;
 };
 
-async function buildPreviewSample(schoolId: string, opts?: PreviewSampleOpts) {
+async function buildPreviewSample(
+  schoolId: string,
+  templateId: ReceiptTemplateId | string | null | undefined,
+  opts?: PreviewSampleOpts
+) {
   const school = await getIdentitySchool(schoolId);
-  return monroviaAcademySampleInput({
+  const sample = sampleInputForReceiptTemplate(String(templateId || ""));
+  return {
+    ...sample,
     schoolName: opts?.schoolName || school?.name || "Monrovia Academy",
     schoolAddress: opts?.schoolAddress ?? school?.address ?? undefined,
     schoolEmail: opts?.schoolEmail ?? school?.contactEmail ?? undefined,
@@ -777,5 +798,5 @@ async function buildPreviewSample(schoolId: string, opts?: PreviewSampleOpts) {
     brandColor: opts?.brandColor ?? school?.brandColor ?? "#2563EB",
     locale: opts?.locale ?? school?.defaultLocale ?? "en",
     schoolTimezone: school?.timezone ?? "UTC",
-  });
+  };
 }

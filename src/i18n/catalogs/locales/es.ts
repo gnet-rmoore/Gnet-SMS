@@ -4070,7 +4070,7 @@ export const esResources = {
       "certificateTemplate": "Plantilla de certificado de graduación",
       "certificateTemplateHint": "Cuatro diplomas Letter apaisados para graduados. Usa el logo, color de marca y dirección de la escuela. Se usa en la página Certificados.",
       "receiptTemplate": "Plantillas de recibos oficiales",
-      "receiptTemplateHint": "Elige un diseño para cada tipo de recibo — los pagos de cuotas, las nóminas, los gastos y otras transacciones pueden usar plantillas diferentes.",
+      "receiptTemplateHint": "Elige uno de dos diseños A4 para cada categoría: pagos de cuotas, nóminas o gastos.",
       "receiptTypeFeePayment": "Recibos de pago de cuotas",
       "receiptTypeFeePaymentHint": "Se emiten cuando las familias pagan las cuotas escolares o se cobran las facturas.",
       "receiptTypePayslip": "Recibos de nómina",

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="{{locale}}" dir="{{dir}}"><head><meta charset="UTF-8"><title>{{title}} — {{receiptNumber}}</title>
+<style>
+@page{size:A4;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--b:#1d4ed8;--void:#be123c}
+body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{position:relative;width:210mm;min-height:297mm;margin:0 auto;padding:15mm 16mm;overflow:hidden}
+.lg{display:flex;gap:11px;align-items:center}
+.mono{width:46px;height:46px;border-radius:10px;background:var(--b);color:#fff;font-weight:700;font-size:16px;display:grid;place-items:center;letter-spacing:.04em}
+.sn{font-weight:700;font-size:14.5px;line-height:1.2}.sa{color:#6b7686;font-size:11px;margin-top:2px}
+.row{display:flex;justify-content:space-between;gap:14px}
+.l{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#6b7686;font-weight:700}
+.v{font-size:13px;font-weight:600;margin-top:2px}
+.card{background:#eef3f8;border-radius:12px;padding:26px;text-align:center;margin-top:26px}
+.tick{width:46px;height:46px;border-radius:50%;background:#1c7a45;color:#fff;font-size:24px;display:grid;place-items:center;margin:0 auto 10px}
+.heroAmt{font-size:40px;font-weight:700;color:var(--b);letter-spacing:-.02em;margin:6px 0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+.bd{border:1px solid #dfe4ea;border-radius:12px;padding:16px 18px}
+.bar{height:9px;border-radius:9px;background:#dfe4ea;overflow:hidden;margin:14px 0 6px}.bar i{display:block;height:100%;background:var(--b)}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+td{padding:9px 10px;border-bottom:1px solid #dfe4ea;font-size:12.5px}
+td.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{border:0;font-weight:700}
+.w{font-size:11.5px;color:#6b7686;font-style:italic;margin-top:8px}
+.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #1b2430;padding-top:6px;font-size:10.5px;color:#6b7686}
+.ft{position:absolute;left:16mm;right:16mm;bottom:13mm;display:flex;gap:14px;align-items:center;border-top:1px solid #dfe4ea;padding-top:12px;font-size:10px;color:#6b7686}
+.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #1b2430}
+.ft b{color:#1b2430}
+.void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:70px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 34px;border-radius:8px;z-index:5}
+.page.is-voided .void-stamp{display:block}
+@media print{body{background:#fff}}
+</style></head><body>
+<div class="{{pageClass}}">
+  <div class="void-stamp">{{t.voided}}</div>
+  <div class="row" style="align-items:center">
+    <div class="lg">
+      {{#schoolLogoUrl}}<img class="mono" src="{{schoolLogoUrl}}" alt="" style="object-fit:contain;background:#fff">{{/schoolLogoUrl}}
+      {{^schoolLogoUrl}}<div class="mono" data-school-monogram="{{schoolName}}"></div>{{/schoolLogoUrl}}
+      <div><div class="sn">{{schoolName}}</div><div class="sa">{{schoolAddress}}</div></div>
+    </div>
+    <div style="text-align:right"><div class="l">Receipt</div><div class="v">{{receiptNumber}}</div></div>
+  </div>
+  <div class="card">
+    <div class="tick">&#10003;</div>
+    <div style="font-size:18px;font-weight:700">Payment received. Thank you!</div>
+    <div class="heroAmt">{{amountDisplay}}</div>
+    <div class="sa">{{#isCashMethod}}Paid in cash{{/isCashMethod}}{{^isCashMethod}}{{#hasMethod}}Paid by {{methodLabel}}{{/hasMethod}}{{^hasMethod}}Paid{{/hasMethod}}{{/isCashMethod}} on {{paidAtLongDisplay}}</div>
+  </div>
+  <div class="g2">
+    <div class="bd"><div class="l">Learner</div><div class="v">{{studentName}}</div>{{#hasStudentDetail}}<div class="sa">{{studentDetail}}</div>{{/hasStudentDetail}}</div>
+    <div class="bd"><div class="l">Paid by</div><div class="v">{{payerName}}</div><div class="sa">Parent / Guardian</div></div>
+  </div>
+  <div class="bd" style="margin-top:14px">
+    <div class="row">
+      <div><div class="l">{{categoryLabel}} · {{periodLabel}}</div><div class="sa" style="margin-top:2px">Invoice {{sourceRef}}</div></div>
+      <div style="text-align:right"><div class="l">Remaining balance</div><div class="v" style="font-size:18px">{{balanceAfterDisplay}}</div></div>
+    </div>
+    <div class="bar"><i style="width:{{paidPercent}}%"></i></div>
+    <div class="row sa"><span>Paid so far {{amountDisplay}}</span><span>Total billed {{billedTotalDisplay}}</span></div>
+  </div>
+  <table>
+    <tr><td>Previous balance</td><td class="r">{{balanceBeforeDisplay}}</td></tr>
+    <tr><td>Amount paid</td><td class="r">&minus; {{amountFormatted}}</td></tr>
+    <tr class="tot"><td>Balance after payment</td><td class="r">{{balanceAfterDisplay}}</td></tr>
+  </table>
+  <div class="w">{{amountInWords}}.</div>
+  <div class="sig">
+    <div>Cashier{{#cashierName}}<br><b>{{cashierName}}</b>{{/cashierName}}</div>
+    <div>Authorised signatory · {{authorizedSignerTitle}}</div>
+  </div>
+  <div class="ft">
+    {{#qrDataUrl}}<img class="qr" src="{{qrDataUrl}}" alt="">{{/qrDataUrl}}
+    <div><b>Keep this receipt for your records.</b><br>Verify at {{verifyLabel}} · Fingerprint {{fingerprint}}</div>
+  </div>
+</div>
+<script>document.querySelectorAll('[data-school-monogram]').forEach(function(e){var n=(e.getAttribute('data-school-monogram')||'').trim().split(/\s+/);e.textContent=(n[0]||'S').charAt(0)+(n[1]||'').charAt(0)});</script>
+</body></html>

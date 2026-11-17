@@ -33,8 +33,8 @@ import {
 } from "../../../lib/documentSignatories";
 import { getOfficialSignatureUrl } from "../../../lib/userSignature";
 import {
+  RECEIPT_PICKER_TYPE_KEYS,
   RECEIPT_TEMPLATES,
-  RECEIPT_TYPE_KEYS,
   type ReceiptTemplateId,
   type ReceiptTypeKey,
   type ReceiptTemplatesByType,
@@ -310,17 +310,22 @@ function ReportCardPick({
 
 function ReceiptTemplatePick({
   selected,
+  typeKey,
   onSelect,
   onPreview,
 }: {
   selected: ReceiptTemplateId;
+  typeKey?: ReceiptTypeKey;
   onSelect: (id: ReceiptTemplateId) => void;
   onPreview: (id: ReceiptTemplateId) => void;
 }) {
   const { t } = useTranslation("common");
+  const templates = typeKey
+    ? RECEIPT_TEMPLATES.filter((template) => template.recommendedFor.includes(typeKey))
+    : RECEIPT_TEMPLATES;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {RECEIPT_TEMPLATES.map((template) => {
+      {templates.map((template) => {
         const active = selected === template.id;
         return (
           <div
@@ -388,7 +393,7 @@ const RECEIPT_TYPE_HINT_KEYS: Record<ReceiptTypeKey, string> = {
 
 function ReceiptTemplatesByTypePick({
   values,
-  typeKeys = [...RECEIPT_TYPE_KEYS],
+  typeKeys = RECEIPT_PICKER_TYPE_KEYS,
   onSelect,
   onPreview,
 }: {
@@ -398,10 +403,11 @@ function ReceiptTemplatesByTypePick({
   onPreview: (type: ReceiptTypeKey, id: ReceiptTemplateId) => void;
 }) {
   const { t } = useTranslation(["pages", "common"]);
+  const visibleTypeKeys = typeKeys.filter((key) => RECEIPT_PICKER_TYPE_KEYS.includes(key));
 
   return (
     <div className="space-y-8">
-      {typeKeys.map((typeKey) => (
+      {visibleTypeKeys.map((typeKey) => (
         <div key={typeKey} className="space-y-3">
           <div>
             <h4 className="text-sm font-extrabold tracking-tight text-slate-900">
@@ -411,6 +417,7 @@ function ReceiptTemplatesByTypePick({
           </div>
           <ReceiptTemplatePick
             selected={values[typeKey]}
+            typeKey={typeKey}
             onSelect={(id) => onSelect(typeKey, id)}
             onPreview={(id) => onPreview(typeKey, id)}
           />

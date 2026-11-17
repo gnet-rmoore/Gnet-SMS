@@ -36,6 +36,8 @@ export type ReceiptPdfInput = {
   paidAt?: Date | null;
   /** Student the payment relates to (fee receipts). */
   studentName?: string | null;
+  /** Optional secondary student detail, e.g. grade/class. */
+  studentDetail?: string | null;
   /** Fee/payroll/expense category surfaced under details. */
   categoryLabel?: string | null;
   /** School year or billing month/period label. */

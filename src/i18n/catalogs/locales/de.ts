@@ -4070,7 +4070,7 @@ export const deResources = {
       "certificateTemplate": "Abschlusszertifikat-Vorlage",
       "certificateTemplateHint": "Vier Querformat-Letter-Diplome für Absolventen. Nutzt Schullogo, Markenfarbe und Adresse. Wird auf der Zertifikatsseite verwendet.",
       "receiptTemplate": "Offizielle Belegvorlagen",
-      "receiptTemplateHint": "Wählen Sie ein Layout für jeden Belegtyp — Gebührenzahlungen, Lohnabrechnungen, Ausgaben und andere Transaktionen können unterschiedliche Vorlagen verwenden.",
+      "receiptTemplateHint": "Wählen Sie für jede Kategorie eines von zwei A4-Designs: Gebührenzahlungen, Lohnabrechnungen oder Ausgaben.",
       "receiptTypeFeePayment": "Gebührenzahlungsbelege",
       "receiptTypeFeePaymentHint": "Wird ausgestellt, wenn Eltern Schulgeld zahlen oder Rechnungen eingezogen werden.",
       "receiptTypePayslip": "Lohnabrechnungsbelege",

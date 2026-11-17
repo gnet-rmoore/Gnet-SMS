@@ -38,6 +38,32 @@ export function formatReceiptDateTime(
   }
 }
 
+/** Format a date without the time component, in the school's local wall-clock time. */
+export function formatReceiptDate(
+  date: Date,
+  locale: AppLocale,
+  timeZone?: string | null,
+  longMonth = false
+): string {
+  const opts: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: longMonth ? "long" : "short",
+    year: "numeric",
+  };
+  const tag = INTL_LOCALE[locale] ?? "en-GB";
+  try {
+    if (timeZone) opts.timeZone = timeZone;
+    return new Intl.DateTimeFormat(tag, opts).format(date);
+  } catch {
+    try {
+      delete opts.timeZone;
+      return new Intl.DateTimeFormat(tag, opts).format(date);
+    } catch {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+}
+
 /** Map a payment-method code to its localized chrome key (null when unrecognized). */
 export function methodChromeKey(raw: string): ReceiptChromeKey | null {
   switch (raw.trim().toUpperCase().replace(/[\s-]+/g, "_")) {

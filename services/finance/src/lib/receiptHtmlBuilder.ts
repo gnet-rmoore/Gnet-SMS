@@ -18,7 +18,7 @@ function templateDir(): string {
     path.join(process.cwd(), "receipt-templates"),
   ];
   for (const dir of candidates) {
-    if (existsSync(path.join(dir, "minimal-line.html"))) return dir;
+    if (existsSync(path.join(dir, "fee-official-receipt.html"))) return dir;
   }
   return candidates[0];
 }

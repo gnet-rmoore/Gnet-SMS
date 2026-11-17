@@ -4070,7 +4070,7 @@ export const zhHansResources = {
       "certificateTemplate": "毕业证书模板",
       "certificateTemplateHint": "四份横向 Letter 尺寸毕业证书。使用学校徽标、品牌色和地址。用于证书页面。",
       "receiptTemplate": "官方收据模板",
-      "receiptTemplateHint": "为每种收据类型选择版式——费用支付、工资单、支出和其他交易可以使用不同的模板。",
+      "receiptTemplateHint": "为每个类别从两种 A4 设计中选择一种——费用支付、工资单或支出。",
       "receiptTypeFeePayment": "费用支付收据",
       "receiptTypeFeePaymentHint": "家长支付学费或收取发票时开具。",
       "receiptTypePayslip": "工资单收据",

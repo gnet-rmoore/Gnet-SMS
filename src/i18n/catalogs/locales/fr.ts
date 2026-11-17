@@ -4070,7 +4070,7 @@ export const frResources = {
       "certificateTemplate": "Modèle de certificat de fin d'études",
       "certificateTemplateHint": "Quatre diplômes format Letter en paysage pour les diplômés. Utilise le logo, la couleur de marque et l'adresse de l'établissement. Utilisé sur la page Certificats.",
       "receiptTemplate": "Modèles de reçus officiels",
-      "receiptTemplateHint": "Choisissez une mise en page pour chaque type de reçu — les paiements de frais, les bulletins de paie, les dépenses et les autres transactions peuvent utiliser des modèles différents.",
+      "receiptTemplateHint": "Choisissez l'un de deux modèles A4 pour chaque catégorie : paiements de frais, bulletins de paie ou dépenses.",
       "receiptTypeFeePayment": "Reçus de paiement de frais",
       "receiptTypeFeePaymentHint": "Émis lorsque les parents paient les frais scolaires ou que les factures sont encaissées.",
       "receiptTypePayslip": "Reçus de bulletins de paie",

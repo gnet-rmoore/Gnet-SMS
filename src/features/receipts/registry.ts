@@ -1,20 +1,12 @@
 ﻿/** Receipt template metadata for Settings picker — IDs match Finance registry. */
 
 export const RECEIPT_TEMPLATE_IDS = [
-  "COMPACT_GRID",
-  "MINIMAL_LINE",
-  "FEE_FORMAL_STATEMENT",
-  "FEE_PARENT_ACK",
-  "FEE_CASHIER_SLIP",
-  "FEE_LEDGER",
-  "PAYSLIP_DETAILED",
-  "PAYSLIP_COMPACT",
-  "PAYSLIP_EXECUTIVE",
-  "PAYSLIP_MINIMAL",
-  "EXPENSE_VOUCHER",
-  "EXPENSE_LEDGER",
-  "EXPENSE_PETTY_CASH",
-  "EXPENSE_CORPORATE",
+  "FEE_OFFICIAL_RECEIPT",
+  "FEE_PAYMENT_CONFIRMATION",
+  "PAYSLIP_EARNINGS_DEDUCTIONS",
+  "PAYSLIP_NET_PAY_HERO",
+  "EXPENSE_EXECUTIVE_VOUCHER",
+  "EXPENSE_CLEAN_LEDGER",
 ] as const;
 
 export type ReceiptTemplateId = (typeof RECEIPT_TEMPLATE_IDS)[number];
@@ -28,127 +20,76 @@ export type ReceiptTemplateDef = {
   recommendedFor: Array<"FEE_PAYMENT" | "PAYSLIP" | "EXPENSE" | "TRANSACTION">;
 };
 
+export const DEFAULT_RECEIPT_TEMPLATE_ID: ReceiptTemplateId = "FEE_OFFICIAL_RECEIPT";
+
 export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
   {
-    id: "COMPACT_GRID",
-    name: "Compact Grid",
-    description: "Dense grid for payslips and expense receipts with many line items.",
-    accent: "#475569",
-    engine: "html",
-    recommendedFor: ["PAYSLIP", "EXPENSE"],
-  },
-  {
-    id: "MINIMAL_LINE",
-    name: "Minimal Line",
-    description: "Modern minimal layout with thin rules and bold total.",
-    accent: "#64748b",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT", "PAYSLIP", "EXPENSE", "TRANSACTION"],
-  },
-  {
-    id: "FEE_FORMAL_STATEMENT",
-    name: "Formal Statement",
-    description: "Institutional fee receipt with clear student, payment, and balance summary for official records.",
-    accent: "#1e3a8a",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT"],
-  },
-  {
-    id: "FEE_PARENT_ACK",
-    name: "Parent Acknowledgment",
-    description: "Warm, easy-to-read payment acknowledgment highlighting amount paid and balance due for families.",
-    accent: "#0f766e",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT"],
-  },
-  {
-    id: "FEE_CASHIER_SLIP",
-    name: "Cashier Slip",
-    description: "Compact, payment-first slip optimized for quick counter issuance and clear totals.",
-    accent: "#334155",
+    id: "FEE_OFFICIAL_RECEIPT",
+    name: "Official Receipt",
+    description:
+      "Burgundy institutional fee receipt with payment details, balance summary, and verification footer.",
+    accent: "#7a1f2b",
     engine: "html",
     recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
   },
   {
-    id: "FEE_LEDGER",
-    name: "Fee Ledger",
-    description: "Detailed ledger-style receipt showing line items and account balance context at a glance.",
-    accent: "#0f172a",
-    engine: "html",
-    recommendedFor: ["FEE_PAYMENT"],
-  },
-  {
-    id: "PAYSLIP_DETAILED",
-    name: "Detailed Statement",
-    description: "Structured payslip emphasizing earnings, deductions, net pay, and period for staff clarity.",
+    id: "FEE_PAYMENT_CONFIRMATION",
+    name: "Payment Confirmation",
+    description:
+      "Blue payment confirmation with a success card, balance progress bar, and payer/learner details.",
     accent: "#1d4ed8",
     engine: "html",
-    recommendedFor: ["PAYSLIP"],
+    recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
   },
   {
-    id: "PAYSLIP_COMPACT",
-    name: "Compact Voucher",
-    description: "Space-efficient payslip voucher with essential payroll details and bold net amount.",
-    accent: "#475569",
-    engine: "html",
-    recommendedFor: ["PAYSLIP"],
-  },
-  {
-    id: "PAYSLIP_EXECUTIVE",
-    name: "Executive Payslip",
-    description: "Premium, professional payslip layout with strong hierarchy and clean financial presentation.",
-    accent: "#111827",
-    engine: "html",
-    recommendedFor: ["PAYSLIP"],
-  },
-  {
-    id: "PAYSLIP_MINIMAL",
-    name: "Minimal Payslip",
-    description: "Modern minimal payslip with refined spacing and focus on net pay and verification.",
-    accent: "#64748b",
-    engine: "html",
-    recommendedFor: ["PAYSLIP"],
-  },
-  {
-    id: "EXPENSE_VOUCHER",
-    name: "Expense Voucher",
-    description: "Formal voucher-style receipt for approved expenses with clear authorization and references.",
-    accent: "#7c2d12",
-    engine: "html",
-    recommendedFor: ["EXPENSE"],
-  },
-  {
-    id: "EXPENSE_LEDGER",
-    name: "Expense Ledger",
-    description: "Detailed grid receipt suited to itemized expense claims and audit-friendly records.",
-    accent: "#334155",
-    engine: "html",
-    recommendedFor: ["EXPENSE"],
-  },
-  {
-    id: "EXPENSE_PETTY_CASH",
-    name: "Petty Cash Slip",
-    description: "Compact petty-cash style receipt for quick reimbursements and small disbursements.",
-    accent: "#0f766e",
-    engine: "html",
-    recommendedFor: ["EXPENSE", "TRANSACTION"],
-  },
-  {
-    id: "EXPENSE_CORPORATE",
-    name: "Corporate Claim",
-    description: "Polished corporate expense receipt with structured metadata and professional finish.",
+    id: "PAYSLIP_EARNINGS_DEDUCTIONS",
+    name: "Earnings & Deductions",
+    description:
+      "Statement-style payslip with side-by-side earnings and deductions tables and a net-pay hero.",
     accent: "#1e293b",
+    engine: "html",
+    recommendedFor: ["PAYSLIP"],
+  },
+  {
+    id: "PAYSLIP_NET_PAY_HERO",
+    name: "Net Pay Hero",
+    description: "Teal payslip with a large net-pay panel and a compact salary breakdown.",
+    accent: "#0b5d6b",
+    engine: "html",
+    recommendedFor: ["PAYSLIP"],
+  },
+  {
+    id: "EXPENSE_EXECUTIVE_VOUCHER",
+    name: "Executive Voucher",
+    description:
+      "A4 expense voucher with a bold amount hero, payee/payer grid, itemised charges, and verification.",
+    accent: "#0f3d5e",
+    engine: "html",
+    recommendedFor: ["EXPENSE"],
+  },
+  {
+    id: "EXPENSE_CLEAN_LEDGER",
+    name: "Clean Ledger",
+    description:
+      "Green payment voucher with numbered itemised charges, a status panel, and a signature line.",
+    accent: "#14532d",
     engine: "html",
     recommendedFor: ["EXPENSE"],
   },
 ];
 
-export function resolveReceiptTemplateId(value: unknown): ReceiptTemplateId {
-  const raw = String(value || "").trim();
-  const id = raw.toUpperCase().replace(/-/g, "_");
+export function normalizeReceiptTemplateId(value: unknown): ReceiptTemplateId | null {
+  const id = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, "_");
   return RECEIPT_TEMPLATE_IDS.includes(id as ReceiptTemplateId)
     ? (id as ReceiptTemplateId)
-    : "MINIMAL_LINE";
+    : null;
+}
+
+export function resolveReceiptTemplateId(value: unknown): ReceiptTemplateId {
+  return normalizeReceiptTemplateId(value) ?? DEFAULT_RECEIPT_TEMPLATE_ID;
 }
 
 export function getReceiptTemplateDef(id: ReceiptTemplateId): ReceiptTemplateDef {
@@ -170,14 +111,18 @@ export type ReceiptTypeKey = (typeof RECEIPT_TYPE_KEYS)[number];
 
 export type ReceiptTemplatesByType = Record<ReceiptTypeKey, ReceiptTemplateId>;
 
-export function defaultReceiptTemplates(legacySingle?: unknown): ReceiptTemplatesByType {
-  const fallback = resolveReceiptTemplateId(legacySingle);
-  return {
-    FEE_PAYMENT: fallback,
-    PAYSLIP: fallback,
-    EXPENSE: fallback,
-    TRANSACTION: fallback,
-  };
+export const DEFAULT_RECEIPT_TEMPLATES: ReceiptTemplatesByType = {
+  FEE_PAYMENT: "FEE_OFFICIAL_RECEIPT",
+  PAYSLIP: "PAYSLIP_EARNINGS_DEDUCTIONS",
+  EXPENSE: "EXPENSE_EXECUTIVE_VOUCHER",
+  TRANSACTION: "FEE_OFFICIAL_RECEIPT",
+};
+
+/** The settings picker shows the three receipt categories the templates belong to. */
+export const RECEIPT_PICKER_TYPE_KEYS: ReceiptTypeKey[] = ["FEE_PAYMENT", "PAYSLIP", "EXPENSE"];
+
+export function defaultReceiptTemplates(_legacySingle?: unknown): ReceiptTemplatesByType {
+  return { ...DEFAULT_RECEIPT_TEMPLATES };
 }
 
 export function mergeReceiptTemplates(
@@ -188,9 +133,8 @@ export function mergeReceiptTemplates(
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return merged;
   const obj = raw as Record<string, unknown>;
   for (const key of RECEIPT_TYPE_KEYS) {
-    if (obj[key] != null && String(obj[key]).trim()) {
-      merged[key] = resolveReceiptTemplateId(obj[key]);
-    }
+    const resolved = normalizeReceiptTemplateId(obj[key]);
+    if (resolved) merged[key] = resolved;
   }
   return merged;
 }
@@ -225,7 +169,7 @@ export function receiptTemplateRoleKey(role: string | null | undefined): Receipt
 
 export function receiptTypesForRole(role: string | null | undefined): ReceiptTypeKey[] {
   const key = receiptTemplateRoleKey(role);
-  return key ? [...RECEIPT_TYPES_FOR_ROLE[key]] : [];
+  return key ? [...RECEIPT_TYPES_FOR_ROLE[key]] : [...RECEIPT_TYPE_KEYS];
 }
 
 function storageRoleKey(role: ReceiptTemplateRoleKey): ReceiptTemplateRoleKey {
@@ -249,9 +193,8 @@ function isFlatTypeMap(obj: Record<string, unknown>): boolean {
 function mergePartialTypeMap(raw: Record<string, unknown>): Partial<ReceiptTemplatesByType> {
   const partial: Partial<ReceiptTemplatesByType> = {};
   for (const key of RECEIPT_TYPE_KEYS) {
-    if (raw[key] != null && String(raw[key]).trim()) {
-      partial[key] = resolveReceiptTemplateId(raw[key]);
-    }
+    const id = normalizeReceiptTemplateId(raw[key]);
+    if (id) partial[key] = id;
   }
   return partial;
 }
@@ -261,7 +204,6 @@ export function parseReceiptTemplatesByRole(
   legacyFlat?: unknown,
   legacySingle?: unknown
 ): ReceiptTemplatesByRole {
-  const legacyFallback = defaultReceiptTemplates(legacySingle);
   const out: ReceiptTemplatesByRole = {};
 
   const ingestFlat = (rawVal: unknown) => {
@@ -302,7 +244,7 @@ export function parseReceiptTemplatesByRole(
   }
 
   if (Object.keys(out).length === 0) {
-    out.SCHOOL_ADMIN = { ...legacyFallback };
+    out.SCHOOL_ADMIN = { ...DEFAULT_RECEIPT_TEMPLATES };
   }
 
   return out;
@@ -317,10 +259,10 @@ export function getReceiptTemplatesForRole(
   const allowed = roleKey ? RECEIPT_TYPES_FOR_ROLE[roleKey] : [...RECEIPT_TYPE_KEYS];
   const storage = roleKey ? storageRoleKey(roleKey) : "SCHOOL_ADMIN";
   const bucket = byRole[storage];
-  const fallback = resolveReceiptTemplateId(legacySingle);
   const result = defaultReceiptTemplates(legacySingle);
   for (const typeKey of allowed) {
-    result[typeKey] = resolveReceiptTemplateId(bucket?.[typeKey] ?? fallback);
+    const stored = normalizeReceiptTemplateId(bucket?.[typeKey]);
+    if (stored) result[typeKey] = stored;
   }
   return result;
 }
@@ -331,7 +273,8 @@ export function receiptTemplatesPatchForRole(
 ): Partial<ReceiptTemplatesByType> {
   const patch: Partial<ReceiptTemplatesByType> = {};
   for (const typeKey of receiptTypesForRole(role)) {
-    patch[typeKey] = values[typeKey];
+    const id = normalizeReceiptTemplateId(values[typeKey]);
+    patch[typeKey] = id ?? DEFAULT_RECEIPT_TEMPLATES[typeKey];
   }
   return patch;
 }

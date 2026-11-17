@@ -6,6 +6,20 @@ import {
   validateGradebookConfigTotals,
 } from "../lib/gradebookConfig";
 
+const RECEIPT_TEMPLATES_BY_TYPE: Record<string, readonly string[]> = {
+  FEE_PAYMENT: ["FEE_OFFICIAL_RECEIPT", "FEE_PAYMENT_CONFIRMATION"],
+  PAYSLIP: ["PAYSLIP_EARNINGS_DEDUCTIONS", "PAYSLIP_NET_PAY_HERO"],
+  EXPENSE: ["EXPENSE_EXECUTIVE_VOUCHER", "EXPENSE_CLEAN_LEDGER"],
+  TRANSACTION: ["FEE_OFFICIAL_RECEIPT"],
+};
+
+function normalizeReceiptTemplateId(value: unknown): string {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, "_");
+}
+
 const gradebookConfigUpdateSchema = z.string().nullable().superRefine((raw, context) => {
   if (raw == null) return;
 
@@ -68,8 +82,13 @@ const receiptTemplatesMapSchema = z
   })
   .refine(
     (obj) =>
-      Object.values(obj).every((v) => v === undefined || isKnownReceiptTemplateId(v)),
-    { message: "Invalid receipt template id" }
+      Object.entries(obj).every(
+        ([type, value]) =>
+          value === undefined ||
+          (isKnownReceiptTemplateId(value) &&
+            (RECEIPT_TEMPLATES_BY_TYPE[type] || []).includes(normalizeReceiptTemplateId(value)))
+      ),
+    { message: "Invalid receipt template id for this receipt type" }
   );
 
 export const receiptTemplateUpdateSchema = z

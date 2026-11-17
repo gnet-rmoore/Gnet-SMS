@@ -96,7 +96,7 @@ const catalogs: Record<AppLocale, Catalog> = {
     referenceLabel: "Reference",
     methodCash: "Cash",
     methodCheck: "Cheque",
-    methodTransfer: "Bank transfer",
+    methodTransfer: "Bank Transfer",
     methodCard: "Card",
     methodCheckout: "Online payment",
     methodOther: "Other",
