@@ -27,6 +27,7 @@ import { useAuthStore } from "../../store/authStore";
 import {
   TRANSCRIPT_TEMPLATE_OPTIONS,
   fetchTranscriptPdf,
+  getTranscriptTemplateOption,
   transcriptPdfFilename,
   transcriptsApi,
   type GradeLevelOption,
@@ -91,6 +92,7 @@ export const Transcripts = () => {
   const role = user?.role || "";
   const canPrepare = PREPARE_ROLES.includes(role);
   const canApprove = APPROVE_ROLES.includes(role);
+  const previewTemplate = getTranscriptTemplateOption(school?.transcriptTemplate || "classic");
 
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [gradeLevels, setGradeLevels] = useState<GradeLevelOption[]>([]);
@@ -1108,6 +1110,7 @@ export const Transcripts = () => {
 
               <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-slate-100">
                 <TranscriptPreview
+                  templateKey={previewTemplate.key}
                   schoolName={school?.name}
                   address={school?.address}
                   logoUrl={school?.logoUrl}
@@ -1116,7 +1119,7 @@ export const Transcripts = () => {
                   gradeLevel="Grade 10"
                   academicYear={academicYear}
                   records={SAMPLE_TRANSCRIPT_RECORDS}
-                  templateName={tr("tplClassic")}
+                  templateName={tr(previewTemplate.nameKey)}
                 />
               </div>
 

@@ -76,24 +76,21 @@ export const TRANSCRIPT_TEMPLATE_OPTIONS = [
   { key: "executive", nameKey: "tplExecutive", descKey: "tplExecutiveDesc" },
 ] as const;
 
-export const DEFAULT_TRANSCRIPT_TEMPLATE = "classic";
+export type TranscriptTemplateKey = (typeof TRANSCRIPT_TEMPLATE_OPTIONS)[number]["key"];
 
-export const SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS = TRANSCRIPT_TEMPLATE_OPTIONS.filter(
-  (option) => option.key === DEFAULT_TRANSCRIPT_TEMPLATE
-);
+export const DEFAULT_TRANSCRIPT_TEMPLATE: TranscriptTemplateKey = "classic";
 
-export function resolveTranscriptTemplateKey(value: unknown): string {
+export const SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS = TRANSCRIPT_TEMPLATE_OPTIONS;
+
+export function resolveTranscriptTemplateKey(value: unknown): TranscriptTemplateKey {
   const key = String(value || "").trim().toLowerCase();
   return TRANSCRIPT_TEMPLATE_OPTIONS.some((option) => option.key === key)
-    ? key
+    ? (key as TranscriptTemplateKey)
     : DEFAULT_TRANSCRIPT_TEMPLATE;
 }
 
-export function resolveSelectableTranscriptTemplateKey(value: unknown): string {
-  const key = resolveTranscriptTemplateKey(value);
-  return SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.some((option) => option.key === key)
-    ? key
-    : SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS[0].key;
+export function resolveSelectableTranscriptTemplateKey(value: unknown): TranscriptTemplateKey {
+  return resolveTranscriptTemplateKey(value);
 }
 
 export function getTranscriptTemplateOption(value: unknown) {

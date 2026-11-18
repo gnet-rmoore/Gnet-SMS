@@ -192,7 +192,7 @@ export const Settings = () => {
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
   const [gradeSheetTemplate, setGradeSheetTemplate] = React.useState("TEMPLATE_1");
   const [reportCardTemplate, setReportCardTemplate] = React.useState("TEMPLATE_1");
-  const [transcriptTemplate, setTranscriptTemplate] = React.useState(DEFAULT_TRANSCRIPT_TEMPLATE);
+  const [transcriptTemplate, setTranscriptTemplate] = React.useState<string>(DEFAULT_TRANSCRIPT_TEMPLATE);
   const [certificateTemplate, setCertificateTemplate] = React.useState("CERT_CLASSIC_BROWN");
   const [certificateDefaults, setCertificateDefaults] = React.useState<CertificateDefaults>({
     ...DEFAULT_CERTIFICATE_DEFAULTS,

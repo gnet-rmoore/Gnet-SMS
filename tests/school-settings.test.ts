@@ -34,6 +34,8 @@ import { sampleGradeSheetData } from "../src/features/gradesheets/sampleData";
 import {
   DEFAULT_TRANSCRIPT_TEMPLATE,
   SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS,
+  TRANSCRIPT_TEMPLATE_OPTIONS,
+  getTranscriptTemplateOption,
   resolveSelectableTranscriptTemplateKey,
   resolveTranscriptTemplateKey,
 } from "../src/features/transcripts/api";
@@ -195,23 +197,42 @@ assert(!previewSheetText.includes("Education For The Future"), "no hardcoded sch
 
 assert(DEFAULT_TRANSCRIPT_TEMPLATE === "classic", "transcript default is the current design");
 assert(
-  SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.length === 1 &&
-    SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS[0].key === "classic",
-  "only the current transcript template is selectable for now"
+  SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.length === 3 &&
+    SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.map((option) => option.key).join(",") ===
+      "classic,modern,executive",
+  "all three transcript templates are selectable"
 );
-assert(resolveTranscriptTemplateKey("modern") === "modern", "future transcript keys resolve");
+assert(
+  TRANSCRIPT_TEMPLATE_OPTIONS.every((option) =>
+    SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.some((selectable) => selectable.key === option.key)
+  ),
+  "every defined transcript template is selectable"
+);
+assert(resolveTranscriptTemplateKey("modern") === "modern", "modern transcript key resolves");
+assert(resolveTranscriptTemplateKey("executive") === "executive", "executive transcript key resolves");
 assert(resolveTranscriptTemplateKey("unknown") === "classic", "unknown transcript keys fall back");
 assert(
-  resolveSelectableTranscriptTemplateKey("modern") === "classic",
-  "unsupported stored transcript keys fall back to the selectable current design"
+  resolveSelectableTranscriptTemplateKey("modern") === "modern",
+  "stored modern template stays selected"
+);
+assert(
+  resolveSelectableTranscriptTemplateKey("executive") === "executive",
+  "stored executive template stays selected"
 );
 assert(
   resolveSelectableTranscriptTemplateKey("unknown") === "classic",
-  "unknown transcript keys fall back to the selectable current design"
+  "unknown transcript keys fall back to the default design"
+);
+assert(getTranscriptTemplateOption("modern").nameKey === "tplModern", "modern template option resolves");
+assert(
+  getTranscriptTemplateOption("executive").nameKey === "tplExecutive",
+  "executive template option resolves"
 );
 assert(
-  schoolUpdateSchema.shape.transcriptTemplate.safeParse("classic").success,
-  "school update accepts transcript template"
+  ["classic", "modern", "executive"].every((key) =>
+    schoolUpdateSchema.shape.transcriptTemplate.safeParse(key).success
+  ),
+  "school update accepts all transcript templates"
 );
 assert(
   !schoolUpdateSchema.shape.transcriptTemplate.safeParse("unknown").success,

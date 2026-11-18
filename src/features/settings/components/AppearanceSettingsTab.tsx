@@ -49,6 +49,7 @@ import {
 import {
   SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS,
   resolveSelectableTranscriptTemplateKey,
+  type TranscriptTemplateKey,
 } from "../../transcripts/api";
 
 /** Preset brand swatches for Settings → Appearance (16 total). */
@@ -324,6 +325,12 @@ function ReportCardPick({
   );
 }
 
+const TRANSCRIPT_TEMPLATE_ICONS: Record<TranscriptTemplateKey, LucideIcon> = {
+  classic: ScrollText,
+  modern: FileText,
+  executive: Award,
+};
+
 function TranscriptPick({
   selected,
   onSelect,
@@ -338,6 +345,7 @@ function TranscriptPick({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.map((option) => {
         const active = resolveSelectableTranscriptTemplateKey(selected) === option.key;
+        const Icon = TRANSCRIPT_TEMPLATE_ICONS[option.key];
         return (
           <div
             key={option.key}
@@ -359,7 +367,7 @@ function TranscriptPick({
                   active ? "bg-indigo-600 text-white" : "bg-slate-50 text-slate-400"
                 }`}
               >
-                <ScrollText className="w-5 h-5" aria-hidden />
+                <Icon className="w-5 h-5" aria-hidden />
               </div>
               <button
                 type="button"

@@ -380,6 +380,7 @@ export function renderTemplatePreview({
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
         {previewHeader(`A4 · 210 × 297 mm · ${transcriptDef.key}`, "Transcript")}
         <TranscriptPreview
+          templateKey={transcriptDef.key}
           schoolName={school.name}
           address={[school.address, school.location].filter(Boolean).join(" · ")}
           logoUrl={school.logoUrl}
