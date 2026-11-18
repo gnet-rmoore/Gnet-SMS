@@ -23,6 +23,11 @@ function dateLabel(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function humanize(value: string | null | undefined): string {
+  if (!value) return "—";
+  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function tone(score: number | null | undefined, failBand: string): string {
   if (score == null) return "#b3b9c9";
   return failBand === "fail" ? "#b5232f" : "#14203d";
@@ -70,17 +75,19 @@ function groupsOf(columns: ReportCardPayload["columns"]) {
 function Frame({
   children,
   centered = false,
+  wide = false,
 }: {
   children: React.ReactNode;
   centered?: boolean;
+  wide?: boolean;
 }) {
   return (
     <div
       style={{
         position: "absolute",
-        inset: "9mm",
+        inset: wide ? "7mm" : "9mm",
         border: "1.2mm double #1b2f6b",
-        padding: "11mm 12mm",
+        padding: wide ? "9mm 8mm" : "11mm 12mm",
         display: "flex",
         flexDirection: "column",
         alignItems: centered ? "center" : undefined,
@@ -92,6 +99,111 @@ function Frame({
     >
       {children}
     </div>
+  );
+}
+
+function PromotionBlock({ promotion }: { promotion: ReportCardPayload["promotion"] }) {
+  if (!promotion) return null;
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: "7.4pt",
+    color: "#5f6a82",
+    textTransform: "uppercase",
+  };
+  const cell = (label: string, text: string, full = false) => (
+    <div style={{ gridColumn: full ? "span 2" : undefined }}>
+      <span style={labelStyle}>{label}</span>
+      <b style={{ fontWeight: label === "Remarks" ? 500 : undefined }}>{text}</b>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: "auto", width: "100%", textAlign: "left" }}>
+      <h4 style={{ margin: "0 0 2mm", fontSize: "11pt", color: "#1b2f6b", borderBottom: "0.3mm solid #cfd5e3", paddingBottom: "1mm" }}>
+        Promotion
+      </h4>
+      <div style={{ border: "0.4mm solid #1b2f6b", borderRadius: 2, padding: "3mm 4mm", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2mm 8mm" }}>
+        {cell("Outcome", promotion.outcome ? value(humanize(promotion.outcome)) : "Not yet finalised")}
+        {cell("Promoted to", value(promotion.toGrade))}
+        {promotion.conditionedSubjects ? cell("Conditioned subjects", value(promotion.conditionedSubjects), true) : null}
+        {promotion.probationWeeks ? cell("Probation", `${promotion.probationWeeks} weeks`) : null}
+        {cell("Remarks", value(promotion.remarks), true)}
+        {cell("Finalised", dateLabel(promotion.finalizedAt))}
+      </div>
+    </div>
+  );
+}
+
+function GradingSystemBlock({ legend }: { legend: ReportCardPayload["legend"] }) {
+  const rows = [...legend];
+  if (!rows.some((row) => String(row.letter || "").toUpperCase() === "INC")) {
+    rows.push({ letter: "INC", min: 0, max: 0, detail: "Incomplete" });
+  }
+  const cellStyle: React.CSSProperties = {
+    border: "0.2mm solid #cfd5e3",
+    padding: "1.2mm 0.6mm",
+    textAlign: "center",
+    overflowWrap: "anywhere",
+  };
+  const labelStyle: React.CSSProperties = {
+    ...cellStyle,
+    background: "#1b2f6b",
+    color: "#fff",
+    fontWeight: 700,
+  };
+  return (
+    <div style={{ marginTop: "auto" }}>
+      <h4 style={{ margin: "4mm 0 2mm", fontSize: "11pt", color: "#1b2f6b", borderBottom: "0.3mm solid #cfd5e3", paddingBottom: "1mm" }}>
+        Grading system
+      </h4>
+      <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", fontSize: "7.2pt" }}>
+        <thead>
+          <tr>
+            <th style={labelStyle}>Grade</th>
+            {rows.map((row) => <th key={`grade-${row.letter}`} style={labelStyle}>{value(row.letter)}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th style={labelStyle}>Score range</th>
+            {rows.map((row) => (
+              <td key={`range-${row.letter}`} style={cellStyle}>
+                {String(row.letter || "").toUpperCase() === "INC" ? "—" : `${row.min} – ${row.max}`}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th style={labelStyle}>Meaning</th>
+            {rows.map((row) => <td key={`detail-${row.letter}`} style={cellStyle}>{value(row.detail)}</td>)}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SignatureRow({ payload }: { payload: ReportCardPayload }) {
+  const signatures = [
+    ["Principal", payload.officialSignatures?.principal],
+    ["Registrar", payload.officialSignatures?.registrar],
+    ["Academic head", payload.officialSignatures?.academic],
+  ] as const;
+  return (
+    <>
+      <div style={{ display: "flex", gap: "8mm", marginTop: "6mm" }}>
+        {signatures.map(([label, slot]) => (
+          <div key={label} style={{ flex: 1, textAlign: "center", fontSize: "8pt", color: "#5f6a82" }}>
+            <div style={{ height: "13mm", borderBottom: "0.3mm solid #14203d", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+              {slot?.signatureUrl && <img src={slot.signatureUrl} alt="" style={{ maxHeight: "12mm" }} />}
+            </div>
+            <b style={{ display: "block", color: "#14203d", fontSize: "9pt" }}>{value(slot?.name)}</b>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", fontSize: "7.5pt", color: "#5f6a82", marginTop: "4mm" }}>
+        Generated {dateLabel(payload.generatedAt)}
+      </div>
+    </>
   );
 }
 
@@ -170,7 +282,8 @@ function CoverPage({ payload }: { payload: ReportCardPayload }) {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: "auto", fontSize: "8pt", color: "#5f6a82" }}>{location}</div>
+        <PromotionBlock promotion={payload.promotion} />
+        <div style={{ marginTop: payload.promotion ? "4mm" : "auto", fontSize: "8pt", color: "#5f6a82" }}>{location}</div>
       </Frame>
     </A4Page>
   );
@@ -180,7 +293,7 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
   const groups = groupsOf(payload.columns);
   return (
     <A4Page style={{ background: "#fff", position: "relative" }}>
-      <Frame>
+      <Frame wide>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "0.6mm solid #1b2f6b", paddingBottom: "3mm" }}>
           <div>
             <h3 style={{ margin: 0, fontFamily: "Georgia, serif", fontSize: "14pt", color: "#1b2f6b" }}>
@@ -196,25 +309,25 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
             <small style={{ color: "#5f6a82" }}>Academic record</small>
           </div>
         </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "5mm", fontSize: "8.6pt" }}>
+        <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", marginTop: "5mm", fontSize: "7.8pt" }}>
           <thead>
             <tr>
-              <th rowSpan={2} style={{ textAlign: "left", background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}>
+              <th rowSpan={2} style={{ textAlign: "left", background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}>
                 Subject
               </th>
               {groups.map((group, index) => (
                 <th
                   key={group.key}
                   colSpan={group.columns.length + (group.key === "ALL" ? 0 : 1)}
-                  style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}
+                  style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}
                 >
                   {semesterLabel(group.key)}
                 </th>
               ))}
-              <th rowSpan={2} style={{ background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}>
+              <th rowSpan={2} style={{ background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}>
                 Yearly average
               </th>
-              <th rowSpan={2} style={{ background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}>
+              <th rowSpan={2} style={{ background: "#1b2f6b", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}>
                 Grade
               </th>
             </tr>
@@ -222,12 +335,12 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
               {groups.map((group, index) => (
                 <React.Fragment key={group.key}>
                   {group.columns.map((column) => (
-                    <th key={column.key} style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}>
+                    <th key={column.key} style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}>
                       {column.label}
                     </th>
                   ))}
                   {group.key !== "ALL" && (
-                    <th style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.6mm 0.8mm" }}>
+                    <th style={{ background: index % 2 ? "#7a1a24" : "#223b86", color: "#fff", border: "0.2mm solid #fff", padding: "1.4mm 0.5mm", overflowWrap: "anywhere" }}>
                       Avg
                     </th>
                   )}
@@ -238,7 +351,7 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
           <tbody>
             {payload.subjects.map((subject) => (
               <tr key={subject.subjectId}>
-                <td style={{ textAlign: "left", fontWeight: 600, border: "0.2mm solid #cfd5e3", padding: "2.1mm 0.8mm" }}>
+                <td style={{ textAlign: "left", fontWeight: 600, border: "0.2mm solid #cfd5e3", padding: "1.7mm 0.5mm", overflowWrap: "anywhere" }}>
                   {subject.name}
                 </td>
                 {groups.map((group, index) => (
@@ -246,22 +359,22 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
                     {group.columns.map((column) => {
                       const cell = cellState(subject, column.key);
                       return (
-                        <td key={column.key} style={{ textAlign: "center", border: "0.2mm solid #cfd5e3", padding: "2.1mm 0.8mm", color: cell.color, fontWeight: cell.color === "#b5232f" ? 700 : undefined }}>
+                        <td key={column.key} style={{ textAlign: "center", border: "0.2mm solid #cfd5e3", padding: "1.7mm 0.5mm", overflowWrap: "anywhere", color: cell.color, fontWeight: cell.color === "#b5232f" ? 700 : undefined }}>
                           {cell.label}
                         </td>
                       );
                     })}
                     {group.key !== "ALL" && (
-                      <td style={{ textAlign: "center", background: "#f3f5fa", fontWeight: 700, border: "0.2mm solid #cfd5e3", padding: "2.1mm 0.8mm" }}>
+                      <td style={{ textAlign: "center", background: "#f3f5fa", fontWeight: 700, border: "0.2mm solid #cfd5e3", padding: "1.7mm 0.5mm", overflowWrap: "anywhere" }}>
                         {number(semesterAverage(subject, group.key))}
                       </td>
                     )}
                   </React.Fragment>
                 ))}
-                <td style={{ textAlign: "center", background: "#e8ecf7", fontWeight: 800, border: "0.2mm solid #cfd5e3", padding: "2.1mm 0.8mm" }}>
+                <td style={{ textAlign: "center", background: "#e8ecf7", fontWeight: 800, border: "0.2mm solid #cfd5e3", padding: "1.7mm 0.5mm", overflowWrap: "anywhere" }}>
                   {number(subject.yearlyAvg ?? subject.average)}
                 </td>
-                <td style={{ textAlign: "center", border: "0.2mm solid #cfd5e3", padding: "2.1mm 0.8mm" }}>
+                <td style={{ textAlign: "center", border: "0.2mm solid #cfd5e3", padding: "1.7mm 0.5mm", overflowWrap: "anywhere" }}>
                   <b>{value(subject.letter)}</b>
                 </td>
               </tr>
@@ -291,69 +404,8 @@ function GradesPage({ payload }: { payload: ReportCardPayload }) {
         <p style={{ marginTop: "4mm", fontSize: "8pt", color: "#5f6a82" }}>
           Scores shown in <b style={{ color: "#b5232f" }}>red</b> fall in the failing band of the school's grading system. — means no released score.
         </p>
-      </Frame>
-    </A4Page>
-  );
-}
-
-function DetailsPage({ payload }: { payload: ReportCardPayload }) {
-  const promotion = payload.promotion;
-  const signatures = [
-    ["Principal", payload.officialSignatures?.principal],
-    ["Registrar", payload.officialSignatures?.registrar],
-    ["Academic head", payload.officialSignatures?.academic],
-  ] as const;
-  return (
-    <A4Page style={{ background: "#fff", position: "relative" }}>
-      <Frame>
-        <h4 style={{ margin: 0, fontSize: "11pt", color: "#1b2f6b", borderBottom: "0.3mm solid #cfd5e3", paddingBottom: "1mm" }}>
-          Grading system
-        </h4>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "3mm", fontSize: "8.6pt" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", background: "#1b2f6b", color: "#fff", padding: "1.6mm", border: "0.2mm solid #fff" }}>Grade</th>
-              <th style={{ textAlign: "left", background: "#1b2f6b", color: "#fff", padding: "1.6mm", border: "0.2mm solid #fff" }}>Score range</th>
-              <th style={{ textAlign: "left", background: "#1b2f6b", color: "#fff", padding: "1.6mm", border: "0.2mm solid #fff" }}>Meaning</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payload.legend.map((row) => (
-              <tr key={row.letter}>
-                <td style={{ fontWeight: 800, textAlign: "left", padding: "2mm 3mm", border: "0.2mm solid #cfd5e3" }}>{row.letter}</td>
-                <td style={{ textAlign: "left", padding: "2mm 3mm", border: "0.2mm solid #cfd5e3" }}>{row.min} – {row.max}</td>
-                <td style={{ textAlign: "left", padding: "2mm 3mm", border: "0.2mm solid #cfd5e3" }}>{value(row.detail)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {promotion && (
-          <>
-            <h4 style={{ margin: "6mm 0 2mm", fontSize: "11pt", color: "#1b2f6b", borderBottom: "0.3mm solid #cfd5e3", paddingBottom: "1mm" }}>
-              Promotion
-            </h4>
-            <div style={{ border: "0.4mm solid #1b2f6b", borderRadius: 2, padding: "4mm 5mm", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2.5mm 8mm" }}>
-              <div><span style={{ display: "block", fontSize: "7.4pt", color: "#5f6a82", textTransform: "uppercase" }}>Outcome</span><b>{promotion.outcome ? value(promotion.outcome) : "Not yet finalised"}</b></div>
-              <div><span style={{ display: "block", fontSize: "7.4pt", color: "#5f6a82", textTransform: "uppercase" }}>Promoted to</span><b>{value(promotion.toGrade)}</b></div>
-              <div style={{ gridColumn: "span 2" }}><span style={{ display: "block", fontSize: "7.4pt", color: "#5f6a82", textTransform: "uppercase" }}>Remarks</span><b style={{ fontWeight: 500 }}>{value(promotion.remarks)}</b></div>
-              <div><span style={{ display: "block", fontSize: "7.4pt", color: "#5f6a82", textTransform: "uppercase" }}>Finalised</span><b>{dateLabel(promotion.finalizedAt)}</b></div>
-            </div>
-          </>
-        )}
-        <div style={{ display: "flex", gap: "8mm", marginTop: "auto", paddingTop: "10mm" }}>
-          {signatures.map(([label, slot]) => (
-            <div key={label} style={{ flex: 1, textAlign: "center", fontSize: "8pt", color: "#5f6a82" }}>
-              <div style={{ height: "13mm", borderBottom: "0.3mm solid #14203d", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                {slot?.signatureUrl && <img src={slot.signatureUrl} alt="" style={{ maxHeight: "12mm" }} />}
-              </div>
-              <b style={{ display: "block", color: "#14203d", fontSize: "9pt" }}>{value(slot?.name)}</b>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ textAlign: "center", fontSize: "7.5pt", color: "#5f6a82", marginTop: "4mm" }}>
-          Generated {dateLabel(payload.generatedAt)}
-        </div>
+        <GradingSystemBlock legend={payload.legend} />
+        <SignatureRow payload={payload} />
       </Frame>
     </A4Page>
   );
@@ -368,7 +420,6 @@ export function IprepSemesterBooklet({ payload, preview = false }: Props) {
     >
       <CoverPage payload={payload} />
       <GradesPage payload={payload} />
-      <DetailsPage payload={payload} />
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 0; }

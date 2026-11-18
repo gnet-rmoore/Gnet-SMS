@@ -403,21 +403,21 @@ export function monroviaAcademySampleInput(overrides?: Partial<ReceiptPdfInput>)
 
 const SAMPLE_BASE = {
   issuedAt: new Date("2026-11-17T14:30:00.000Z"),
-  schoolEmail: "finance@iprep.edu.lr",
+  schoolEmail: "finance@liberianacademy.edu.lr",
   schoolPhone: "+231 77 000 0000",
   schoolLogoUrl: "",
   brandColor: "#2563EB",
   schoolTimezone: "Africa/Monrovia",
   currency: "USD",
   payloadHash: "a91f3c7de204b58aa91f3c7de204b58aa91f3c7de204b58aa91f3c7de204b58a",
-  verifyUrl: "https://verify.iprep.edu/r/Xk29-PqL7",
+  verifyUrl: "https://verify.liberianacademy.edu.lr/r/Xk29-PqL7",
   status: "ISSUED",
   locale: "en",
   authorizedSignerName: "Finance Office",
   authorizedSignerTitle: "Authorised signatory",
 } as const;
 
-/** Preview fixtures mirror the six official IPREP designs so each picker option shows real-shaped data. */
+/** Preview fixtures mirror the six official Liberian Academy designs so each picker option shows real-shaped data. */
 export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInput {
   if (templateId.startsWith("PAYSLIP_")) {
     const earnings =
@@ -434,10 +434,10 @@ export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInp
     return {
       ...SAMPLE_BASE,
       title: "PAYSLIP",
-      receiptNumber: "IPREP-2026-000211",
-      schoolName: "Innovation Preparatory International Academy",
+      receiptNumber: "LR-2026-000211",
+      schoolName: "Liberian Academy",
       schoolAddress: "Monrovia, Liberia",
-      payerName: "Innovation Preparatory International Academy",
+      payerName: "Liberian Academy",
       payeeName: "Sarah K. Johnson",
       amount: 1269,
       lineItems: [
@@ -451,7 +451,7 @@ export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInp
       paidAt: new Date("2026-10-31T12:00:00.000Z"),
       paymentMethod: "BANK TRANSFER",
       categoryLabel: "Mathematics Department",
-      verifyUrl: "https://verify.iprep.edu/r/Qm81-Zt40",
+      verifyUrl: "https://verify.liberianacademy.edu.lr/r/Qm81-Zt40",
       payloadHash: "7be290ac14d3f6e17be290ac14d3f6e1",
       authorizedSignerTitle: "Finance Office",
     };
@@ -461,10 +461,10 @@ export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInp
     return {
       ...SAMPLE_BASE,
       title: "Expense Receipt",
-      receiptNumber: "IPREP-2026-000142",
-      schoolName: "Innovation Preparatory International Academy",
+      receiptNumber: "LR-2026-000142",
+      schoolName: "Liberian Academy",
       schoolAddress: "Monrovia, Liberia",
-      payerName: "IPREP",
+      payerName: "Liberian Academy",
       payeeName: "Monrovia Office Supplies Ltd.",
       amount: 450,
       lineItems: [
@@ -489,11 +489,11 @@ export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInp
   return {
     ...SAMPLE_BASE,
     title: "Official Receipt",
-    receiptNumber: "IPREP-2026-000378",
-    schoolName: "Innovation Preparatory International Academy",
+    receiptNumber: "LR-2026-000378",
+    schoolName: "Liberian Academy",
     schoolAddress: "Monrovia, Liberia",
     payerName: "Mrs. Grace Brown",
-    payeeName: "Innovation Preparatory International Academy",
+    payeeName: "Liberian Academy",
     amount: 500,
     lineItems: [
       { label: "Term 2 tuition – billed", amount: 850 },
@@ -511,7 +511,7 @@ export function sampleInputForReceiptTemplate(templateId: string): ReceiptPdfInp
     balanceAfter: 350,
     copyLabel: "Parent copy",
     cashierName: "",
-    verifyUrl: "https://verify.iprep.edu/r/Lw55-Ab19",
+    verifyUrl: "https://verify.liberianacademy.edu.lr/r/Lw55-Ab19",
     payloadHash: "c40d2e8f61a793b0c40d2e8f61a793b0",
     authorizedSignerTitle: "Registrar",
   };

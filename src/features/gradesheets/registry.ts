@@ -3,8 +3,8 @@ import type { GradeSheetTemplateDef, GradeSheetTemplateId } from "./types";
 export const GRADE_SHEET_TEMPLATES: GradeSheetTemplateDef[] = [
   {
     id: "TEMPLATE_1",
-    name: "Classic ledger",
-    description: "Formal certificate-style report. A4 · 210 × 297 mm.",
+    name: "Liberian Classic Grade Sheet",
+    description: "Formal certificate-style Liberian grade sheet. A4 · 210 × 297 mm.",
     pageSize: "a4",
     pdfFormat: "a4",
     cssPageSize: "A4",
@@ -12,8 +12,8 @@ export const GRADE_SHEET_TEMPLATES: GradeSheetTemplateDef[] = [
   },
   {
     id: "TEMPLATE_2",
-    name: "Modern mastery",
-    description: "Performance bars and KPIs. A4 · 210 × 297 mm.",
+    name: "Liberian Modern Grade Sheet",
+    description: "Liberian grade sheet with performance bars and KPIs. A4 · 210 × 297 mm.",
     pageSize: "a4",
     pdfFormat: "a4",
     cssPageSize: "A4",
@@ -21,8 +21,8 @@ export const GRADE_SHEET_TEMPLATES: GradeSheetTemplateDef[] = [
   },
   {
     id: "INTL_STANDARD_TERM",
-    name: "Standard Term Summary",
-    description: "Term-based single-term marks, grades, status, and remarks. A4 · 210 × 297 mm.",
+    name: "Liberian Term Grade Sheet",
+    description: "Liberian single-term grade sheet with marks, grades, status, and remarks. A4 · 210 × 297 mm.",
     pageSize: "a4",
     pdfFormat: "a4",
     cssPageSize: "A4",
@@ -30,8 +30,8 @@ export const GRADE_SHEET_TEMPLATES: GradeSheetTemplateDef[] = [
   },
   {
     id: "INTL_EXECUTIVE",
-    name: "Executive Performance Brief",
-    description: "Term-based leadership brief with strengths, focus areas, and mean mark. A4 · 210 × 297 mm.",
+    name: "Liberian Executive Grade Sheet",
+    description: "Liberian leadership grade sheet with strengths, focus areas, and mean mark. A4 · 210 × 297 mm.",
     pageSize: "a4",
     pdfFormat: "a4",
     cssPageSize: "A4",

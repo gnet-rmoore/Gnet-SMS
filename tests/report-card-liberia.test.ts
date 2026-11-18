@@ -29,6 +29,7 @@ import {
   getGradeSheetTemplateDef,
   resolveGradeSheetTemplateKey,
 } from "../src/features/gradesheets/registry.ts";
+import { renderReportCardHtml } from "../services/academic/src/features/report-cards/htmlBuilder.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -85,14 +86,14 @@ assert(
   ),
   "moved templates are not selectable under Report Card"
 );
-assert(getReportCardTemplateDef("INTL_STANDARD_TERM").picker === false, "Standard Term Summary report-card def stays for compatibility but is hidden");
-assert(getReportCardTemplateDef("INTL_EXECUTIVE").picker === false, "Executive Performance Brief report-card def stays for compatibility but is hidden");
+assert(getReportCardTemplateDef("INTL_STANDARD_TERM").picker === false, "Liberian Term Grade Sheet report-card def stays for compatibility but is hidden");
+assert(getReportCardTemplateDef("INTL_EXECUTIVE").picker === false, "Liberian Executive Grade Sheet report-card def stays for compatibility but is hidden");
 
 const gradeSheetIds = GRADE_SHEET_TEMPLATES.map((template) => template.id);
-assert(gradeSheetIds.includes("INTL_STANDARD_TERM"), "Standard Term Summary is selectable under Grade sheet");
-assert(gradeSheetIds.includes("INTL_EXECUTIVE"), "Executive Performance Brief is selectable under Grade sheet");
-assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "Standard Term Summary grade-sheet key resolves");
-assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").name === "Executive Performance Brief", "Executive Performance Brief grade-sheet def resolves");
+assert(gradeSheetIds.includes("INTL_STANDARD_TERM"), "Liberian Term Grade Sheet is selectable under Grade sheet");
+assert(gradeSheetIds.includes("INTL_EXECUTIVE"), "Liberian Executive Grade Sheet is selectable under Grade sheet");
+assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "Liberian Term Grade Sheet grade-sheet key resolves");
+assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").name === "Liberian Executive Grade Sheet", "Liberian Executive Grade Sheet grade-sheet def resolves");
 
 assert(matchIprepTermKey("Q1") === "T1", "Q1 maps to T1");
 assert(matchIprepTermKey("FIN") === "T3", "FIN maps to T3");
@@ -158,6 +159,23 @@ assert(booklet.columns.length === 8, "booklet has eight period/exam columns");
 const bookletMath = booklet.subjects.find((subject) => subject.code === "MTH");
 assert(bookletMath?.sem1Avg === 85, "booklet semester 1 average");
 assert(bookletMath?.yearlyAvg === 77.5, "booklet yearly average");
+
+const bookletHtml = renderReportCardHtml(IPREP_SEMESTER_BOOKLET, {
+  ...booklet,
+  promotion: {
+    outcome: "PROMOTED",
+    toGrade: "11",
+    remarks: "Promoted on the basis of satisfactory work.",
+    finalizedAt: "2026-06-28T09:00:00.000Z",
+  },
+} as any);
+const bookletPages = bookletHtml.match(/<section class="page/g) || [];
+const secondPageAt = bookletHtml.indexOf('<section class="page grades"');
+assert(bookletPages.length === 2, "booklet HTML renders exactly two pages");
+assert(bookletHtml.indexOf("Promotion") < secondPageAt, "promotion renders on the first page");
+assert(bookletHtml.indexOf("Grading system") > secondPageAt, "grading system renders on the second page");
+assert(bookletHtml.includes('class="page grades"'), "grades page uses the wide layout");
+assert(bookletHtml.includes('class="grade-scale"'), "grading system renders horizontally");
 
 assert(liberianProgressReportTitle("k-2") === "KINDERGARTEN PROGRESS REPORT CARD", "k-2 → Kindergarten title");
 assert(liberianScoreTone(68) === "fail", "68 is fail (<70)");

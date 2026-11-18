@@ -308,7 +308,12 @@ export const Settings = () => {
       })
       .catch((err) => {
         console.error("Failed to fetch notification prefs:", err);
-        showToast(t("settings.toast.notificationPrefsLoadFailed"), "error");
+        showToast(
+          t("pages:settings.toast.notificationPrefsLoadFailed", {
+            defaultValue: "Could not load notification preferences",
+          }),
+          "error"
+        );
       });
   }, [school?.id, showToast]);
 

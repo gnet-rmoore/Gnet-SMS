@@ -34,12 +34,12 @@ console.log("=========================================\n");
 assert(GRADE_SHEET_TEMPLATES.length === 4, "exactly 4 templates");
 assert(getGradeSheetTemplateDef("TEMPLATE_1").pageSize === "a4", "classic is A4");
 assert(getGradeSheetTemplateDef("TEMPLATE_2").pageSize === "a4", "modern is A4");
-assert(getGradeSheetTemplateDef("INTL_STANDARD_TERM").name === "Standard Term Summary", "Standard Term Summary is in grade sheets");
-assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").pageSize === "a4", "Executive Performance Brief is A4");
+assert(getGradeSheetTemplateDef("INTL_STANDARD_TERM").name === "Liberian Term Grade Sheet", "Liberian Term Grade Sheet is in grade sheets");
+assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").pageSize === "a4", "Liberian Executive Grade Sheet is A4");
 
 assert(resolveGradeSheetTemplateKey("TEMPLATE_1") === "TEMPLATE_1", "keep TEMPLATE_1");
-assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "keep Standard Term Summary");
-assert(resolveGradeSheetTemplateKey("INTL_EXECUTIVE") === "INTL_EXECUTIVE", "keep Executive Performance Brief");
+assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "keep Liberian Term Grade Sheet");
+assert(resolveGradeSheetTemplateKey("INTL_EXECUTIVE") === "INTL_EXECUTIVE", "keep Liberian Executive Grade Sheet");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_2") === "TEMPLATE_2", "keep TEMPLATE_2");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_3") === "TEMPLATE_1", "removed TEMPLATE_3 → classic");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_5") === "TEMPLATE_1", "legacy TEMPLATE_5 → classic");

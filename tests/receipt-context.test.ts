@@ -111,7 +111,10 @@ assert(
   const feeSample = sampleInputForReceiptTemplate("FEE_OFFICIAL_RECEIPT");
   const feeCtx = await buildReceiptContext(feeSample);
   assert(feeCtx.issuedAtDisplay === "17 Nov 2026", "short issue date matches design");
-  assert(feeCtx.verifyLabel === "verify.iprep.edu/r/Lw55-Ab19", "verify label is compact");
+  assert(
+    feeCtx.verifyLabel === "verify.liberianacademy.edu.lr/r/Lw55-Ab19",
+    "verify label is compact"
+  );
   assert(feeCtx.fingerprint === "c40d 2e8f 61a7 93b0", "fingerprint is grouped");
   assert(
     feeCtx.amountInWordsLower === "five hundred United States dollars only",

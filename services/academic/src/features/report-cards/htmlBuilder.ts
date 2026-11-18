@@ -287,35 +287,45 @@ function bookletHtml(payload: ReportCardPayload): string {
         <div><span>Finalised</span><b>${val(formatDate(promotion.finalizedAt))}</b></div>
       </div>`
     : "";
+  const gradingLegend = payload.legend.some((row) => String(row.letter || "").toUpperCase() === "INC")
+    ? payload.legend
+    : [...payload.legend, { letter: "INC", min: 0, max: 0, detail: "Incomplete" }];
+  const gradingScaleHtml = `<div class="grade-scale">
+      <h4 style="margin-top:0">Grading system</h4>
+      <table>
+        <thead><tr><th>Grade</th>${gradingLegend.map((row) => `<th>${val(row.letter)}</th>`).join("")}</tr></thead>
+        <tbody>
+          <tr><th>Score range</th>${gradingLegend.map((row) => `<td>${String(row.letter || "").toUpperCase() === "INC" ? "—" : `${val(row.min)} – ${val(row.max)}`}</td>`).join("")}</tr>
+          <tr><th>Meaning</th>${gradingLegend.map((row) => `<td>${val(row.detail)}</td>`).join("")}</tr>
+        </tbody>
+      </table>
+    </div>`;
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(student.name)} — Learner Progress Report</title><style>
     @page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;color:#14203d;font-family:'Segoe UI',Arial,sans-serif;font-size:9.5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .page{position:relative;width:210mm;height:297mm;background:#fff;overflow:hidden;break-after:page}.page:last-child{break-after:auto}.frame{position:absolute;inset:9mm;border:1.2mm double #1b2f6b;padding:11mm 12mm;display:flex;flex-direction:column}.center{align-items:center;text-align:center}
+    .page{position:relative;width:210mm;height:297mm;background:#fff;overflow:hidden;break-after:page}.page:last-child{break-after:auto}.frame{position:absolute;inset:9mm;border:1.2mm double #1b2f6b;padding:11mm 12mm;display:flex;flex-direction:column}.page.grades .frame{inset:7mm;padding:9mm 8mm}.center{align-items:center;text-align:center}
     .gov{font-size:9pt;letter-spacing:2pt;text-transform:uppercase;color:#b5232f;font-weight:700}.gov span{display:block;color:#1b2f6b;font-size:8pt;letter-spacing:1.4pt}.logo{width:38mm;height:38mm;object-fit:contain;margin:14mm 0 6mm}.serif{font-family:Georgia,serif}.cv h1{margin:0;font-size:25pt;color:#1b2f6b}.cv h2{margin:16mm 0 2mm;font-size:21pt}.yr{display:inline-block;background:#1b2f6b;color:#fff;padding:1.6mm 7mm;border-radius:10mm;font-weight:700;letter-spacing:1pt}
-    .card{margin-top:14mm;width:130mm;border:.4mm solid #1b2f6b;border-radius:2mm;text-align:left}.card div{display:flex;justify-content:space-between;padding:3mm 5mm;border-bottom:.2mm solid #cfd5e3}.card span{color:#5f6a82}.card b{font-size:11pt}.ft{margin-top:auto;font-size:8pt;color:#5f6a82}
+    .card{margin-top:14mm;width:130mm;border:.4mm solid #1b2f6b;border-radius:2mm;text-align:left}.card div{display:flex;justify-content:space-between;padding:3mm 5mm;border-bottom:.2mm solid #cfd5e3}.card span{color:#5f6a82}.card b{font-size:11pt}.cover-promo{width:100%;margin-top:auto;text-align:left}.cover-promo h4{margin-top:0}.cover-promo + .ft{margin-top:4mm}.ft{margin-top:auto;font-size:8pt;color:#5f6a82}
     .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.6mm solid #1b2f6b;padding-bottom:3mm}.hd h3{margin:0;font-size:14pt;color:#1b2f6b}.hd small{color:#5f6a82}.hd .rt{text-align:right}.hd .rt b{font-size:12pt}
-    table{width:100%;border-collapse:collapse;margin-top:5mm;font-size:8.6pt}th{background:#1b2f6b;color:#fff;padding:1.6mm .8mm;border:.2mm solid #fff}th.l,td.l{text-align:left;padding-left:2mm}td{padding:2.1mm .8mm;text-align:center;border:.2mm solid #cfd5e3}td.avg{background:#f3f5fa;font-weight:700}td.yr{background:#e8ecf7;font-weight:800}td.fail{color:#b5232f;font-weight:700}td.inc{color:#b26a00;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:5mm;font-size:8.6pt}.grades table{table-layout:fixed;font-size:7.8pt}.grades th,.grades td{padding:1.5mm .45mm;overflow-wrap:anywhere}.grades th.l,.grades td.l{padding-left:1.4mm}.grade-scale{margin-top:auto}.grade-scale table{font-size:7.2pt;margin-top:2mm;table-layout:fixed}.grade-scale th,.grade-scale td{padding:1.2mm .6mm;overflow-wrap:anywhere;text-align:center}th{background:#1b2f6b;color:#fff;padding:1.6mm .8mm;border:.2mm solid #fff}th.l,td.l{text-align:left;padding-left:2mm}td{padding:2.1mm .8mm;text-align:center;border:.2mm solid #cfd5e3}td.avg{background:#f3f5fa;font-weight:700}td.yr{background:#e8ecf7;font-weight:800}td.fail{color:#b5232f;font-weight:700}td.inc{color:#b26a00;font-weight:700}
     .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:6mm}.kp div{border:.3mm solid #cfd5e3;border-top:1mm solid #1b2f6b;border-radius:1.5mm;padding:2.5mm 3mm}.kp span{display:block;font-size:7.4pt;color:#5f6a82;text-transform:uppercase}.kp b{font-size:14pt}
     h4{margin:6mm 0 2mm;font-size:11pt;color:#1b2f6b;border-bottom:.3mm solid #cfd5e3;padding-bottom:1mm}.pm{border:.4mm solid #1b2f6b;border-radius:2mm;padding:4mm 5mm;display:grid;grid-template-columns:1fr 1fr;gap:2.5mm 8mm}.pm span{display:block;font-size:7.4pt;color:#5f6a82;text-transform:uppercase}.pm b{font-size:10.5pt}
-    .sigs{display:flex;gap:8mm;margin-top:auto;padding-top:10mm}.sig{flex:1;text-align:center;font-size:8pt;color:#5f6a82}.sig .ln{height:13mm;border-bottom:.3mm solid #14203d;margin-bottom:1.2mm;display:flex;align-items:flex-end;justify-content:center}.sig img{max-height:12mm}.sig b{display:block;color:#14203d;font-size:9pt}.gen{text-align:center;font-size:7.5pt;color:#5f6a82;margin-top:4mm}
+    .sigs{display:flex;gap:8mm;margin-top:6mm;padding-top:0}.sig{flex:1;text-align:center;font-size:8pt;color:#5f6a82}.sig .ln{height:13mm;border-bottom:.3mm solid #14203d;margin-bottom:1.2mm;display:flex;align-items:flex-end;justify-content:center}.sig img{max-height:12mm}.sig b{display:block;color:#14203d;font-size:9pt}.gen{text-align:center;font-size:7.5pt;color:#5f6a82;margin-top:4mm}
   </style></head><body>
     <section class="page"><div class="frame center">
       <div class="gov">${showMoe ? "Republic of Liberia<span>Ministry of Education</span>" : ""}</div>${school.logoUrl ? `<img class="logo" src="${esc(school.logoUrl)}" alt="">` : `<div class="logo" style="border:.6mm solid #1b2f6b;border-radius:50%;display:grid;place-items:center;font-size:34pt;font-weight:800;color:#1b2f6b">${esc((school.name || "SCHOOL").split(/\s+/).map((word) => word[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "S")}</div>`}
       <h1 class="serif">${val(school.name)}</h1><div style="font-size:9pt;color:#5f6a82">${contact}</div>
       <h2 class="serif">Learner Progress Report</h2><div class="yr">${val(payload.academicYear.label)}</div>
       <div class="card"><div><span>Learner</span><b>${val(student.name)}</b></div><div><span>Class</span><b>${val(student.classLabel)}</b></div><div><span>Grade level</span><b>${val(student.gradeLevelLabel)}</b></div><div><span>Learner ID</span><b>${val(student.id)}</b></div></div>
+      ${promotion ? `<div class="cover-promo">${promotionHtml}</div>` : ""}
       <div class="ft">${val([school.district, school.county && `${school.county} County`, school.country].filter(Boolean).join(" · "))}</div>
     </div></section>
-    <section class="page"><div class="frame">
+    <section class="page grades"><div class="frame">
       <div class="hd"><div><h3 class="serif">${val(student.name)}</h3><small>${val(student.classLabel)} · ${val(payload.academicYear.label)}</small></div><div class="rt"><b>${val(school.name)}</b><br><small>Academic record</small></div></div>
       <table><thead>${head}</thead><tbody>${bodyRows}</tbody></table>
       <div class="kp"><div><span>Overall average</span><b>${num(payload.aggregates.overallAverage)}</b></div><div><span>GPA</span><b>${num(payload.aggregates.gpa, 2)}</b></div><div><span>Class position</span><b>${val(payload.aggregates.classPosition)}</b></div><div><span>Attendance</span><b>${payload.aggregates.attendanceRate == null ? "—" : `${num(payload.aggregates.attendanceRate, 0)}%`}</b></div></div>
       <p style="margin-top:4mm;font-size:8pt;color:#5f6a82">Scores shown in <b style="color:#b5232f">red</b> fall in the failing band of the school's grading system. — means no released score.</p>
-    </div></section>
-    <section class="page"><div class="frame">
-      <h4 style="margin-top:0">Grading system</h4>
-      <table><thead><tr><th class="l">Grade</th><th class="l">Score range</th><th class="l">Meaning</th></tr></thead><tbody>${payload.legend.map((row) => `<tr><td class="l"><b>${val(row.letter)}</b></td><td class="l">${esc(row.min)} – ${esc(row.max)}</td><td class="l">${val(row.detail)}</td></tr>`).join("")}${payload.legend.some((row) => String(row.letter || "").toUpperCase() === "INC") ? "" : `<tr><td class="l"><b>INC</b></td><td class="l">—</td><td class="l">Incomplete</td></tr>`}</tbody></table>
-      ${promotionHtml}
+      ${gradingScaleHtml}
       <div class="sigs">${([
         { label: "Principal", slot: payload.officialSignatures?.principal },
         { label: "Registrar", slot: payload.officialSignatures?.registrar },

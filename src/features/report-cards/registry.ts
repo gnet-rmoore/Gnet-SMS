@@ -10,9 +10,9 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: IPREP_PROGRESS_CLASSIC,
     region: "INTL",
-    label: "IPREP Academic Progress — Classic",
+    label: "Liberian Academic Progress — Classic",
     description:
-      "Black-and-white single-page academic progress report with three terms, grading scale, conduct ratings, promotion certificate, and official signatures.",
+      "Black-and-white single-page Liberian academic progress report with three terms, grading scale, conduct ratings, promotion certificate, and official signatures.",
     audience: "BOTH",
     calendarAffinity: ["THREE_TERM", "ANY"],
     basisLabel: "Term-based · three terms (T1 / T2 / T3)",
@@ -25,9 +25,9 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: IPREP_PROGRESS_MODERN,
     region: "INTL",
-    label: "IPREP Academic Progress — Modern",
+    label: "Liberian Academic Progress — Modern",
     description:
-      "Purple single-page progress report with term bars, performance snapshots, conduct ratings, grading legend, promotion certificate, and signatures.",
+      "Purple single-page Liberian progress report with term bars, performance snapshots, conduct ratings, grading legend, promotion certificate, and signatures.",
     audience: "BOTH",
     calendarAffinity: ["THREE_TERM", "ANY"],
     basisLabel: "Term-based · three terms (T1 / T2 / T3)",
@@ -40,9 +40,9 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: IPREP_SEMESTER_BOOKLET,
     region: "LR",
-    label: "IPREP Liberian Semester Booklet",
+    label: "Liberian Semester Booklet",
     description:
-      "Three-page A4 portrait Liberian learner booklet with cover, two-semester marks matrix, grading system, promotion record, and official signatures.",
+      "Two-page A4 portrait Liberian learner booklet with cover and promotion, two-semester marks matrix, horizontal grading system, and official signatures.",
     audience: "BOTH",
     calendarAffinity: ["SEMESTER"],
     basisLabel: "Semester-based · two semesters (six periods + exams)",
@@ -81,9 +81,9 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: "INTL_STANDARD_TERM",
     region: "INTL",
-    label: "Standard Term Summary",
+    label: "Liberian Term Grade Sheet",
     description:
-      "Term-based single-term summary with marks, grades, status, and remarks. Available under Grade sheet templates.",
+      "Liberian single-term grade sheet with marks, grades, status, and remarks. Available under Grade sheet templates.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
     basisLabel: "Term-based · single term",
@@ -95,9 +95,9 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
   {
     key: "INTL_EXECUTIVE",
     region: "INTL",
-    label: "Executive Performance Brief",
+    label: "Liberian Executive Grade Sheet",
     description:
-      "Term-based leadership brief highlighting strengths, focus areas, overall mean, and concise subject performance. Available under Grade sheet templates.",
+      "Liberian leadership grade sheet with strengths, focus areas, overall mean, and concise subject performance. Available under Grade sheet templates.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
     basisLabel: "Term-based · single term",
@@ -126,7 +126,7 @@ const byLegacy = new Map(
   ])
 );
 
-/** Resolve stored school.reportCardTemplate — removed templates fall back to the IPREP classic report. */
+/** Resolve stored school.reportCardTemplate — removed templates fall back to the Liberian classic report. */
 export function resolveReportCardTemplateKey(stored?: string | null): string {
   const raw = normalizeTemplateKey(stored);
   if (!raw) return DEFAULT_REPORT_CARD_TEMPLATE_KEY;

@@ -192,7 +192,7 @@ export function renderTemplatePreview(
     const payload = assembleReportCardPayload({
       templateKey: templateId,
       school: {
-        name: schoolName || "Innovation Preparatory International Academy — IPREP",
+        name: schoolName || "Liberian Academy — Monrovia",
         address: address || "Education For The Future · Monrovia, Liberia",
         logoUrl: opts?.logoUrl || null,
         brandColor: opts?.brandColor || null,
@@ -201,10 +201,10 @@ export function renderTemplatePreview(
         district: "Monrovia",
         poBox: "P.O. Box 10-1234",
         contactPhone: "+231 77 000 0142",
-        contactEmail: "records@iprep.edu.lr",
+        contactEmail: "records@liberianacademy.edu.lr",
       },
       student: {
-        id: "IPREP-2025-0142",
+        id: "LR-2025-0142",
         name: semester ? "Grace K. Johnson" : "Mbumen Aelys-Shadya",
         sex: "Female",
         classLabel: semester ? "Grade 10 · B" : "Grade 2 · A",
@@ -373,7 +373,7 @@ export function renderTemplatePreview(
     key === "INTL_STANDARD_TERM" || key === "INTL_EXECUTIVE"
       ? "Term-based · single term"
       : null;
-  const schoolLabel = schoolName || "Innovation Preparatory International Academy — IPREP";
+  const schoolLabel = schoolName || "Liberian Academy — Monrovia";
   const addressLabel = address || "Education For The Future · Monrovia, Liberia";
 
   return (
