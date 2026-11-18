@@ -10,11 +10,14 @@ import {
   IPREP_LEGEND_SCALES,
   isIprepProgressTemplate,
   isIprepReportCardTemplate,
+  isIprepSemesterBifoldTemplate,
   isIprepSemesterBookletTemplate,
+  isIprepSemesterTemplate,
   isLiberianReportCardTemplate,
   liberianProgressReportTitle,
   liberianScoreTone,
   IPREP_SEMESTER_BOOKLET,
+  IPREP_SEMESTER_BIFOLD,
   iprepProgressVariant,
   LIBERIA_SENIOR_HIGH_SCALES,
   matchIprepTermKey,
@@ -53,13 +56,18 @@ assert(resolveReportCardTemplateKey("") === IPREP_PROGRESS_CLASSIC, "empty key â
 assert(resolveReportCardTemplateKey("INTL_WISTERIA_GREEN") === "INTL_WISTERIA_GREEN", "kept template passthrough");
 assert(!isLiberianReportCardTemplate("TEMPLATE_1"), "classic legacy key is not Liberian");
 assert(isLiberianReportCardTemplate(IPREP_SEMESTER_BOOKLET), "booklet is Liberian");
+assert(isLiberianReportCardTemplate(IPREP_SEMESTER_BIFOLD), "bi-fold is Liberian");
 assert(isIprepReportCardTemplate("TEMPLATE_2"), "modern legacy key is IPREP");
 assert(isIprepSemesterBookletTemplate("TEMPLATE_3"), "booklet legacy key is IPREP semester booklet");
+assert(isIprepSemesterBifoldTemplate(IPREP_SEMESTER_BIFOLD), "bi-fold key is IPREP semester bi-fold");
+assert(isIprepSemesterTemplate(IPREP_SEMESTER_BIFOLD), "bi-fold key is an IPREP semester template");
+assert(resolveReportCardTemplateKey(IPREP_SEMESTER_BIFOLD) === IPREP_SEMESTER_BIFOLD, "bi-fold key resolves to itself");
 
 assert(normalizeTemplateKey(" intl-iprep-progress-classic ") === IPREP_PROGRESS_CLASSIC, "key normalization uppercases and trims");
 assert(resolveReportCardTemplateKey("intl-iprep-progress-classic") === IPREP_PROGRESS_CLASSIC, "hyphenated/lowercase canonical key resolves");
 assert(resolveReportCardTemplateKey("template_2") === IPREP_PROGRESS_MODERN, "normalized legacy key resolves");
 assert(resolveReportCardTemplateKey("lr-iprep-semester-booklet") === IPREP_SEMESTER_BOOKLET, "normalized booklet key resolves");
+assert(resolveReportCardTemplateKey("lr-iprep-semester-bifold") === IPREP_SEMESTER_BIFOLD, "normalized bi-fold key resolves");
 const removed = resolveReportCardTemplateKey("LR_PUBLIC_MOE_TWO_SEM_REMOVED");
 assert(isIprepReportCardTemplate(removed) && isIprepProgressTemplate(removed), "removed key routes to IPREP branch");
 assert(iprepProgressVariant(removed) === "classic", "removed key uses classic variant");
@@ -71,12 +79,17 @@ assert(moe.pages.includes("GRADES"), "default template has grades page");
 
 const groups = reportCardPickerGroups();
 assert(groups.length === 2, "two picker groups");
-assert(groups.some((group) => group.region === "LR" && group.items.length === 1), "Liberian group has the booklet");
+assert(groups.some((group) => group.region === "LR" && group.items.length === 2), "Liberian group has booklet and bi-fold");
 assert(groups.some((group) => group.region === "INTL" && group.items.length === 4), "International group has 4 selectable templates");
 assert(
   groups.some((group) => group.items.some((item) => item.key === IPREP_SEMESTER_BOOKLET)),
   "booklet is selectable"
 );
+assert(
+  groups.some((group) => group.items.some((item) => item.key === IPREP_SEMESTER_BIFOLD)),
+  "bi-fold is selectable"
+);
+assert(getReportCardTemplateDef(IPREP_SEMESTER_BIFOLD).label === "Liberian Semester Bi-Fold", "bi-fold uses the Liberian label");
 assert(
   !groups.some((group) =>
     group.items.some(
@@ -176,6 +189,38 @@ assert(bookletHtml.indexOf("Promotion") < secondPageAt, "promotion renders on th
 assert(bookletHtml.indexOf("Grading system") > secondPageAt, "grading system renders on the second page");
 assert(bookletHtml.includes('class="page grades"'), "grades page uses the wide layout");
 assert(bookletHtml.includes('class="grade-scale"'), "grading system renders horizontally");
+
+const biFold = assembleReportCardPayload({
+  templateKey: IPREP_SEMESTER_BIFOLD,
+  school: { name: "Liberian Academy", address: "Monrovia", country: "Liberia" },
+  student: { id: "s7", name: "Grace", classLabel: "Grade 10", gradeLevelLabel: "Grade 10" },
+  academicYearLabel: "2025/2026",
+  grades: [
+    { id: "bf1", score: 80, subject: { id: "m", name: "Math", code: "MTH" }, examComponent: { shortCode: "SEM1_P1" } },
+    { id: "bf2", score: 90, subject: { id: "m", name: "Math", code: "MTH" }, examComponent: { shortCode: "SEM1_P2" } },
+    { id: "bf3", score: 70, subject: { id: "m", name: "Math", code: "MTH" }, examComponent: { shortCode: "SEM2_EX" } },
+  ],
+});
+assert(biFold.columns.length === 8, "bi-fold has eight period/exam columns");
+assert(biFold.columns[0].key === "SEM1_P1", "bi-fold starts with first period");
+assert(biFold.subjects[0].yearlyAvg === 77.5, "bi-fold yearly average matches booklet payload");
+
+const biFoldHtml = renderReportCardHtml(IPREP_SEMESTER_BIFOLD, {
+  ...biFold,
+  promotion: {
+    outcome: "PROMOTED",
+    toGrade: "11",
+    remarks: "Promoted on the basis of satisfactory work.",
+    finalizedAt: "2026-06-28T09:00:00.000Z",
+  },
+} as any);
+assert(biFoldHtml.includes("@page{size:A4 landscape"), "bi-fold PDF uses A4 landscape");
+assert(biFoldHtml.includes('class="sheet bifold-sheet"'), "bi-fold PDF uses one landscape sheet");
+assert((biFoldHtml.match(/<section class="panel/g) || []).length === 2, "bi-fold PDF has two panels");
+assert(biFoldHtml.indexOf("Promotion") < biFoldHtml.indexOf("Academic record"), "bi-fold PDF puts promotion before the academic record");
+assert(biFoldHtml.includes("Grading system") && biFoldHtml.includes('class="grade-scale"'), "bi-fold PDF renders the grading system");
+assert(biFoldHtml.includes("<td>77.5</td>"), "bi-fold PDF uses yearly average for Year/Avg");
+assert(biFoldHtml.includes("Class Teacher") && biFoldHtml.includes("Principal"), "bi-fold PDF renders signatures");
 
 assert(liberianProgressReportTitle("k-2") === "KINDERGARTEN PROGRESS REPORT CARD", "k-2 â†’ Kindergarten title");
 assert(liberianScoreTone(68) === "fail", "68 is fail (<70)");

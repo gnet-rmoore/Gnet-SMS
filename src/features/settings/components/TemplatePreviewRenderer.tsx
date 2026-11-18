@@ -5,9 +5,11 @@ import {
   InternationalReportCard,
   iprepProgressVariant,
   IprepProgressReport,
+  IprepSemesterBifold,
   IprepSemesterBooklet,
   isIprepReportCardTemplate,
-  isIprepSemesterBookletTemplate,
+  isIprepSemesterBifoldTemplate,
+  isIprepSemesterTemplate,
   isLiberianReportCardTemplate,
   LiberianReportCardBooklet,
 } from "../../report-cards";
@@ -173,7 +175,8 @@ export function renderTemplatePreview(
   }
 
   if (type === "REPORT" && isIprepReportCardTemplate(templateId)) {
-    const semester = isIprepSemesterBookletTemplate(templateId);
+    const semester = isIprepSemesterTemplate(templateId);
+    const bifold = isIprepSemesterBifoldTemplate(templateId);
     const basis = getReportCardTemplateDef(templateId).basisLabel;
     const columnKeys = semester
       ? ["SEM1_P1", "SEM1_P2", "SEM1_P3", "SEM1_EX", "SEM2_P4", "SEM2_P5", "SEM2_P6", "SEM2_EX"]
@@ -223,8 +226,15 @@ export function renderTemplatePreview(
     payload.officialSignatures = PREVIEW_SIGNATURES;
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        {previewHeader("A4 · 210 × 297 mm · actual print size", basis)}
-        {semester ? (
+        {previewHeader(
+          bifold
+            ? "A4 landscape · 297 × 210 mm · bi-fold"
+            : "A4 · 210 × 297 mm · actual print size",
+          basis
+        )}
+        {bifold ? (
+          <IprepSemesterBifold payload={payload} preview />
+        ) : semester ? (
           <IprepSemesterBooklet payload={payload} preview />
         ) : (
           <IprepProgressReport

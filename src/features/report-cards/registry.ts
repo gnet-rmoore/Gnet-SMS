@@ -3,6 +3,7 @@
   IPREP_PROGRESS_CLASSIC,
   IPREP_PROGRESS_MODERN,
   IPREP_SEMESTER_BOOKLET,
+  IPREP_SEMESTER_BIFOLD,
 } from "./iprepTemplates";
 import type { ReportCardRegion, ReportCardTemplateDef } from "./types";
 
@@ -50,6 +51,20 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
     legacyId: "TEMPLATE_3",
+    documentTitle: "Learner Progress Report",
+  },
+  {
+    key: IPREP_SEMESTER_BIFOLD,
+    region: "LR",
+    label: "Liberian Semester Bi-Fold",
+    description:
+      "Single-sheet A4 landscape Liberian learner report folded into two panels, with cover, promotion, two-semester marks matrix, grading system, and official signatures.",
+    audience: "BOTH",
+    calendarAffinity: ["SEMESTER"],
+    basisLabel: "Semester-based · two semesters (six periods + exams)",
+    pages: ["COVER", "GRADES", "GRADING_SYSTEM", "PROMOTION"],
+    promotionScheme: "A_D",
+    branding: "SCHOOL_LOGO",
     documentTitle: "Learner Progress Report",
   },
   {

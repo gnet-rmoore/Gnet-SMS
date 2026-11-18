@@ -9,21 +9,21 @@ type Props = {
   preview?: boolean;
 };
 
-function value(value: string | number | null | undefined): string {
+export function value(value: string | number | null | undefined): string {
   return value == null || value === "" ? "—" : String(value);
 }
 
-function number(value: number | null | undefined, digits = 1): string {
+export function number(value: number | null | undefined, digits = 1): string {
   return value == null || Number.isNaN(value) ? "—" : Number(value).toFixed(digits);
 }
 
-function dateLabel(value: string | null | undefined): string {
+export function dateLabel(value: string | null | undefined): string {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function humanize(value: string | null | undefined): string {
+export function humanize(value: string | null | undefined): string {
   if (!value) return "—";
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -33,7 +33,7 @@ function tone(score: number | null | undefined, failBand: string): string {
   return failBand === "fail" ? "#b5232f" : "#14203d";
 }
 
-function cellState(
+export function cellState(
   subject: ReportCardPayload["subjects"][number],
   key: string
 ): { label: string; color: string } {
@@ -43,13 +43,13 @@ function cellState(
   return { label: cell?.score == null ? "—" : number(cell.score, 0), color: tone(cell?.score, band) };
 }
 
-function semesterLabel(key: string): string {
+export function semesterLabel(key: string): string {
   if (key === "SEM1") return "First semester";
   if (key === "SEM2") return "Second semester";
   return "Marks";
 }
 
-function semesterAverage(
+export function semesterAverage(
   subject: ReportCardPayload["subjects"][number],
   key: string
 ): number | null {
@@ -58,7 +58,7 @@ function semesterAverage(
   return subject.average;
 }
 
-function groupsOf(columns: ReportCardPayload["columns"]) {
+export function groupsOf(columns: ReportCardPayload["columns"]) {
   const groups: Array<{ key: string; columns: ReportCardPayload["columns"] }> = [];
   for (const column of columns) {
     const key = /^(SEM\d)_/.exec(column.key)?.[1] || "ALL";

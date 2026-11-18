@@ -11,6 +11,7 @@ import type { GradeLegendLike } from "../../lib/gradeLegend";
 import {
   getReportCardTemplateDef,
   isIprepReportCardTemplate,
+  isIprepSemesterBifoldTemplate,
   isIprepSemesterBookletTemplate,
   isLiberianReportCardTemplate,
   resolveReportCardTemplateKey,
@@ -47,6 +48,7 @@ export const ReportCard = () => {
   const templateDef = getReportCardTemplateDef(templateId);
   const liberian = isLiberianReportCardTemplate(templateId);
   const iprepBooklet = isIprepSemesterBookletTemplate(templateId);
+  const semesterBiFold = isIprepSemesterBifoldTemplate(templateId);
   const liberianBifold = liberian && !iprepBooklet;
   const useAllGrades = liberian || isIprepReportCardTemplate(templateId);
   const { calendar } = useAcademicCalendarQuery();
@@ -152,7 +154,7 @@ export const ReportCard = () => {
     try {
       // Liberian bifolds use their own sheets; IPREP booklet + international cards use .intl-a4-page
       const sheetSel = liberianBifold
-        ? ".a4-portrait-sheet, .grades-inside-spread, .grading-spread"
+        ? ".a4-portrait-sheet, .grades-inside-spread, .grading-spread, .bifold-sheet"
         : ".intl-a4-page, .report-card-sheet, #report-card > div, .report-card-page";
       let targets = Array.from(element.querySelectorAll(sheetSel)) as HTMLElement[];
       if (liberianBifold) {
@@ -162,7 +164,7 @@ export const ReportCard = () => {
       }
       if (targets.length === 0) targets = [element];
 
-      const orientation = "portrait";
+      const orientation = semesterBiFold ? "landscape" : "portrait";
       const pdf = new jsPDF({
         orientation,
         unit: "mm",
@@ -235,7 +237,9 @@ export const ReportCard = () => {
     : `Status: Released · ${grades[0]?.exam?.title || "Report"}`;
 
   return (
-    <div className="max-w-[900px] mx-auto space-y-8 pb-20 px-4 sm:px-6">
+    <div
+      className={`${semesterBiFold ? "max-w-[1200px]" : "max-w-[900px]"} mx-auto space-y-8 pb-20 px-4 sm:px-6`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 no-print">
         <div className="flex items-center gap-4">
           <button
@@ -304,7 +308,7 @@ export const ReportCard = () => {
           @page { size: A4 landscape; margin: 0; }
           .no-print { display: none !important; }
           body { background: white !important; padding: 0 !important; margin: 0 !important; }
-          .max-w-\\[1000px\\] { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+          .max-w-\\[900px\\], .max-w-\\[1000px\\], .max-w-\\[1200px\\] { max-width: none !important; margin: 0 !important; padding: 0 !important; }
           #report-card { box-shadow: none !important; border: none !important; width: auto !important; margin: 0 !important; border-radius: 0 !important; }
           .overflow-x-auto { overflow: visible !important; border: none !important; box-shadow: none !important; background: white !important; padding: 0 !important; border-radius: 0 !important; }
         }
@@ -314,7 +318,7 @@ export const ReportCard = () => {
           @page { size: A4 portrait; margin: 0; }
           .no-print { display: none !important; }
           body { background: white !important; padding: 0 !important; margin: 0 !important; }
-          .max-w-\\[1000px\\] { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+          .max-w-\\[900px\\], .max-w-\\[1000px\\], .max-w-\\[1200px\\] { max-width: none !important; margin: 0 !important; padding: 0 !important; }
            #report-card { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; border-radius: 0 !important; }
            .overflow-x-auto { overflow: visible !important; border: none !important; box-shadow: none !important; background: white !important; }
            .iprep-semester-booklet .intl-a4-page { margin: 0 !important; box-shadow: none !important; break-after: page; }

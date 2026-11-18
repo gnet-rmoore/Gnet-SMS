@@ -1,11 +1,13 @@
 export const IPREP_PROGRESS_CLASSIC = "INTL_IPREP_PROGRESS_CLASSIC";
 export const IPREP_PROGRESS_MODERN = "INTL_IPREP_PROGRESS_MODERN";
 export const IPREP_SEMESTER_BOOKLET = "LR_IPREP_SEMESTER_BOOKLET";
+export const IPREP_SEMESTER_BIFOLD = "LR_IPREP_SEMESTER_BIFOLD";
 
 export const IPREP_REPORT_CARD_KEYS = [
   IPREP_PROGRESS_CLASSIC,
   IPREP_PROGRESS_MODERN,
   IPREP_SEMESTER_BOOKLET,
+  IPREP_SEMESTER_BIFOLD,
 ] as const;
 
 export type IprepReportCardKey = (typeof IPREP_REPORT_CARD_KEYS)[number];
@@ -25,8 +27,16 @@ export function isIprepSemesterBookletTemplate(keyOrLegacy?: string | null): boo
   return keyOrLegacy === IPREP_SEMESTER_BOOKLET || keyOrLegacy === "TEMPLATE_3";
 }
 
+export function isIprepSemesterBifoldTemplate(keyOrLegacy?: string | null): boolean {
+  return keyOrLegacy === IPREP_SEMESTER_BIFOLD;
+}
+
+export function isIprepSemesterTemplate(keyOrLegacy?: string | null): boolean {
+  return isIprepSemesterBookletTemplate(keyOrLegacy) || isIprepSemesterBifoldTemplate(keyOrLegacy);
+}
+
 export function isIprepReportCardTemplate(keyOrLegacy?: string | null): boolean {
-  return isIprepProgressTemplate(keyOrLegacy) || isIprepSemesterBookletTemplate(keyOrLegacy);
+  return isIprepProgressTemplate(keyOrLegacy) || isIprepSemesterTemplate(keyOrLegacy);
 }
 
 export function iprepProgressVariant(

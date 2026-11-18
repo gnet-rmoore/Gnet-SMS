@@ -6,8 +6,10 @@ import {
   InternationalReportCard,
   iprepProgressVariant,
   IprepProgressReport,
+  IprepSemesterBifold,
   IprepSemesterBooklet,
   isIprepReportCardTemplate,
+  isIprepSemesterBifoldTemplate,
   isIprepSemesterBookletTemplate,
   isLiberianReportCardTemplate,
   LiberianReportCardBooklet,
@@ -82,6 +84,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
         poBox: school?.poBox,
         logoUrl: school?.logoUrl,
         brandColor: school?.brandColor,
+        branding: school?.branding,
         country: school?.country,
         county: school?.county,
         district: school?.district,
@@ -110,6 +113,9 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
 
   if (isIprepReportCardTemplate(resolvedTemplateKey)) {
     const payload = buildPayload();
+    if (isIprepSemesterBifoldTemplate(resolvedTemplateKey)) {
+      return <IprepSemesterBifold payload={payload} preview={preview} />;
+    }
     if (isIprepSemesterBookletTemplate(resolvedTemplateKey)) {
       return <IprepSemesterBooklet payload={payload} preview={preview} />;
     }

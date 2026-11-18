@@ -1,11 +1,13 @@
 export const IPREP_PROGRESS_CLASSIC = "INTL_IPREP_PROGRESS_CLASSIC";
 export const IPREP_PROGRESS_MODERN = "INTL_IPREP_PROGRESS_MODERN";
 export const IPREP_SEMESTER_BOOKLET = "LR_IPREP_SEMESTER_BOOKLET";
+export const IPREP_SEMESTER_BIFOLD = "LR_IPREP_SEMESTER_BIFOLD";
 
 const CANONICAL_KEYS = new Set([
   IPREP_PROGRESS_CLASSIC,
   IPREP_PROGRESS_MODERN,
   IPREP_SEMESTER_BOOKLET,
+  IPREP_SEMESTER_BIFOLD,
   "INTL_WISTERIA_GREEN",
   "INTL_WISTERIA_NAVY",
   "INTL_STANDARD_TERM",
@@ -41,8 +43,16 @@ export function isIprepSemesterBookletTemplate(value?: string | null): boolean {
   return resolveReportCardTemplateKey(value) === IPREP_SEMESTER_BOOKLET;
 }
 
+export function isIprepSemesterBifoldTemplate(value?: string | null): boolean {
+  return resolveReportCardTemplateKey(value) === IPREP_SEMESTER_BIFOLD;
+}
+
+export function isIprepSemesterTemplate(value?: string | null): boolean {
+  return isIprepSemesterBookletTemplate(value) || isIprepSemesterBifoldTemplate(value);
+}
+
 export function isIprepReportCardTemplate(value?: string | null): boolean {
-  return isIprepProgressTemplate(value) || isIprepSemesterBookletTemplate(value);
+  return isIprepProgressTemplate(value) || isIprepSemesterTemplate(value);
 }
 
 export function iprepProgressVariant(value?: string | null): "classic" | "modern" {

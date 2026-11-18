@@ -3,7 +3,10 @@ import { generatePDF } from "../lib/pdfService";
 import { getGradeSheetTemplateDef, resolveGradeSheetTemplateKey } from "../features/gradesheets";
 import { buildReportCardContext } from "../features/report-cards/context";
 import { renderReportCardHtml } from "../features/report-cards/htmlBuilder";
-import { resolveReportCardTemplateKey } from "../features/report-cards/registry";
+import {
+  isIprepSemesterBifoldTemplate,
+  resolveReportCardTemplateKey,
+} from "../features/report-cards/registry";
 import prisma from "../lib/prisma";
 
 const GRADE_SHEET_TEMPLATES = {
@@ -312,6 +315,7 @@ export const pdfController = {
       const pdfBuffer = await generatePDF({
         html,
         format: "A4",
+        landscape: isIprepSemesterBifoldTemplate(templateId),
         margin: { top: "0", bottom: "0", left: "0", right: "0" },
         printBackground: true,
       });

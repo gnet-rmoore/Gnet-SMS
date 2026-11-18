@@ -8,7 +8,7 @@ import {
 import {
   IPREP_PROGRESS_CLASSIC,
   isIprepReportCardTemplate,
-  isIprepSemesterBookletTemplate,
+  isIprepSemesterTemplate,
   resolveReportCardTemplateKey,
 } from "./registry";
 import type {
@@ -208,7 +208,7 @@ export async function buildReportCardContext(
   if (!school) throw new Error("School not found");
 
   const templateKey = resolveReportCardTemplateKey(school.reportCardTemplate);
-  const semester = isIprepSemesterBookletTemplate(templateKey);
+  const semester = isIprepSemesterTemplate(templateKey);
   const useIprep = isIprepReportCardTemplate(templateKey);
   const columns = semester ? SEMESTER_COLUMNS : TERM_COLUMNS;
 

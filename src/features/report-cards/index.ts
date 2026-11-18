@@ -26,15 +26,19 @@ export {
   IPREP_PROGRESS_CLASSIC,
   IPREP_PROGRESS_MODERN,
   IPREP_SEMESTER_BOOKLET,
+  IPREP_SEMESTER_BIFOLD,
   iprepProgressVariant,
   isIprepProgressTemplate,
   isIprepReportCardTemplate,
+  isIprepSemesterBifoldTemplate,
   isIprepSemesterBookletTemplate,
+  isIprepSemesterTemplate,
 } from "./iprepTemplates";
 export { IPREP_TERM_COLUMNS, matchIprepTermKey, iprepTermLabel } from "./iprepTermColumns";
 export { IPREP_LEGEND_SCALES } from "./iprepLegend";
 export { IprepProgressReport } from "./components/IprepProgressReport";
 export { IprepSemesterBooklet } from "./components/IprepSemesterBooklet";
+export { IprepSemesterBifold } from "./components/IprepSemesterBifold";
 export { signatureForLabel, signaturesForLabels } from "./signatureSlots";
 export type {
   ReportCardPayload,

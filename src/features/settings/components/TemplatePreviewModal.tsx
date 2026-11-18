@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
 import {
   isInternationalReportCardTemplate,
+  isIprepSemesterBifoldTemplate,
   isLiberianReportCardTemplate,
 } from "../../report-cards";
 import { getGradeSheetTemplateDef, resolveGradeSheetTemplateKey } from "../../gradesheets";
@@ -65,6 +66,8 @@ export function TemplatePreviewModal({
     previewType === "REPORT" &&
     (isLiberianReportCardTemplate(previewTemplate) ||
       isInternationalReportCardTemplate(previewTemplate));
+  const biFoldReport =
+    previewType === "REPORT" && isIprepSemesterBifoldTemplate(previewTemplate);
 
   const gradeDef =
     previewType === "GRADE"
@@ -83,9 +86,11 @@ export function TemplatePreviewModal({
     ? "max-w-[min(98vw,calc(11in+3rem))]"
     : gradeDef?.pageSize === "legal"
       ? "max-w-[min(98vw,calc(8.5in+3rem))]"
-      : widePrint
-        ? "max-w-[min(98vw,calc(210mm+3rem))]"
-        : "max-w-5xl";
+      : biFoldReport
+        ? "max-w-[min(98vw,calc(297mm+3rem))]"
+        : widePrint
+          ? "max-w-[min(98vw,calc(210mm+3rem))]"
+          : "max-w-5xl";
 
   const templateName = previewTemplate.replace(/_/g, " ");
   const typeLabel =
@@ -111,9 +116,11 @@ export function TemplatePreviewModal({
           }`
         : receiptDef != null
           ? `${receiptDef.name} · ${receiptTypeLabel} · A4 portrait`
-          : a4Report
-            ? m("a4Portrait", { name: templateName })
-            : templateName;
+          : biFoldReport
+            ? `${templateName} · A4 landscape 297×210 mm`
+            : a4Report
+              ? m("a4Portrait", { name: templateName })
+              : templateName;
 
   return (
     <FeatureModalShell

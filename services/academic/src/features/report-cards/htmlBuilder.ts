@@ -1,5 +1,6 @@
 import {
   IPREP_PROGRESS_MODERN,
+  IPREP_SEMESTER_BIFOLD,
   IPREP_SEMESTER_BOOKLET,
   iprepProgressVariant,
   resolveReportCardTemplateKey,
@@ -339,8 +340,138 @@ function bookletHtml(payload: ReportCardPayload): string {
   </body></html>`;
 }
 
+function biFoldHtml(payload: ReportCardPayload): string {
+  const school = payload.school;
+  const student = payload.student;
+  const promotion = payload.promotion;
+  const groups: Array<{ key: string; columns: ReportCardColumn[] }> = [];
+  for (const column of payload.columns) {
+    const key = /^(SEM\d)_/.exec(column.key)?.[1] || "ALL";
+    let group = groups.find((item) => item.key === key);
+    if (!group) {
+      group = { key, columns: [] };
+      groups.push(group);
+    }
+    group.columns.push(column);
+  }
+  const semesterName = (key: string) => (key === "SEM1" ? "First semester" : key === "SEM2" ? "Second semester" : "Marks");
+  const shortColumn = (label: string) => {
+    const match = /^(\d)(?:st|nd|rd|th) Period$/.exec(label);
+    if (match) return `P${match[1]}`;
+    if (label === "Sem 1 Exam") return "S1E";
+    if (label === "Sem 2 Exam") return "S2E";
+    return label;
+  };
+  const head = `<tr><th class="l" rowspan="2">Subject</th>${groups.map((group, index) => `<th colspan="${group.columns.length + (group.key === "ALL" ? 0 : 1)}" style="background:${index % 2 ? "#7a1a24" : "#223b86"}">${semesterName(group.key)}</th>`).join("")}<th rowspan="2">Year/Avg</th><th rowspan="2">Rank/Grade</th></tr>
+    <tr>${groups.map((group, index) => `${group.columns.map((column) => `<th style="background:${index % 2 ? "#7a1a24" : "#223b86"}">${esc(shortColumn(column.label))}</th>`).join("")}${group.key === "ALL" ? "" : `<th style="background:${index % 2 ? "#7a1a24" : "#223b86"}">Avg</th>`}`).join("")}</tr>`;
+  const rows = payload.subjects.map((subject) => `<tr><td class="l">${esc(subject.name)}<small>${val(subject.code)}</small></td>${groups.map((group) => `${group.columns.map((column) => {
+    const cell = subject.cells[column.key];
+    const cls = cell?.incomplete ? "inc" : failClass(cell?.score);
+    return `<td class="${cls}">${cell?.incomplete ? "INC" : num(cell?.score, 0)}</td>`;
+  }).join("")}${group.key === "ALL" ? "" : `<td class="avg">${num(group.key === "SEM1" ? subject.sem1Avg : group.key === "SEM2" ? subject.sem2Avg : subject.average)}</td>`}`).join("")}<td>${num(subject.yearlyAvg ?? subject.average)}</td><td>${val(subject.letter)}<small>${val(subject.remark)}</small></td></tr>`).join("");
+  const bodyRows = payload.subjects.length
+    ? rows
+    : `<tr><td class="empty" colspan="${payload.columns.length + 5}">No released grades for this period yet.</td></tr>`;
+  const poBox = school.poBox
+    ? /^p\.?\s*o\.?\s*box/i.test(school.poBox.trim())
+      ? school.poBox.trim()
+      : `P.O. Box ${school.poBox.trim()}`
+    : null;
+  const contact = [school.contactPhone, school.contactEmail]
+    .filter(Boolean)
+    .map((part) => esc(part))
+    .join(" · ");
+  const showMoe = school.branding ? school.branding !== "SCHOOL_LOGO" : school.country === "Liberia";
+  const conditioned = promotion?.conditionedSubjects?.length
+    ? `<div><span>Conditioned subjects</span><b>${promotion.conditionedSubjects.map((item) => esc(typeof item === "string" ? item : item.name)).join(", ")}</b></div>`
+    : "";
+  const probation = promotion?.probationWeeks
+    ? `<div><span>Probation</span><b>${esc(promotion.probationWeeks)} weeks</b></div>`
+    : "";
+  const promotionHtml = `<h4>Promotion</h4><div class="pm">
+      <div><span>Outcome</span><b>${promotion?.outcome ? val(humanize(promotion.outcome)) : "Pending"}</b></div>
+      <div><span>Promoted to</span><b>${val(promotion?.toGrade)}</b></div>
+      ${conditioned}${probation}
+      <div style="grid-column:1/-1"><span>Remarks</span><b style="font-weight:500">${val(promotion?.remarks)}</b></div>
+      <div><span>Finalised</span><b>${val(formatDate(promotion?.finalizedAt))}</b></div>
+    </div>`;
+  const gradingLegend = payload.legend.some((row) => String(row.letter || "").toUpperCase() === "INC")
+    ? payload.legend
+    : [...payload.legend, { letter: "INC", min: 0, max: 0, detail: "Incomplete" }];
+  const gradingScaleHtml = `<div class="grade-scale">
+      <h4>Grading system</h4>
+      <table>
+        <thead><tr><th>Grade</th>${gradingLegend.map((row) => `<th>${val(row.letter)}</th>`).join("")}</tr></thead>
+        <tbody>
+          <tr><th>Score range</th>${gradingLegend.map((row) => `<td>${String(row.letter || "").toUpperCase() === "INC" ? "—" : `${val(row.min)} – ${val(row.max)}`}</td>`).join("")}</tr>
+          <tr><th>Meaning</th>${gradingLegend.map((row) => `<td>${val(row.detail)}</td>`).join("")}</tr>
+        </tbody>
+      </table>
+    </div>`;
+  const signatureSlots = [
+    { label: "Class Teacher", name: "Class Teacher", url: null as string | null },
+    {
+      label: "Principal",
+      name: payload.officialSignatures?.principal?.name,
+      url: dataImageUrl(payload.officialSignatures?.principal?.signatureUrl),
+    },
+    {
+      label: "Registrar",
+      name: payload.officialSignatures?.registrar?.name,
+      url: dataImageUrl(payload.officialSignatures?.registrar?.signatureUrl),
+    },
+  ];
+  const signaturesHtml = signatureSlots.map(({ label, name, url }) =>
+    `<div class="sig"><span class="ln">${url ? `<img src="${esc(url)}" alt="">` : ""}</span><b>${val(name)}</b><span>${esc(label)}</span></div>`
+  ).join("");
+
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(student.name)} — Learner Progress Report</title><style>
+    @page{size:A4 landscape;margin:0}*{box-sizing:border-box}body{margin:0;color:#14203d;font-family:'Segoe UI',Arial,sans-serif;font-size:8pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .sheet{position:relative;width:297mm;height:210mm;background:#fff;display:flex;gap:4mm;padding:6mm;overflow:hidden}.sheet:after{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:.3mm dashed #9aa6c4;pointer-events:none}
+    .panel{border:1.2mm double #1b2f6b;background:#fff}.panel.cover{flex:1;padding:5mm 6mm;display:flex;flex-direction:column}.panel.record{flex:1;padding:4.5mm 5mm;display:flex;flex-direction:column;min-width:0}
+    .gov{text-align:center;border-bottom:.5mm solid #1b2f6b;padding-bottom:2.2mm;font-size:6.4pt;letter-spacing:.5mm;font-weight:700}.gov span{display:block;color:#5f6a82;font-size:5.8pt;letter-spacing:0;margin-top:1mm}
+    .brand{display:flex;align-items:center;gap:4mm;margin-top:4mm}.brand img{width:24mm;height:24mm;object-fit:contain}.brand .initials{width:24mm;height:24mm;flex:none;border:.6mm solid #1b2f6b;border-radius:50%;display:grid;place-items:center;font-size:11pt;font-weight:800;color:#1b2f6b}.brand h1{margin:0;font-size:13pt;line-height:1.1;color:#1b2f6b}.brand small{display:block;color:#5f6a82;font-size:7pt;line-height:1.35;margin-top:1.5mm}
+    .title{margin-top:6mm;border-top:1mm solid #1b2f6b;border-bottom:.5mm solid #1b2f6b;padding:3.5mm 0;text-align:center}.title span{display:block;font-size:6.6pt;letter-spacing:.45mm;color:#5f6a82}.title h2{margin:1.5mm 0 0;font-size:17pt;color:#14203d}.title .yr{display:inline-block;margin-top:2.5mm;padding:1mm 4mm;border-radius:99px;background:#eaf0ff;color:#1b2f6b;font-size:8pt;font-weight:700}
+    .card{margin-top:5mm;border:.35mm solid #cbd3e6;border-radius:2mm;overflow:hidden}.card div{display:grid;grid-template-columns:31mm 1fr;border-bottom:.25mm solid #e4e9f3;font-size:7.6pt}.card div:last-child{border-bottom:0}.card span{padding:2mm 3mm;background:#f5f7fc;color:#5f6a82}.card b{padding:2mm 3mm}
+    .promo{margin-top:5mm;border:.35mm solid #1b2f6b;border-radius:2mm;padding:3mm 3.5mm;background:#fbfcff}.promo h4,.grade-scale h4{margin:0 0 2mm;font-size:6.4pt;color:#5f6a82;border:0;padding:0}.pm{display:grid;grid-template-columns:1fr 1fr;gap:2mm 4mm}.pm span{display:block;font-size:6pt;color:#5f6a82;text-transform:uppercase}.pm b{font-size:8.5pt}.pm > div > b{font-size:10pt;color:#1b2f6b}
+    .ft{margin-top:auto;padding-top:3mm;font-size:6.2pt;color:#5f6a82}
+    .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.5mm solid #1b2f6b;padding-bottom:2mm}.hd h3{margin:0;font-size:10pt;color:#1b2f6b}.hd small{color:#5f6a82;font-size:6.5pt}.hd .rt{text-align:right}
+    table{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:2.5mm;font-size:6.1pt}th{background:#1b2f6b;color:#fff;padding:1.1mm .5mm;border:.25mm solid #1b2f6b;overflow-wrap:anywhere}th:nth-child(2){background:#dfe7fb;color:#14203d}td{padding:1.2mm .4mm;text-align:center;border:.25mm solid #d8dfec;overflow-wrap:anywhere}th.l,td.l{text-align:left;padding-left:.8mm}td small{display:block;font-size:5.2pt;color:#7b8499}td.avg{background:#f8faff;font-weight:700}td.fail{color:#b5232f;font-weight:700}td.inc{color:#b26a00;font-weight:700}td.empty{padding:5mm;color:#7b8499}
+    .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5mm;margin-top:2.5mm}.kp div{border:.25mm solid #d8dfec;border-radius:1.2mm;background:#f8faff;padding:1.3mm 1.6mm}.kp span{display:block;font-size:5.4pt;color:#6b748c}.kp b{font-size:8pt;color:#1b2f6b}
+    .note{margin-top:2mm;font-size:5.8pt;color:#7b8499;line-height:1.35}
+    .grade-scale{margin-top:3mm}.grade-scale table{margin-top:0;font-size:5.4pt}.grade-scale th,.grade-scale td{padding:1mm .3mm;text-align:center;overflow-wrap:anywhere}
+    .sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;margin-top:auto;padding-top:3mm}.sig{text-align:center;font-size:5.8pt;color:#5f6a82}.sig .ln{display:flex;align-items:flex-end;justify-content:center;height:8mm;border-top:.3mm solid #1b2f6b;padding-top:1.5mm;margin-bottom:1mm}.sig img{max-height:7.5mm}.sig b{display:block;color:#14203d;font-size:7pt}.gen{text-align:center;font-size:5.4pt;color:#7b8499;margin-top:2mm}
+  </style></head><body>
+    <div class="sheet bifold-sheet" data-page-size="A4-landscape">
+      <section class="panel cover">
+        <div class="gov">${showMoe ? `Republic of Liberia<span>County Education Office · ${val(school.district || school.county)}</span>` : ""}</div>
+        <div class="brand">${school.logoUrl ? `<img src="${esc(school.logoUrl)}" alt="">` : `<div class="initials">${esc((school.name || "SCHOOL").split(/\s+/).map((word) => word[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "S")}</div>`}<div><h1>${val(school.name)}</h1><small>${val(poBox || school.address)}<br>${val(contact)}</small></div></div>
+        <div class="title"><span>LEARNER PROGRESS REPORT</span><h2>SEMESTER RECORD</h2><div class="yr">${val(payload.academicYear.label)}</div></div>
+        <div class="card">
+          <div><span>Learner</span><b>${val(student.name)}</b></div>
+          <div><span>Class</span><b>${val(student.classLabel)}</b></div>
+          <div><span>Grade level</span><b>${val(student.gradeLevelLabel)}</b></div>
+          <div><span>Learner ID</span><b>${val(student.id)}</b></div>
+        </div>
+        ${promotionHtml}
+        <div class="ft">${val([school.district, school.county && `${school.county} County`, school.country].filter(Boolean).join(" · "))}</div>
+      </section>
+      <section class="panel record">
+        <div class="hd"><div><h3>${val(student.name)}</h3><small>${val(student.classLabel)} · ${val(payload.academicYear.label)}</small></div><div class="rt"><b>${val(school.name)}</b><br><small>Academic record</small></div></div>
+        <table><thead>${head}</thead><tbody>${bodyRows}</tbody></table>
+        <div class="kp"><div><span>Overall average</span><b>${num(payload.aggregates.overallAverage)}</b></div><div><span>GPA</span><b>${num(payload.aggregates.gpa, 2)}</b></div><div><span>Class position</span><b>${val(payload.aggregates.classPosition)}</b></div><div><span>Attendance</span><b>${payload.aggregates.attendanceRate == null ? "—" : `${num(payload.aggregates.attendanceRate, 0)}%`}</b></div></div>
+        <div class="note">Scores below 70 are shown in red. INC = incomplete. Semester averages are the mean of the recorded periods and semester exam.</div>
+        ${gradingScaleHtml}
+        <div class="sigs">${signaturesHtml}</div>
+        <div class="gen">Generated ${val(formatDate(payload.generatedAt))}</div>
+      </section>
+    </div>
+  </body></html>`;
+}
+
 export function renderReportCardHtml(templateKeyOrLegacy: string | null | undefined, payload: ReportCardPayload): string {
   const templateKey = resolveReportCardTemplateKey(templateKeyOrLegacy || payload.templateKey);
+  if (templateKey === IPREP_SEMESTER_BIFOLD) return biFoldHtml(payload);
   if (templateKey === IPREP_SEMESTER_BOOKLET) return bookletHtml(payload);
   if (templateKey === IPREP_PROGRESS_MODERN || iprepProgressVariant(templateKey) === "modern") {
     return progressHtml(payload, true);
