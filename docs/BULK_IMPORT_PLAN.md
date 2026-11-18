@@ -1,9 +1,9 @@
 # Bulk roster import (CSV / Excel) — Plan
 
-> **Status:** Phases 1–2 done (2026-07-30) — Identity preview/import + SPA wizards; Phase 3 classroom column deferred  
-> **Scope:** School Admin (and allowed roles) import **students** or **staff** from a CSV or Excel spreadsheet into an **existing school**, creating Identity accounts in one atomic batch  
+> **Status:** Phases 1–2 done (2026-07-30); registrar student import with optional parent accounts, partial success, quota/ID allocation, and audit implemented (2026-11-18)
+> **Scope:** School Admin, Registrar (and allowed roles) import **students** or **staff** from a CSV or Excel spreadsheet into an **existing school**; students import valid rows independently, staff remains one atomic batch
 > **Companion:** `ONBOARDING_AND_ADMISSION_PLAN.md`, `docs/STAFF_WORKFORCE_PLAN.md`, `IMPLEMENTATION_STATUS.md`  
-> **UI:** `/{slug}/students` (Import students); `/{slug}/staff` (Import staff)
+> **UI:** `/{slug}/students` (Import students); `/{slug}/staff` (Import staff); `/{slug}/registrar` Directory tab (Import students)
 
 ---
 
@@ -12,11 +12,11 @@
 Schools that already have a paper or spreadsheet roster should not re-type every person. An authorized staff member uploads a **CSV** or **Excel (.xlsx)** file. The system:
 
 1. Parses and **previews** every row (errors highlighted before anything is saved).
-2. On confirm, **atomically creates all valid accounts** for that batch — if any row fails, **no** accounts from that import are created.
-3. Returns a **credentials download** (email + temporary password) so the school can distribute logins.
+2. On confirm, **student imports create every valid row and skip/report failures**; staff imports remain atomic (if any row fails, no staff accounts are created).
+3. Returns a **credentials download** (email + temporary password) so the school can distribute logins; when `parentEmail` is supplied, created parent credentials are included.
 4. Supports the same for **students** and **staff** (separate templates and endpoints).
 
-**Out of scope for this plan (later):** admission-pipeline import (applications + fee/docs gates), parent login accounts from spreadsheet, update/upsert of existing users, photo/document bulk upload, invite-email blast.
+**Out of scope for this plan (later):** admission-pipeline import (applications + fee/docs gates), update/upsert of existing users, photo/document bulk upload, import history/async jobs.
 
 ---
 
@@ -98,8 +98,9 @@ Headers are **case-insensitive**; aliases allowed (listed). Unknown columns igno
 | `gender` | No | `gender` | As today (free text / school convention) |
 | `phone` | No | `phone` | |
 | `address` | No | `address` | |
-| `parentName` | No | `parentName` | Contact fields only — **no** parent User |
-| `parentPhone` | No | `parentPhone` | |
+| `parentName` | No | `parentName` | Contact field; also names a created parent account when `parentEmail` is present |
+| `parentPhone` | No | `parentPhone` | Contact field; copied to created parent account |
+| `parentEmail` | No | `Parent User` + `ParentStudent` link | Optional single parent/guardian login; existing PARENT accounts are linked, non-parent/other-school emails and emails used by students in the same file fail that row |
 | `feeCohort` | No | `feeCohort` | `NEW` \| `RETURNING` (default `NEW`) |
 | `classroom` | No (Phase B) | resolve → classroom id | Soft-assign after commit |
 | `password` | No | custom password | Else auto temp (≥8); `mustChangePassword: true` |
@@ -268,10 +269,10 @@ Client may parse CSV/XLSX locally and POST JSON (MVP — no multipart on Identit
 ### Phase 4 — Hardening (later)
 
 - [ ] Server-side multipart upload (large files / untrusted clients)
-- [ ] Audit log row: who imported N users, filename, timestamp
-- [ ] Optional welcome emails
+- [x] Audit log row: who imported N users, filename, timestamp
+- [x] Welcome emails for created parent accounts (via `findOrCreateUser`)
 - [ ] Upsert / “skip existing” mode (explicit, non-default — breaks strict atomic create semantics; document carefully)
-- [ ] Parent User + link columns (ties to admission parent model)
+- [x] Parent User + link column (`parentEmail`, optional single parent per student)
 
 ---
 
@@ -280,10 +281,11 @@ Client may parse CSV/XLSX locally and POST JSON (MVP — no multipart on Identit
 ### Students
 
 - [ ] Download student template; fill 3 rows; preview shows 3 valid
-- [ ] Introduce bad email + unknown grade → preview errors; Import disabled or Confirm rejected; **zero** new students
+- [ ] Introduce bad email + unknown grade → preview errors; valid rows still import and the done step lists skipped rows
 - [ ] Fix file; Import → 3 students appear on Students list with correct grade / fee cohort
-- [ ] Credentials CSV downloads and passwords allow login with must-change
-- [ ] Duplicate email vs existing user → whole import rejected
+- [ ] Credentials CSV downloads and passwords allow login with must-change (including created parent rows)
+- [ ] Duplicate email vs existing user → that row is skipped and reported; other valid rows import
+- [ ] Seat limit shown in preview; valid rows beyond remaining seats are skipped and reported
 - [ ] Registrar can import; Teacher cannot (403)
 
 ### Staff

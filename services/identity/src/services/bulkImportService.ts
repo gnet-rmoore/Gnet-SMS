@@ -2,6 +2,9 @@ import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma";
 import { fetchSchoolGradeLevelsInternal } from "../lib/academicClient";
 import { parseSecurityPolicy, DEFAULT_SECURITY_POLICY } from "../lib/securityPolicy";
+import { studentQuotaHeadroom } from "../lib/quotaEnforcement";
+import { userService } from "./userService";
+import { allocateStudentId } from "./studentIdService";
 import {
   filterNonEmptyRows,
   normalizeRowKeys,
@@ -26,6 +29,61 @@ async function existingEmailSet(emails: string[]): Promise<Set<string>> {
     select: { email: true },
   });
   return new Set(found.map((u) => u.email.toLowerCase()));
+}
+
+type StudentImportFailure = {
+  index: number;
+  email: string | null;
+  errors: string[];
+};
+
+function normalizedImportEmails(rows: Record<string, unknown>[]) {
+  const students: string[] = [];
+  const parents = new Set<string>();
+  for (const raw of rows) {
+    const { row } = normalizeRowKeys(raw, "student");
+    const email = String(row.email || "")
+      .trim()
+      .toLowerCase();
+    const parentEmail = String(row.parentEmail || "")
+      .trim()
+      .toLowerCase();
+    if (email) students.push(email);
+    if (parentEmail && parentEmail !== email) parents.add(parentEmail);
+  }
+  return { students, parents: [...parents] };
+}
+
+async function blockedParentEmailSet(schoolId: string, emails: string[]): Promise<Set<string>> {
+  if (!emails.length) return new Set();
+  const found = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, role: true, schoolId: true },
+  });
+  return new Set(
+    found
+      .filter((u) => u.role !== "PARENT" || (u.schoolId && u.schoolId !== schoolId))
+      .map((u) => u.email.toLowerCase())
+  );
+}
+
+function failedRowsFromValidation(
+  rows: Record<string, unknown>[],
+  validated: { rows: Array<{ index: number; ok: boolean; errors: string[] }> }
+): StudentImportFailure[] {
+  return validated.rows
+    .filter((row) => !row.ok)
+    .map((row) => {
+      const { row: normalized } = normalizeRowKeys(rows[row.index] || {}, "student");
+      return {
+        index: row.index,
+        email: String(normalized.email || "")
+          .trim()
+          .toLowerCase()
+          .replace(/^$/, "") || null,
+        errors: row.errors,
+      };
+    });
 }
 
 async function loadGradeLevels(schoolId: string) {
@@ -80,6 +138,8 @@ async function assignStudentClassroomByCode(
 function previewPayload(result: BulkImportPreviewResult) {
   return {
     ok: result.ok,
+    canImport: result.canImport,
+    importableCount: result.importableCount,
     rowCount: result.rowCount,
     validCount: result.validCount,
     errorCount: result.errorCount,
@@ -97,6 +157,7 @@ export const bulkImportService = {
     if (!rows.length) {
       return {
         ok: false,
+        canImport: false,
         rowCount: 0,
         validCount: 0,
         errorCount: 0,
@@ -112,22 +173,31 @@ export const bulkImportService = {
         status: 502,
       });
     }
-    const normalizedEmails = rows
-      .map((r) => {
-        const { row } = normalizeRowKeys(r, "student");
-        return String(row.email || "")
-          .trim()
-          .toLowerCase();
-      })
-      .filter(Boolean);
+    const { students: normalizedEmails, parents: parentEmails } = normalizedImportEmails(rows);
     const existingAll = await existingEmailSet(normalizedEmails);
+    const blockedParentEmails = await blockedParentEmailSet(schoolId, parentEmails);
 
     const result = validateStudentRows({
       rows,
       gradeLevels,
       existingEmails: existingAll,
+      blockedParentEmails,
     });
-    return previewPayload(result);
+    const preview = previewPayload(result);
+    const headroom = await studentQuotaHeadroom(schoolId);
+    if (headroom) {
+      preview.importableCount = Math.min(preview.validCount, headroom.remaining);
+      if (preview.validCount > headroom.remaining) {
+        preview.warnings = [
+          ...preview.warnings,
+          `Student seat limit allows ${headroom.remaining} more student(s); ${
+            preview.validCount - headroom.remaining
+          } valid row(s) will be skipped.`,
+        ];
+      }
+      if (preview.importableCount === 0) preview.canImport = false;
+    }
+    return preview;
   },
 
   async importStudents(schoolId: string, body: any) {
@@ -137,6 +207,7 @@ export const bulkImportService = {
       err.status = 400;
       err.preview = {
         ok: false,
+        canImport: false,
         rowCount: 0,
         validCount: 0,
         errorCount: 0,
@@ -153,110 +224,234 @@ export const bulkImportService = {
       throw Object.assign(new Error(e?.message || "Failed to load grade levels"), { status: 502 });
     }
 
-    const normalizedEmails = rows
-      .map((r) => {
-        const { row } = normalizeRowKeys(r, "student");
-        return String(row.email || "")
-          .trim()
-          .toLowerCase();
-      })
-      .filter(Boolean);
+    const { students: normalizedEmails, parents: parentEmails } = normalizedImportEmails(rows);
     const existingAll = await existingEmailSet(normalizedEmails);
+    const blockedParentEmails = await blockedParentEmailSet(schoolId, parentEmails);
 
     const validated = validateStudentRows({
       rows,
       gradeLevels,
       existingEmails: existingAll,
+      blockedParentEmails,
     });
-    if (!validated.ok) {
+    if (!validated.canImport) {
       const err: any = new Error("Import validation failed");
       err.status = 400;
       err.preview = previewPayload(validated);
       throw err;
     }
 
-    const prepared = validated.prepared as PreparedStudentRow[];
-    const created = await prisma.$transaction(
-      async (tx) => {
-        const out: Array<{
-          id: string;
-          name: string;
-          email: string;
-          role: string;
-          gradeLevelId: string | null;
-          feeCohort: string | null;
-          temporaryPassword: string;
-          classroomCode?: string | null;
-        }> = [];
-        for (const row of prepared) {
-          const clash = await tx.user.findUnique({
-            where: { email: row.email },
-            select: { id: true },
-          });
-          if (clash) {
-            throw Object.assign(new Error(`email already exists: ${row.email}`), {
-              status: 400,
-            });
-          }
-          const passwordHash = bcrypt.hashSync(row.temporaryPassword, 10);
-          const user = await tx.user.create({
-            data: {
-              name: row.name,
-              email: row.email,
-              passwordHash,
-              role: "STUDENT",
-              schoolId,
-              dob: row.dob,
-              gender: row.gender,
-              phone: row.phone,
-              address: row.address,
-              parentName: row.parentName,
-              parentPhone: row.parentPhone,
-              gradeLevelId: row.gradeLevelId,
-              feeCohort: row.feeCohort,
-              mustChangePassword: true,
-              isActive: true,
-            },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              gradeLevelId: true,
-              feeCohort: true,
-            },
-          });
-          out.push({
-            ...user,
-            temporaryPassword: row.temporaryPassword,
-            classroomCode: row.classroomCode,
-          });
-        }
-        return out;
-      },
-      { timeout: 120_000 }
-    );
+    const headroom = await studentQuotaHeadroom(schoolId);
+    if (headroom && headroom.remaining <= 0) {
+      const err: any = new Error(`Student seat limit reached (${headroom.limit})`);
+      err.status = 403;
+      err.code = "QUOTA_EXCEEDED";
+      err.preview = {
+        ...previewPayload(validated),
+        canImport: false,
+        importableCount: 0,
+        warnings: [
+          ...validated.warnings,
+          `Student seat limit reached (${headroom.limit}). Upgrade your plan or free a seat.`,
+        ],
+      };
+      err.details = { reason: "QUOTA_EXCEEDED", failedCount: validated.validCount };
+      throw err;
+    }
 
-    const classroomWarnings: string[] = [];
+    const warnings = [...validated.warnings];
+    const failed: StudentImportFailure[] = failedRowsFromValidation(rows, validated);
+    const prepared = validated.prepared as PreparedStudentRow[];
+    const validIndices = validated.rows.filter((row) => row.ok).map((row) => row.index);
+
+    const accepted: PreparedStudentRow[] = [];
+    const acceptedIndices: number[] = [];
+    prepared.forEach((row, position) => {
+      if (headroom && position >= headroom.remaining) {
+        failed.push({
+          index: validIndices[position],
+          email: row.email,
+          errors: [
+            `Student seat limit allows ${headroom.remaining} more student(s); this valid row was skipped.`,
+          ],
+        });
+        return;
+      }
+      accepted.push(row);
+      acceptedIndices.push(validIndices[position]);
+    });
+    if (headroom && prepared.length > headroom.remaining) {
+      warnings.push(
+        `Student seat limit allows ${headroom.remaining} more student(s); ${
+          prepared.length - headroom.remaining
+        } valid row(s) were skipped.`
+      );
+    }
+
+    type CreatedStudent = {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      gradeLevelId: string | null;
+      feeCohort: string | null;
+      temporaryPassword: string;
+      classroomCode?: string | null;
+      parentName: string | null;
+      parentEmail: string | null;
+      parentTemporaryPassword?: string;
+      parentCreated: boolean;
+      parentLinkFailed: boolean;
+    };
+
+    const created: CreatedStudent[] = [];
+    for (let i = 0; i < accepted.length; i++) {
+      const row = accepted[i];
+      const index = acceptedIndices[i];
+      let user: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        gradeLevelId: string | null;
+      } | null = null;
+      try {
+        const clash = await prisma.user.findUnique({
+          where: { email: row.email },
+          select: { id: true },
+        });
+        if (clash) {
+          failed.push({ index, email: row.email, errors: ["email already exists"] });
+          continue;
+        }
+        const passwordHash = bcrypt.hashSync(row.temporaryPassword, 10);
+        user = await prisma.user.create({
+          data: {
+            name: row.name,
+            email: row.email,
+            passwordHash,
+            role: "STUDENT",
+            schoolId,
+            studentIdNumber: await allocateStudentId(schoolId),
+            dob: row.dob,
+            gender: row.gender,
+            phone: row.phone,
+            address: row.address,
+            parentName: row.parentName,
+            parentPhone: row.parentPhone,
+            gradeLevelId: row.gradeLevelId,
+            feeCohort: row.feeCohort,
+            mustChangePassword: true,
+            isActive: true,
+          } as any,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            gradeLevelId: true,
+          },
+        });
+      } catch (err: any) {
+        failed.push({
+          index,
+          email: row.email,
+          errors: [err?.message || "Failed to create student"],
+        });
+        continue;
+      }
+      if (!user) continue;
+
+      const record: CreatedStudent = {
+        ...user,
+        feeCohort: row.feeCohort,
+        temporaryPassword: row.temporaryPassword,
+        classroomCode: row.classroomCode,
+        parentName: row.parentName,
+        parentEmail: null,
+        parentCreated: false,
+        parentLinkFailed: false,
+      };
+
+      if (row.parentEmail) {
+        try {
+          const parentPassword = `Pa@${Math.random().toString(36).slice(2, 8)}${Date.now()
+            .toString(36)
+            .slice(-3)}`;
+          const parentUser = await userService.findOrCreateUser({
+            email: row.parentEmail,
+            name: row.parentName?.trim() || row.parentEmail,
+            role: "PARENT",
+            schoolId,
+            password: parentPassword,
+            phone: row.parentPhone,
+            sendWelcomeEmail: true,
+          });
+          if (parentUser.role !== "PARENT") {
+            warnings.push(`${row.email}: parent email belongs to a non-parent account`);
+          } else {
+            record.parentEmail = parentUser.email;
+            record.parentCreated = parentUser.created === true;
+            record.parentTemporaryPassword = parentUser.created ? parentPassword : undefined;
+            await userService.createParentLink(parentUser.id, user.id);
+          }
+        } catch (err: any) {
+          record.parentLinkFailed = true;
+          warnings.push(`${row.email}: parent account/link failed — student still created`);
+        }
+      }
+
+      created.push(record);
+    }
+
     for (const row of created) {
       if (!row.classroomCode) continue;
       try {
         const assigned = await assignStudentClassroomByCode(schoolId, row.id, row.classroomCode);
         if (!assigned.ok) {
-          classroomWarnings.push(
+          warnings.push(
             `${row.email}: classroom "${row.classroomCode}" not found — student created without class assign`
           );
         }
       } catch {
-        classroomWarnings.push(`${row.email}: classroom assign failed — student still created`);
+        warnings.push(`${row.email}: classroom assign failed — student still created`);
       }
+    }
+
+    if (!created.length) {
+      const err: any = new Error("No rows were imported");
+      err.status = 400;
+      err.code = "NO_ROWS_IMPORTED";
+      err.preview = {
+        ...previewPayload(validated),
+        canImport: false,
+        importableCount: 0,
+        warnings,
+        rows: validated.rows.map((row) => {
+          const failure = failed.find((item) => item.index === row.index);
+          return failure
+            ? {
+                ...row,
+                ok: false,
+                errors: [...new Set([...row.errors, ...failure.errors])],
+              }
+            : row;
+        }),
+      };
+      err.details = { reason: "NO_ROWS_IMPORTED", failedCount: failed.length, failed, warnings };
+      throw err;
     }
 
     return {
       ok: true,
+      canImport: true,
+      rowCount: rows.length,
+      validCount: validated.validCount,
       createdCount: created.length,
+      failedCount: failed.length,
       created,
-      warnings: [...validated.warnings, ...classroomWarnings],
+      failed,
+      warnings,
     };
   },
 
@@ -265,6 +460,7 @@ export const bulkImportService = {
     if (!rows.length) {
       return {
         ok: false,
+        canImport: false,
         rowCount: 0,
         validCount: 0,
         errorCount: 0,
@@ -297,6 +493,7 @@ export const bulkImportService = {
       err.status = 400;
       err.preview = {
         ok: false,
+        canImport: false,
         rowCount: 0,
         validCount: 0,
         errorCount: 0,

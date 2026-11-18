@@ -1,6 +1,6 @@
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../services/api";
-import type { BulkImportCreated, BulkImportPreview } from "./ImportRosterModal";
+import type { BulkImportImportResult, BulkImportPreview } from "./ImportRosterModal";
 
 function authHeaders(): HeadersInit {
   const token = useAuthStore.getState().accessToken;
@@ -14,7 +14,7 @@ async function postImport(
   url: string,
   rows: Record<string, unknown>[],
   sourceFileName: string
-): Promise<{ ok: boolean; createdCount: number; created: BulkImportCreated[] }> {
+): Promise<BulkImportImportResult> {
   const res = await fetch(url, {
     method: "POST",
     headers: authHeaders(),
@@ -24,6 +24,8 @@ async function postImport(
   if (!res.ok) {
     throw Object.assign(new Error(data.error || "Import failed"), {
       status: res.status,
+      code: data.code,
+      details: data.details,
       preview: data.rows ? data : undefined,
     });
   }

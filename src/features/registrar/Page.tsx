@@ -23,12 +23,14 @@ import { periodsOf } from "../academics-shared/calendar/selectors";
 import type { TabType } from "./types";
 import { RegistrarChrome } from "./components/RegistrarChrome";
 import { usePageActions } from "./hooks/usePageActions";
+import { ImportRosterModal } from "../bulk-import/ImportRosterModal";
+import { bulkImportApi } from "../bulk-import/api";
 import { emptyManualAdmissionForm } from "./lib/manualAdmissionForm";
 import { useTranslation } from "react-i18next";
 
 export const Registrar = () => {
   const { t } = useTranslation("pages");
-  const { school, accessToken } = useAuthStore();
+  const { school, accessToken, user } = useAuthStore();
   const {
     students,
     gradeLevels,
@@ -40,6 +42,7 @@ export const Registrar = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   React.useEffect(() => {
     if (activeTab !== "promotion_statement" || !school?.id) return;
@@ -297,6 +300,9 @@ export const Registrar = () => {
     window.open(`/api/schools/${school.id}/applications/export.csv${qs ? `?${qs}` : ""}`, "_blank");
   };
 
+  const canImportStudents = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
+    String(user?.role || "")
+  );
   const totalStudentsCount = students.length;
   const activeStudentsCount = students.filter((s) => s.isActive).length;
   const classroomsCount = classrooms.length;
@@ -387,6 +393,7 @@ export const Registrar = () => {
               filterFields={directoryFilterFields}
               filters={directoryFilters}
               savedViewsScope={school?.id ? `${school.id}:registrar-directory` : undefined}
+              onImportStudents={canImportStudents ? () => setShowImportModal(true) : undefined}
             />
           )}
 
@@ -496,6 +503,25 @@ export const Registrar = () => {
             setEnrollCredentials(null);
             setWaiveFee(false);
             setWaiveDocs(false);
+          }}
+        />
+      ) : null}
+      {showImportModal && school?.id ? (
+        <ImportRosterModal
+          kind="student"
+          open={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onDownloadTemplate={() => bulkImportApi.downloadStudentTemplate(school.id)}
+          onPreview={(rows, sourceFileName) =>
+            bulkImportApi.previewStudents(school.id, rows, sourceFileName)
+          }
+          onImport={(rows, sourceFileName) =>
+            bulkImportApi.importStudents(school.id, rows, sourceFileName)
+          }
+          onImported={() => {
+            refetchRegistrar();
+            setSuccessMessage(t("students.imported"));
+            setErrorMessage("");
           }}
         />
       ) : null}

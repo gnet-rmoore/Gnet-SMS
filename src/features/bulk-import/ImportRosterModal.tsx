@@ -15,6 +15,8 @@ import { translateApiError } from "../../i18n/apiErrors";
 
 export type BulkImportPreview = {
   ok: boolean;
+  canImport?: boolean;
+  importableCount?: number;
   rowCount: number;
   validCount: number;
   errorCount: number;
@@ -33,6 +35,21 @@ export type BulkImportCreated = {
   email: string;
   role: string;
   temporaryPassword: string;
+  parentName?: string | null;
+  parentEmail?: string | null;
+  parentTemporaryPassword?: string;
+  parentCreated?: boolean;
+  parentLinkFailed?: boolean;
+};
+
+export type BulkImportImportResult = {
+  ok: boolean;
+  canImport?: boolean;
+  createdCount: number;
+  failedCount?: number;
+  created: BulkImportCreated[];
+  warnings?: string[];
+  failed?: Array<{ index: number; email?: string | null; errors: string[] }>;
 };
 
 type Props = {
@@ -44,7 +61,7 @@ type Props = {
   onImport: (
     rows: Record<string, unknown>[],
     sourceFileName: string
-  ) => Promise<{ ok: boolean; createdCount: number; created: BulkImportCreated[] }>;
+  ) => Promise<BulkImportImportResult>;
   onImported?: () => void;
 };
 
@@ -65,6 +82,9 @@ export function ImportRosterModal({
   const [rows, setRows] = React.useState<Record<string, unknown>[]>([]);
   const [preview, setPreview] = React.useState<BulkImportPreview | null>(null);
   const [created, setCreated] = React.useState<BulkImportCreated[]>([]);
+  const [failedCount, setFailedCount] = React.useState(0);
+  const [failures, setFailures] = React.useState<NonNullable<BulkImportImportResult["failed"]>>([]);
+  const [importWarnings, setImportWarnings] = React.useState<string[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -76,6 +96,9 @@ export function ImportRosterModal({
       setRows([]);
       setPreview(null);
       setCreated([]);
+      setFailedCount(0);
+      setFailures([]);
+      setImportWarnings([]);
       setBusy(false);
       setError("");
     }
@@ -85,10 +108,21 @@ export function ImportRosterModal({
 
   const title =
     kind === "student" ? t("pages:bulkImport.titleStudents") : t("pages:bulkImport.titleStaff");
+  const canCommit = preview ? (preview.canImport ?? preview.ok) : false;
+  const commitCount = preview?.importableCount ?? preview?.validCount ?? 0;
+  const blockedMessage =
+    kind === "student" && preview?.importableCount === 0
+      ? t("pages:bulkImport.noSeats")
+      : (preview?.validCount ?? 0) === 0
+        ? t("pages:bulkImport.noValidRows")
+        : t("pages:bulkImport.fixErrors");
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
     setError("");
+    setFailedCount(0);
+    setFailures([]);
+    setImportWarnings([]);
     setBusy(true);
     try {
       const parsed = await parseRosterFile(file);
@@ -110,13 +144,16 @@ export function ImportRosterModal({
   };
 
   const handleCommit = async () => {
-    if (!preview?.ok || !rows.length) return;
+    if (!canCommit || !rows.length) return;
     const ok = await confirmAction({
       title: t("pages:bulkImport.confirmTitle", {
-        count: preview.validCount,
+        count: commitCount,
         kind: kind === "student" ? t("pages:students.title") : t("pages:staff.titleDirectory"),
       }),
-      text: t("pages:bulkImport.confirmText"),
+      text:
+        kind === "student"
+          ? t("pages:bulkImport.confirmTextStudents")
+          : t("pages:bulkImport.confirmTextStaff"),
       confirmText: t("common:import"),
     });
     if (!ok) return;
@@ -125,12 +162,21 @@ export function ImportRosterModal({
     try {
       const result = await onImport(rows, fileName);
       setCreated(result.created || []);
+      setFailedCount(result.failedCount ?? 0);
+      setFailures(result.failed || []);
+      setImportWarnings(result.warnings || []);
       setStep("done");
       onImported?.();
     } catch (err: any) {
       if (err?.preview) {
         setPreview(err.preview);
-        setError(t("pages:bulkImport.fixErrors"));
+        const quotaFailure =
+          err?.code === "QUOTA_EXCEEDED" || err?.details?.reason === "QUOTA_EXCEEDED";
+        setError(
+          quotaFailure
+            ? t("pages:bulkImport.noSeats")
+            : t("pages:bulkImport.noValidRows")
+        );
         setStep("preview");
       } else {
         setError(translateApiError(err) || err?.message || t("common:errorGeneric"));
@@ -151,7 +197,11 @@ export function ImportRosterModal({
     <AnimatePresence>
       <FeatureModalShell
         title={title}
-        subtitle={t("pages:bulkImport.subtitle")}
+        subtitle={
+          kind === "student"
+            ? t("pages:bulkImport.subtitleStudents")
+            : t("pages:bulkImport.subtitleStaff")
+        }
         eyebrow={t("pages:bulkImport.eyebrow")}
         onClose={onClose}
         wide
@@ -171,6 +221,9 @@ export function ImportRosterModal({
                     setRows([]);
                     setFileName("");
                     setError("");
+                    setFailedCount(0);
+                    setFailures([]);
+                    setImportWarnings([]);
                   }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
                   disabled={busy}
@@ -180,12 +233,12 @@ export function ImportRosterModal({
                 <button
                   type="button"
                   onClick={handleCommit}
-                  disabled={busy || !preview?.ok}
+                  disabled={busy || !canCommit}
                   className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm disabled:opacity-50"
                 >
                   {busy
                     ? t("pages:bulkImport.importing")
-                    : t("pages:bulkImport.importN", { count: preview?.validCount ?? 0 })}
+                    : t("pages:bulkImport.importN", { count: commitCount })}
                 </button>
               </div>
             </div>
@@ -251,7 +304,7 @@ export function ImportRosterModal({
               <input
                 ref={inputRef}
                 type="file"
-                accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
                 className="hidden"
                 onChange={(e) => handleFile(e.target.files?.[0] || null)}
               />
@@ -312,10 +365,8 @@ export function ImportRosterModal({
                   </tbody>
                 </table>
               </div>
-              {!preview.ok ? (
-                <p className="text-sm font-medium text-rose-700">
-                  {t("pages:bulkImport.fixErrors")}
-                </p>
+              {!canCommit ? (
+                <p className="text-sm font-medium text-rose-700">{blockedMessage}</p>
               ) : null}
             </div>
           )}
@@ -328,6 +379,32 @@ export function ImportRosterModal({
                   ? t("pages:bulkImport.importedStudents", { count: created.length })
                   : t("pages:bulkImport.importedStaff", { count: created.length })}
               </p>
+              {failedCount > 0 ? (
+                <p className="text-sm font-medium text-amber-700">
+                  {t("pages:bulkImport.partialImported", { count: failedCount })}
+                </p>
+              ) : null}
+              {importWarnings.length ? (
+                <div className="w-full text-left rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-600 space-y-1">
+                  <p className="font-bold text-slate-800">
+                    {t("pages:bulkImport.importWarnings")}
+                  </p>
+                  {importWarnings.slice(0, 5).map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
+                </div>
+              ) : null}
+              {failures.length ? (
+                <div className="w-full text-left rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-xs font-medium text-rose-800 space-y-1">
+                  <p className="font-bold">{t("pages:bulkImport.failedRows")}</p>
+                  {failures.slice(0, 8).map((failure) => (
+                    <p key={`${failure.index}-${failure.email || ""}`}>
+                      {failure.index + 1}
+                      {failure.email ? ` · ${failure.email}` : ""}: {failure.errors.join("; ")}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
               <p className="text-sm text-slate-600 font-medium max-w-md mx-auto">
                 {t("pages:bulkImport.credentialsHint")}
               </p>

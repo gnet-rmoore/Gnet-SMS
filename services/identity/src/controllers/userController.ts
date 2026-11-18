@@ -540,15 +540,60 @@ export const userController = {
 
   async importStudents(req: any, res: any) {
     const { schoolId } = req.params;
+    const sourceFileName = String(req.body?.sourceFileName || "unknown");
     try {
       if (req.user.schoolId !== schoolId && req.user.role !== "SUPER_ADMIN") {
         return res.status(403).json({ error: "Unauthorized" });
       }
       const result = await bulkImportService.importStudents(schoolId, req.body);
+      await logSystemEvent(
+        "bulk_students_imported",
+        "USERS",
+        `Student roster imported: ${result.createdCount} created, ${result.failedCount || 0} failed (${sourceFileName})`,
+        "INFO",
+        req,
+        {
+          category: "USER_MGMT",
+          entityType: "User",
+          schoolId,
+          outcome: "SUCCESS",
+          dataSensitivity: "PII",
+          after: {
+            sourceFileName,
+            rowCount: result.rowCount,
+            validCount: result.validCount,
+            createdCount: result.createdCount,
+            failedCount: result.failedCount || 0,
+            createdIds: result.created.map((row: any) => row.id),
+          },
+          tags: ["user", "student", "bulk-import"],
+        }
+      );
       res.json(result);
     } catch (err: any) {
+      await logSystemEvent(
+        "bulk_students_import_failed",
+        "USERS",
+        `Student roster import failed (${sourceFileName}): ${err?.message || "unknown error"}`,
+        "WARNING",
+        req,
+        {
+          category: "USER_MGMT",
+          entityType: "User",
+          schoolId,
+          outcome: "FAILURE",
+          dataSensitivity: "PII",
+          after: { sourceFileName, reason: err?.message || "Import failed" },
+          tags: ["user", "student", "bulk-import", "failure"],
+        }
+      );
       if (err.preview) {
-        return res.status(400).json(err.preview);
+        return res.status(err.status || 400).json({
+          ...err.preview,
+          error: err.message || "Import failed",
+          code: err.code,
+          details: err.details,
+        });
       }
       res.status(err.status || 400).json({ error: err.message || "Import failed" });
     }

@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash2, Eye, Users } from "lucide-react";
+import { Edit, Trash2, Eye, Upload, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button, ListFilterBar, DataTable, dataTableClass } from "../../../components/ui";
 import { UserAvatar } from "../../../components/UserAvatar";
@@ -14,6 +14,7 @@ export type DirectoryTabProps = {
   filterFields: FilterFieldDef[];
   filters: UseListFiltersResult;
   savedViewsScope?: string;
+  onImportStudents?: () => void;
 };
 
 export function DirectoryTab({
@@ -25,6 +26,7 @@ export function DirectoryTab({
   filterFields,
   filters,
   savedViewsScope,
+  onImportStudents,
 }: DirectoryTabProps) {
   const { t } = useTranslation(["pages", "common"]);
   return (
@@ -40,6 +42,19 @@ export function DirectoryTab({
           searchPlaceholder={t("admissions.directory.searchPlaceholder")}
           shownCount={filteredStudents.length}
           savedViewsScope={savedViewsScope}
+          actions={
+            onImportStudents ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onImportStudents}
+                className="bg-slate-900 text-white hover:bg-slate-800"
+              >
+                <Upload className="w-4 h-4" />
+                {t("pages:bulkImport.titleStudents")}
+              </Button>
+            ) : undefined
+          }
         />
       </div>
 

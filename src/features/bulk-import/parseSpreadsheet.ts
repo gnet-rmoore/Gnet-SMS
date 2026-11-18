@@ -121,11 +121,20 @@ export async function parseRosterFile(file: File): Promise<{
     const buffer = await file.arrayBuffer();
     return { rows: await parseXlsx(buffer), sourceFileName: name };
   }
-  throw new Error("Use a .csv or .xlsx file");
+  throw new Error("Use a .csv, .xlsx or .xls file");
 }
 
 export function credentialsToCsv(
-  created: Array<{ name?: string; email: string; role?: string; temporaryPassword: string }>
+  created: Array<{
+    name?: string;
+    email: string;
+    role?: string;
+    temporaryPassword: string;
+    parentName?: string | null;
+    parentEmail?: string | null;
+    parentTemporaryPassword?: string;
+    parentCreated?: boolean;
+  }>
 ): string {
   const header = "name,email,role,temporaryPassword";
   const escape = (v: unknown) => {
@@ -133,9 +142,18 @@ export function credentialsToCsv(
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
   };
-  const lines = created.map((r) =>
-    [r.name || "", r.email, r.role || "", r.temporaryPassword].map(escape).join(",")
-  );
+  const lines = created.flatMap((r) => {
+    const rows = [[r.name || "", r.email, r.role || "", r.temporaryPassword]];
+    if (r.parentCreated && r.parentTemporaryPassword && r.parentEmail) {
+      rows.push([
+        r.parentName || r.parentEmail,
+        r.parentEmail,
+        "PARENT",
+        r.parentTemporaryPassword,
+      ]);
+    }
+    return rows.map((line) => line.map(escape).join(","));
+  });
   return [header, ...lines].join("\n");
 }
 

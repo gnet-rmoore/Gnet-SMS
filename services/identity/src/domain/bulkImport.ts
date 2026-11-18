@@ -23,6 +23,8 @@ export type BulkImportRowResult = {
 
 export type BulkImportPreviewResult = {
   ok: boolean;
+  canImport: boolean;
+  importableCount?: number;
   rowCount: number;
   validCount: number;
   errorCount: number;
@@ -40,6 +42,7 @@ export type PreparedStudentRow = {
   address: string | null;
   parentName: string | null;
   parentPhone: string | null;
+  parentEmail: string | null;
   feeCohort: "NEW" | "RETURNING";
   classroomCode?: string | null;
   temporaryPassword: string;
@@ -82,6 +85,10 @@ const STUDENT_ALIASES: Record<string, string> = {
   "parent name": "parentName",
   parentphone: "parentPhone",
   "parent phone": "parentPhone",
+  parentemail: "parentEmail",
+  "parent email": "parentEmail",
+  guardianemail: "parentEmail",
+  "guardian email": "parentEmail",
   feecohort: "feeCohort",
   "fee cohort": "feeCohort",
   cohort: "feeCohort",
@@ -204,15 +211,22 @@ export function validateStudentRows(opts: {
   rows: Record<string, unknown>[];
   gradeLevels: GradeLevelRef[];
   existingEmails: Set<string>;
+  blockedParentEmails?: Set<string>;
 }): BulkImportPreviewResult & { prepared: PreparedStudentRow[] } {
   const warnings: string[] = [];
   const results: BulkImportRowResult[] = [];
   const prepared: PreparedStudentRow[] = [];
   const seenEmails = new Set<string>();
+  const studentEmailsInFile = new Set(
+    opts.rows
+      .map((raw) => cellStr(normalizeRowKeys(raw, "student").row.email).toLowerCase())
+      .filter(Boolean)
+  );
 
   if (opts.rows.length > BULK_IMPORT_MAX_ROWS) {
     return {
       ok: false,
+      canImport: false,
       rowCount: opts.rows.length,
       validCount: 0,
       errorCount: opts.rows.length,
@@ -244,6 +258,22 @@ export function validateStudentRows(opts: {
       if (seenEmails.has(email)) errors.push("duplicate email in this file");
       else seenEmails.add(email);
       if (opts.existingEmails.has(email)) errors.push("email already exists");
+    }
+
+    const parentEmail = cellStr(row.parentEmail).toLowerCase();
+    if (parentEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail)) {
+        errors.push("parentEmail is invalid");
+      }
+      if (email && parentEmail === email) {
+        errors.push("parentEmail must be different from the student email");
+      }
+      if (opts.blockedParentEmails?.has(parentEmail)) {
+        errors.push("parentEmail belongs to a non-parent account or another school");
+      }
+      if (studentEmailsInFile.has(parentEmail)) {
+        errors.push("parentEmail cannot be a student email in this file");
+      }
     }
 
     const gradeLevelId = resolveGradeLevelId(
@@ -283,6 +313,7 @@ export function validateStudentRows(opts: {
       address: cellStr(row.address) || null,
       parentName: cellStr(row.parentName) || null,
       parentPhone: cellStr(row.parentPhone) || null,
+      parentEmail: parentEmail || null,
       feeCohort,
       classroomCode: cellStr(row.classroomCode) || null,
       temporaryPassword,
@@ -302,15 +333,18 @@ export function validateStudentRows(opts: {
         phone: normalized.phone,
         parentName: normalized.parentName,
         parentPhone: normalized.parentPhone,
+        parentEmail: normalized.parentEmail,
       },
     });
   }
 
   const errorCount = results.filter((r) => !r.ok).length;
+  const validCount = results.filter((r) => r.ok).length;
   return {
     ok: errorCount === 0 && opts.rows.length > 0,
+    canImport: validCount > 0,
     rowCount: opts.rows.length,
-    validCount: results.filter((r) => r.ok).length,
+    validCount,
     errorCount,
     warnings,
     rows: results,
@@ -332,6 +366,7 @@ export function validateStaffRows(opts: {
   if (opts.rows.length > BULK_IMPORT_MAX_ROWS) {
     return {
       ok: false,
+      canImport: false,
       rowCount: opts.rows.length,
       validCount: 0,
       errorCount: opts.rows.length,
@@ -429,6 +464,7 @@ export function validateStaffRows(opts: {
   const errorCount = results.filter((r) => !r.ok).length;
   return {
     ok: errorCount === 0 && opts.rows.length > 0,
+    canImport: errorCount === 0 && opts.rows.length > 0,
     rowCount: opts.rows.length,
     validCount: results.filter((r) => r.ok).length,
     errorCount,
@@ -440,8 +476,8 @@ export function validateStaffRows(opts: {
 
 export function studentImportTemplateCsv(): string {
   return [
-    "name,email,gradeLevel,dob,gender,phone,address,parentName,parentPhone,feeCohort,classroomCode",
-    "Ada Lovelace,ada.lovelace@example.com,Grade 7,2012-12-10,FEMALE,,,Ada Parent,+2315550001,NEW,7A",
+    "name,email,gradeLevel,dob,gender,phone,address,parentName,parentPhone,parentEmail,feeCohort,classroomCode",
+    "Ada Lovelace,ada.lovelace@example.com,Grade 7,2012-12-10,FEMALE,,,Ada Parent,+2315550001,parent.ada@example.com,NEW,7A",
   ].join("\n");
 }
 

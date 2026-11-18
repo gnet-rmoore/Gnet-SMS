@@ -11,6 +11,7 @@ import {
   validateStaffRows,
   validateStudentRows,
 } from "../services/identity/src/domain/bulkImport.ts";
+import { credentialsToCsv } from "../src/features/bulk-import/parseSpreadsheet.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -54,6 +55,94 @@ const grades = [
   assert(ok.validCount === 2, "two valid students");
   assert(ok.prepared[0].gradeLevelId === "g7", "resolve grade by name");
   assert(ok.prepared[1].gradeLevelId === "g8", "resolve grade by id");
+}
+
+{
+  const parent = validateStudentRows({
+    rows: [
+      {
+        name: "Ada",
+        email: "ada@school.test",
+        gradeLevel: "Grade 7",
+        "parent email": "Parent.Example@school.test",
+      },
+    ],
+    gradeLevels: grades,
+    existingEmails: new Set(),
+  });
+  assert(parent.ok === true, "optional parentEmail accepted");
+  assert(
+    parent.prepared[0].parentEmail === "parent.example@school.test",
+    "parentEmail normalized and prepared"
+  );
+}
+
+{
+  const sameEmail = validateStudentRows({
+    rows: [
+      {
+        name: "Ada",
+        email: "ada@school.test",
+        gradeLevel: "Grade 7",
+        parentEmail: "ada@school.test",
+      },
+    ],
+    gradeLevels: grades,
+    existingEmails: new Set(),
+  });
+  assert(sameEmail.ok === false, "parentEmail equal to student email rejected");
+}
+
+{
+  const blocked = validateStudentRows({
+    rows: [
+      {
+        name: "Ada",
+        email: "ada@school.test",
+        gradeLevel: "Grade 7",
+        parentEmail: "teacher@school.test",
+      },
+    ],
+    gradeLevels: grades,
+    existingEmails: new Set(),
+    blockedParentEmails: new Set(["teacher@school.test"]),
+  });
+  assert(blocked.ok === false, "parentEmail belonging to non-parent account rejected");
+}
+
+{
+  const inFileStudent = validateStudentRows({
+    rows: [
+      {
+        name: "Ada",
+        email: "ada@school.test",
+        gradeLevel: "Grade 7",
+        parentEmail: "bob@school.test",
+      },
+      { name: "Bob", email: "bob@school.test", gradeLevel: "Grade 7" },
+    ],
+    gradeLevels: grades,
+    existingEmails: new Set(),
+  });
+  assert(inFileStudent.ok === false, "parentEmail matching another student in file rejected");
+  assert(
+    inFileStudent.rows[0].errors.some((e) => e.includes("student email in this file")),
+    "in-file parentEmail collision error message"
+  );
+}
+
+{
+  const partial = validateStudentRows({
+    rows: [
+      { name: "Ada", email: "ada@school.test", gradeLevel: "Grade 7" },
+      { name: "Bad", email: "bad@school.test", gradeLevel: "Unknown" },
+    ],
+    gradeLevels: grades,
+    existingEmails: new Set(),
+  });
+  assert(partial.ok === false, "partial student batch is not fully ok");
+  assert(partial.canImport === true, "partial student batch can still import valid rows");
+  assert(partial.validCount === 1, "partial student batch counts valid rows");
 }
 
 {
@@ -117,8 +206,30 @@ const grades = [
 }
 
 assert(studentImportTemplateCsv().includes("gradeLevel"), "student template has gradeLevel");
+assert(studentImportTemplateCsv().includes("parentEmail"), "student template has parentEmail");
 assert(staffImportTemplateCsv().includes("role"), "staff template has role");
 assert(BULK_IMPORT_MAX_ROWS === 500, "max rows constant");
+
+{
+  const csv = credentialsToCsv([
+    {
+      name: "Ada",
+      email: "ada@school.test",
+      role: "STUDENT",
+      temporaryPassword: "Stu@12345",
+      parentName: "Ada Parent",
+      parentEmail: "parent@school.test",
+      parentTemporaryPassword: "Par@12345",
+      parentCreated: true,
+    },
+  ]);
+  const lines = csv.split("\n");
+  assert(lines.length === 3, "credentials CSV includes a parent row");
+  assert(
+    lines[2].includes("parent@school.test") && lines[2].includes("PARENT"),
+    "parent credentials use PARENT role"
+  );
+}
 
 {
   const tooMany = validateStudentRows({
