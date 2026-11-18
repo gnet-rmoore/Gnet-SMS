@@ -31,6 +31,7 @@ interface School {
   defaultLocale?: string;
   gradeSheetTemplate?: string;
   reportCardTemplate?: string;
+  transcriptTemplate?: string;
   certificateTemplate?: string;
   certificateDefaults?: {
     sig1Name?: string;

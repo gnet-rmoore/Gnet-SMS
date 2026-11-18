@@ -72,6 +72,7 @@ export type ReportCardPayload = {
     logoUrl?: string | null;
     brandColor?: string | null;
     branding?: string | null;
+    motto?: string | null;
     country?: string | null;
     county?: string | null;
     district?: string | null;

@@ -296,6 +296,9 @@ export const schoolService = {
           : {}),
         gradeSheetTemplate: data.gradeSheetTemplate,
         reportCardTemplate: data.reportCardTemplate,
+        ...(data.transcriptTemplate !== undefined
+          ? { transcriptTemplate: String(data.transcriptTemplate || "classic") }
+          : {}),
         ...(data.certificateTemplate !== undefined
           ? { certificateTemplate: String(data.certificateTemplate || "CERT_CLASSIC_BROWN") }
           : {}),

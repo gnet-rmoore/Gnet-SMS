@@ -4352,6 +4352,9 @@ export const enPages = {
     reportCardTemplate: "Report card template",
     reportCardTemplateHint:
       "One polished single-page A4 layout (Green academic quarterly) for all classes and levels.",
+    transcriptTemplate: "Transcript template",
+    transcriptTemplateHint:
+      "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
     certificateTemplate: "Graduation certificate template",
     certificateTemplateHint:
       "Four landscape Letter diplomas for graduating students. Uses your school logo, brand color, and address. Used on the Certificates page.",
@@ -4642,6 +4645,7 @@ export const enPages = {
       title: "Template preview",
       gradeSheet: "Grade sheet",
       reportCard: "Report card",
+      transcript: "Transcript",
       certificate: "Certificate",
       receipt: "Receipt",
       receiptPdfKit: "Built-in Classic PDF — preview by issuing a test receipt",
@@ -6682,6 +6686,7 @@ export const enPages = {
     title: "Transcripts",
     subtitle: "Audit student performances and issue official academic records.",
     refresh: "Refresh",
+    previewDemo: "Preview transcript",
     tabStudents: "Student Registry",
     tabApprovals: "Approvals",
     tabIssued: "Issued",

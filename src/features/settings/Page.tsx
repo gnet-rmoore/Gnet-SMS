@@ -67,6 +67,10 @@ import { LanguageSelect } from "../../i18n/LanguageSelect";
 import { DEFAULT_LOCALE, normalizeLocale, type AppLocale } from "../../i18n";
 import { resolveGradeSheetTemplateKey } from "../gradesheets";
 import {
+  DEFAULT_TRANSCRIPT_TEMPLATE,
+  resolveSelectableTranscriptTemplateKey,
+} from "../transcripts/api";
+import {
   parseReceiptTemplatesFromSchool,
   receiptTemplatesPatchForRole,
   receiptTypesForRole,
@@ -133,6 +137,7 @@ export const Settings = () => {
   const {
     schoolData,
     gradeLegends,
+    calendar,
     loading,
     invalidate: refetchSettings,
     refetchAll,
@@ -187,6 +192,7 @@ export const Settings = () => {
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
   const [gradeSheetTemplate, setGradeSheetTemplate] = React.useState("TEMPLATE_1");
   const [reportCardTemplate, setReportCardTemplate] = React.useState("TEMPLATE_1");
+  const [transcriptTemplate, setTranscriptTemplate] = React.useState(DEFAULT_TRANSCRIPT_TEMPLATE);
   const [certificateTemplate, setCertificateTemplate] = React.useState("CERT_CLASSIC_BROWN");
   const [certificateDefaults, setCertificateDefaults] = React.useState<CertificateDefaults>({
     ...DEFAULT_CERTIFICATE_DEFAULTS,
@@ -212,7 +218,9 @@ export const Settings = () => {
   });
   const [leavePolicies, setLeavePolicies] = React.useState<LeavePolicyRow[]>([]);
   const [previewTemplate, setPreviewTemplate] = React.useState<string | null>(null);
-  const [previewType, setPreviewType] = React.useState<"GRADE" | "REPORT" | "CERT" | "RECEIPT">("GRADE");
+  const [previewType, setPreviewType] = React.useState<
+    "GRADE" | "REPORT" | "TRANSCRIPT" | "CERT" | "RECEIPT"
+  >("GRADE");
   const [previewReceiptType, setPreviewReceiptType] = React.useState<ReceiptTypeKey>("FEE_PAYMENT");
   const [receiptTemplates, setReceiptTemplates] = React.useState<ReceiptTemplatesByType>(() =>
     parseReceiptTemplatesFromSchool({})
@@ -241,6 +249,7 @@ export const Settings = () => {
     setLogoPreview(s.logoUrl || null);
     setGradeSheetTemplate(resolveGradeSheetTemplateKey(s.gradeSheetTemplate || "TEMPLATE_1"));
     setReportCardTemplate(s.reportCardTemplate || "TEMPLATE_1");
+    setTranscriptTemplate(resolveSelectableTranscriptTemplateKey(s.transcriptTemplate));
     setCertificateTemplate(
       resolveCertificateTemplateKey(s.certificateTemplate || "CERT_CLASSIC_BROWN")
     );
@@ -571,6 +580,7 @@ export const Settings = () => {
         logoUrl: logoPreview,
         gradeSheetTemplate,
         reportCardTemplate,
+        transcriptTemplate,
         certificateTemplate,
         certificateDefaults,
         documentSignatories,
@@ -908,6 +918,7 @@ export const Settings = () => {
               brandColor={brandColor}
               gradeSheetTemplate={gradeSheetTemplate}
               reportCardTemplate={reportCardTemplate}
+              transcriptTemplate={transcriptTemplate}
               certificateTemplate={certificateTemplate}
               certificateDefaults={certificateDefaults}
               documentSignatories={documentSignatories}
@@ -917,6 +928,7 @@ export const Settings = () => {
               setBrandColor={setBrandColor}
               setGradeSheetTemplate={setGradeSheetTemplate}
               setReportCardTemplate={setReportCardTemplate}
+              setTranscriptTemplate={setTranscriptTemplate}
               setCertificateTemplate={setCertificateTemplate}
               setCertificateDefaults={setCertificateDefaults}
               setDocumentSignatories={setDocumentSignatories}
@@ -1027,9 +1039,27 @@ export const Settings = () => {
             address={address}
             logoUrl={logoPreview}
             brandColor={brandColor}
+            previewOptions={{
+              school: {
+                ...(displaySchool || {}),
+                name: schoolName,
+                address,
+                country,
+                contactPhone,
+                contactEmail,
+                logoUrl: logoPreview,
+                brandColor,
+              },
+              calendar,
+              documentSignatories,
+              staff: staffForSignatures,
+              logoUrl: logoPreview,
+              brandColor,
+            }}
             setGradeSheetTemplate={setGradeSheetTemplate}
             setPreviewTemplate={setPreviewTemplate}
             setReportCardTemplate={setReportCardTemplate}
+            setTranscriptTemplate={setTranscriptTemplate}
             setCertificateTemplate={setCertificateTemplate}
             setReceiptTemplateForType={(type, id) =>
               setReceiptTemplates((prev) => ({ ...prev, [type]: id }))

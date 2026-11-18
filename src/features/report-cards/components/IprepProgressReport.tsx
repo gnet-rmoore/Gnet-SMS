@@ -379,9 +379,11 @@ export function IprepProgressReport({ payload, variant, preview = false }: Props
             <div style={{ fontSize: modern ? 13.5 : 16, fontWeight: 800 }}>
               {payload.school.name || "School"}
             </div>
-            <div style={{ fontStyle: "italic", fontSize: modern ? 8.6 : 12, opacity: modern ? 0.9 : 1 }}>
-              "Education For The Future"
-            </div>
+            {payload.school.motto ? (
+              <div style={{ fontStyle: "italic", fontSize: modern ? 8.6 : 12, opacity: modern ? 0.9 : 1 }}>
+                {payload.school.motto}
+              </div>
+            ) : null}
             {!modern && (
               <div style={{ fontSize: 14.5, fontWeight: 700, marginTop: 2, letterSpacing: 0.3 }}>
                 ACADEMIC PROGRESS REPORT

@@ -128,6 +128,7 @@ export const schoolUpdateSchema = z
       .refine(isKnownReportCardTemplateId, {
         message: "Invalid report card template id",
       }),
+    transcriptTemplate: z.enum(["classic", "modern", "executive"]),
     receiptTemplate: z.string().optional(),
     receiptTemplates: receiptTemplatesMapSchema.optional(),
     certificateTemplate: z.string(),

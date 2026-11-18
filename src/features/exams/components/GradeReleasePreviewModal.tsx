@@ -92,7 +92,7 @@ export function GradeReleasePreviewModal({
           <div className="mx-auto min-w-min">
             <GradeSheetView
               templateId={activeId}
-              studentName="Sample Student"
+              studentName="Sample Learner"
               examTitle={examTitle || "End-of-Term Examination"}
               examDate={examDate || new Date().toISOString()}
               grades={[]}

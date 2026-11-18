@@ -51,6 +51,8 @@ model School {
   guideRequired      Boolean   @default(false)
   gradeSheetTemplate String    @default("TEMPLATE_1")
   reportCardTemplate String    @default("TEMPLATE_1")
+  /// School-wide transcript print template id
+  transcriptTemplate String    @default("classic")
   /// Graduation / completion certificate print template id
   certificateTemplate String   @default("CERT_CLASSIC_BROWN")
   /// Legacy single receipt template id — per-type defaults now live in the receipt registries

@@ -76,6 +76,31 @@ export const TRANSCRIPT_TEMPLATE_OPTIONS = [
   { key: "executive", nameKey: "tplExecutive", descKey: "tplExecutiveDesc" },
 ] as const;
 
+export const DEFAULT_TRANSCRIPT_TEMPLATE = "classic";
+
+export const SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS = TRANSCRIPT_TEMPLATE_OPTIONS.filter(
+  (option) => option.key === DEFAULT_TRANSCRIPT_TEMPLATE
+);
+
+export function resolveTranscriptTemplateKey(value: unknown): string {
+  const key = String(value || "").trim().toLowerCase();
+  return TRANSCRIPT_TEMPLATE_OPTIONS.some((option) => option.key === key)
+    ? key
+    : DEFAULT_TRANSCRIPT_TEMPLATE;
+}
+
+export function resolveSelectableTranscriptTemplateKey(value: unknown): string {
+  const key = resolveTranscriptTemplateKey(value);
+  return SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.some((option) => option.key === key)
+    ? key
+    : SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS[0].key;
+}
+
+export function getTranscriptTemplateOption(value: unknown) {
+  const key = resolveTranscriptTemplateKey(value);
+  return TRANSCRIPT_TEMPLATE_OPTIONS.find((option) => option.key === key) || TRANSCRIPT_TEMPLATE_OPTIONS[0];
+}
+
 export const transcriptsApi = {
   listStudents: (schoolId: string) =>
     api.get(`/api/schools/${encodeURIComponent(schoolId)}/students`) as Promise<StudentOption[]>,

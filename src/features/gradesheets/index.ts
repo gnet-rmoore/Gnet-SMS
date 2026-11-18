@@ -19,7 +19,7 @@ export {
   type AssembleGradeEntry,
   type AssembleGradeSheetInput,
 } from "./assembleGradeSheet";
-export { sampleGradeSheetData } from "./sampleData";
+export { sampleGradeSheetData, type SampleGradeSheetOverrides } from "./sampleData";
 export {
   DENSE_SUBJECT_THRESHOLD,
   gradeSheetDensityClass,

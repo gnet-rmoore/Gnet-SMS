@@ -11,6 +11,13 @@ import {
   Award,
   GraduationCap,
   Receipt,
+  ReceiptText,
+  BadgeDollarSign,
+  FileSpreadsheet,
+  Wallet,
+  ScrollText,
+  Banknote,
+  type LucideIcon,
 } from "lucide-react";
 import {
   persistableReportCardKey,
@@ -39,6 +46,10 @@ import {
   type ReceiptTypeKey,
   type ReceiptTemplatesByType,
 } from "../../receipts/registry";
+import {
+  SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS,
+  resolveSelectableTranscriptTemplateKey,
+} from "../../transcripts/api";
 
 /** Preset brand swatches for Settings → Appearance (16 total). */
 const BRAND_COLORS = [
@@ -65,6 +76,7 @@ export type AppearanceSettingsTabProps = {
   brandColor: string;
   gradeSheetTemplate: string;
   reportCardTemplate: string;
+  transcriptTemplate: string;
   certificateTemplate: string;
   certificateDefaults: CertificateDefaults;
   documentSignatories: DocumentSignatories;
@@ -74,10 +86,11 @@ export type AppearanceSettingsTabProps = {
   setBrandColor: (hex: string) => void;
   setGradeSheetTemplate: (id: string) => void;
   setReportCardTemplate: (id: string) => void;
+  setTranscriptTemplate: (id: string) => void;
   setCertificateTemplate: (id: string) => void;
   setCertificateDefaults: (next: CertificateDefaults) => void;
   setDocumentSignatories: (next: DocumentSignatories) => void;
-  setPreviewType: (t: "GRADE" | "REPORT" | "CERT" | "RECEIPT") => void;
+  setPreviewType: (t: "GRADE" | "REPORT" | "TRANSCRIPT" | "CERT" | "RECEIPT") => void;
   setPreviewTemplate: (id: string | null) => void;
   setPreviewReceiptType: (type: ReceiptTypeKey) => void;
   receiptTemplates: ReceiptTemplatesByType;
@@ -311,6 +324,82 @@ function ReportCardPick({
   );
 }
 
+function TranscriptPick({
+  selected,
+  onSelect,
+  onPreview,
+}: {
+  selected: string;
+  onSelect: (id: string) => void;
+  onPreview: (id: string) => void;
+}) {
+  const { t } = useTranslation(["pages", "common"]);
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.map((option) => {
+        const active = resolveSelectableTranscriptTemplateKey(selected) === option.key;
+        return (
+          <div
+            key={option.key}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(option.key)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onSelect(option.key);
+            }}
+            className={`p-4 rounded-2xl border-2 text-start cursor-pointer transition-colors ${
+              active
+                ? "border-indigo-600 bg-indigo-50/50"
+                : "border-slate-100 bg-white hover:border-slate-200"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  active ? "bg-indigo-600 text-white" : "bg-slate-50 text-slate-400"
+                }`}
+              >
+                <ScrollText className="w-5 h-5" aria-hidden />
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreview(option.key);
+                }}
+                className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 bg-white"
+                title={t("preview")}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
+            <h4 className="text-sm font-extrabold tracking-tight text-slate-900 mt-3">
+              {t(`pages:transcripts.${option.nameKey}`)}
+            </h4>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              {t(`pages:transcripts.${option.descKey}`)}
+            </p>
+            {active && (
+              <p className="mt-3 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-indigo-600">
+                <Check className="w-3.5 h-3.5" /> {t("selected")}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const RECEIPT_TEMPLATE_ICONS: Record<ReceiptTemplateId, LucideIcon> = {
+  FEE_OFFICIAL_RECEIPT: ReceiptText,
+  FEE_PAYMENT_CONFIRMATION: BadgeDollarSign,
+  PAYSLIP_EARNINGS_DEDUCTIONS: FileSpreadsheet,
+  PAYSLIP_NET_PAY_HERO: Wallet,
+  EXPENSE_EXECUTIVE_VOUCHER: ScrollText,
+  EXPENSE_CLEAN_LEDGER: Banknote,
+};
+
 function ReceiptTemplatePick({
   selected,
   typeKey,
@@ -330,6 +419,7 @@ function ReceiptTemplatePick({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {templates.map((template) => {
         const active = selected === template.id;
+        const Icon = RECEIPT_TEMPLATE_ICONS[template.id];
         return (
           <div
             key={template.id}
@@ -348,9 +438,12 @@ function ReceiptTemplatePick({
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3 min-w-0">
                 <div
-                  className="w-10 h-10 rounded-xl shrink-0 border border-slate-200"
-                  style={{ backgroundColor: template.accent }}
-                />
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    active ? "bg-indigo-600 text-white" : "bg-slate-50 text-slate-400"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" aria-hidden />
+                </div>
                 <div className="min-w-0">
                   <p className="font-bold text-slate-900 text-sm">{template.name}</p>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{template.description}</p>
@@ -435,6 +528,7 @@ export function AppearanceSettingsTab({
   brandColor,
   gradeSheetTemplate,
   reportCardTemplate,
+  transcriptTemplate,
   certificateTemplate,
   certificateDefaults,
   documentSignatories,
@@ -444,6 +538,7 @@ export function AppearanceSettingsTab({
   setBrandColor,
   setGradeSheetTemplate,
   setReportCardTemplate,
+  setTranscriptTemplate,
   setCertificateTemplate,
   setCertificateDefaults,
   setDocumentSignatories,
@@ -647,6 +742,24 @@ export function AppearanceSettingsTab({
           onSelect={setReportCardTemplate}
           onPreview={(id) => {
             setPreviewType("REPORT");
+            setPreviewTemplate(id);
+          }}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+          <ScrollText className="w-4 h-4 text-indigo-600" />
+          {t("pages:settings.transcriptTemplate")}
+        </h3>
+        <p className="text-sm text-slate-500">
+          {t("pages:settings.transcriptTemplateHint")}
+        </p>
+        <TranscriptPick
+          selected={transcriptTemplate}
+          onSelect={setTranscriptTemplate}
+          onPreview={(id) => {
+            setPreviewType("TRANSCRIPT");
             setPreviewTemplate(id);
           }}
         />

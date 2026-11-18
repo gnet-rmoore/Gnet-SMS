@@ -85,6 +85,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
         logoUrl: school?.logoUrl,
         brandColor: school?.brandColor,
         branding: school?.branding,
+        motto: school?.motto,
         country: school?.country,
         county: school?.county,
         district: school?.district,

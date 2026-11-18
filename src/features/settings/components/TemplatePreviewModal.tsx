@@ -11,7 +11,7 @@ import {
   getCertificateTemplateDef,
   resolveCertificateTemplateKey,
 } from "../../certificates";
-import { renderTemplatePreview } from "./TemplatePreviewRenderer";
+import { renderTemplatePreview, type TemplatePreviewOptions } from "./TemplatePreviewRenderer";
 import { ReceiptTemplatePreview } from "./ReceiptTemplatePreview";
 import {
   resolveReceiptTemplateId,
@@ -19,6 +19,7 @@ import {
   type ReceiptTemplateId,
   type ReceiptTypeKey,
 } from "../../receipts/registry";
+import { getTranscriptTemplateOption } from "../../transcripts/api";
 
 const RECEIPT_TYPE_PREVIEW_LABEL: Record<ReceiptTypeKey, string> = {
   FEE_PAYMENT: "settings.receiptTypeFeePayment",
@@ -29,15 +30,17 @@ const RECEIPT_TYPE_PREVIEW_LABEL: Record<ReceiptTypeKey, string> = {
 
 export type TemplatePreviewModalProps = {
   previewTemplate: string;
-  previewType: "GRADE" | "REPORT" | "CERT" | "RECEIPT";
+  previewType: "GRADE" | "REPORT" | "TRANSCRIPT" | "CERT" | "RECEIPT";
   schoolId?: string;
   schoolName?: string;
   address?: string;
   logoUrl?: string | null;
   brandColor?: string | null;
+  previewOptions?: TemplatePreviewOptions;
   setGradeSheetTemplate: (id: string) => void;
   setPreviewTemplate: (id: string | null) => void;
   setReportCardTemplate: (id: string) => void;
+  setTranscriptTemplate: (id: string) => void;
   setCertificateTemplate: (id: string) => void;
   setReceiptTemplateForType: (type: ReceiptTypeKey, id: string) => void;
   previewReceiptType?: ReceiptTypeKey;
@@ -50,9 +53,11 @@ export function TemplatePreviewModal({
   address = "",
   logoUrl = null,
   brandColor = null,
+  previewOptions,
   setGradeSheetTemplate,
   setPreviewTemplate,
   setReportCardTemplate,
+  setTranscriptTemplate,
   setCertificateTemplate,
   setReceiptTemplateForType,
   previewReceiptType = "FEE_PAYMENT",
@@ -77,11 +82,14 @@ export function TemplatePreviewModal({
     previewType === "CERT"
       ? getCertificateTemplateDef(resolveCertificateTemplateKey(previewTemplate))
       : null;
+  const transcriptDef =
+    previewType === "TRANSCRIPT" ? getTranscriptTemplateOption(previewTemplate) : null;
   const receiptDef =
     previewType === "RECEIPT"
       ? getReceiptTemplateDef(resolveReceiptTemplateId(previewTemplate) as ReceiptTemplateId)
       : null;
-  const widePrint = a4Report || gradeDef != null || certDef != null || receiptDef != null;
+  const widePrint =
+    a4Report || gradeDef != null || transcriptDef != null || certDef != null || receiptDef != null;
   const maxWidthClass = certDef
     ? "max-w-[min(98vw,calc(11in+3rem))]"
     : gradeDef?.pageSize === "legal"
@@ -96,11 +104,13 @@ export function TemplatePreviewModal({
   const typeLabel =
     previewType === "GRADE"
       ? m("gradeSheet")
-      : previewType === "CERT"
-        ? m("certificate")
-        : previewType === "RECEIPT"
-          ? m("receipt")
-          : m("reportCard");
+      : previewType === "TRANSCRIPT"
+        ? m("transcript")
+        : previewType === "CERT"
+          ? m("certificate")
+          : previewType === "RECEIPT"
+            ? m("receipt")
+            : m("reportCard");
 
   const receiptTypeLabel =
     previewType === "RECEIPT"
@@ -108,19 +118,21 @@ export function TemplatePreviewModal({
       : "";
 
   const subtitle =
-    certDef != null
-      ? `${certDef.name} · Letter landscape 11×8.5 in`
-      : gradeDef != null
-        ? `${gradeDef.name} · ${
-            gradeDef.pageSize === "legal" ? "Legal 8.5×14 in" : "A4 portrait"
-          }`
-        : receiptDef != null
-          ? `${receiptDef.name} · ${receiptTypeLabel} · A4 portrait`
-          : biFoldReport
-            ? `${templateName} · A4 landscape 297×210 mm`
-            : a4Report
-              ? m("a4Portrait", { name: templateName })
-              : templateName;
+    transcriptDef != null
+      ? `${t(`pages:transcripts.${transcriptDef.nameKey}`)} · A4 portrait`
+      : certDef != null
+        ? `${certDef.name} · Letter landscape 11×8.5 in`
+        : gradeDef != null
+          ? `${gradeDef.name} · ${
+              gradeDef.pageSize === "legal" ? "Legal 8.5×14 in" : "A4 portrait"
+            }`
+          : receiptDef != null
+            ? `${receiptDef.name} · ${receiptTypeLabel} · A4 portrait`
+            : biFoldReport
+              ? `${templateName} · A4 landscape 297×210 mm`
+              : a4Report
+                ? m("a4Portrait", { name: templateName })
+                : templateName;
 
   return (
     <FeatureModalShell
@@ -144,6 +156,8 @@ export function TemplatePreviewModal({
             onClick={() => {
               if (previewType === "GRADE") {
                 setGradeSheetTemplate(previewTemplate);
+              } else if (previewType === "TRANSCRIPT") {
+                setTranscriptTemplate(previewTemplate);
               } else if (previewType === "CERT") {
                 setCertificateTemplate(previewTemplate);
               } else if (previewType === "RECEIPT") {
@@ -180,9 +194,12 @@ export function TemplatePreviewModal({
               brandColor={brandColor}
             />
           ) : (
-            renderTemplatePreview(previewTemplate, previewType as "GRADE" | "REPORT" | "CERT", schoolName, address, {
-              logoUrl,
-              brandColor,
+            renderTemplatePreview({
+              templateId: previewTemplate,
+              type: previewType as "GRADE" | "REPORT" | "TRANSCRIPT" | "CERT",
+              schoolName,
+              address,
+              opts: previewOptions ?? { logoUrl, brandColor },
             })
           )}
         </div>

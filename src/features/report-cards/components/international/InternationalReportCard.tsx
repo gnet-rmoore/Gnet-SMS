@@ -395,7 +395,9 @@ function CambridgeCard(p: IntlReportProps) {
           <h1 className="text-[16px] font-bold uppercase tracking-[0.08em] leading-tight">
             {p.school.name || "School"}
           </h1>
-          <p className="text-[10px] text-slate-500 mt-1 italic">{p.school.address || "Cambridge International Pathway"}</p>
+          {p.school.address ? (
+            <p className="text-[10px] text-slate-500 mt-1 italic">{p.school.address}</p>
+          ) : null}
           <div className="mt-3 inline-block border border-slate-800 px-5 py-1">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em]">Statement of results</p>
           </div>

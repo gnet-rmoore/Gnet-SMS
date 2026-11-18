@@ -24,6 +24,7 @@ model School {
   status             String                    @default("ACTIVE")
   gradeSheetTemplate String                    @default("TEMPLATE_1")
   reportCardTemplate String                    @default("TEMPLATE_1")
+  transcriptTemplate String                    @default("classic")
   certificateTemplate String                   @default("CERT_CLASSIC_BROWN")
   receiptTemplate    String                    @default("FEE_OFFICIAL_RECEIPT")
   receiptTemplates   String?

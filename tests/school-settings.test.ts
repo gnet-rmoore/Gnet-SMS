@@ -30,6 +30,13 @@ import {
   type GradebookConfig,
 } from "../services/identity/src/lib/gradebookConfig";
 import { schoolUpdateSchema } from "../services/identity/src/validation/schemas";
+import { sampleGradeSheetData } from "../src/features/gradesheets/sampleData";
+import {
+  DEFAULT_TRANSCRIPT_TEMPLATE,
+  SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS,
+  resolveSelectableTranscriptTemplateKey,
+  resolveTranscriptTemplateKey,
+} from "../src/features/transcripts/api";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -166,6 +173,50 @@ assert(sky["50"] !== sky["600"], "palette 50 is lighter");
 assert(sky["900"] !== sky["600"], "palette 900 is darker");
 const appBlue = brandPaletteFromHex(APP_BRAND_DEFAULT);
 assert(appBlue["600"] === "#2563eb", "app palette 600 is blue-600");
+
+const previewSheet = sampleGradeSheetData("Current Academy", "12 Main Road", {
+  school: {
+    phone: "+231 77 000 0001",
+    email: "office@current.edu.lr",
+  },
+  term: { academicYear: "2030/2031" },
+  student: { name: "Sample Learner" },
+});
+assert(previewSheet.school.name === "Current Academy", "grade-sheet preview uses current school name");
+assert(previewSheet.school.address === "12 Main Road", "grade-sheet preview uses current school address");
+assert(previewSheet.school.phone === "+231 77 000 0001", "grade-sheet preview uses current school phone");
+assert(previewSheet.term.academicYear === "2030/2031", "grade-sheet preview uses supplied academic year");
+assert(previewSheet.student.name === "Sample Learner", "grade-sheet preview uses neutral sample learner");
+assert(previewSheet.subjects.length > 0, "grade-sheet preview keeps sample grades");
+const previewSheetText = JSON.stringify(previewSheet);
+assert(!previewSheetText.includes("Greenfield"), "no Greenfield academy dummy data");
+assert(!previewSheetText.includes("Grace K. Johnson"), "no hardcoded sample learner identity");
+assert(!previewSheetText.includes("Education For The Future"), "no hardcoded school motto");
+
+assert(DEFAULT_TRANSCRIPT_TEMPLATE === "classic", "transcript default is the current design");
+assert(
+  SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS.length === 1 &&
+    SELECTABLE_TRANSCRIPT_TEMPLATE_OPTIONS[0].key === "classic",
+  "only the current transcript template is selectable for now"
+);
+assert(resolveTranscriptTemplateKey("modern") === "modern", "future transcript keys resolve");
+assert(resolveTranscriptTemplateKey("unknown") === "classic", "unknown transcript keys fall back");
+assert(
+  resolveSelectableTranscriptTemplateKey("modern") === "classic",
+  "unsupported stored transcript keys fall back to the selectable current design"
+);
+assert(
+  resolveSelectableTranscriptTemplateKey("unknown") === "classic",
+  "unknown transcript keys fall back to the selectable current design"
+);
+assert(
+  schoolUpdateSchema.shape.transcriptTemplate.safeParse("classic").success,
+  "school update accepts transcript template"
+);
+assert(
+  !schoolUpdateSchema.shape.transcriptTemplate.safeParse("unknown").success,
+  "school update rejects unknown transcript template"
+);
 
 console.log("\n=========================================");
 if (failed > 0) {
