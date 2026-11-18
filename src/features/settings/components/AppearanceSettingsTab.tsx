@@ -293,6 +293,9 @@ function ReportCardPick({
                     {def.label}
                   </h4>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{def.description}</p>
+                  <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+                    {def.basisLabel}
+                  </p>
                   {active && (
                     <p className="mt-3 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-indigo-600">
                       <Check className="w-3.5 h-3.5" /> {t("selected")}

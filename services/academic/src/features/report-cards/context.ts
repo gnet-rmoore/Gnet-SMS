@@ -341,6 +341,7 @@ export async function buildReportCardContext(
       classPosition: null,
       attendanceRate: null,
     },
+    assessments: null,
     promotion: null,
     templateKey: templateKey || IPREP_PROGRESS_CLASSIC,
     generatedAt: new Date().toISOString(),

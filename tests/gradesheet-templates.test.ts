@@ -31,11 +31,15 @@ console.log("=========================================");
 console.log(" GRADESHEET TEMPLATES TESTS");
 console.log("=========================================\n");
 
-assert(GRADE_SHEET_TEMPLATES.length === 2, "exactly 2 templates");
+assert(GRADE_SHEET_TEMPLATES.length === 4, "exactly 4 templates");
 assert(getGradeSheetTemplateDef("TEMPLATE_1").pageSize === "a4", "classic is A4");
 assert(getGradeSheetTemplateDef("TEMPLATE_2").pageSize === "a4", "modern is A4");
+assert(getGradeSheetTemplateDef("INTL_STANDARD_TERM").name === "Standard Term Summary", "Standard Term Summary is in grade sheets");
+assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").pageSize === "a4", "Executive Performance Brief is A4");
 
 assert(resolveGradeSheetTemplateKey("TEMPLATE_1") === "TEMPLATE_1", "keep TEMPLATE_1");
+assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "keep Standard Term Summary");
+assert(resolveGradeSheetTemplateKey("INTL_EXECUTIVE") === "INTL_EXECUTIVE", "keep Executive Performance Brief");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_2") === "TEMPLATE_2", "keep TEMPLATE_2");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_3") === "TEMPLATE_1", "removed TEMPLATE_3 → classic");
 assert(resolveGradeSheetTemplateKey("TEMPLATE_5") === "TEMPLATE_1", "legacy TEMPLATE_5 → classic");

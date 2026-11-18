@@ -2,10 +2,12 @@ import React from "react";
 import {
   A4Page,
   A4_H,
+  SigBlock,
   dash,
   formatIssued,
   type IntlReportProps,
 } from "./shared";
+import { signaturesForLabels } from "../../signatureSlots";
 import {
   applyTenantBrand,
   buildPeriodSubjectRows,
@@ -30,6 +32,21 @@ const GREEN_BASE = {
 };
 
 type GreenAccent = typeof GREEN_BASE;
+
+function attendanceValue(
+  p: IntlReportProps,
+  key: string,
+  rowLabel: string
+): string {
+  const period = p.attendanceDays?.byPeriod?.[key] ?? p.attendanceDays;
+  const field =
+    rowLabel === "Total Days of School"
+      ? period?.total
+      : rowLabel === "Days Attended"
+        ? period?.present
+        : period?.absent;
+  return field == null ? "" : String(field);
+}
 
 function GreenCrest({
   school,
@@ -171,22 +188,19 @@ export function WisteriaGreenCard(p: IntlReportProps) {
               </PeriodTable>
 
               <PeriodTable title="Attendance" columns={columns} dense={dense} accent={accent}>
-                {[
-                  { label: "Total Days of School", value: null as number | null },
-                  { label: "Days Attended", value: null },
-                  { label: "Days Absent", value: null },
-                ].map((row, i) => (
-                  <tr key={row.label} style={{ background: i % 2 === 0 ? accent.mint : accent.paper }}>
+                {["Total Days of School", "Days Attended", "Days Absent"].map((rowLabel, i) => (
+                  <tr key={rowLabel} style={{ background: i % 2 === 0 ? accent.mint : accent.paper }}>
                     <td className={`${cellPad} ${nameSize} font-semibold`} style={{ color: accent.ink }}>
-                      {row.label}
+                      {rowLabel}
                     </td>
                     {columns.map((c) => (
-                      <td key={c.key} className={`${cellPad} text-center text-[9px] text-slate-400`}>
-                        {c.key === firstColKey &&
-                        row.label === "Days Attended" &&
-                        p.attendanceRate != null
-                          ? `${p.attendanceRate}%`
-                          : ""}
+                      <td key={c.key} className={`${cellPad} text-center text-[9px] text-slate-500`}>
+                        {attendanceValue(p, c.key, rowLabel) ||
+                          (c.key === firstColKey &&
+                          rowLabel === "Days Attended" &&
+                          p.attendanceRate != null
+                            ? `${p.attendanceRate}%`
+                            : "—")}
                       </td>
                     ))}
                   </tr>
@@ -194,7 +208,7 @@ export function WisteriaGreenCard(p: IntlReportProps) {
               </PeriodTable>
               {p.attendanceRate != null ? (
                 <p className="text-[8px] text-slate-500 -mt-1">
-                  Attendance rate available: {p.attendanceRate}% (day counts show when recorded by period).
+                  Overall attendance rate: {p.attendanceRate}%.
                 </p>
               ) : null}
 
@@ -271,7 +285,12 @@ export function WisteriaGreenCard(p: IntlReportProps) {
             </div>
           </div>
 
-          <p className="text-[8px] text-center mt-4" style={{ color: accent.inkSoft }}>
+          <SigBlock
+            labels={["Class teacher", "Principal"]}
+            signatures={signaturesForLabels(["Class teacher", "Principal"], p.officialSignatures)}
+            className="mt-4"
+          />
+          <p className="text-[8px] text-center mt-3" style={{ color: accent.inkSoft }}>
             Official academic record of {p.school.name || "the school"} · {formatIssued(p.examDate)}
             {p.preview ? " · Preview" : ""}
           </p>

@@ -9,6 +9,8 @@ import prisma from "../lib/prisma";
 const GRADE_SHEET_TEMPLATES = {
   TEMPLATE_1: "LedgerReport",
   TEMPLATE_2: "MasteryBarsReport",
+  INTL_STANDARD_TERM: "AcademicSummaryGradeSheet",
+  INTL_EXECUTIVE: "AcademicSummaryGradeSheet",
 } as const;
 
 function getGradeSheetHTML(
@@ -19,8 +21,10 @@ function getGradeSheetHTML(
   signatures: any,
   exam: any
 ): string {
-  const templateName = GRADE_SHEET_TEMPLATES[templateId as keyof typeof GRADE_SHEET_TEMPLATES] || "LedgerReport";
-  const templateDef = getGradeSheetTemplateDef(templateId);
+  const resolvedTemplateId = resolveGradeSheetTemplateKey(templateId);
+  const templateName =
+    GRADE_SHEET_TEMPLATES[resolvedTemplateId as keyof typeof GRADE_SHEET_TEMPLATES] || "LedgerReport";
+  const templateDef = getGradeSheetTemplateDef(resolvedTemplateId);
 
   // Build the HTML for the grade sheet using React components server-side
   // For now, we'll use a simplified HTML generation approach

@@ -15,6 +15,7 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
       "Black-and-white single-page academic progress report with three terms, grading scale, conduct ratings, promotion certificate, and official signatures.",
     audience: "BOTH",
     calendarAffinity: ["THREE_TERM", "ANY"],
+    basisLabel: "Term-based · three terms (T1 / T2 / T3)",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
@@ -29,6 +30,7 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
       "Purple single-page progress report with term bars, performance snapshots, conduct ratings, grading legend, promotion certificate, and signatures.",
     audience: "BOTH",
     calendarAffinity: ["THREE_TERM", "ANY"],
+    basisLabel: "Term-based · three terms (T1 / T2 / T3)",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
@@ -43,6 +45,7 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
       "Three-page A4 portrait Liberian learner booklet with cover, two-semester marks matrix, grading system, promotion record, and official signatures.",
     audience: "BOTH",
     calendarAffinity: ["SEMESTER"],
+    basisLabel: "Semester-based · two semesters (six periods + exams)",
     pages: ["COVER", "GRADES", "GRADING_SYSTEM", "PROMOTION"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
@@ -57,6 +60,7 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
       "Fresh green academic report with period columns, attendance, grading scale, and teacher feedback — ideal for term/quarter progress.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
+    basisLabel: "Term-based · four quarters (Q1 / Q2 / Q3 / Q4)",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
@@ -69,6 +73,7 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
       "Structured navy-bordered quarterly report with clear subject grid, period averages, grading system, and comments panel.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
+    basisLabel: "Term-based · four quarters (Q1 / Q2 / Q3 / Q4)",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
@@ -78,24 +83,28 @@ export const REPORT_CARD_TEMPLATES: ReportCardTemplateDef[] = [
     region: "INTL",
     label: "Standard Term Summary",
     description:
-      "Clean single-page term report with marks, grades, status, and remarks — a balanced choice for routine assessments.",
+      "Term-based single-term summary with marks, grades, status, and remarks. Available under Grade sheet templates.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
+    basisLabel: "Term-based · single term",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
+    picker: false,
   },
   {
     key: "INTL_EXECUTIVE",
     region: "INTL",
     label: "Executive Performance Brief",
     description:
-      "Modern leadership-style brief highlighting strengths, focus areas, overall mean, and concise subject performance.",
+      "Term-based leadership brief highlighting strengths, focus areas, overall mean, and concise subject performance. Available under Grade sheet templates.",
     audience: "BOTH",
     calendarAffinity: ["ANY"],
+    basisLabel: "Term-based · single term",
     pages: ["GRADES"],
     promotionScheme: "A_D",
     branding: "SCHOOL_LOGO",
+    picker: false,
   },
 ];
 
@@ -168,7 +177,7 @@ export function reportCardPickerGroups(): Array<{
     .map((region) => ({
       region,
       label: REGION_LABELS[region],
-      items: reportCardsByRegion(region),
+      items: reportCardsByRegion(region).filter((template) => template.picker !== false),
     }))
     .filter((g) => g.items.length > 0);
 }

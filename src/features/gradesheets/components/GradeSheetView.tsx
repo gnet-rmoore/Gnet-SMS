@@ -2,6 +2,7 @@ import React from "react";
 import type { GradeLegendLike } from "../../../lib/gradeLegend";
 import { assembleGradeSheetData, type AssembleGradeEntry } from "../assembleGradeSheet";
 import { resolveGradeSheetTemplateKey } from "../registry";
+import { AcademicSummaryGradeSheet } from "./AcademicSummaryGradeSheet";
 import { LedgerReport } from "./LedgerReport";
 import { MasteryBarsReport } from "./MasteryBarsReport";
 
@@ -67,6 +68,9 @@ export function GradeSheetView(props: GradeSheetViewProps) {
       signatures: props.signatures,
     });
 
+  if (key === "INTL_STANDARD_TERM" || key === "INTL_EXECUTIVE") {
+    return <AcademicSummaryGradeSheet data={data} variant={key} compact={props.compact} />;
+  }
   if (key === "TEMPLATE_2") {
     return <MasteryBarsReport data={data} compact={props.compact} />;
   }

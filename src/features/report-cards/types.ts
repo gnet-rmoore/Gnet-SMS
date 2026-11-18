@@ -15,11 +15,13 @@ export type ReportCardTemplateDef = {
   description: string;
   audience: "PRIVATE" | "PUBLIC" | "BOTH";
   calendarAffinity: CalendarAffinity[];
+  basisLabel: string;
   pages: ReportCardPageKind[];
   promotionScheme: PromotionScheme;
   branding: "SCHOOL_LOGO" | "SCHOOL_LOGO_PLUS_MOE" | "MOE_ONLY";
   /** Legacy Identity key e.g. TEMPLATE_1 */
   legacyId?: string;
+  picker?: boolean;
   divisionTitle?: string;
   documentTitle?: string;
 };
@@ -53,6 +55,12 @@ export type ReportCardPromotion = {
   probationWeeks?: number | null;
   remarks?: string | null;
   finalizedAt?: string | null;
+};
+
+export type ReportCardAssessments = {
+  conduct?: Record<string, string>;
+  attitude?: Record<string, string>;
+  progress?: Record<string, string>;
 };
 
 export type ReportCardPayload = {
@@ -91,12 +99,15 @@ export type ReportCardPayload = {
     attendanceRate: number | null;
   };
   promotion: ReportCardPromotion | null;
+  assessments?: ReportCardAssessments | null;
   templateKey: string;
   generatedAt: string;
   officialSignatures?: {
     principal?: { name?: string | null; signatureUrl?: string | null } | null;
     registrar?: { name?: string | null; signatureUrl?: string | null } | null;
     academic?: { name?: string | null; signatureUrl?: string | null } | null;
+    vpi?: { name?: string | null; signatureUrl?: string | null } | null;
+    vpa?: { name?: string | null; signatureUrl?: string | null } | null;
   } | null;
 };
 

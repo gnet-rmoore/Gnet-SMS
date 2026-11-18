@@ -4399,6 +4399,7 @@ export const enPages = {
       securitySaveFailed: "Failed to save security policy",
       notificationsSaved: "Notification preferences saved",
       notificationsSaveFailed: "Failed to save notification preferences",
+      notificationPrefsLoadFailed: "Could not load notification preferences",
     },
     confirm: {
       deleteLegendTitle: "Delete grade legend?",

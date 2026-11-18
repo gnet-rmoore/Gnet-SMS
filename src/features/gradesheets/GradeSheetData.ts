@@ -8,7 +8,7 @@
  * anything missing renders as "—" and nothing is invented.
  */
 
-export type GradeSheetTemplateId = 'TEMPLATE_1' | 'TEMPLATE_2';
+export type GradeSheetTemplateId = 'TEMPLATE_1' | 'TEMPLATE_2' | 'INTL_STANDARD_TERM' | 'INTL_EXECUTIVE';
 
 export interface GradeSheetData {
   school: { name: string; address?: string; phone?: string; email?: string; motto?: string; logoUrl?: string };
@@ -40,11 +40,16 @@ export interface GradeSheetData {
 const TEMPLATE_FILES: Record<GradeSheetTemplateId, string> = {
   TEMPLATE_1: '/gradesheets/TEMPLATE_1_classic-ledger.html',
   TEMPLATE_2: '/gradesheets/TEMPLATE_2_modern-mastery.html',
+  INTL_STANDARD_TERM: '/gradesheets/TEMPLATE_1_classic-ledger.html',
+  INTL_EXECUTIVE: '/gradesheets/TEMPLATE_2_modern-mastery.html',
 };
 
 /** Unknown or legacy ids fall back to the Classic ledger, matching the existing registry rule. */
-export const resolveTemplateId = (id?: string | null): GradeSheetTemplateId =>
-  id === 'TEMPLATE_2' ? 'TEMPLATE_2' : 'TEMPLATE_1';
+export const resolveTemplateId = (id?: string | null): GradeSheetTemplateId => {
+  const normalized = String(id ?? '').trim().toUpperCase().replace(/[-\s]+/g, '_');
+  if (normalized === 'TEMPLATE_2' || normalized === 'INTL_EXECUTIVE' || normalized === 'INTL_STANDARD_TERM') return normalized;
+  return 'TEMPLATE_1';
+};
 
 /** Loads the school's selected template into an iframe and fills it with data. */
 export async function loadGradeSheet(

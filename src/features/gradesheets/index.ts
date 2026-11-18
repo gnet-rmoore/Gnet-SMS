@@ -25,6 +25,7 @@ export {
   gradeSheetDensityClass,
   isDenseGradeSheet,
 } from "./density";
+export { AcademicSummaryGradeSheet } from "./components/AcademicSummaryGradeSheet";
 export { LedgerReport } from "./components/LedgerReport";
 export { MasteryBarsReport } from "./components/MasteryBarsReport";
 export { GradeSheetView } from "./components/GradeSheetView";

@@ -51,6 +51,12 @@ export type IntlReportProps = {
   academicYearLabel?: string;
   /** Active Academic Calendar periods — Wisteria uses these as grade columns. */
   calendarPeriods?: IntlCalendarPeriod[] | null;
+  attendanceDays?: {
+    total?: number | null;
+    present?: number | null;
+    absent?: number | null;
+    byPeriod?: Record<string, { total?: number | null; present?: number | null; absent?: number | null }> | null;
+  } | null;
   preview?: boolean;
   /** School-mapped official signatures for print (blank line when missing). */
   officialSignatures?: {

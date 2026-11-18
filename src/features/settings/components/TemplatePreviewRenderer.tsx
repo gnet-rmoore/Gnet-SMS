@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import {
   assembleReportCardPayload,
+  getReportCardTemplateDef,
   InternationalReportCard,
   iprepProgressVariant,
   IprepProgressReport,
@@ -32,6 +33,118 @@ export type TemplatePreviewProps = {
   brandColor?: string | null;
 };
 
+const PREVIEW_SIGNATURES = {
+  principal: { name: "Dr. Hannah G. Brown" },
+  registrar: { name: "Mrs. Grace Z. Williams" },
+  academic: { name: "Mrs. Louise K. Harris" },
+  vpi: { name: "Mrs. Louise K. Harris" },
+  vpa: { name: "Mr. Jonathan P. Smith" },
+};
+
+const PREVIEW_ASSESSMENTS = {
+  conduct: {
+    "Is a good listener": "4",
+    "Is kind and helpful": "4",
+    "Shares with others": "3",
+    "Shows respect to others": "4",
+    "Expresses ideas clearly verbally": "3",
+    "Expresses ideas in drawing": "3",
+    "Unexcused Absence": "0",
+    "Day(s) Late": "1",
+  },
+  attitude: {
+    "Tidy / properly dressed": "4",
+    "Obeys rules and regulations": "4",
+    "Shows appropriate manners": "4",
+    Responsible: "3",
+    "Kindness / Sharing": "4",
+    Tardiness: "3",
+  },
+  progress: {
+    "Demonstrates understanding and application at grade-level": "4",
+    "Engages in classroom activities": "4",
+    "Completes and turns in assignments within expected timeframe": "3",
+    "Listens attentively and follows instructions clearly": "4",
+    "Demonstrates a positive attitude towards learning": "4",
+    "Shows enthusiasm and willingness to engage": "3",
+    "Consistency, effort, and attitude towards learning": "3",
+    "Demonstrates good communication skills": "4",
+    "Behavior in classroom (disruptive)": "4",
+  },
+};
+
+const PREVIEW_PROMOTION = {
+  outcome: "PROMOTED",
+  toGrade: "3",
+  conditionedSubjects: "None",
+  remarks: "Promoted on the basis of sustained work and satisfactory attendance.",
+  finalizedAt: "2026-06-28T09:00:00.000Z",
+};
+
+const IPREP_SUBJECTS = [
+  { id: "m", name: "Mathematics", code: "MTH" },
+  { id: "e", name: "English Language", code: "ENG" },
+  { id: "s", name: "Integrated Science", code: "SCI" },
+  { id: "h", name: "Social Studies", code: "SST" },
+  { id: "r", name: "Religious Education", code: "REL" },
+  { id: "f", name: "French", code: "FRN" },
+  { id: "c", name: "Creative Arts", code: "CRT" },
+  { id: "p", name: "Physical Education", code: "PED" },
+] as const;
+
+const IPREP_TERM_SCORES: Record<string, number[]> = {
+  m: [94, 91, 96],
+  e: [88, 92, 90],
+  s: [86, 89, 92],
+  h: [82, 85, 88],
+  r: [95, 93, 94],
+  f: [78, 82, 85],
+  c: [90, 92, 91],
+  p: [92, 94, 93],
+};
+
+const IPREP_SEMESTER_SCORES: Record<string, number[]> = {
+  m: [92, 88, 94, 95, 91, 96, 93, 94],
+  e: [86, 90, 88, 91, 89, 92, 94, 93],
+  s: [84, 88, 91, 89, 90, 93, 92, 95],
+  h: [80, 84, 86, 88, 85, 89, 90, 91],
+  r: [94, 92, 95, 93, 96, 94, 95, 96],
+  f: [76, 80, 83, 85, 82, 86, 88, 87],
+  c: [89, 91, 90, 93, 92, 94, 93, 95],
+  p: [91, 93, 92, 94, 93, 95, 94, 96],
+};
+
+const WISTERIA_SUBJECTS = [
+  { id: "m", name: "Algebra I", code: "MTH" },
+  { id: "e", name: "English Language", code: "ENG" },
+  { id: "s", name: "Physical Science", code: "SCI" },
+  { id: "h", name: "World History", code: "HIS" },
+  { id: "f", name: "French", code: "FRN" },
+  { id: "c", name: "Visual Arts", code: "ART" },
+  { id: "p", name: "Physical Education", code: "PED" },
+  { id: "t", name: "Computer Studies", code: "ICT" },
+] as const;
+
+const WISTERIA_SCORES: Record<string, number[]> = {
+  m: [94, 91, 96, 93],
+  e: [88, 92, 90, 94],
+  s: [86, 89, 92, 90],
+  h: [82, 85, 88, 91],
+  f: [78, 82, 85, 87],
+  c: [90, 92, 91, 94],
+  p: [92, 94, 93, 95],
+  t: [89, 87, 92, 94],
+};
+
+function previewHeader(label: string, basis?: string | null) {
+  return (
+    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
+      {label}
+      {basis ? ` · ${basis}` : ""}
+    </p>
+  );
+}
+
 /** Render grade-sheet / report-card / certificate template previews. */
 export function renderTemplatePreview(
   templateId: string,
@@ -45,9 +158,7 @@ export function renderTemplatePreview(
     const def = getCertificateTemplateDef(key);
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
-          Letter landscape · 11 × 8.5 in · {def.name}
-        </p>
+        {previewHeader(`Letter landscape · 11 × 8.5 in · ${def.name}`)}
         <CertificateView
           templateId={key}
           data={sampleCertificateData(schoolName, {
@@ -63,54 +174,56 @@ export function renderTemplatePreview(
 
   if (type === "REPORT" && isIprepReportCardTemplate(templateId)) {
     const semester = isIprepSemesterBookletTemplate(templateId);
-    const subjects = [
-      { id: "m", name: "Mathematics", code: "MTH" },
-      { id: "e", name: "English Language", code: "ENG" },
-      { id: "s", name: "Science", code: "SCI" },
-      { id: "h", name: "World Studies", code: "WST" },
-      { id: "f", name: "French", code: "FRN" },
-      { id: "c", name: "Creative Arts", code: "CRT" },
-      { id: "p", name: "Physical Education", code: "PED" },
-      { id: "t", name: "Technology", code: "TEC" },
-    ] as const;
+    const basis = getReportCardTemplateDef(templateId).basisLabel;
     const columnKeys = semester
       ? ["SEM1_P1", "SEM1_P2", "SEM1_P3", "SEM1_EX", "SEM2_P4", "SEM2_P5", "SEM2_P6", "SEM2_EX"]
       : ["T1", "T2", "T3"];
-    const mockGrades = subjects.flatMap((subject, subjectIndex) =>
+    const scoresBySubject = semester ? IPREP_SEMESTER_SCORES : IPREP_TERM_SCORES;
+    const mockGrades = IPREP_SUBJECTS.flatMap((subject, subjectIndex) =>
       columnKeys.map((key, columnIndex) => ({
         id: `${subject.id}-${key}`,
-        score: Math.max(58, Math.min(100, 86 + ((subjectIndex * 7 + columnIndex * 3) % 15) - 6)),
+        score: scoresBySubject[subject.id][columnIndex],
+        status: "RELEASED",
         subject: { id: subject.id, name: subject.name, code: subject.code },
         examComponent: { shortCode: key, label: key },
-        classroom: { name: "Grade 2" },
+        classroom: { name: semester ? "Grade 10 · B" : "Grade 2 · A" },
       }))
     );
     const payload = assembleReportCardPayload({
       templateKey: templateId,
       school: {
         name: schoolName || "Innovation Preparatory International Academy — IPREP",
-        address: address || "Education For The Future",
+        address: address || "Education For The Future · Monrovia, Liberia",
         logoUrl: opts?.logoUrl || null,
         brandColor: opts?.brandColor || null,
         country: "Liberia",
+        county: "Montserrado",
+        district: "Monrovia",
+        poBox: "P.O. Box 10-1234",
+        contactPhone: "+231 77 000 0142",
+        contactEmail: "records@iprep.edu.lr",
       },
       student: {
-        id: "A22095",
-        name: "Mbumen Aelys-Shadya",
+        id: "IPREP-2025-0142",
+        name: semester ? "Grace K. Johnson" : "Mbumen Aelys-Shadya",
         sex: "Female",
-        classLabel: "Grade 2",
-        gradeLevelLabel: "Grade 2",
+        classLabel: semester ? "Grade 10 · B" : "Grade 2 · A",
+        gradeLevelLabel: semester ? "Grade 10" : "Grade 2",
       },
-      academicYearLabel: "2025-2026",
+      academicYearLabel: "2025 - 2026",
       grades: mockGrades,
     });
-    payload.aggregates.classPosition = "1";
+    payload.aggregates.classPosition = "1 of 32";
     payload.aggregates.attendanceRate = 96;
+    payload.assessments = PREVIEW_ASSESSMENTS;
+    payload.promotion = {
+      ...PREVIEW_PROMOTION,
+      toGrade: semester ? "11" : "3",
+    };
+    payload.officialSignatures = PREVIEW_SIGNATURES;
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
-          A4 · 210 × 297 mm · actual print size
-        </p>
+        {previewHeader("A4 · 210 × 297 mm · actual print size", basis)}
         {semester ? (
           <IprepSemesterBooklet payload={payload} preview />
         ) : (
@@ -125,6 +238,7 @@ export function renderTemplatePreview(
   }
 
   if (type === "REPORT" && isLiberianReportCardTemplate(templateId)) {
+    const basis = getReportCardTemplateDef(templateId).basisLabel;
     const subjects = [
       { id: "m", name: "Mathematics", code: "MATH" },
       { id: "e", name: "English", code: "ENG" },
@@ -151,8 +265,10 @@ export function renderTemplatePreview(
       colKeys.map((key, ki) => ({
         id: `${si}-${ki}`,
         score: periodScores[sub.id][ki],
+        status: "RELEASED",
         subject: { id: sub.id, name: sub.name, code: sub.code },
         examComponent: { shortCode: key, label: key },
+        classroom: { name: "Grade 10 · A" },
       }))
     );
     const payload = assembleReportCardPayload({
@@ -160,97 +276,87 @@ export function renderTemplatePreview(
       school: {
         name: schoolName || "Sample Liberian School",
         address: address || "Monrovia, Republic of Liberia",
+        logoUrl: opts?.logoUrl || null,
+        brandColor: opts?.brandColor || null,
+        country: "Liberia",
+        county: "Montserrado",
+        district: "Monrovia",
+        poBox: "P.O. Box 2048",
       },
       student: {
-        id: "preview",
-        name: "Sample Student",
-        classLabel: "10A",
+        id: "LIB-2025-0088",
+        name: "Grace K. Johnson",
+        sex: "Female",
+        classLabel: "Grade 10 · A",
         gradeLevelLabel: "Grade 10",
       },
       academicYearLabel: "2025 - 2026",
       grades: mockGrades,
     });
+    payload.aggregates.classPosition = "4 of 38";
+    payload.aggregates.attendanceRate = 94;
+    payload.promotion = { ...PREVIEW_PROMOTION, toGrade: "11" };
+    payload.officialSignatures = PREVIEW_SIGNATURES;
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
-          A4 · 210 × 297 mm · actual print size
-        </p>
+        {previewHeader("A4 · 210 × 297 mm · actual print size", basis)}
         <LiberianReportCardBooklet payload={payload} preview />
       </div>
     );
   }
 
   if (type === "REPORT") {
-    const isWisteria =
-      templateId === "INTL_WISTERIA_GREEN" || templateId === "INTL_WISTERIA_NAVY";
-    const mockData = isWisteria
-      ? [
-          { sub: "Physical Sciences", tot: 88, q: "Q1" },
-          { sub: "Algebra", tot: 76, q: "Q1" },
-          { sub: "Language", tot: 91, q: "Q1" },
-          { sub: "English Literature", tot: 69, q: "Q2" },
-          { sub: "History", tot: 82, q: "Q2" },
-          { sub: "Writing and Composition", tot: 74, q: "Q2" },
-          { sub: "Music", tot: 85, q: "Q3" },
-          { sub: "Arts", tot: 79, q: "Q3" },
-          { sub: "Physical Education", tot: 90, q: "Q3" },
-          { sub: "Computer Science", tot: 94, q: "Q4" },
-          { sub: "Geography", tot: 71, q: "Q4" },
-          { sub: "Biology", tot: 83, q: "Q1" },
-          { sub: "Chemistry", tot: 77, q: "Q2" },
-          { sub: "French", tot: 68, q: "Q3" },
-          { sub: "Literature", tot: 80, q: "Q4" },
-        ]
-      : [
-          { sub: "Mathematics", tot: 86, q: "Q1" },
-          { sub: "English Language", tot: 78, q: "Q1" },
-          { sub: "Physics", tot: 93, q: "Q1" },
-          { sub: "Chemistry", tot: 77, q: "Q1" },
-          { sub: "Biology", tot: 85, q: "Q1" },
-          { sub: "History", tot: 81, q: "Q1" },
-        ];
-    const intlGrades = mockData.map((item, i) => ({
-      id: String(i + 1),
-      score: item.tot,
-      status: "RELEASED",
-      subject: {
-        id: `s${i}`,
-        name: item.sub,
-        code: item.sub.slice(0, 3).toUpperCase(),
-      },
-      classroom: { name: "Grade 10 · Section A" },
-      examComponent: isWisteria ? { shortCode: item.q } : undefined,
-    }));
-    const previewPeriods = isWisteria
-      ? [
-          { label: "Fall", shortCode: "Q1", orderIndex: 0 },
-          { label: "Winter", shortCode: "Q2", orderIndex: 1 },
-          { label: "Spring", shortCode: "Q3", orderIndex: 2 },
-          { label: "Summer", shortCode: "Q4", orderIndex: 3 },
-        ]
-      : null;
+    const basis = getReportCardTemplateDef(templateId).basisLabel;
+    const periodKeys = ["Q1", "Q2", "Q3", "Q4"];
+    const intlGrades = WISTERIA_SUBJECTS.flatMap((subject, subjectIndex) =>
+      periodKeys.map((key, periodIndex) => ({
+        id: `${subject.id}-${key}`,
+        score: WISTERIA_SCORES[subject.id][periodIndex],
+        status: "RELEASED",
+        subject: { id: subject.id, name: subject.name, code: subject.code },
+        examComponent: { shortCode: key, label: key },
+        classroom: { name: "Grade 10 · Section A" },
+      }))
+    );
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
-          A4 · 210 × 297 mm · actual print size
-        </p>
+        {previewHeader("A4 · 210 × 297 mm · actual print size", basis)}
         <InternationalReportCard
           templateKey={templateId}
-          studentName="Sample Student"
-          examTitle={isWisteria ? "2nd Grading Period" : "Term 1 Assessment"}
-          examDate={new Date().toISOString()}
+          studentName="Mbumen Aelys-Shadya"
+          examTitle="Academic Year 2025 - 2026"
+          examDate="2026-06-28T09:00:00.000Z"
           grades={intlGrades}
           school={{
-            name: schoolName || "International Academy",
-            address: address || "Global Campus",
-            brandColor: opts?.brandColor || (isWisteria ? "#0f766e" : undefined),
+            name: schoolName || "International Preparatory Academy",
+            address: address || "Global Campus · Monrovia, Liberia",
+            brandColor: opts?.brandColor || (templateId === "INTL_WISTERIA_GREEN" ? "#0f766e" : undefined),
             logoUrl: opts?.logoUrl || null,
           }}
           academicYearLabel="2025 - 2026"
-          calendarPeriods={previewPeriods}
-          studentId="STU-001"
-          attendanceRate={isWisteria ? 94 : null}
-          teacherComment="Consistent effort across core subjects with clear progress in analytical work."
+          calendarPeriods={[
+            { label: "Term 1", shortCode: "Q1", orderIndex: 0 },
+            { label: "Term 2", shortCode: "Q2", orderIndex: 1 },
+            { label: "Term 3", shortCode: "Q3", orderIndex: 2 },
+            { label: "Term 4", shortCode: "Q4", orderIndex: 3 },
+          ]}
+          attendanceDays={{
+            total: 180,
+            present: 172,
+            absent: 8,
+            byPeriod: {
+              Q1: { total: 45, present: 43, absent: 2 },
+              Q2: { total: 45, present: 44, absent: 1 },
+              Q3: { total: 45, present: 42, absent: 3 },
+              Q4: { total: 45, present: 43, absent: 2 },
+            },
+          }}
+          studentId="STU-2025-0142"
+          attendanceRate={96}
+          classPosition="2 of 32"
+          gpa={3.6}
+          teacherComment="Mbumen shows strong command across the four terms, especially in Algebra and Computer Studies. Continued reading practice will strengthen written expression in the final term."
+          officialSignatures={PREVIEW_SIGNATURES}
           preview
         />
       </div>
@@ -263,21 +369,25 @@ export function renderTemplatePreview(
     def.pageSize === "legal"
       ? "Legal · 8.5 × 14 in · actual print size"
       : "A4 · 210 × 297 mm · actual print size";
+  const basis =
+    key === "INTL_STANDARD_TERM" || key === "INTL_EXECUTIVE"
+      ? "Term-based · single term"
+      : null;
+  const schoolLabel = schoolName || "Innovation Preparatory International Academy — IPREP";
+  const addressLabel = address || "Education For The Future · Monrovia, Liberia";
 
   return (
     <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-3 self-start">
-        {sizeLabel}
-      </p>
+      {previewHeader(sizeLabel, basis)}
       <GradeSheetView
         templateId={key}
-        studentName="Sample Student"
-        examTitle="End-of-Term Examination"
-        examDate={new Date().toISOString()}
+        studentName="Grace K. Johnson"
+        examTitle="First Term Examination"
+        examDate="2026-11-16T09:00:00.000Z"
         grades={[]}
-        school={{ name: schoolName, address }}
+        school={{ name: schoolLabel, address: addressLabel }}
         compact
-        data={sampleGradeSheetData(schoolName, address)}
+        data={sampleGradeSheetData(schoolLabel, addressLabel)}
       />
     </div>
   );

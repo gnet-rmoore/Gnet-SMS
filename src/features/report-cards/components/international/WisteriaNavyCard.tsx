@@ -2,10 +2,12 @@ import React from "react";
 import {
   A4Page,
   A4_H,
+  SigBlock,
   dash,
   formatIssued,
   type IntlReportProps,
 } from "./shared";
+import { signaturesForLabels } from "../../signatureSlots";
 import {
   applyTenantBrand,
   buildPeriodSubjectRows,
@@ -31,6 +33,21 @@ const NAVY_BASE = {
 };
 
 type NavyAccent = typeof NAVY_BASE;
+
+function attendanceValue(
+  p: IntlReportProps,
+  key: string,
+  rowLabel: string
+): string {
+  const period = p.attendanceDays?.byPeriod?.[key] ?? p.attendanceDays;
+  const field =
+    rowLabel === "Total Days of School"
+      ? period?.total
+      : rowLabel === "Days Attended"
+        ? period?.present
+        : period?.absent;
+  return field == null ? "" : String(field);
+}
 
 function NavyBadge({
   school,
@@ -173,23 +190,26 @@ export function WisteriaNavyCard(p: IntlReportProps) {
               </NavyTable>
 
               <NavyTable title="Attendance" columns={columns} dense={dense} accent={accent}>
-                {["Total Days of School", "Days Attended", "Days Absent"].map((label) => (
-                  <tr key={label}>
+                {["Total Days of School", "Days Attended", "Days Absent"].map((rowLabel) => (
+                  <tr key={rowLabel}>
                     <td
                       className={`${cellPad} ${nameSize} font-semibold`}
                       style={{ background: accent.sage, color: accent.ink }}
                     >
-                      {label}:
+                      {rowLabel}:
                     </td>
                     {columns.map((c) => (
                       <td
                         key={c.key}
-                        className={`${cellPad} text-center text-[9px] text-slate-400`}
+                        className={`${cellPad} text-center text-[9px] text-slate-500`}
                         style={{ background: accent.gray }}
                       >
-                        {c.key === firstColKey && label === "Days Attended" && p.attendanceRate != null
-                          ? `${p.attendanceRate}%`
-                          : ""}
+                        {attendanceValue(p, c.key, rowLabel) ||
+                          (c.key === firstColKey &&
+                          rowLabel === "Days Attended" &&
+                          p.attendanceRate != null
+                            ? `${p.attendanceRate}%`
+                            : "—")}
                       </td>
                     ))}
                   </tr>
@@ -280,7 +300,12 @@ export function WisteriaNavyCard(p: IntlReportProps) {
             </div>
           </div>
 
-          <p className="text-[8px] text-center mt-4" style={{ color: accent.inkSoft }}>
+          <SigBlock
+            labels={["Class teacher", "Principal"]}
+            signatures={signaturesForLabels(["Class teacher", "Principal"], p.officialSignatures)}
+            className="mt-4"
+          />
+          <p className="text-[8px] text-center mt-3" style={{ color: accent.inkSoft }}>
             Official academic record of {p.school.name || "the school"} · {formatIssued(p.examDate)}
             {p.preview ? " · Preview" : ""}
           </p>

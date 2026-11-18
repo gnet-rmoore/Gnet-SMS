@@ -19,6 +19,12 @@ export type ReportCardSubject = {
   remark: string | null;
 };
 
+export type ReportCardAssessments = {
+  conduct?: Record<string, string>;
+  attitude?: Record<string, string>;
+  progress?: Record<string, string>;
+};
+
 export type ReportCardPayload = {
   school: {
     name: string;
@@ -50,6 +56,7 @@ export type ReportCardPayload = {
     classPosition: string | null;
     attendanceRate: number | null;
   };
+  assessments?: ReportCardAssessments | null;
   promotion: {
     outcome?: string | null;
     toGrade?: string | null;

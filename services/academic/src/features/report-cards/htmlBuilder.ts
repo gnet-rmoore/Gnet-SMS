@@ -79,6 +79,20 @@ function formatDate(value: unknown): string | null {
     : date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function assessmentValue(
+  payload: ReportCardPayload,
+  section: "conduct" | "attitude" | "progress",
+  label: string
+): string {
+  return payload.assessments?.[section]?.[label] ?? "—";
+}
+
+function ratingWidth(value: string): number {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Math.min(100, (score / 4) * 100));
+}
+
 function logoHtml(payload: ReportCardPayload, size = 72): string {
   if (payload.school.logoUrl) {
     return `<img src="${esc(payload.school.logoUrl)}" alt="" style="width:${size}px;height:${size}px;object-fit:contain">`;
@@ -155,7 +169,10 @@ function progressHtml(payload: ReportCardPayload, modern: boolean): string {
     { key: "T3", label: "Term 3 (Final)" },
   ];
   if (modern) {
-    const rating = (label: string) => `<div class="rating"><span>${esc(label)}</span><div class="track"><div></div></div><b>—</b></div>`;
+    const rating = (section: "conduct" | "attitude" | "progress") => (label: string) => {
+      const value = assessmentValue(payload, section, label);
+      return `<div class="rating"><span>${esc(label)}</span><div class="track"><div style="width:${ratingWidth(value)}%"></div></div><b>${val(value)}</b></div>`;
+    };
     const legendRows = payload.legend.map((row) => `<div><span class="dot"></span><b>${val(row.letter)}</b><span>${val(row.detail)}</span><span style="margin-left:auto">${esc(row.min)}–${esc(row.max)}</span></div>`).join("");
     const incLegend = payload.legend.some((row) => String(row.letter || "").toUpperCase() === "INC")
       ? ""
@@ -184,16 +201,16 @@ function progressHtml(payload: ReportCardPayload, modern: boolean): string {
         </div>
         <div class="card"><h3>Grading System</h3><div class="legend">${legendRows}${incLegend}</div></div>
       </div><div>
-        <div class="card"><h3>Conduct</h3>${CONDUCT_ROWS.map(rating).join("")}${ATTENDANCE_ROWS.map(rating).join("")}</div>
-        <div class="card"><h3>Attitude &amp; Values</h3>${ATTITUDE_ROWS.map(rating).join("")}</div>
-        <div class="card"><h3>Academic Progress</h3>${PROGRESS_ROWS.map(rating).join("")}<div class="mini-note">${CONDUCT_NOTE}</div></div>
+        <div class="card"><h3>Conduct</h3>${CONDUCT_ROWS.map(rating("conduct")).join("")}${ATTENDANCE_ROWS.map(rating("conduct")).join("")}</div>
+        <div class="card"><h3>Attitude &amp; Values</h3>${ATTITUDE_ROWS.map(rating("attitude")).join("")}</div>
+        <div class="card"><h3>Academic Progress</h3>${PROGRESS_ROWS.map(rating("progress")).join("")}<div class="mini-note">${CONDUCT_NOTE}</div></div>
       </div></div>
       ${promoHtml(payload, true)}
       ${signatureHtml(payload)}
     </div></body></html>`;
   }
 
-  const ratingTable = (title: string, rows: string[]) => `<h3>${esc(title)}</h3><table><tbody>${rows.map((row) => `<tr><td>${esc(row)}</td><td class="num">—</td></tr>`).join("")}</tbody></table>`;
+  const ratingTable = (title: string, rows: string[], section: "conduct" | "attitude" | "progress") => `<h3>${esc(title)}</h3><table><tbody>${rows.map((row) => `<tr><td>${esc(row)}</td><td class="num">${val(assessmentValue(payload, section, row))}</td></tr>`).join("")}</tbody></table>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(payload.student.name)} — Academic Progress Report</title><style>
     @page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .page{width:210mm;height:297mm;padding:6mm 7mm;overflow:hidden}.header{display:flex;align-items:flex-start;gap:8px;border-bottom:1.5px solid #000;padding-bottom:3px;margin-bottom:4px}.header .text{flex:1;text-align:center}.school{font-size:16px;font-weight:bold}.tag{font-style:italic;font-size:12px}.title{font-size:14.5px;font-weight:bold;margin-top:2px}
@@ -210,9 +227,9 @@ function progressHtml(payload: ReportCardPayload, modern: boolean): string {
       <tfoot><tr><td class="l"><b>Average</b></td>${columns.map(() => "<td></td>").join("")}<td><b>${num(payload.aggregates.overallAverage)}</b></td></tr><tr><td class="l"><b>Rank</b></td>${columns.map(() => "<td></td>").join("")}<td><b>${val(payload.aggregates.classPosition)}</b></td></tr></tfoot></table>
       <h3>Grading System</h3><table><thead><tr><th>Remarks</th><th>%</th><th>Letter</th><th>Points</th></tr></thead><tbody>${legendHtml(payload)}</tbody></table>
     </div><div>
-      ${ratingTable("Conduct", [...CONDUCT_ROWS, ...ATTENDANCE_ROWS])}
-      ${ratingTable("Attitude & Values", ATTITUDE_ROWS)}
-      ${ratingTable("Academic progress", PROGRESS_ROWS)}
+      ${ratingTable("Conduct", [...CONDUCT_ROWS, ...ATTENDANCE_ROWS], "conduct")}
+      ${ratingTable("Attitude & Values", ATTITUDE_ROWS, "attitude")}
+      ${ratingTable("Academic progress", PROGRESS_ROWS, "progress")}
       <div class="note-box">${CONDUCT_NOTE}</div>
     </div></div>
     ${promoHtml(payload, false)}

@@ -19,6 +19,24 @@ export const GRADE_SHEET_TEMPLATES: GradeSheetTemplateDef[] = [
     cssPageSize: "A4",
     sheetMm: { width: 210, height: 297 },
   },
+  {
+    id: "INTL_STANDARD_TERM",
+    name: "Standard Term Summary",
+    description: "Term-based single-term marks, grades, status, and remarks. A4 · 210 × 297 mm.",
+    pageSize: "a4",
+    pdfFormat: "a4",
+    cssPageSize: "A4",
+    sheetMm: { width: 210, height: 297 },
+  },
+  {
+    id: "INTL_EXECUTIVE",
+    name: "Executive Performance Brief",
+    description: "Term-based leadership brief with strengths, focus areas, and mean mark. A4 · 210 × 297 mm.",
+    pageSize: "a4",
+    pdfFormat: "a4",
+    cssPageSize: "A4",
+    sheetMm: { width: 210, height: 297 },
+  },
 ];
 
 const byId = Object.fromEntries(
@@ -29,8 +47,17 @@ const byId = Object.fromEntries(
 export function resolveGradeSheetTemplateKey(
   raw: string | null | undefined
 ): GradeSheetTemplateId {
-  if (raw === "TEMPLATE_1" || raw === "TEMPLATE_2") {
-    return raw;
+  const normalized = String(raw ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[-\s]+/g, "_");
+  if (
+    normalized === "TEMPLATE_1" ||
+    normalized === "TEMPLATE_2" ||
+    normalized === "INTL_STANDARD_TERM" ||
+    normalized === "INTL_EXECUTIVE"
+  ) {
+    return normalized;
   }
   return "TEMPLATE_1";
 }

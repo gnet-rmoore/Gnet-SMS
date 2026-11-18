@@ -24,6 +24,11 @@ import {
   resolveReportCardTemplateKey,
   reportCardPickerGroups,
 } from "../src/features/report-cards/index.ts";
+import {
+  GRADE_SHEET_TEMPLATES,
+  getGradeSheetTemplateDef,
+  resolveGradeSheetTemplateKey,
+} from "../src/features/gradesheets/registry.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -66,11 +71,28 @@ assert(moe.pages.includes("GRADES"), "default template has grades page");
 const groups = reportCardPickerGroups();
 assert(groups.length === 2, "two picker groups");
 assert(groups.some((group) => group.region === "LR" && group.items.length === 1), "Liberian group has the booklet");
-assert(groups.some((group) => group.region === "INTL" && group.items.length === 6), "International group has 6 templates");
+assert(groups.some((group) => group.region === "INTL" && group.items.length === 4), "International group has 4 selectable templates");
 assert(
   groups.some((group) => group.items.some((item) => item.key === IPREP_SEMESTER_BOOKLET)),
   "booklet is selectable"
 );
+assert(
+  !groups.some((group) =>
+    group.items.some(
+      (item) =>
+        item.key === "INTL_STANDARD_TERM" || item.key === "INTL_EXECUTIVE"
+    )
+  ),
+  "moved templates are not selectable under Report Card"
+);
+assert(getReportCardTemplateDef("INTL_STANDARD_TERM").picker === false, "Standard Term Summary report-card def stays for compatibility but is hidden");
+assert(getReportCardTemplateDef("INTL_EXECUTIVE").picker === false, "Executive Performance Brief report-card def stays for compatibility but is hidden");
+
+const gradeSheetIds = GRADE_SHEET_TEMPLATES.map((template) => template.id);
+assert(gradeSheetIds.includes("INTL_STANDARD_TERM"), "Standard Term Summary is selectable under Grade sheet");
+assert(gradeSheetIds.includes("INTL_EXECUTIVE"), "Executive Performance Brief is selectable under Grade sheet");
+assert(resolveGradeSheetTemplateKey("INTL_STANDARD_TERM") === "INTL_STANDARD_TERM", "Standard Term Summary grade-sheet key resolves");
+assert(getGradeSheetTemplateDef("INTL_EXECUTIVE").name === "Executive Performance Brief", "Executive Performance Brief grade-sheet def resolves");
 
 assert(matchIprepTermKey("Q1") === "T1", "Q1 maps to T1");
 assert(matchIprepTermKey("FIN") === "T3", "FIN maps to T3");

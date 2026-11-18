@@ -95,7 +95,11 @@ export type GradeSheetData = {
   issuedOn?: string;
 };
 
-export type GradeSheetTemplateId = "TEMPLATE_1" | "TEMPLATE_2";
+export type GradeSheetTemplateId =
+  | "TEMPLATE_1"
+  | "TEMPLATE_2"
+  | "INTL_STANDARD_TERM"
+  | "INTL_EXECUTIVE";
 
 export type GradeSheetTemplateDef = {
   id: GradeSheetTemplateId;

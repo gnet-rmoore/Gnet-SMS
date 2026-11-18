@@ -51,6 +51,30 @@ function rounded(value: number | null | undefined): string {
   return value == null || Number.isNaN(value) ? "—" : value.toFixed(1);
 }
 
+type AssessmentSection = "conduct" | "attitude" | "progress";
+
+function assessmentValue(
+  payload: ReportCardPayload,
+  section: AssessmentSection,
+  label: string
+): string {
+  return payload.assessments?.[section]?.[label] ?? "—";
+}
+
+function ratingPercent(value: string): number {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Math.min(100, (score / 4) * 100));
+}
+
+function columnAverage(payload: ReportCardPayload, key: string): number | null {
+  const scores = payload.subjects
+    .map((subject) => subject.cells[key]?.score)
+    .filter((score): score is number => typeof score === "number" && !Number.isNaN(score));
+  if (!scores.length) return null;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
 function Logo({ payload, dark = false }: { payload: ReportCardPayload; dark?: boolean }) {
   const name = payload.school.name || "School";
   const initials = name
@@ -233,10 +257,12 @@ function GradingTable({ payload, modern }: { payload: ReportCardPayload; modern?
 function RatingCard({
   title,
   rows,
+  values,
   modern,
 }: {
   title: string;
   rows: string[];
+  values?: Record<string, string>;
   modern?: boolean;
 }) {
   return (
@@ -250,19 +276,27 @@ function RatingCard({
       <h3 style={{ margin: modern ? "0 0 6px" : "4px 0 2px", fontSize: modern ? 10 : 12, color: modern ? "#3B1E70" : undefined }}>
         {title}
       </h3>
-      {rows.map((label) => (
-        <div
-          key={label}
-          style={
-            modern
-              ? { display: "grid", gridTemplateColumns: "1fr 46px 22px", gap: 6, fontSize: 7.4, padding: "2.5px 0", borderBottom: "1px dashed #E4DEF2" }
-              : { display: "flex", justifyContent: "space-between", border: "1px solid #000", padding: "1.8px 4px", fontSize: 11 }
-          }
-        >
-          <span>{label}</span>
-          <span style={{ fontWeight: 700 }}>—</span>
-        </div>
-      ))}
+      {rows.map((label) => {
+        const raw = values?.[label] ?? "—";
+        return (
+          <div
+            key={label}
+            style={
+              modern
+                ? { display: "grid", gridTemplateColumns: "1fr 46px 22px", gap: 6, fontSize: 7.4, padding: "2.5px 0", borderBottom: "1px dashed #E4DEF2", alignItems: "center" }
+                : { display: "flex", justifyContent: "space-between", border: "1px solid #000", padding: "1.8px 4px", fontSize: 11 }
+            }
+          >
+            <span>{label}</span>
+            {modern ? (
+              <div style={{ height: 5, background: "#EDEAF7", borderRadius: 5, overflow: "hidden" }}>
+                <div style={{ width: `${ratingPercent(raw)}%`, height: "100%", background: "#6C4AB6", borderRadius: 5 }} />
+              </div>
+            ) : null}
+            <span style={{ fontWeight: 700, textAlign: modern ? "right" : undefined }}>{display(raw)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -443,7 +477,7 @@ export function IprepProgressReport({ payload, variant, preview = false }: Props
                     <td style={{ border: modern ? undefined : "1px solid #000", padding: modern ? "3px 4px" : "1.8px 4px" }}>Average</td>
                     {columns.map((column) => (
                       <td key={column.key} style={{ textAlign: "center", border: modern ? undefined : "1px solid #000", padding: modern ? "3px 4px" : "1.8px 4px" }}>
-                        —
+                        {rounded(columnAverage(payload, column.key))}
                       </td>
                     ))}
                     <td style={{ textAlign: "center", border: modern ? undefined : "1px solid #000", padding: modern ? "3px 4px" : "1.8px 4px" }}>
@@ -453,7 +487,9 @@ export function IprepProgressReport({ payload, variant, preview = false }: Props
                   <tr style={{ fontWeight: 700 }}>
                     <td style={{ border: modern ? undefined : "1px solid #000", padding: modern ? "3px 4px" : "1.8px 4px" }}>Rank</td>
                     {columns.map((column) => (
-                      <td key={column.key} style={{ border: modern ? undefined : "1px solid #000" }} />
+                      <td key={column.key} style={{ border: modern ? undefined : "1px solid #000", textAlign: "center", padding: modern ? "3px 4px" : "1.8px 4px" }}>
+                        —
+                      </td>
                     ))}
                     <td style={{ textAlign: "center", border: modern ? undefined : "1px solid #000", padding: modern ? "3px 4px" : "1.8px 4px" }}>
                       {display(payload.aggregates.classPosition)}
@@ -466,9 +502,24 @@ export function IprepProgressReport({ payload, variant, preview = false }: Props
           </div>
 
           <div>
-            <RatingCard title="Conduct" rows={CONDUCT_ROWS} modern={modern} />
-            <RatingCard title="Attitude & Values" rows={ATTITUDE_ROWS} modern={modern} />
-            <RatingCard title="Academic Progress" rows={PROGRESS_ROWS} modern={modern} />
+            <RatingCard
+              title="Conduct"
+              rows={CONDUCT_ROWS}
+              values={payload.assessments?.conduct}
+              modern={modern}
+            />
+            <RatingCard
+              title="Attitude & Values"
+              rows={ATTITUDE_ROWS}
+              values={payload.assessments?.attitude}
+              modern={modern}
+            />
+            <RatingCard
+              title="Academic Progress"
+              rows={PROGRESS_ROWS}
+              values={payload.assessments?.progress}
+              modern={modern}
+            />
             <div style={{ fontSize: modern ? 6.6 : 10, lineHeight: 1.35, color: modern ? "#6B6480" : undefined, background: modern ? "#EDEAF7" : undefined, borderRadius: modern ? 6 : undefined, padding: modern ? "5px 6px" : undefined }}>
               Consultation is required with the homeroom and instructional team when a child receives 1–3 in conduct: 1 Not Yet, 2 Sometimes, 3 Almost Always, 4 Always.
             </div>

@@ -932,6 +932,9 @@ const fr: any = {
         security: "Sécurité",
         notifications: "Notifications",
       },
+      toast: {
+        notificationPrefsLoadFailed: "Impossible de charger les préférences de notification",
+      },
     },
     profile: {
       title: "Profil",
@@ -1870,6 +1873,9 @@ const ar: any = {
       title: "الإعدادات",
       subtitle: "ملف المدرسة والمظهر والأمان واللغة.",
       tabLanguage: "اللغة",
+      toast: {
+        notificationPrefsLoadFailed: "تعذّر تحميل تفضيلات الإشعارات",
+      },
     },
     dashboard: {
       title: "لوحة التحكم",
@@ -2298,6 +2304,9 @@ const es: any = {
       title: "Ajustes",
       subtitle: "Perfil escolar, apariencia, seguridad e idioma.",
       tabLanguage: "Idioma",
+      toast: {
+        notificationPrefsLoadFailed: "No se pudieron cargar las preferencias de notificación",
+      },
     },
     dashboard: {
       title: "Panel",
@@ -2727,6 +2736,9 @@ const de: any = {
       title: "Einstellungen",
       subtitle: "Schulprofil, Erscheinungsbild, Sicherheit und Sprache.",
       tabLanguage: "Sprache",
+      toast: {
+        notificationPrefsLoadFailed: "Benachrichtigungseinstellungen konnten nicht geladen werden",
+      },
     },
     dashboard: {
       title: "Dashboard",
@@ -3145,6 +3157,9 @@ const zhHans: any = {
       title: "设置",
       subtitle: "学校资料、外观、安全与语言。",
       tabLanguage: "语言",
+      toast: {
+        notificationPrefsLoadFailed: "无法加载通知偏好设置",
+      },
     },
     dashboard: {
       title: "仪表盘",
@@ -3565,6 +3580,9 @@ const hi: any = {
       title: "सेटिंग्स",
       subtitle: "विद्यालय प्रोफ़ाइल, दिखावट, सुरक्षा और भाषा।",
       tabLanguage: "भाषा",
+      toast: {
+        notificationPrefsLoadFailed: "सूचना प्राथमिकताएँ लोड नहीं हो सकीं",
+      },
     },
     dashboard: {
       title: "डैशबोर्ड",
