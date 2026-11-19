@@ -655,7 +655,7 @@ Mark each file when the owning feature route wave is done. Skip `bannerUtils.tsx
 | F126 | `src/features/registrar/Page.tsx` | ok |
 | F127 | `src/features/registrar/components/AdmissionsTab.tsx` | ok |
 | F128 | `src/features/registrar/components/ApplicationReviewModal.tsx` | ok |
-| F129 | `src/features/registrar/components/ClassroomsTab.tsx` | ok |
+| F129 | `src/features/enrollment/Page.tsx` | ok |
 | F130 | `src/features/registrar/components/DirectoryTab.tsx` | ok |
 | F131 | `src/features/registrar/components/EditStudentModal.tsx` | ok |
 | F132 | `src/features/registrar/components/EnrollCredentialsModal.tsx` | ok |

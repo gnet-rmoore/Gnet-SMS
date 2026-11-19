@@ -1,12 +1,15 @@
 import React from "react";
-import { UserPlus, CheckCircle2, AlertCircle, School } from "lucide-react";
+import { Link } from "react-router-dom";
+import { UserPlus, CheckCircle2, AlertCircle, School, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Surface } from "../../../components/ui";
+import type { PlacementLink } from "../types";
 
 export type RegistrarChromeProps = {
   activeTab?: string;
   errorMessage?: string;
   pendingAppsCount?: number;
+  placementLink?: PlacementLink | null;
   school?: { name?: string } | null;
   setActiveTab?: (tab: any) => void;
   successMessage?: string;
@@ -19,6 +22,7 @@ export function RegistrarChrome({
   activeTab,
   errorMessage,
   pendingAppsCount = 0,
+  placementLink,
   school,
   setActiveTab,
   successMessage,
@@ -32,7 +36,6 @@ export function RegistrarChrome({
     { id: "overview", label: t("admissions.tabs.overview") },
     { id: "directory", label: t("admissions.tabs.directory") },
     { id: "admissions", label: t("admissions.tabs.admissions"), badge: true },
-    { id: "classrooms", label: t("admissions.tabs.classrooms") },
     { id: "promotion_statement", label: t("admissions.tabs.promotionStatement") },
     { id: "new_admission", label: t("admissions.tabs.directAdmission"), icon: true },
   ] as const;
@@ -40,20 +43,35 @@ export function RegistrarChrome({
   return (
     <>
       <Surface className="space-y-5 overflow-hidden">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-indigo-600 text-xs font-bold tracking-wider uppercase mb-1">
-            <School className="w-4 h-4" />
-            {t("admissions.eyebrow")}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-indigo-600 text-xs font-bold tracking-wider uppercase mb-1">
+              <School className="w-4 h-4" />
+              {t("admissions.eyebrow")}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-dashboard">
+              {title ||
+                t("admissions.schoolAdmissions", {
+                  name: school?.name || t("admissions.schoolFallback"),
+                })}
+            </h1>
+            <p className="text-slate-500 font-medium mt-1">
+              {subtitle || t("admissions.subtitle")}
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-dashboard">
-            {title ||
-              t("admissions.schoolAdmissions", {
-                name: school?.name || t("admissions.schoolFallback"),
-              })}
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            {subtitle || t("admissions.subtitle")}
-          </p>
+          {placementLink ? (
+            <Link
+              to={placementLink.href}
+              className="group inline-flex shrink-0 items-center gap-2 self-start rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2.5 text-sm font-bold text-indigo-700 transition-all hover:border-indigo-300 hover:bg-indigo-100 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+              {placementLink.label}
+              <ArrowUpRight
+                className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          ) : null}
         </div>
 
         <div className="relative -mx-4 border-t border-slate-100 px-4 sm:-mx-6 sm:px-6">

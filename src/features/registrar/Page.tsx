@@ -14,13 +14,12 @@ import { StudentDossierModal } from "./components/StudentDossierModal";
 import { OverviewTab } from "./components/OverviewTab";
 import { DirectoryTab } from "./components/DirectoryTab";
 import { AdmissionsTab } from "./components/AdmissionsTab";
-import { ClassroomsTab } from "./components/ClassroomsTab";
 import { ManualAdmissionTab } from "./components/ManualAdmissionTab";
 import { OnlineRegistrationCard } from "./components/OnlineRegistrationCard";
 import { PromotionStatementReport, type ReportPeriod } from "../promotion-statement/components/PromotionStatementReport";
 import { academicCalendarApi } from "../academics-shared/calendar/api";
 import { periodsOf } from "../academics-shared/calendar/selectors";
-import type { TabType } from "./types";
+import type { PlacementLink, TabType } from "./types";
 import { RegistrarChrome } from "./components/RegistrarChrome";
 import { usePageActions } from "./hooks/usePageActions";
 import { ImportRosterModal } from "../bulk-import/ImportRosterModal";
@@ -169,9 +168,6 @@ export const Registrar = () => {
   // Selection states for Modals / Active Sub-views
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
-  const [selectedClassroom, setSelectedClassroom] = useState<any | null>(null);
-  const [classroomRoster, setClassroomRoster] = useState<any[]>([]);
-  const [rosterLoading, setRosterLoading] = useState(false);
 
   // Form States
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
@@ -217,9 +213,6 @@ export const Registrar = () => {
   // Manual Admission Form State
   const [manualAdmissionForm, setManualAdmissionForm] = useState(emptyManualAdmissionForm);
 
-  // Classroom Allocation State
-  const [classAllocationStudentId, setClassAllocationStudentId] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -228,16 +221,12 @@ export const Registrar = () => {
     parseAppNotes,
     parseAppDocuments,
     fetchData,
-    fetchClassroomRoster,
-    handleSelectClassroom,
     handleOpenEditStudent,
     handleSaveStudent,
     handleDeleteStudent,
     handleOpenReviewApp,
     handleToggleDoc,
     handleSaveReview,
-    handleAssignStudentToClass,
-    handleRemoveStudentFromClass,
     handleManualAdmissionSubmit,
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,
@@ -250,9 +239,6 @@ export const Registrar = () => {
     gradeLevels,
     classrooms,
     refetchRegistrar: refetchAll,
-    setRosterLoading,
-    setClassroomRoster,
-    setSelectedClassroom,
     setStudentFormData,
     setShowEditStudentModal,
     setSelectedStudent,
@@ -269,9 +255,6 @@ export const Registrar = () => {
     selectedApp,
     selectedClassroomId,
     setSelectedClassroomId,
-    classAllocationStudentId,
-    setClassAllocationStudentId,
-    selectedClassroom,
     manualAdmissionForm,
     setManualAdmissionForm,
     setActiveTab,
@@ -303,6 +286,21 @@ export const Registrar = () => {
   const canImportStudents = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     String(user?.role || "")
   );
+  const placementLink: PlacementLink | null = school?.slug
+    ? ["SCHOOL_ADMIN", "REGISTRAR"].includes(String(user?.role || ""))
+      ? {
+          href: `/${school.slug}/enrollment`,
+          label: t("enrollment.title"),
+          description: t("enrollment.subtitle"),
+        }
+      : user?.role === "PRINCIPAL"
+        ? {
+            href: `/${school.slug}/classrooms`,
+            label: t("nav:items.classrooms"),
+            description: t("classrooms.subtitle"),
+          }
+        : null
+    : null;
   const totalStudentsCount = students.length;
   const activeStudentsCount = students.filter((s) => s.isActive).length;
   const classroomsCount = classrooms.length;
@@ -333,12 +331,11 @@ export const Registrar = () => {
         activeTab={activeTab}
         errorMessage={errorMessage}
         pendingAppsCount={pendingAppsCount}
+        placementLink={placementLink}
         school={school}
         setActiveTab={setActiveTab}
         successMessage={successMessage}
         underReviewAppsCount={underReviewAppsCount}
-        title={t("admissions.title")}
-        subtitle={t("admissions.subtitle")}
       />
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-[32px] shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-4">
@@ -367,6 +364,7 @@ export const Registrar = () => {
               underReviewAppsCount={underReviewAppsCount}
               onExportCsv={handleExportCsv}
               onOpenWaitlist={openWaitlist}
+              placementLink={placementLink}
               onlineRegistrationSlot={
                 <OnlineRegistrationCard
                   onMessage={(msg, kind) => {
@@ -415,22 +413,6 @@ export const Registrar = () => {
               underReviewAppsCount={underReviewAppsCount}
               waitlistedCount={waitlistedCount}
               onExportCsv={handleExportCsv}
-            />
-          )}
-
-          {activeTab === "classrooms" && (
-            <ClassroomsTab
-              classAllocationStudentId={classAllocationStudentId}
-              setClassAllocationStudentId={setClassAllocationStudentId}
-              classrooms={classrooms}
-              classroomRoster={classroomRoster}
-              gradeLevels={gradeLevels}
-              handleAssignStudentToClass={handleAssignStudentToClass}
-              handleRemoveStudentFromClass={handleRemoveStudentFromClass}
-              handleSelectClassroom={handleSelectClassroom}
-              rosterLoading={rosterLoading}
-              selectedClassroom={selectedClassroom}
-              students={students}
             />
           )}
 

@@ -1,9 +1,11 @@
 import React from "react";
-import { Users, GraduationCap, BookOpen, ClipboardList, Clock, Download } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Users, GraduationCap, BookOpen, ClipboardList, Clock, Download, UserPlus, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/ui";
 import { StatusBadge } from "./StatusBadge";
 import { FUNNEL_STATUSES } from "../lib/admissionReporting";
+import type { PlacementLink } from "../types";
 
 export type OverviewTabProps = {
   activeStudentsCount: number;
@@ -20,6 +22,7 @@ export type OverviewTabProps = {
   onExportCsv?: () => void;
   onOpenWaitlist?: () => void;
   onlineRegistrationSlot?: React.ReactNode;
+  placementLink?: PlacementLink | null;
 };
 
 export function OverviewTab({
@@ -37,6 +40,7 @@ export function OverviewTab({
   onExportCsv,
   onOpenWaitlist,
   onlineRegistrationSlot,
+  placementLink,
 }: OverviewTabProps) {
   const { t } = useTranslation(["pages", "common"]);
   const totalApps = totalApplicationsCount;
@@ -95,6 +99,43 @@ export function OverviewTab({
           </div>
         </div>
       </div>
+
+      {placementLink ? (
+        <section className="relative overflow-hidden rounded-[32px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-white p-6 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] sm:p-7">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-indigo-200/40 blur-3xl"
+          />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+                <UserPlus className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-indigo-600">
+                  {t("enrollment.headerEyebrow")}
+                </p>
+                <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-900">
+                  {placementLink.label}
+                </h3>
+                <p className="mt-1 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+                  {placementLink.description}
+                </p>
+              </div>
+            </div>
+            <Link
+              to={placementLink.href}
+              className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              {placementLink.label}
+              <ArrowUpRight
+                className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -164,7 +205,7 @@ export function OverviewTab({
       </div>
 
       <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-2">
           <Clock className="w-4 h-4 text-slate-400" />
           <h3 className="font-extrabold text-slate-900 tracking-tight text-sm">{t("admissions.overview.enrollmentSnapshot")}</h3>
         </div>

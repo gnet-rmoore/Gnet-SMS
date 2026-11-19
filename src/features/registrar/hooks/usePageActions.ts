@@ -15,9 +15,6 @@ export type PageActionsDeps = {
   gradeLevels: any;
   classrooms: any;
   refetchRegistrar: any;
-  setRosterLoading: any;
-  setClassroomRoster: any;
-  setSelectedClassroom: any;
   setStudentFormData: any;
   setShowEditStudentModal: any;
   setSelectedStudent: any;
@@ -34,9 +31,6 @@ export type PageActionsDeps = {
   selectedApp: any;
   selectedClassroomId: any;
   setSelectedClassroomId: any;
-  classAllocationStudentId: any;
-  setClassAllocationStudentId: any;
-  selectedClassroom: any;
   manualAdmissionForm: any;
   setManualAdmissionForm: any;
   setActiveTab: any;
@@ -56,9 +50,6 @@ export function usePageActions(deps: PageActionsDeps) {
     gradeLevels,
     classrooms,
     refetchRegistrar,
-    setRosterLoading,
-    setClassroomRoster,
-    setSelectedClassroom,
     setStudentFormData,
     setShowEditStudentModal,
     setSelectedStudent,
@@ -75,9 +66,6 @@ export function usePageActions(deps: PageActionsDeps) {
     selectedApp,
     selectedClassroomId,
     setSelectedClassroomId,
-    classAllocationStudentId,
-    setClassAllocationStudentId,
-    selectedClassroom,
     manualAdmissionForm,
     setManualAdmissionForm,
     setActiveTab,
@@ -156,26 +144,6 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const fetchData = () => {
     refetchRegistrar();
-  };
-
-  // Fetch specific classroom roster when active classroom changes
-  const fetchClassroomRoster = async (classroomId: string) => {
-    setRosterLoading(true);
-    try {
-      const members = await registrarApi.fetchClassroomMembers(classroomId);
-      const list = Array.isArray(members) ? members : [];
-      const studentMembers = list.filter((m: any) => m.user?.role === "STUDENT");
-      setClassroomRoster(studentMembers);
-    } catch (error) {
-      console.error("Failed to fetch classroom members:", error);
-    } finally {
-      setRosterLoading(false);
-    }
-  };
-
-  const handleSelectClassroom = (classroom: any) => {
-    setSelectedClassroom(classroom);
-    fetchClassroomRoster(classroom.id);
   };
 
   // Student directory operations
@@ -343,47 +311,6 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
-  // Classroom rosters update
-  const handleAssignStudentToClass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClassroom || !classAllocationStudentId) return;
-    setSubmitting(true);
-    try {
-      await registrarApi.addClassroomMember(selectedClassroom.id, {
-        userId: classAllocationStudentId,
-      });
-      setClassAllocationStudentId("");
-      fetchClassroomRoster(selectedClassroom.id);
-      fetchData();
-      setSuccessMessage(t("admissions.toast.studentAddedToClass"));
-    } catch (error) {
-      setErrorMessage(apiErrorMessage(error, t("admissions.toast.addToClassFailed")));
-      console.error(error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRemoveStudentFromClass = async (memberUserId: string) => {
-    if (!selectedClassroom) return;
-    const ok = await confirmAction({
-      title: t("admissions.confirm.removeFromClassTitle"),
-      text: t("admissions.confirm.removeFromClassText"),
-      confirmText: t("common:remove"),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await registrarApi.removeClassroomMember(selectedClassroom.id, memberUserId);
-      fetchClassroomRoster(selectedClassroom.id);
-      fetchData();
-      setSuccessMessage(t("admissions.toast.studentRemovedFromClass"));
-    } catch (error) {
-      setErrorMessage(apiErrorMessage(error, t("admissions.toast.removeMemberFailed")));
-      console.error(error);
-    }
-  };
-
   // Submit offline manual admission application
   const handleManualAdmissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -538,16 +465,12 @@ export function usePageActions(deps: PageActionsDeps) {
     parseAppNotes,
     parseAppDocuments,
     fetchData,
-    fetchClassroomRoster,
-    handleSelectClassroom,
     handleOpenEditStudent,
     handleSaveStudent,
     handleDeleteStudent,
     handleOpenReviewApp,
     handleToggleDoc,
     handleSaveReview,
-    handleAssignStudentToClass,
-    handleRemoveStudentFromClass,
     handleManualAdmissionSubmit,
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,

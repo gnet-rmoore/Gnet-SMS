@@ -31,7 +31,6 @@ export const registrarApi = {
       api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
     ),
   fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`),
-  fetchClassroomMembers: (classroomId: string) => api.get(`/api/classrooms/${classroomId}/members`),
   updateUser: (userId: string, data: unknown) => api.patch(`/api/users/${userId}`, data),
   deleteUser: (userId: string) => api.delete(`/api/users/${userId}`),
   updateApplication: (applicationId: string, data: unknown) =>
@@ -57,10 +56,6 @@ export const registrarApi = {
     api.patch(`/api/applications/${applicationId}/documents/${docId}`, data),
   createApplication: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/applications`, data),
-  addClassroomMember: (classroomId: string, data: unknown) =>
-    api.post(`/api/classrooms/${classroomId}/members`, data),
-  removeClassroomMember: (classroomId: string, userId: string) =>
-    api.delete(`/api/classrooms/${classroomId}/members/${userId}`),
   getAdmissionPolicy: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/admission-policy`) as Promise<{
       schoolId: string;

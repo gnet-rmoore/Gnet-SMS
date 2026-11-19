@@ -295,7 +295,7 @@ Classrooms are **not** paged by the classroom service (`services/classroom/src/c
 - `src/features/registrar/components/EditStudentModal.tsx`
 - `src/features/registrar/components/ManualAdmissionTab.tsx`
 - `src/features/registrar/components/AdmissionsTab.tsx`
-- `src/features/registrar/components/ClassroomsTab.tsx`
+- `src/features/enrollment/Page.tsx` (canonical student placement surface)
 - `src/features/promotion-statement/components/PromotionStatementReport.tsx`
 
 ### 4.1 Grade Assignment is empty
@@ -367,11 +367,12 @@ Classrooms are **not** paged by the classroom service (`services/classroom/src/c
 - Add section eyebrows and consistent spacing.
 - Ensure `Direct admission` is visually distinct when active but not competing with the primary card.
 
-**Acceptance:** Navigation is obvious at all widths, all six tabs remain reachable, and the active state is unmistakable.
+**Acceptance:** Navigation is obvious at all widths, all five tabs remain reachable, and the active state is unmistakable.
 
-### 4.5 Admissions / Classrooms / Promotion tabs
+### 4.5 Admissions / Promotion tabs
 
-- Bring `AdmissionsTab.tsx`, `ClassroomsTab.tsx`, and `PromotionStatementReport.tsx` onto the same card, table, empty-state, and filter patterns used elsewhere.
+- Bring `AdmissionsTab.tsx` and `PromotionStatementReport.tsx` onto the same card, table, empty-state, and filter patterns used elsewhere.
+- Student placement belongs on `src/features/enrollment/Page.tsx`; the registrar hub only links to it.
 - Add empty states and loading skeletons.
 - Ensure tables horizontally scroll on mobile rather than overflow the page.
 - Keep promotion report readable/printable.
