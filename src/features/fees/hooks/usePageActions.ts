@@ -608,6 +608,22 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
+  const openEditTemplate = (templ: FeeTemplate) => {
+    setTemplateForm({
+      id: templ.id,
+      name: templ.name || "",
+      type: templ.type || "TUITION",
+      amount: String(templ.amount ?? ""),
+      description: templ.description || "",
+      scopeMode: templ.scopeMode || "SCHOOL",
+      gradeLevelId: templ.gradeLevelId || "",
+      divisionId: templ.divisionId || "",
+      cohort: templ.cohort || "ALL",
+      schoolYearKey: templ.schoolYearKey || "",
+    });
+    setShowTemplateModal(true);
+  };
+
   const handleDeleteTemplate = async (id: string) => {
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
     // School admins and accountants can only view, not delete templates

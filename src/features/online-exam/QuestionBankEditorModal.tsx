@@ -3,7 +3,7 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
-import { alertError } from "../../lib/swal";
+import { alertError, confirmAction } from "../../lib/swal";
 import { questionBankApi, type BankItem, type BankVisibility } from "./api";
 import { fromApiQuestions, toApiQuestions } from "./mappers";
 import { emptyQuestion, type DraftQuestion, type QuestionType } from "./types";
@@ -15,7 +15,12 @@ type Props = {
   onClose: () => void;
   item?: BankItem | null;
   defaultSubjectId?: string | null;
-  onSaved: () => void;
+  onSaved?: () => void;
+  /** Draft mode edits a local exam question instead of saving to the bank. */
+  draftQuestion?: DraftQuestion | null;
+  onSaveDraft?: (question: DraftQuestion) => void;
+  titleOverride?: string;
+  subtitleOverride?: string;
 };
 
 type Taxonomy = { id: string; name: string };
@@ -29,6 +34,10 @@ export function QuestionBankEditorModal({
   item = null,
   defaultSubjectId = null,
   onSaved,
+  draftQuestion = null,
+  onSaveDraft,
+  titleOverride,
+  subtitleOverride,
 }: Props) {
   const { t } = useTranslation(["pages", "common"]);
   const [draft, setDraft] = React.useState<DraftQuestion>(() => emptyQuestion());
@@ -40,28 +49,52 @@ export function QuestionBankEditorModal({
   const [tags, setTags] = React.useState("");
   const [visibility, setVisibility] = React.useState<BankVisibility>("SHARED");
   const [busy, setBusy] = React.useState(false);
+  const snapshotRef = React.useRef("");
+  const draftMode = Boolean(onSaveDraft);
 
   React.useEffect(() => {
     if (!open) return;
-    if (item) {
-      setDraft(fromApiQuestions([{ ...item, id: item.id }])[0]);
-      setSubjectId(item.subjectId || "");
-      setGradeLevelId(item.gradeLevelId || "");
-      setTopic(item.topic || "");
-      setTags((item.tags || []).join(", "));
-      setVisibility(item.visibility || "SHARED");
-    } else {
-      setDraft(emptyQuestion());
-      setSubjectId(defaultSubjectId || "");
-      setGradeLevelId("");
-      setTopic("");
-      setTags("");
-      setVisibility("SHARED");
-    }
-  }, [open, item, defaultSubjectId]);
+    const next =
+      draftMode && draftQuestion
+        ? {
+            question: {
+              ...draftQuestion,
+              choices: draftQuestion.choices.map((choice) => ({ ...choice })),
+            },
+            subjectId: "",
+            gradeLevelId: "",
+            topic: "",
+            tags: "",
+            visibility: "SHARED" as BankVisibility,
+          }
+        : item
+          ? {
+              question: fromApiQuestions([{ ...item, id: item.id }])[0],
+              subjectId: item.subjectId || "",
+              gradeLevelId: item.gradeLevelId || "",
+              topic: item.topic || "",
+              tags: (item.tags || []).join(", "),
+              visibility: item.visibility || "SHARED",
+            }
+          : {
+              question: emptyQuestion(),
+              subjectId: defaultSubjectId || "",
+              gradeLevelId: "",
+              topic: "",
+              tags: "",
+              visibility: "SHARED" as BankVisibility,
+            };
+    setDraft(next.question);
+    setSubjectId(next.subjectId);
+    setGradeLevelId(next.gradeLevelId);
+    setTopic(next.topic);
+    setTags(next.tags);
+    setVisibility(next.visibility);
+    snapshotRef.current = JSON.stringify(next);
+  }, [open, item, defaultSubjectId, draftQuestion, draftMode]);
 
   React.useEffect(() => {
-    if (!open || !schoolId) return;
+    if (!open || !schoolId || draftMode) return;
     let cancelled = false;
     (async () => {
       try {
@@ -79,7 +112,38 @@ export function QuestionBankEditorModal({
     return () => {
       cancelled = true;
     };
-  }, [open, schoolId]);
+  }, [open, schoolId, draftMode]);
+
+  const formSnapshot = React.useMemo(
+    () =>
+      JSON.stringify({
+        question: draft,
+        subjectId,
+        gradeLevelId,
+        topic,
+        tags,
+        visibility,
+      }),
+    [draft, subjectId, gradeLevelId, topic, tags, visibility]
+  );
+  const isDirty =
+    open && snapshotRef.current.length > 0 && formSnapshot !== snapshotRef.current;
+
+  const requestClose = React.useCallback(async () => {
+    if (busy) return;
+    if (!isDirty) {
+      onClose();
+      return;
+    }
+    const confirmed = await confirmAction({
+      title: t("common:confirm"),
+      text: "Discard this question? Your changes will be lost.",
+      confirmText: t("common:confirmProceed"),
+      cancelText: t("common:cancel"),
+      danger: true,
+    });
+    if (confirmed) onClose();
+  }, [busy, isDirty, onClose, t]);
 
   if (!open) return null;
 
@@ -104,20 +168,27 @@ export function QuestionBankEditorModal({
     if (!canSave) return;
     setBusy(true);
     try {
-      const question = toApiQuestions([draft])[0];
-      const taxonomy = {
-        subjectId: subjectId || null,
-        gradeLevelId: gradeLevelId || null,
-        topic: topic.trim() || null,
-        tags: tags.trim() || undefined,
-        visibility,
-      };
-      if (item) {
-        await questionBankApi.update(schoolId, item.id, question, taxonomy);
+      if (onSaveDraft) {
+        onSaveDraft({
+          ...draft,
+          choices: draft.choices.map((choice) => ({ ...choice })),
+        });
       } else {
-        await questionBankApi.create(schoolId, [question], taxonomy);
+        const question = toApiQuestions([draft])[0];
+        const taxonomy = {
+          subjectId: subjectId || null,
+          gradeLevelId: gradeLevelId || null,
+          topic: topic.trim() || null,
+          tags: tags.trim() || undefined,
+          visibility,
+        };
+        if (item) {
+          await questionBankApi.update(schoolId, item.id, question, taxonomy);
+        } else {
+          await questionBankApi.create(schoolId, [question], taxonomy);
+        }
       }
-      onSaved();
+      onSaved?.();
       onClose();
     } catch (err: any) {
       await alertError(t("onlineExams.questionBank.saveFailed"), err?.message);
@@ -131,18 +202,18 @@ export function QuestionBankEditorModal({
   return (
     <AnimatePresence>
       <FeatureModalShell
-        title={item ? q("editTitle") : q("newTitle")}
-        subtitle={q("editorSubtitle")}
+        title={titleOverride || (item ? q("editTitle") : q("newTitle"))}
+        subtitle={subtitleOverride || q("editorSubtitle")}
         eyebrow={q("title")}
-        onClose={onClose}
-        wide
+        onClose={requestClose}
         fullscreen
-        maxWidthClass="max-w-6xl"
+        dismissOnBackdropClick={false}
+        lockBodyScroll
         footer={
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               disabled={busy}
               className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
             >
@@ -165,6 +236,7 @@ export function QuestionBankEditorModal({
             <div>
               <label className={fieldLabel}>{t("common:type")}</label>
               <select
+                autoFocus
                 value={draft.type}
                 onChange={(e) => changeType(e.target.value as QuestionType)}
                 className={`${fieldSelect} mt-1.5`}
@@ -292,64 +364,70 @@ export function QuestionBankEditorModal({
             </div>
           )}
 
-          <div className="border-t border-slate-100 pt-6 grid sm:grid-cols-2 gap-3">
-            <div>
-              <label className={fieldLabel}>{q("subject")}</label>
-              <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className={`${fieldSelect} mt-1.5`}>
-                <option value="">{q("noSubject")}</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+          {!draftMode ? (
+            <div className="border-t border-slate-100 pt-6 grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className={fieldLabel}>{q("subject")}</label>
+                <select
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  className={`${fieldSelect} mt-1.5`}
+                >
+                  <option value="">{q("noSubject")}</option>
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>{q("gradeLevel")}</label>
+                <select
+                  value={gradeLevelId}
+                  onChange={(e) => setGradeLevelId(e.target.value)}
+                  className={`${fieldSelect} mt-1.5`}
+                >
+                  <option value="">{q("noGrade")}</option>
+                  {grades.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={fieldLabel}>{q("topicLabel")}</label>
+                <input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder={q("topicPlaceholder")}
+                  className={`${fieldInput} mt-1.5`}
+                />
+              </div>
+              <div>
+                <label className={fieldLabel}>{q("tagsLabel")}</label>
+                <input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder={q("tagsPlaceholder")}
+                  className={`${fieldInput} mt-1.5`}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={fieldLabel}>{q("visibilityLabel")}</label>
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as BankVisibility)}
+                  className={`${fieldSelect} mt-1.5`}
+                >
+                  <option value="SHARED">{q("visibilityShared")}</option>
+                  <option value="PRIVATE">{q("visibilityPrivate")}</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">{q("visibilityHint")}</p>
+              </div>
             </div>
-            <div>
-              <label className={fieldLabel}>{q("gradeLevel")}</label>
-              <select
-                value={gradeLevelId}
-                onChange={(e) => setGradeLevelId(e.target.value)}
-                className={`${fieldSelect} mt-1.5`}
-              >
-                <option value="">{q("noGrade")}</option>
-                {grades.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={fieldLabel}>{q("topicLabel")}</label>
-              <input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder={q("topicPlaceholder")}
-                className={`${fieldInput} mt-1.5`}
-              />
-            </div>
-            <div>
-              <label className={fieldLabel}>{q("tagsLabel")}</label>
-              <input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder={q("tagsPlaceholder")}
-                className={`${fieldInput} mt-1.5`}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={fieldLabel}>{q("visibilityLabel")}</label>
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as BankVisibility)}
-                className={`${fieldSelect} mt-1.5`}
-              >
-                <option value="SHARED">{q("visibilityShared")}</option>
-                <option value="PRIVATE">{q("visibilityPrivate")}</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-1">{q("visibilityHint")}</p>
-            </div>
-          </div>
+          ) : null}
         </div>
       </FeatureModalShell>
     </AnimatePresence>

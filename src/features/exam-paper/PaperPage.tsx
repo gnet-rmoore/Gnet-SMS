@@ -13,6 +13,7 @@ import {
   Users,
   Download,
   Upload,
+  Pencil,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { examPaperApi } from "./api";
@@ -23,6 +24,7 @@ import {
 } from "../online-exam/types";
 import type { OnlineQuestionInput } from "../online-exam/api";
 import { ImportQuestionsModal } from "../online-exam/ImportQuestionsModal";
+import { QuestionBankEditorModal } from "../online-exam/QuestionBankEditorModal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError, confirmAction } from "../../lib/swal";
 
@@ -118,6 +120,7 @@ export default function ExamPaperPage() {
   const [questions, setQuestions] = React.useState<DraftQuestion[]>([emptyQuestion()]);
   const [rosterText, setRosterText] = React.useState("");
   const [showImport, setShowImport] = React.useState(false);
+  const [editingQuestion, setEditingQuestion] = React.useState<DraftQuestion | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   // Max violations is a school-administration setting for exams; teachers may
@@ -169,6 +172,23 @@ export default function ExamPaperPage() {
         return { ...next, key: q.key, prompt: q.prompt, points: q.points };
       })
     );
+  };
+
+  const openQuestionEditor = (question?: DraftQuestion) => {
+    setEditingQuestion(
+      question
+        ? { ...question, choices: question.choices.map((choice) => ({ ...choice })) }
+        : emptyQuestion()
+    );
+  };
+
+  const saveQuestionDraft = (next: DraftQuestion) => {
+    setQuestions((prev) =>
+      prev.some((q) => q.key === next.key)
+        ? prev.map((q) => (q.key === next.key ? next : q))
+        : [...prev, next]
+    );
+    setEditingQuestion(null);
   };
 
   const handleSaveDraft = async () => {
@@ -304,6 +324,19 @@ export default function ExamPaperPage() {
           onImported={load}
         />
       ) : null}
+      <QuestionBankEditorModal
+        schoolId={school?.id || ""}
+        open={Boolean(editingQuestion)}
+        draftQuestion={editingQuestion}
+        onSaveDraft={saveQuestionDraft}
+        onClose={() => setEditingQuestion(null)}
+        titleOverride={
+          editingQuestion && questions.some((q) => q.key === editingQuestion.key)
+            ? "Edit question"
+            : "Add question"
+        }
+        subtitleOverride="Author this question in a focused fullscreen editor. Save to return to the exam paper."
+      />
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -508,7 +541,7 @@ export default function ExamPaperPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
+                onClick={() => openQuestionEditor()}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700"
               >
                 <Plus className="w-4 h-4" /> Add question
@@ -543,6 +576,17 @@ export default function ExamPaperPage() {
                     onChange={(e) => updateQuestion(q.key, { points: e.target.value })}
                     className="w-20 rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm"
                   />
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => openQuestionEditor(q)}
+                      className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"
+                      title="Edit question"
+                      aria-label="Edit question"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
                   {canEdit && (
                     <button
                       type="button"

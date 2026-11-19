@@ -29,6 +29,7 @@ const publicApply = read("src/pages/PublicApply.tsx");
 const gradebook = read("src/features/gradebook/Page.tsx");
 const curriculumHook = read("src/features/curriculum/hooks/useCurriculumQuery.ts");
 const schedulePage = read("src/features/class-schedule/Page.tsx");
+const feesPageActions = read("src/features/fees/hooks/usePageActions.ts");
 
 console.log("=========================================");
 console.log(" UX WIRING REGRESSION TESTS");
@@ -100,6 +101,12 @@ assert(
   schedulePage.includes("FeatureModalShell") &&
     schedulePage.includes("space-y-5 sm:space-y-6"),
   "assign-class modal uses shared chrome and consistent spacing"
+);
+
+assert(
+  feesPageActions.includes("const openEditTemplate =") &&
+    feesPageActions.includes("openEditTemplate,"),
+  "fees exposes a defined template-edit action"
 );
 
 console.log("");

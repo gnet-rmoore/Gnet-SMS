@@ -14,6 +14,10 @@ type Props = {
   wide?: boolean;
   /** Fill the viewport instead of a centered card (long editors). */
   fullscreen?: boolean;
+  /** Keep long forms open when the user clicks outside the dialog. */
+  dismissOnBackdropClick?: boolean;
+  /** Stop the page behind the dialog from scrolling. */
+  lockBodyScroll?: boolean;
 };
 
 /** Shared Executive Slate modal chrome for Curriculum / Classrooms. */
@@ -27,8 +31,22 @@ export function FeatureModalShell({
   maxWidthClass,
   wide,
   fullscreen,
+  dismissOnBackdropClick = true,
+  lockBodyScroll = false,
 }: Props) {
   const width = maxWidthClass || (wide ? "max-w-3xl" : "max-w-lg");
+  const titleId = React.useId();
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!lockBodyScroll || typeof document === "undefined") return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [lockBodyScroll]);
 
   const modal = (
     <div
@@ -43,10 +61,17 @@ export function FeatureModalShell({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-900/40"
+        onClick={dismissOnBackdropClick ? onClose : undefined}
+        className={`absolute inset-0 bg-slate-900/40 ${
+          dismissOnBackdropClick ? "cursor-pointer" : "cursor-default"
+        }`}
       />
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 15 }}
@@ -62,7 +87,9 @@ export function FeatureModalShell({
             {eyebrow && (
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{eyebrow}</p>
             )}
-            <h2 className="text-xl font-extrabold tracking-tight text-white">{title}</h2>
+            <h2 id={titleId} className="text-xl font-extrabold tracking-tight text-white">
+              {title}
+            </h2>
             {subtitle && (
               <p className="text-sm text-slate-300 font-medium leading-relaxed">{subtitle}</p>
             )}

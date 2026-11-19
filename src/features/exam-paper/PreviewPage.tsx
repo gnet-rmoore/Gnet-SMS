@@ -1,8 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
-import { PageToast, usePageToast } from "../academics-shared/PageToast";
-import { alertError } from "../../lib/swal";
 
 type PreviewQuestion = {
   key: string;
@@ -51,30 +50,23 @@ const sampleQuestions: PreviewQuestion[] = [
 
 export default function ExamPaperPreviewPage() {
   const { t } = useTranslation(["pages", "common"]);
-  const { toast, showToast } = usePageToast();
-  const { user } = useAuthStore();
-
-  const handleSubmit = async () => {
-    // placeholder – no actual submission
-    showToast(t("examPaper.toast.draftSaved"));
-  };
+  const { school } = useAuthStore();
 
   return (
     <div className="max-w-7xl mx-auto p-6 sm:p-8">
-      <PageToast toast={toast} />
       <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-6">
         <h2 className="font-extrabold tracking-tight text-slate-900">
-          {t("examPaper.title")} – Preview
+          {t("examPaper.title")} – Test view
         </h2>
         <p className="text-slate-500">
-          This preview shows how the exam paper will appear to students when submitted.
+          This test view shows how a teacher-submitted paper and its questions will appear to reviewers.
         </p>
 
         <div className="space-y-4">
-          {sampleQuestions.map((q) => (
+          {sampleQuestions.map((q, index) => (
             <div key={q.key} className="rounded-2xl border border-slate-100 p-6 space-y-4 bg-slate-50/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-extrabold text-slate-900 font-mono">Q{String.fromCharCode(64 + sampleQuestions.indexOf(q) + 1)}</p>
+                <p className="font-extrabold text-slate-900 font-mono">Q{String.fromCharCode(65 + index)}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">
                     {t(`questionType.${q.type}`)} – {q.points} pts
@@ -128,13 +120,12 @@ export default function ExamPaperPreviewPage() {
         </div>
 
         <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="flex-1 py-3 border border-slate-200 text-slate-700 font-bold rounded-xl text-sm hover:bg-slate-50"
+          <Link
+            to={`/${school?.slug}/exam-paper-review`}
+            className="flex-1 py-3 border border-slate-200 text-slate-700 font-bold rounded-xl text-sm hover:bg-slate-50 text-center"
           >
             {t("common:close")}
-          </button>
+          </Link>
         </div>
       </div>
     </div>

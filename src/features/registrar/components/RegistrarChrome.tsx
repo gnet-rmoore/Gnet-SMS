@@ -62,7 +62,7 @@ export function RegistrarChrome({
           {placementLink ? (
             <Link
               to={placementLink.href}
-              className="group inline-flex shrink-0 items-center gap-2 self-start rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2.5 text-sm font-bold text-indigo-700 transition-all hover:border-indigo-300 hover:bg-indigo-100 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="group inline-flex shrink-0 items-center gap-2 self-start rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2.5 text-sm font-bold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <LayoutGrid className="h-4 w-4" aria-hidden="true" />
               {placementLink.label}

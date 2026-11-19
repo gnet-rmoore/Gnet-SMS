@@ -91,11 +91,7 @@ export default function ExamPaperReviewPage() {
     }
   };
 
-  const previewPaper = async (pkg: any) => {
-    const { school } = useAuthStore();
-    if (!school?.id) return;
-    void window.open(`/${school.slug}/exams/${pkg.examId}/paper-preview`, "_blank");
-  };
+  const previewHref = `/${school?.slug}/exam-paper-preview`;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
@@ -104,16 +100,28 @@ export default function ExamPaperReviewPage() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
+        className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
       >
-        <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-          {t("examPaper.reviewEyebrow")}
-        </p>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1 font-dashboard">
-          {t("examPaper.reviewTitle")}
-        </h1>
-        <p className="text-slate-500 font-medium mt-1">
-          {t("examPaper.reviewSubtitle")}
-        </p>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+            {t("examPaper.reviewEyebrow")}
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1 font-dashboard">
+            {t("examPaper.reviewTitle")}
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">
+            {t("examPaper.reviewSubtitle")}
+          </p>
+        </div>
+        <a
+          href={previewHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Preview how a teacher-submitted paper will look to reviewers"
+          className="inline-flex items-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
+        >
+          <Eye className="w-4 h-4" /> Test paper view
+        </a>
       </motion.div>
 
       {loading ? (
@@ -165,14 +173,14 @@ export default function ExamPaperReviewPage() {
                 >
                   {t("examPaper.openPaper")}
                 </Link>
-                <button
-                  type="button"
-                  disabled={busyId === pkg.id}
-                  onClick={() => void previewPaper(pkg)}
-                  className="inline-flex items-center gap-2 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl text-sm py-2.5 px-4 disabled:opacity-60"
+                <a
+                  href={previewHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl text-sm py-2.5 px-4"
                 >
-                  <Eye className="w-4 h-4" /> {t("examPaper.preview")}
-                </button>
+                  <Eye className="w-4 h-4" /> {t("common:preview")}
+                </a>
                 <button
                   type="button"
                   disabled={busyId === pkg.id}

@@ -18,6 +18,7 @@ import {
   Upload,
   Library,
   BookmarkPlus,
+  Pencil,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { onlineExamApi, type OnlineExamConfig } from "./api";
@@ -28,6 +29,7 @@ import { alertError } from "../../lib/swal";
 import { ImportQuestionsModal } from "./ImportQuestionsModal";
 import { QuestionBankPickerModal } from "./QuestionBankPickerModal";
 import { SaveToBankModal } from "./SaveToBankModal";
+import { QuestionBankEditorModal } from "./QuestionBankEditorModal";
 import { MathEditor } from "./MathEditor";
 import { RichContent } from "./RichContent";
 import { hasRichContent } from "./richText";
@@ -65,6 +67,7 @@ export default function OnlineExamAuthorPage() {
   const [showImport, setShowImport] = React.useState(false);
   const [showBankPicker, setShowBankPicker] = React.useState(false);
   const [showSaveToBank, setShowSaveToBank] = React.useState(false);
+  const [editingQuestion, setEditingQuestion] = React.useState<DraftQuestion | null>(null);
   const [examSubjectId, setExamSubjectId] = React.useState<string | null>(null);
   const [classrooms, setClassrooms] = React.useState<Array<{ id: string; name: string; grade?: string; subject?: string }>>([]);
   // Retake policy state
@@ -157,6 +160,23 @@ export default function OnlineExamAuthorPage() {
         return { ...next, key: q.key, prompt: q.prompt, points: q.points };
       })
     );
+  };
+
+  const openQuestionEditor = (question?: DraftQuestion) => {
+    setEditingQuestion(
+      question
+        ? { ...question, choices: question.choices.map((choice) => ({ ...choice })) }
+        : emptyQuestion()
+    );
+  };
+
+  const saveQuestionDraft = (next: DraftQuestion) => {
+    setQuestions((prev) =>
+      prev.some((q) => q.key === next.key)
+        ? prev.map((q) => (q.key === next.key ? next : q))
+        : [...prev, next]
+    );
+    setEditingQuestion(null);
   };
 
   const handleSave = async () => {
@@ -268,6 +288,19 @@ export default function OnlineExamAuthorPage() {
           onSaved={() => showToast(t("onlineExams.questionBank.savedToBank"))}
         />
       ) : null}
+      <QuestionBankEditorModal
+        schoolId={school?.id || ""}
+        open={Boolean(editingQuestion)}
+        draftQuestion={editingQuestion}
+        onSaveDraft={saveQuestionDraft}
+        onClose={() => setEditingQuestion(null)}
+        titleOverride={
+          editingQuestion && questions.some((q) => q.key === editingQuestion.key)
+            ? t("common:edit")
+            : t("onlineExams.author.addQuestion")
+        }
+        subtitleOverride={t("onlineExams.questionBank.editorSubtitle")}
+      />
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -586,7 +619,7 @@ export default function OnlineExamAuthorPage() {
             </button>
             <button
               type="button"
-              onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
+              onClick={() => openQuestionEditor()}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-700 hover:bg-slate-50"
             >
               <Plus className="w-4 h-4" /> {t("onlineExams.author.addQuestion")}
@@ -620,6 +653,15 @@ export default function OnlineExamAuthorPage() {
                     className="w-20 rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm"
                     title={t("onlineExams.author.points")}
                   />
+                  <button
+                    type="button"
+                    onClick={() => openQuestionEditor(q)}
+                    className="p-2 rounded-xl text-slate-500 hover:bg-slate-100"
+                    title={t("common:edit")}
+                    aria-label={t("common:edit")}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => setQuestions((prev) => prev.filter((x) => x.key !== q.key))}
