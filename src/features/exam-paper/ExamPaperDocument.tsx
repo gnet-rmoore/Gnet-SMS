@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { format } from "date-fns";
 import { RichContent } from "../online-exam/RichContent";
 
@@ -36,6 +36,13 @@ export type ExamPaperDocumentPackage = {
   revision?: number | null;
 };
 
+const NAVY = "#0b1f3b";
+const NAVY_SOFT = "#102a4c";
+const BORDER = "#d7deea";
+const BORDER_STRONG = "#94a3b8";
+const TEXT = "#0f172a";
+const MUTED = "#475569";
+
 function formatDate(value?: string | Date | null) {
   if (!value) return "—";
   try {
@@ -55,128 +62,234 @@ function formatDuration(minutes?: number | null) {
   return `${h} hr ${rem} min`;
 }
 
-function contactLine(school: ExamPaperDocumentSchool) {
-  return [school.address, school.contactPhone, school.contactEmail]
-    .map((v) => (v || "").trim())
-    .filter(Boolean)
-    .join("  •  ");
-}
-
 function totalPoints(questions: PaperQuestion[]) {
   return questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
 }
 
+function questionTypeLabel(type: PaperQuestion["type"]) {
+  if (type === "MULTIPLE_CHOICE") return "Multiple Choice";
+  if (type === "TRUE_FALSE") return "True / False";
+  if (type === "FILL_BLANK") return "Fill in the Blank";
+  return "Essay";
+}
+
+function fillBlankLines(points: number) {
+  return Math.max(1, Math.min(3, Math.ceil(points || 1)));
+}
+
+function essayLines(points: number) {
+  const p = Math.max(1, Number(points) || 1);
+  return Math.min(22, Math.max(8, p * 2));
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="ep-info-card"
+      style={{
+        border: `1px solid ${BORDER}`,
+        borderRadius: 10,
+        padding: "10px 12px",
+        background: "#f8fafc",
+        minHeight: 58,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: MUTED,
+          marginBottom: 4,
+          lineHeight: 1.2,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
   const points = Number(q.points) || 0;
-  const typeLabel =
-    q.type === "MULTIPLE_CHOICE"
-      ? "Multiple Choice"
-      : q.type === "TRUE_FALSE"
-        ? "True / False"
-        : q.type === "FILL_BLANK"
-          ? "Fill in the Blank"
-          : "Essay";
+  const marksText = `${points} ${points === 1 ? "mark" : "marks"}`;
+  const qNum = index + 1;
 
   return (
     <section
       className="ep-question"
-      style={{ breakInside: "avoid", pageBreakInside: "avoid", marginBottom: 22 }}
+      data-question-index={index}
+      style={{
+        breakInside: "avoid",
+        pageBreakInside: "avoid",
+        marginBottom: 18,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 12,
+        padding: "14px 16px 14px",
+        background: "#ffffff",
+      }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-        <div style={{ display: "flex", gap: 10, minWidth: 0, flex: 1 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "34px minmax(0,1fr) auto",
+          alignItems: "start",
+          columnGap: 12,
+          marginBottom: 10,
+        }}
+      >
+        <div
+          aria-hidden
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 8,
+            background: NAVY,
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 800,
+            fontSize: 14,
+            lineHeight: 1,
+          }}
+        >
+          {qNum}
+        </div>
+        <div style={{ minWidth: 0, paddingTop: 1 }}>
           <div
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: "#0f172a",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              fontSize: 10.5,
               fontWeight: 800,
-              fontSize: 13,
-              flexShrink: 0,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: MUTED,
+              marginBottom: 5,
+              lineHeight: 1.2,
             }}
           >
-            {index + 1}
+            Question {qNum} · {questionTypeLabel(q.type)}
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#64748b",
-                marginBottom: 4,
-              }}
-            >
-              {typeLabel}
-            </div>
-            <div style={{ fontSize: 14.5, lineHeight: 1.65, color: "#0f172a", fontWeight: 500 }}>
-              <RichContent content={q.prompt || ""} />
-            </div>
+          <div
+            style={{
+              fontSize: 14.5,
+              lineHeight: 1.6,
+              color: TEXT,
+              fontWeight: 500,
+              overflowWrap: "anywhere",
+            }}
+          >
+            <RichContent content={q.prompt || ""} />
           </div>
         </div>
         <div
           style={{
-            flexShrink: 0,
-            fontSize: 12,
-            fontWeight: 700,
-            color: "#334155",
-            background: "#f1f5f9",
-            border: "1px solid #e2e8f0",
+            fontSize: 11.5,
+            fontWeight: 800,
+            color: NAVY,
+            background: "#e8eef7",
+            border: "1px solid #c8d6ea",
             borderRadius: 999,
-            padding: "4px 10px",
+            padding: "5px 12px",
             whiteSpace: "nowrap",
+            lineHeight: 1.2,
+            marginTop: 2,
           }}
         >
-          {points} {points === 1 ? "mark" : "marks"}
+          {marksText}
         </div>
       </div>
 
-      <div style={{ marginTop: 12, marginLeft: 40 }}>
+      <div style={{ marginLeft: 46 }}>
         {q.type === "MULTIPLE_CHOICE" && (
-          <div style={{ display: "grid", gap: 8 }}>
-            {(q.choices && q.choices.length ? q.choices : []).map((c, i) => (
-              <div
-                key={c.id || i}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 10,
-                  padding: "8px 10px",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 10,
-                  background: "#fff",
-                }}
-              >
-                <span
+          <div style={{ display: "grid", gap: 8, marginTop: 2 }}>
+            {(q.choices && q.choices.length ? q.choices : []).map((c, i) => {
+              const label = c.label || String.fromCharCode(65 + i);
+              return (
+                <label
+                  key={c.id || i}
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 999,
-                    border: "1.5px solid #94a3b8",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: "#334155",
-                    flexShrink: 0,
-                    marginTop: 1,
+                    display: "grid",
+                    gridTemplateColumns: "28px minmax(0,1fr)",
+                    alignItems: "start",
+                    columnGap: 12,
+                    minHeight: 42,
+                    padding: "9px 12px",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 10,
+                    background: "#fff",
+                    boxSizing: "border-box",
                   }}
                 >
-                  {c.label || String.fromCharCode(65 + i)}
-                </span>
-                <div style={{ fontSize: 14, lineHeight: 1.6, color: "#0f172a" }}>
-                  <RichContent content={c.text || ""} />
-                </div>
-              </div>
-            ))}
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingTop: 1,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name={`q-${q.id || index}`}
+                      aria-label={`Option ${label}`}
+                      style={{ margin: 0, width: 14, height: 14, accentColor: NAVY }}
+                    />
+                  </span>
+                  <span
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "22px minmax(0,1fr)",
+                      alignItems: "start",
+                      columnGap: 8,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 999,
+                        border: `1.5px solid ${BORDER_STRONG}`,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: NAVY,
+                        lineHeight: 1,
+                        marginTop: 0,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        color: TEXT,
+                        minWidth: 0,
+                        overflowWrap: "anywhere",
+                        paddingTop: 1,
+                      }}
+                    >
+                      <RichContent content={c.text || ""} />
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
             {!q.choices?.length && (
-              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>
+              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "8px 0" }}>
                 No options provided.
               </div>
             )}
@@ -184,51 +297,345 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
         )}
 
         {q.type === "TRUE_FALSE" && (
-          <div style={{ display: "flex", gap: 24, paddingTop: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(160px, 220px))", gap: 10, marginTop: 4 }}>
             {["True", "False"].map((label) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#0f172a" }}>
-                <span
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 4,
-                    border: "1.5px solid #64748b",
-                    display: "inline-block",
-                  }}
+              <label
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  minHeight: 42,
+                  padding: "9px 12px",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 10,
+                  background: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: TEXT,
+                  boxSizing: "border-box",
+                }}
+              >
+                <input
+                  type="radio"
+                  name={`q-${q.id || index}`}
+                  aria-label={label}
+                  style={{ margin: 0, width: 15, height: 15, accentColor: NAVY }}
                 />
-                <span style={{ fontWeight: 600 }}>{label}</span>
-              </div>
+                <span>{label}</span>
+              </label>
             ))}
           </div>
         )}
 
         {q.type === "FILL_BLANK" && (
-          <div style={{ paddingTop: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <div style={{ marginTop: 6 }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 800,
+                color: MUTED,
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
               Answer
             </div>
-            <div style={{ borderBottom: "1.5px solid #334155", height: 28, maxWidth: 520 }} />
+            <div style={{ display: "grid", gap: 10 }}>
+              {Array.from({ length: fillBlankLines(points) }).map((_, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  aria-label={`Answer line ${i + 1}`}
+                  style={{
+                    width: "100%",
+                    maxWidth: 560,
+                    height: 32,
+                    border: "none",
+                    borderBottom: `1.8px solid ${NAVY_SOFT}`,
+                    borderRadius: 0,
+                    padding: "4px 2px",
+                    fontSize: 14,
+                    color: TEXT,
+                    background: "transparent",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
 
         {q.type === "ESSAY" && (
-          <div style={{ paddingTop: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Response
-            </div>
+          <div style={{ marginTop: 6 }}>
             <div
               style={{
-                border: "1px solid #cbd5e1",
+                fontSize: 10.5,
+                fontWeight: 800,
+                color: MUTED,
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Response
+            </div>
+            <textarea
+              aria-label={`Response for question ${qNum}`}
+              rows={essayLines(points)}
+              style={{
+                width: "100%",
+                minHeight: essayLines(points) * 28 + 12,
+                border: `1px solid ${BORDER_STRONG}`,
                 borderRadius: 10,
-                minHeight: 140,
-                background:
-                  "repeating-linear-gradient(to bottom, transparent, transparent 27px, #e2e8f0 28px)",
+                padding: "10px 12px",
+                fontSize: 14,
+                lineHeight: "28px",
+                color: TEXT,
+                backgroundImage:
+                  "repeating-linear-gradient(to bottom, transparent, transparent 27px, #e2e8f0 27px, #e2e8f0 28px)",
+                backgroundAttachment: "local",
+                resize: "none",
+                outline: "none",
+                boxSizing: "border-box",
+                fontFamily: "inherit",
               }}
             />
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+function PaperHeader({
+  school,
+  exam,
+  pkg,
+  questions,
+  compact,
+}: {
+  school: ExamPaperDocumentSchool;
+  exam: ExamPaperDocumentExam;
+  pkg?: ExamPaperDocumentPackage | null;
+  questions: PaperQuestion[];
+  compact?: boolean;
+}) {
+  const total = totalPoints(questions);
+  const mode = pkg?.deliveryMode || exam.deliveryMode || "—";
+  const contact = [school.address, school.contactPhone, school.contactEmail]
+    .map((v) => (v || "").trim())
+    .filter(Boolean);
+
+  if (compact) {
+    return (
+      <div
+        className="ep-running-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: `1.5px solid ${BORDER}`,
+          paddingBottom: 8,
+          marginBottom: 14,
+          gap: 12,
+        }}
+      >
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: NAVY, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {school.name || "School"}
+        </div>
+        <div style={{ fontSize: 11, color: MUTED, textAlign: "right", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {exam.title || "Examination"}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <header className="ep-header" style={{ marginBottom: 16, breakInside: "avoid", pageBreakInside: "avoid" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          alignItems: "start",
+          gap: 20,
+          paddingBottom: 14,
+          borderBottom: `2.5px solid ${NAVY}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          {school.logoUrl ? (
+            <img
+              src={school.logoUrl}
+              alt={school.name ? `${school.name} logo` : "School logo"}
+              crossOrigin="anonymous"
+              style={{
+                width: 68,
+                height: 68,
+                objectFit: "contain",
+                flexShrink: 0,
+                display: "block",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 68,
+                height: 68,
+                borderRadius: 12,
+                background: NAVY,
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: 22,
+                flexShrink: 0,
+              }}
+            >
+              {(school.name || "S").slice(0, 1).toUpperCase()}
+            </div>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.015em", color: NAVY, lineHeight: 1.2 }}>
+              {school.name || "School"}
+            </div>
+            {contact.length > 0 && (
+              <div style={{ marginTop: 5, display: "grid", gap: 2 }}>
+                {contact.map((line, i) => (
+                  <div key={i} style={{ fontSize: 12, color: MUTED, lineHeight: 1.45, overflowWrap: "anywhere" }}>
+                    {line}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right", minWidth: 220 }}>
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 800,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: MUTED,
+              marginBottom: 6,
+            }}
+          >
+            Examination Information
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1.25 }}>
+            Examination Paper
+          </div>
+          <div style={{ marginTop: 6, display: "grid", gap: 3, fontSize: 12, color: MUTED }}>
+            <div><strong style={{ color: TEXT }}>Mode:</strong> {mode}</div>
+            {pkg?.revision ? <div><strong style={{ color: TEXT }}>Revision:</strong> {pkg.revision}</div> : null}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16, textAlign: "center" }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 28,
+            lineHeight: 1.18,
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            color: NAVY,
+          }}
+        >
+          {exam.title || "Examination"}
+        </h1>
+      </div>
+
+      <div
+        style={{
+          marginTop: 14,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        <InfoCard label="Date" value={formatDate(exam.startDate)} />
+        <InfoCard label="Duration" value={formatDuration(exam.duration)} />
+        <InfoCard label="Total Marks" value={String(total)} />
+        <InfoCard label="Questions" value={String(questions.length)} />
+      </div>
+    </header>
+  );
+}
+
+function InstructionsBlock({ instructions }: { instructions?: string | null }) {
+  if (!instructions) return null;
+  return (
+    <div
+      className="ep-instructions"
+      style={{
+        border: "1px solid #c8d6ea",
+        background: "#f3f6fb",
+        borderRadius: 12,
+        padding: "12px 14px",
+        marginBottom: 16,
+        breakInside: "avoid",
+        pageBreakInside: "avoid",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10.5,
+          fontWeight: 800,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: NAVY,
+          marginBottom: 6,
+        }}
+      >
+        General Instructions
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.65, color: TEXT, whiteSpace: "pre-wrap" }}>
+        {instructions}
+      </div>
+    </div>
+  );
+}
+
+function PageFooter({
+  school,
+  exam,
+  page,
+  totalPages,
+}: {
+  school: ExamPaperDocumentSchool;
+  exam: ExamPaperDocumentExam;
+  page?: number;
+  totalPages?: number;
+}) {
+  return (
+    <footer
+      className="ep-footer"
+      style={{
+        marginTop: "auto",
+        paddingTop: 10,
+        borderTop: `1px solid ${BORDER}`,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+        fontSize: 10.5,
+        color: MUTED,
+      }}
+    >
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {school.name || "School"} — {exam.title || "Examination"}
+      </span>
+      <span style={{ whiteSpace: "nowrap", fontWeight: 700, color: NAVY_SOFT }}>
+        {page && totalPages ? `Page ${page} of ${totalPages}` : "End of paper"}
+      </span>
+    </footer>
   );
 }
 
@@ -241,164 +648,31 @@ export const ExamPaperDocument = React.forwardRef<
     questions: PaperQuestion[];
   }
 >(function ExamPaperDocument({ school, exam, pkg, questions }, ref) {
-  const contact = contactLine(school);
-  const total = totalPoints(questions);
-  const mode = pkg?.deliveryMode || exam.deliveryMode || "—";
-
   return (
     <div
       ref={ref}
       id="exam-paper-document"
+      className="ep-document"
       style={{
         width: "210mm",
         minHeight: "297mm",
         margin: "0 auto",
         background: "#ffffff",
-        color: "#0f172a",
-        padding: "18mm 16mm 20mm",
+        color: TEXT,
+        padding: "15mm 15mm 16mm",
         boxSizing: "border-box",
-        fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-        position: "relative",
+        fontFamily:
+          'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <header style={{ borderBottom: "2px solid #0f172a", paddingBottom: 16, marginBottom: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {school.logoUrl ? (
-            <img
-              src={school.logoUrl}
-              alt=""
-              crossOrigin="anonymous"
-              style={{
-                width: 64,
-                height: 64,
-                objectFit: "contain",
-                borderRadius: 12,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
-                padding: 4,
-                flexShrink: 0,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 12,
-                background: school.brandColor || "#1e293b",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 800,
-                fontSize: 20,
-                flexShrink: 0,
-              }}
-            >
-              {(school.name || "S").slice(0, 1).toUpperCase()}
-            </div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em", color: "#0f172a" }}>
-              {school.name || "School"}
-            </div>
-            {contact && (
-              <div style={{ marginTop: 4, fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
-                {contact}
-              </div>
-            )}
-          </div>
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div
-              style={{
-                fontSize: 10.5,
-                fontWeight: 800,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "#64748b",
-              }}
-            >
-              Examination Paper
-            </div>
-            {pkg?.revision ? (
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Revision {pkg.revision}</div>
-            ) : null}
-          </div>
-        </div>
+      <PaperHeader school={school} exam={exam} pkg={pkg} questions={questions} />
+      <InstructionsBlock instructions={exam.instructions} />
 
-        <div style={{ marginTop: 18, textAlign: "center" }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              lineHeight: 1.15,
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              color: "#020617",
-            }}
-          >
-            {exam.title || "Examination"}
-          </h1>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: 10,
-          }}
-        >
-          {[
-            { label: "Date", value: formatDate(exam.startDate) },
-            { label: "Duration", value: formatDuration(exam.duration) },
-            { label: "Total Marks", value: String(total) },
-            { label: "Questions", value: String(questions.length) },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                border: "1px solid #e2e8f0",
-                borderRadius: 10,
-                padding: "8px 10px",
-                background: "#f8fafc",
-              }}
-            >
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748b" }}>
-                {item.label}
-              </div>
-              <div style={{ marginTop: 3, fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 10, display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12, color: "#475569" }}>
-          <span><strong style={{ color: "#0f172a" }}>Delivery mode:</strong> {mode}</span>
-        </div>
-      </header>
-
-      {exam.instructions ? (
-        <div
-          style={{
-            border: "1px solid #c7d2fe",
-            background: "#eef2ff",
-            borderRadius: 12,
-            padding: "12px 14px",
-            marginBottom: 18,
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3730a3", marginBottom: 4 }}>
-            General Instructions
-          </div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#1e1b4b", whiteSpace: "pre-wrap" }}>
-            {exam.instructions}
-          </div>
-        </div>
-      ) : null}
-
-      <main>
+      <main style={{ flex: 1 }}>
         {questions.length === 0 ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#64748b", fontSize: 14 }}>
+          <div style={{ padding: "40px 0", textAlign: "center", color: MUTED, fontSize: 14 }}>
             No questions available for this paper.
           </div>
         ) : (
@@ -406,61 +680,264 @@ export const ExamPaperDocument = React.forwardRef<
         )}
       </main>
 
-      <footer
-        style={{
-          marginTop: 24,
-          paddingTop: 12,
-          borderTop: "1px solid #e2e8f0",
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: 11,
-          color: "#64748b",
-        }}
-      >
-        <span>{school.name || "School"} — {exam.title || "Examination"}</span>
-        <span>End of paper</span>
-      </footer>
+      <PageFooter school={school} exam={exam} />
 
       <style>{`
+        .ep-document * { box-sizing: border-box; }
+        .ep-question { break-inside: avoid; page-break-inside: avoid; }
+        .ep-header, .ep-instructions { break-inside: avoid; page-break-inside: avoid; }
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          #exam-paper-document { box-shadow: none !important; margin: 0 !important; }
+          html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          #exam-paper-document { box-shadow: none !important; margin: 0 !important; width: auto !important; min-height: auto !important; padding: 0 !important; }
+          .ep-question { break-inside: avoid-page !important; page-break-inside: avoid !important; }
+          .ep-footer { break-inside: avoid; }
         }
-        @page { size: A4; margin: 12mm; }
+        @page { size: A4 portrait; margin: 12mm; }
       `}</style>
     </div>
   );
 });
 
+function createPageShell(school: ExamPaperDocumentSchool, exam: ExamPaperDocumentExam, compactHeader: boolean) {
+  const page = document.createElement("div");
+  page.className = "ep-page";
+  page.style.width = "210mm";
+  page.style.height = "297mm";
+  page.style.padding = "15mm 15mm 14mm";
+  page.style.boxSizing = "border-box";
+  page.style.background = "#ffffff";
+  page.style.color = TEXT;
+  page.style.fontFamily =
+    'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  page.style.display = "flex";
+  page.style.flexDirection = "column";
+  page.style.overflow = "hidden";
+  page.style.position = "relative";
+
+  if (compactHeader) {
+    const h = document.createElement("div");
+    h.style.display = "flex";
+    h.style.justifyContent = "space-between";
+    h.style.alignItems = "center";
+    h.style.borderBottom = `1.5px solid ${BORDER}`;
+    h.style.paddingBottom = "8px";
+    h.style.marginBottom = "14px";
+    h.style.gap = "12px";
+    const left = document.createElement("div");
+    left.textContent = school.name || "School";
+    left.style.fontSize = "11.5px";
+    left.style.fontWeight = "700";
+    left.style.color = NAVY;
+    left.style.minWidth = "0";
+    left.style.overflow = "hidden";
+    left.style.textOverflow = "ellipsis";
+    left.style.whiteSpace = "nowrap";
+    const right = document.createElement("div");
+    right.textContent = exam.title || "Examination";
+    right.style.fontSize = "11px";
+    right.style.color = MUTED;
+    right.style.textAlign = "right";
+    right.style.minWidth = "0";
+    right.style.overflow = "hidden";
+    right.style.textOverflow = "ellipsis";
+    right.style.whiteSpace = "nowrap";
+    h.appendChild(left);
+    h.appendChild(right);
+    page.appendChild(h);
+  }
+
+  const content = document.createElement("div");
+  content.className = "ep-page-content";
+  content.style.flex = "1";
+  content.style.minHeight = "0";
+  page.appendChild(content);
+
+  const footer = document.createElement("footer");
+  footer.className = "ep-page-footer";
+  footer.style.marginTop = "auto";
+  footer.style.paddingTop = "10px";
+  footer.style.borderTop = `1px solid ${BORDER}`;
+  footer.style.display = "flex";
+  footer.style.justifyContent = "space-between";
+  footer.style.alignItems = "center";
+  footer.style.gap = "12px";
+  footer.style.fontSize = "10.5px";
+  footer.style.color = MUTED;
+  const fLeft = document.createElement("span");
+  fLeft.textContent = `${school.name || "School"} — ${exam.title || "Examination"}`;
+  fLeft.style.minWidth = "0";
+  fLeft.style.overflow = "hidden";
+  fLeft.style.textOverflow = "ellipsis";
+  fLeft.style.whiteSpace = "nowrap";
+  const fRight = document.createElement("span");
+  fRight.className = "ep-page-number";
+  fRight.style.whiteSpace = "nowrap";
+  fRight.style.fontWeight = "700";
+  fRight.style.color = NAVY_SOFT;
+  footer.appendChild(fLeft);
+  footer.appendChild(fRight);
+  page.appendChild(footer);
+
+  return page;
+}
+
 export async function downloadExamPaperPdf(element: HTMLElement, filename: string) {
   const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    backgroundColor: "#ffffff",
-    windowWidth: element.scrollWidth,
-  });
+  const root = element.cloneNode(true) as HTMLElement;
+  root.id = "exam-paper-export-root";
+  root.style.margin = "0";
+  root.style.boxShadow = "none";
+  root.style.minHeight = "0";
+  root.style.height = "auto";
 
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const imgProps = pdf.getImageProperties(imgData);
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  const schoolName = (root.querySelector(".ep-footer span")?.textContent || "School — Examination").split(" — ")[0] || "School";
+  // extract school/exam from footer text in clone
+  const footerText = root.querySelector(".ep-footer span")?.textContent || "";
+  const parts = footerText.split(" — ");
+  const school = { name: parts[0] || "School" } as ExamPaperDocumentSchool;
+  const exam = { id: "", title: parts.slice(1).join(" — ") || "Examination" } as ExamPaperDocumentExam;
 
-  let heightLeft = pdfHeight;
-  let position = 0;
-  pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-  heightLeft -= pageHeight;
-  while (heightLeft > 0) {
-    position -= pageHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-    heightLeft -= pageHeight;
+  const header = root.querySelector(".ep-header") as HTMLElement | null;
+  const instructions = root.querySelector(".ep-instructions") as HTMLElement | null;
+  const questions = Array.from(root.querySelectorAll(".ep-question")) as HTMLElement[];
+  const baseFooter = root.querySelector(".ep-footer") as HTMLElement | null;
+
+  const staging = document.createElement("div");
+  staging.style.position = "fixed";
+  staging.style.left = "-10000px";
+  staging.style.top = "0";
+  staging.style.width = "210mm";
+  staging.style.background = "#fff";
+  staging.style.zIndex = "-1";
+  document.body.appendChild(staging);
+
+  const measureHost = document.createElement("div");
+  measureHost.style.width = "210mm";
+  measureHost.style.padding = "15mm 15mm 14mm";
+  measureHost.style.boxSizing = "border-box";
+  measureHost.style.position = "absolute";
+  measureHost.style.left = "-10000px";
+  measureHost.style.top = "0";
+  measureHost.style.visibility = "hidden";
+  measureHost.style.fontFamily = root.style.fontFamily;
+  staging.appendChild(measureHost);
+
+  const pxPerMm = 96 / 25.4;
+  const pageContentHeight = (297 - 15 - 14) * pxPerMm; // px, approx
+
+  function measure(node: HTMLElement, withHeader: boolean) {
+    measureHost.innerHTML = "";
+    if (withHeader) {
+      if (header) measureHost.appendChild(header.cloneNode(true));
+      if (instructions) measureHost.appendChild(instructions.cloneNode(true));
+    } else {
+      const rh = document.createElement("div");
+      rh.style.borderBottom = `1.5px solid ${BORDER}`;
+      rh.style.paddingBottom = "8px";
+      rh.style.marginBottom = "14px";
+      rh.style.height = "28px";
+      measureHost.appendChild(rh);
+    }
+    measureHost.appendChild(node.cloneNode(true));
+    const foot = document.createElement("div");
+    foot.style.marginTop = "10px";
+    foot.style.paddingTop = "10px";
+    foot.style.height = "24px";
+    measureHost.appendChild(foot);
+    return measureHost.scrollHeight;
   }
 
-  pdf.save(filename);
+  const pages: HTMLElement[] = [];
+  let pageIndex = 0;
+  let page = createPageShell(school, exam, false);
+  let content = page.querySelector(".ep-page-content") as HTMLElement;
+  // first page: full header + instructions
+  page = createPageShell(school, exam, false);
+  content = page.querySelector(".ep-page-content") as HTMLElement;
+  if (header) content.appendChild(header.cloneNode(true));
+  if (instructions) content.appendChild(instructions.cloneNode(true));
+  pages.push(page);
+
+  const ensureCapacity = (node: HTMLElement) => {
+    // try add to current page; if overflow, move to new page
+    content.appendChild(node);
+    const over = content.scrollHeight > content.clientHeight + 2;
+    if (over) {
+      content.removeChild(node);
+      // new page
+      page = createPageShell(school, exam, true);
+      content = page.querySelector(".ep-page-content") as HTMLElement;
+      pages.push(page);
+      content.appendChild(node);
+      // if still over (very tall question), allow it but keep intact as best effort
+    }
+  };
+
+  // mount pages to staging to measure real clientHeight
+  staging.innerHTML = "";
+  pages.forEach((p) => staging.appendChild(p));
+  // content clientHeight now known; but we built first page already - adjust by moving if needed
+  // Simpler: rebuild with measurement loop
+  staging.innerHTML = "";
+
+  const built: HTMLElement[] = [];
+  let current = createPageShell(school, exam, false);
+  staging.appendChild(current);
+  let currentContent = current.querySelector(".ep-page-content") as HTMLElement;
+  if (header) currentContent.appendChild(header.cloneNode(true));
+  if (instructions) currentContent.appendChild(instructions.cloneNode(true));
+  built.push(current);
+
+  for (const q of questions) {
+    const clone = q.cloneNode(true) as HTMLElement;
+    currentContent.appendChild(clone);
+    if (currentContent.scrollHeight > currentContent.clientHeight + 1) {
+      currentContent.removeChild(clone);
+      current = createPageShell(school, exam, true);
+      staging.appendChild(current);
+      currentContent = current.querySelector(".ep-page-content") as HTMLElement;
+      built.push(current);
+      currentContent.appendChild(clone);
+    }
+  }
+  if (questions.length === 0) {
+    const empty = document.createElement("div");
+    empty.style.padding = "40px 0";
+    empty.style.textAlign = "center";
+    empty.style.color = MUTED;
+    empty.style.fontSize = "14px";
+    empty.textContent = "No questions available for this paper.";
+    currentContent.appendChild(empty);
+  }
+
+  const totalPages = built.length;
+  built.forEach((p, i) => {
+    const num = p.querySelector(".ep-page-number") as HTMLElement | null;
+    if (num) num.textContent = `Page ${i + 1} of ${totalPages}`;
+  });
+
+  try {
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    for (let i = 0; i < built.length; i++) {
+      const canvas = await html2canvas(built[i], {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: built[i].offsetWidth,
+        height: built[i].offsetHeight,
+        windowWidth: built[i].scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+    }
+    pdf.save(filename);
+  } finally {
+    document.body.removeChild(staging);
+  }
 }
