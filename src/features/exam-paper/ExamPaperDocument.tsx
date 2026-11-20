@@ -91,7 +91,8 @@ function InfoCard({ label, value }: { label: string; value: string }) {
         borderRadius: 10,
         padding: "10px 12px",
         background: "#f8fafc",
-        minHeight: 58,
+        minHeight: 60,
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
@@ -111,9 +112,7 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       >
         {label}
       </div>
-      <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>
-        {value}
-      </div>
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>{value}</div>
     </div>
   );
 }
@@ -130,11 +129,12 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
       style={{
         breakInside: "avoid",
         pageBreakInside: "avoid",
-        marginBottom: 18,
+        marginBottom: 16,
         border: `1px solid ${BORDER}`,
         borderRadius: 12,
-        padding: "14px 16px 14px",
+        padding: "14px 16px",
         background: "#ffffff",
+        boxSizing: "border-box",
       }}
     >
       <div
@@ -218,26 +218,18 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                   key={c.id || i}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "28px minmax(0,1fr)",
+                    gridTemplateColumns: "20px 24px minmax(0,1fr)",
                     alignItems: "start",
-                    columnGap: 12,
-                    minHeight: 42,
-                    padding: "9px 12px",
+                    columnGap: 10,
+                    minHeight: 44,
+                    padding: "10px 12px",
                     border: `1px solid ${BORDER}`,
                     borderRadius: 10,
                     background: "#fff",
                     boxSizing: "border-box",
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      paddingTop: 1,
-                    }}
-                  >
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", paddingTop: 3 }}>
                     <input
                       type="radio"
                       name={`q-${q.id || index}`}
@@ -247,43 +239,24 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                   </span>
                   <span
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "22px minmax(0,1fr)",
-                      alignItems: "start",
-                      columnGap: 8,
-                      minWidth: 0,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: `1.5px solid ${BORDER_STRONG}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      color: NAVY,
+                      lineHeight: 1,
+                      marginTop: 0,
                     }}
                   >
-                    <span
-                      style={{
-                        width: 22,
-                        height: 22,
-                        borderRadius: 999,
-                        border: `1.5px solid ${BORDER_STRONG}`,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: NAVY,
-                        lineHeight: 1,
-                        marginTop: 0,
-                      }}
-                    >
-                      {label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.55,
-                        color: TEXT,
-                        minWidth: 0,
-                        overflowWrap: "anywhere",
-                        paddingTop: 1,
-                      }}
-                    >
-                      <RichContent content={c.text || ""} />
-                    </span>
+                    {label}
+                  </span>
+                  <span style={{ fontSize: 14, lineHeight: 1.55, color: TEXT, minWidth: 0, overflowWrap: "anywhere", paddingTop: 2 }}>
+                    <RichContent content={c.text || ""} />
                   </span>
                 </label>
               );
@@ -297,7 +270,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
         )}
 
         {q.type === "TRUE_FALSE" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(160px, 220px))", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(170px, 220px))", gap: 10, marginTop: 4 }}>
             {["True", "False"].map((label) => (
               <label
                 key={label}
@@ -305,8 +278,8 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  minHeight: 42,
-                  padding: "9px 12px",
+                  minHeight: 44,
+                  padding: "10px 12px",
                   border: `1px solid ${BORDER}`,
                   borderRadius: 10,
                   background: "#fff",
@@ -347,7 +320,8 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                 <input
                   key={i}
                   type="text"
-                  aria-label={`Answer line ${i + 1}`}
+                  name={`q${qNum}_answer_${i + 1}`}
+                  aria-label={`Question ${qNum} answer line ${i + 1}`}
                   style={{
                     width: "100%",
                     maxWidth: 560,
@@ -383,7 +357,8 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
               Response
             </div>
             <textarea
-              aria-label={`Response for question ${qNum}`}
+              name={`q${qNum}_response`}
+              aria-label={`Question ${qNum} response`}
               rows={essayLines(points)}
               style={{
                 width: "100%",
@@ -415,13 +390,11 @@ function PaperHeader({
   exam,
   pkg,
   questions,
-  compact,
 }: {
   school: ExamPaperDocumentSchool;
   exam: ExamPaperDocumentExam;
   pkg?: ExamPaperDocumentPackage | null;
   questions: PaperQuestion[];
-  compact?: boolean;
 }) {
   const total = totalPoints(questions);
   const mode = pkg?.deliveryMode || exam.deliveryMode || "—";
@@ -429,36 +402,12 @@ function PaperHeader({
     .map((v) => (v || "").trim())
     .filter(Boolean);
 
-  if (compact) {
-    return (
-      <div
-        className="ep-running-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: `1.5px solid ${BORDER}`,
-          paddingBottom: 8,
-          marginBottom: 14,
-          gap: 12,
-        }}
-      >
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: NAVY, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {school.name || "School"}
-        </div>
-        <div style={{ fontSize: 11, color: MUTED, textAlign: "right", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {exam.title || "Examination"}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <header className="ep-header" style={{ marginBottom: 16, breakInside: "avoid", pageBreakInside: "avoid" }}>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridTemplateColumns: "minmax(0,1fr) minmax(220px, auto)",
           alignItems: "start",
           gap: 20,
           paddingBottom: 14,
@@ -475,6 +424,7 @@ function PaperHeader({
                 width: 68,
                 height: 68,
                 objectFit: "contain",
+                objectPosition: "center",
                 flexShrink: 0,
                 display: "block",
               }}
@@ -514,7 +464,7 @@ function PaperHeader({
           </div>
         </div>
 
-        <div style={{ textAlign: "right", minWidth: 220 }}>
+        <div style={{ textAlign: "right", justifySelf: "end" }}>
           <div
             style={{
               fontSize: 10.5,
@@ -527,27 +477,22 @@ function PaperHeader({
           >
             Examination Information
           </div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1.25 }}>
-            Examination Paper
-          </div>
-          <div style={{ marginTop: 6, display: "grid", gap: 3, fontSize: 12, color: MUTED }}>
-            <div><strong style={{ color: TEXT }}>Mode:</strong> {mode}</div>
-            {pkg?.revision ? <div><strong style={{ color: TEXT }}>Revision:</strong> {pkg.revision}</div> : null}
+          <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1.25 }}>Examination Paper</div>
+          <div style={{ marginTop: 6, display: "grid", gap: 3, fontSize: 12, color: MUTED, justifyItems: "end" }}>
+            <div>
+              <strong style={{ color: TEXT }}>Mode:</strong> {mode}
+            </div>
+            {pkg?.revision ? (
+              <div>
+                <strong style={{ color: TEXT }}>Revision:</strong> {pkg.revision}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
 
       <div style={{ marginTop: 16, textAlign: "center" }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            lineHeight: 1.18,
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            color: NAVY,
-          }}
-        >
+        <h1 style={{ margin: 0, fontSize: 28, lineHeight: 1.18, fontWeight: 800, letterSpacing: "-0.02em", color: NAVY }}>
           {exam.title || "Examination"}
         </h1>
       </div>
@@ -558,6 +503,7 @@ function PaperHeader({
           display: "grid",
           gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 10,
+          alignItems: "stretch",
         }}
       >
         <InfoCard label="Date" value={formatDate(exam.startDate)} />
@@ -596,46 +542,8 @@ function InstructionsBlock({ instructions }: { instructions?: string | null }) {
       >
         General Instructions
       </div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.65, color: TEXT, whiteSpace: "pre-wrap" }}>
-        {instructions}
-      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.65, color: TEXT, whiteSpace: "pre-wrap" }}>{instructions}</div>
     </div>
-  );
-}
-
-function PageFooter({
-  school,
-  exam,
-  page,
-  totalPages,
-}: {
-  school: ExamPaperDocumentSchool;
-  exam: ExamPaperDocumentExam;
-  page?: number;
-  totalPages?: number;
-}) {
-  return (
-    <footer
-      className="ep-footer"
-      style={{
-        marginTop: "auto",
-        paddingTop: 10,
-        borderTop: `1px solid ${BORDER}`,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 12,
-        fontSize: 10.5,
-        color: MUTED,
-      }}
-    >
-      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {school.name || "School"} — {exam.title || "Examination"}
-      </span>
-      <span style={{ whiteSpace: "nowrap", fontWeight: 700, color: NAVY_SOFT }}>
-        {page && totalPages ? `Page ${page} of ${totalPages}` : "End of paper"}
-      </span>
-    </footer>
   );
 }
 
@@ -680,17 +588,34 @@ export const ExamPaperDocument = React.forwardRef<
         )}
       </main>
 
-      <PageFooter school={school} exam={exam} />
+      <footer
+        className="ep-footer"
+        style={{
+          marginTop: "auto",
+          paddingTop: 10,
+          borderTop: `1px solid ${BORDER}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          fontSize: 10.5,
+          color: MUTED,
+        }}
+      >
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {school.name || "School"} — {exam.title || "Examination"}
+        </span>
+        <span style={{ whiteSpace: "nowrap", fontWeight: 700, color: NAVY_SOFT }}>End of paper</span>
+      </footer>
 
       <style>{`
-        .ep-document * { box-sizing: border-box; }
-        .ep-question { break-inside: avoid; page-break-inside: avoid; }
-        .ep-header, .ep-instructions { break-inside: avoid; page-break-inside: avoid; }
+        .ep-document, .ep-document * { box-sizing: border-box; }
+        .ep-question { break-inside: avoid !important; page-break-inside: avoid !important; }
+        .ep-header, .ep-instructions { break-inside: avoid !important; page-break-inside: avoid !important; }
         @media print {
           html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           #exam-paper-document { box-shadow: none !important; margin: 0 !important; width: auto !important; min-height: auto !important; padding: 0 !important; }
           .ep-question { break-inside: avoid-page !important; page-break-inside: avoid !important; }
-          .ep-footer { break-inside: avoid; }
         }
         @page { size: A4 portrait; margin: 12mm; }
       `}</style>
@@ -698,7 +623,11 @@ export const ExamPaperDocument = React.forwardRef<
   );
 });
 
-function createPageShell(school: ExamPaperDocumentSchool, exam: ExamPaperDocumentExam, compactHeader: boolean) {
+function createPageShell(
+  school: ExamPaperDocumentSchool,
+  exam: ExamPaperDocumentExam,
+  compactHeader: boolean
+) {
   const page = document.createElement("div");
   page.className = "ep-page";
   page.style.width = "210mm";
@@ -750,6 +679,7 @@ function createPageShell(school: ExamPaperDocumentSchool, exam: ExamPaperDocumen
   content.className = "ep-page-content";
   content.style.flex = "1";
   content.style.minHeight = "0";
+  content.style.overflow = "hidden";
   page.appendChild(content);
 
   const footer = document.createElement("footer");
@@ -792,8 +722,6 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
   root.style.minHeight = "0";
   root.style.height = "auto";
 
-  const schoolName = (root.querySelector(".ep-footer span")?.textContent || "School — Examination").split(" — ")[0] || "School";
-  // extract school/exam from footer text in clone
   const footerText = root.querySelector(".ep-footer span")?.textContent || "";
   const parts = footerText.split(" — ");
   const school = { name: parts[0] || "School" } as ExamPaperDocumentSchool;
@@ -802,7 +730,6 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
   const header = root.querySelector(".ep-header") as HTMLElement | null;
   const instructions = root.querySelector(".ep-instructions") as HTMLElement | null;
   const questions = Array.from(root.querySelectorAll(".ep-question")) as HTMLElement[];
-  const baseFooter = root.querySelector(".ep-footer") as HTMLElement | null;
 
   const staging = document.createElement("div");
   staging.style.position = "fixed";
@@ -813,122 +740,56 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
   staging.style.zIndex = "-1";
   document.body.appendChild(staging);
 
-  const measureHost = document.createElement("div");
-  measureHost.style.width = "210mm";
-  measureHost.style.padding = "15mm 15mm 14mm";
-  measureHost.style.boxSizing = "border-box";
-  measureHost.style.position = "absolute";
-  measureHost.style.left = "-10000px";
-  measureHost.style.top = "0";
-  measureHost.style.visibility = "hidden";
-  measureHost.style.fontFamily = root.style.fontFamily;
-  staging.appendChild(measureHost);
-
-  const pxPerMm = 96 / 25.4;
-  const pageContentHeight = (297 - 15 - 14) * pxPerMm; // px, approx
-
-  function measure(node: HTMLElement, withHeader: boolean) {
-    measureHost.innerHTML = "";
-    if (withHeader) {
-      if (header) measureHost.appendChild(header.cloneNode(true));
-      if (instructions) measureHost.appendChild(instructions.cloneNode(true));
-    } else {
-      const rh = document.createElement("div");
-      rh.style.borderBottom = `1.5px solid ${BORDER}`;
-      rh.style.paddingBottom = "8px";
-      rh.style.marginBottom = "14px";
-      rh.style.height = "28px";
-      measureHost.appendChild(rh);
-    }
-    measureHost.appendChild(node.cloneNode(true));
-    const foot = document.createElement("div");
-    foot.style.marginTop = "10px";
-    foot.style.paddingTop = "10px";
-    foot.style.height = "24px";
-    measureHost.appendChild(foot);
-    return measureHost.scrollHeight;
-  }
-
-  const pages: HTMLElement[] = [];
-  let pageIndex = 0;
-  let page = createPageShell(school, exam, false);
-  let content = page.querySelector(".ep-page-content") as HTMLElement;
-  // first page: full header + instructions
-  page = createPageShell(school, exam, false);
-  content = page.querySelector(".ep-page-content") as HTMLElement;
-  if (header) content.appendChild(header.cloneNode(true));
-  if (instructions) content.appendChild(instructions.cloneNode(true));
-  pages.push(page);
-
-  const ensureCapacity = (node: HTMLElement) => {
-    // try add to current page; if overflow, move to new page
-    content.appendChild(node);
-    const over = content.scrollHeight > content.clientHeight + 2;
-    if (over) {
-      content.removeChild(node);
-      // new page
-      page = createPageShell(school, exam, true);
-      content = page.querySelector(".ep-page-content") as HTMLElement;
-      pages.push(page);
-      content.appendChild(node);
-      // if still over (very tall question), allow it but keep intact as best effort
-    }
-  };
-
-  // mount pages to staging to measure real clientHeight
-  staging.innerHTML = "";
-  pages.forEach((p) => staging.appendChild(p));
-  // content clientHeight now known; but we built first page already - adjust by moving if needed
-  // Simpler: rebuild with measurement loop
-  staging.innerHTML = "";
-
-  const built: HTMLElement[] = [];
-  let current = createPageShell(school, exam, false);
-  staging.appendChild(current);
-  let currentContent = current.querySelector(".ep-page-content") as HTMLElement;
-  if (header) currentContent.appendChild(header.cloneNode(true));
-  if (instructions) currentContent.appendChild(instructions.cloneNode(true));
-  built.push(current);
-
-  for (const q of questions) {
-    const clone = q.cloneNode(true) as HTMLElement;
-    currentContent.appendChild(clone);
-    if (currentContent.scrollHeight > currentContent.clientHeight + 1) {
-      currentContent.removeChild(clone);
-      current = createPageShell(school, exam, true);
-      staging.appendChild(current);
-      currentContent = current.querySelector(".ep-page-content") as HTMLElement;
-      built.push(current);
-      currentContent.appendChild(clone);
-    }
-  }
-  if (questions.length === 0) {
-    const empty = document.createElement("div");
-    empty.style.padding = "40px 0";
-    empty.style.textAlign = "center";
-    empty.style.color = MUTED;
-    empty.style.fontSize = "14px";
-    empty.textContent = "No questions available for this paper.";
-    currentContent.appendChild(empty);
-  }
-
-  const totalPages = built.length;
-  built.forEach((p, i) => {
-    const num = p.querySelector(".ep-page-number") as HTMLElement | null;
-    if (num) num.textContent = `Page ${i + 1} of ${totalPages}`;
-  });
-
   try {
+    const built: HTMLElement[] = [];
+    let current = createPageShell(school, exam, false);
+    staging.appendChild(current);
+    let currentContent = current.querySelector(".ep-page-content") as HTMLElement;
+    if (header) currentContent.appendChild(header.cloneNode(true));
+    if (instructions) currentContent.appendChild(instructions.cloneNode(true));
+    built.push(current);
+
+    if (questions.length === 0) {
+      const empty = document.createElement("div");
+      empty.style.padding = "40px 0";
+      empty.style.textAlign = "center";
+      empty.style.color = MUTED;
+      empty.style.fontSize = "14px";
+      empty.textContent = "No questions available for this paper.";
+      currentContent.appendChild(empty);
+    } else {
+      for (const q of questions) {
+        const clone = q.cloneNode(true) as HTMLElement;
+        currentContent.appendChild(clone);
+        if (currentContent.scrollHeight > currentContent.clientHeight + 1) {
+          currentContent.removeChild(clone);
+          current = createPageShell(school, exam, true);
+          staging.appendChild(current);
+          currentContent = current.querySelector(".ep-page-content") as HTMLElement;
+          built.push(current);
+          currentContent.appendChild(clone);
+        }
+      }
+    }
+
+    const totalPages = built.length;
+    built.forEach((p, i) => {
+      const num = p.querySelector(".ep-page-number") as HTMLElement | null;
+      if (num) num.textContent = `Page ${i + 1} of ${totalPages}`;
+    });
+
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     for (let i = 0; i < built.length; i++) {
-      const canvas = await html2canvas(built[i], {
+      const pageEl = built[i];
+      const canvas = await html2canvas(pageEl, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: built[i].offsetWidth,
-        height: built[i].offsetHeight,
-        windowWidth: built[i].scrollWidth,
+        width: pageEl.offsetWidth,
+        height: pageEl.offsetHeight,
+        windowWidth: pageEl.scrollWidth,
+        windowHeight: pageEl.scrollHeight,
       });
       const imgData = canvas.toDataURL("image/png");
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -938,6 +799,6 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
     }
     pdf.save(filename);
   } finally {
-    document.body.removeChild(staging);
+    if (staging.parentNode) staging.parentNode.removeChild(staging);
   }
 }
