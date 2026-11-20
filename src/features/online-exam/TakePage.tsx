@@ -1,16 +1,15 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Send, Loader2, RotateCcw, Play, School, Pencil } from "lucide-react";
+import { Send, Loader2, RotateCcw, Play, School, Pencil, ShieldCheck } from "lucide-react";
 import { onlineExamApi, type KioskConfig, type ProctorLevel } from "./api";
 import {
   ExamRulesBlock,
   IntroFacts,
-  PrevNextButtons,
-  QuestionPalette,
-  ReviewSheet,
+  QuestionProgress,
+  SubmitSummarySheet,
+  ForwardNavButton,
   SaveIndicator,
-  ShortcutHint,
   SystemCheck,
   TimeProgress,
   TimerPill,
@@ -27,6 +26,13 @@ import { SchoolLogo } from "../report-cards/components/pages/BifoldChrome";
 import { alertError } from "../../lib/swal";
 import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
+import {
+  requestExamTabStream,
+  stopMediaStream,
+  attachStreamToVideo,
+  examTabShareSupported,
+  isStreamLive,
+} from "./screenShare";
 
 type AnswerMap = KioskAnswerMap;
 
@@ -72,6 +78,7 @@ export default function TakeOnlineExamPage() {
   const [questions, setQuestions] = React.useState<any[]>([]);
   const [answers, setAnswers] = React.useState<AnswerMap>({});
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [maxReachedIndex, setMaxReachedIndex] = React.useState(0);
   const [endsAtMs, setEndsAtMs] = React.useState<number>(0);
   const [clockOffset, setClockOffset] = React.useState(0);
   const [remainingMs, setRemainingMs] = React.useState(0);
@@ -95,14 +102,14 @@ export default function TakeOnlineExamPage() {
   const [totalMs, setTotalMs] = React.useState(0);
   const [introFacts, setIntroFacts] = React.useState<IntroFactsState>(EMPTY_INTRO_FACTS);
   const heartbeatFailsRef = React.useRef(0);
-  /** Arrow-key navigation without re-binding the kiosk listener on every render. */
-  const navRef = React.useRef<(direction: 1 | -1) => void>(() => undefined);
   const reportingRef = React.useRef(false);
+  const endingRef = React.useRef(false);
   const answersRef = React.useRef(answers);
   answersRef.current = answers;
   const screenStreamRef = React.useRef<MediaStream | null>(null);
   const captureVideoRef = React.useRef<HTMLVideoElement | null>(null);
   const [screenSharing, setScreenSharing] = React.useState(false);
+  const screenShareSupported = examTabShareSupported();
 
   const capturesScreen = proctorLevel === "SCREEN_VIEW";
   const needsScreenConsent = kioskConfig.requireScreenShare || capturesScreen;
@@ -134,8 +141,11 @@ export default function TakeOnlineExamPage() {
         setViolationCount(res.attempt?.violationCount ?? 0);
         if (res.attempt?.maxViolations != null) setMaxViolations(res.attempt.maxViolations);
         if (res.attempt?.autoSubmitted) {
+          endingRef.current = true;
           setWarnLevel("danger");
           setWarning(t("onlineExams.take.maxViolationsReached"));
+          stopScreenShare();
+          try { if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined); } catch {}
           goResults(attemptId);
           return;
         }
@@ -146,14 +156,16 @@ export default function TakeOnlineExamPage() {
             max: res.attempt?.maxViolations || maxViolations,
           })
         );
-        await enterFullscreen();
+        if (kioskConfig.requireFullscreen) {
+          await enterFullscreen();
+        }
       } catch {
         /* ignore transient */
       } finally {
         reportingRef.current = false;
       }
     },
-    [attemptId, enterFullscreen, goResults, maxViolations, t]
+    [attemptId, enterFullscreen, goResults, maxViolations, t, kioskConfig.requireFullscreen, stopScreenShare]
   );
 
   const dirtyRef = React.useRef<Set<string>>(new Set());
@@ -207,7 +219,8 @@ export default function TakeOnlineExamPage() {
       setAttemptId(data.attempt.id);
       setExamTitle(data.exam?.title || t("onlineExams.take.examFallback"));
       setInstructions(data.exam?.instructions || null);
-      setQuestions(data.questions || []);
+      const qs = data.questions || [];
+      setQuestions(qs);
       setViolationCount(data.attempt?.violationCount || 0);
       setMaxViolations(data.attempt?.maxViolations ?? data.exam?.maxViolations ?? 3);
       if (data.exam?.kiosk) {
@@ -225,8 +238,8 @@ export default function TakeOnlineExamPage() {
       setTotalMs(Math.max(0, endsMs - serverNow));
       setIntroFacts((prev) => ({
         duration: data.exam?.duration ?? prev.duration,
-        count: (data.questions || []).length,
-        points: sumPoints(data.questions || []),
+        count: qs.length,
+        points: sumPoints(qs),
         start: prev.start,
         end: prev.end,
       }));
@@ -238,7 +251,9 @@ export default function TakeOnlineExamPage() {
         };
       }
       setAnswers(map);
-      setCurrentIndex(firstUnansweredIndex(data.questions || [], map));
+      const startIdx = firstUnansweredIndex(qs, map);
+      setCurrentIndex(startIdx);
+      setMaxReachedIndex(startIdx);
     },
     [t]
   );
@@ -471,14 +486,6 @@ export default function TakeOnlineExamPage() {
         e.preventDefault();
         void enterFullscreen();
       }
-      const target = e.target as HTMLElement | null;
-      const typing =
-        !!target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || !!target.isContentEditable);
-      if (!typing && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        e.preventDefault();
-        navRef.current(e.key === "ArrowRight" ? 1 : -1);
-      }
       if ((e.ctrlKey || e.metaKey) && ["c", "v", "x", "p", "s"].includes(e.key.toLowerCase())) {
         e.preventDefault();
         void reportViolation("COPY_ATTEMPT", e.key);
@@ -510,44 +517,11 @@ export default function TakeOnlineExamPage() {
     };
   }, [started, reportViolation, enterFullscreen]);
 
-  const attachCaptureVideo = React.useCallback((stream: MediaStream) => {
-    let el = captureVideoRef.current;
-    if (!el) {
-      el = document.createElement("video");
-      el.muted = true;
-      el.playsInline = true;
-      captureVideoRef.current = el;
-    }
-    if (el.srcObject !== stream) {
-      el.srcObject = stream;
-      void el.play().catch(() => undefined);
-    }
-  }, []);
-
-  const beginScreenShare = React.useCallback(async () => {
-    if (!needsScreenConsent) return true;
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      screenStreamRef.current = stream;
-      attachCaptureVideo(stream);
-      setScreenSharing(true);
-      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
-        setScreenSharing(false);
-        screenStreamRef.current = null;
-        captureVideoRef.current = null;
-        void reportViolation("SCREEN_SHARE_STOPPED");
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [needsScreenConsent, reportViolation, attachCaptureVideo]);
-
   const stopScreenShare = React.useCallback(() => {
-    screenStreamRef.current?.getTracks().forEach((track) => track.stop());
+    stopMediaStream(screenStreamRef.current);
     screenStreamRef.current = null;
     if (captureVideoRef.current) {
-      captureVideoRef.current.srcObject = null;
+      try { captureVideoRef.current.srcObject = null; } catch {}
       captureVideoRef.current = null;
     }
     setScreenSharing(false);
@@ -555,21 +529,85 @@ export default function TakeOnlineExamPage() {
 
   React.useEffect(() => () => stopScreenShare(), [stopScreenShare]);
 
-  const beginKiosk = async () => {
-    await enterFullscreen();
-    if (needsScreenConsent && !screenSharing) {
-      const ok = await beginScreenShare();
-      if (!ok) {
-        await alertError(t("onlineExams.take.startFailed"), t("onlineExams.take.screenShareRequired"));
-        return;
+  const finalizeAndExit = React.useCallback(async (id: string) => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    try {
+      await flushAnswers().catch(() => undefined);
+    } catch {}
+    stopScreenShare();
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+    } catch {}
+    goResults(id);
+  }, [flushAnswers, stopScreenShare, goResults]);
+
+  const enforceScreenShareRequirement = React.useCallback(async (source: "start" | "runtime") => {
+    if (!needsScreenConsent) return true;
+    if (!screenShareSupported) {
+      if (source === "start") {
+        await alertError(t("onlineExams.take.startFailed"), t("onlineExams.take.screenShareUnavailable", "Screen sharing is unavailable in this browser."));
+      } else if (attemptId) {
+        setWarnLevel("danger");
+        setWarning(t("onlineExams.take.screenShareRequired"));
+        void reportViolation("SCREEN_SHARE_STOPPED", "screen-share-unavailable");
+        await finalizeAndExit(attemptId);
       }
+      return false;
     }
+    const res = await requestExamTabStream();
+    if (!res.ok) {
+      if (source === "start") {
+        await alertError(
+          t("onlineExams.take.startFailed"),
+          res.reason === "invalid-surface"
+            ? (res.message || t("onlineExams.take.screenShareRequired"))
+            : (res.message || t("onlineExams.take.screenShareRequired"))
+        );
+      } else if (attemptId) {
+        setWarnLevel("danger");
+        setWarning(res.message || t("onlineExams.take.screenShareRequired"));
+        void reportViolation("SCREEN_SHARE_STOPPED", res.reason);
+        await finalizeAndExit(attemptId);
+      }
+      return false;
+    }
+    screenStreamRef.current = res.stream;
+    captureVideoRef.current = attachStreamToVideo(res.stream, captureVideoRef.current);
+    setScreenSharing(true);
+    const track = res.stream.getVideoTracks()[0];
+    if (track) {
+      track.onended = () => {
+        setScreenSharing(false);
+        screenStreamRef.current = null;
+        captureVideoRef.current = null;
+        if (!endingRef.current) {
+          setWarnLevel("danger");
+          setWarning(t("onlineExams.take.screenShareRequired"));
+          void reportViolation("SCREEN_SHARE_STOPPED", "track-ended");
+          if (attemptId) void finalizeAndExit(attemptId);
+        }
+      };
+    }
+    return true;
+  }, [needsScreenConsent, screenShareSupported, attemptId, reportViolation, finalizeAndExit, t]);
+
+  const beginKiosk = async () => {
+    if (needsScreenConsent) {
+      const ok = await enforceScreenShareRequirement("start");
+      if (!ok) return;
+    }
+    await enterFullscreen();
     setStarted(true);
   };
 
   const beginExam = async () => {
     if (!examId || !consentChecked || submitting) return;
     if (needsScreenConsent && !screenShareConsented) return;
+    if (needsScreenConsent && !screenShareSupported) {
+      await alertError(t("onlineExams.take.startFailed"), t("onlineExams.take.screenShareUnavailable", "Screen sharing is unavailable in this browser."));
+      return;
+    }
     setSubmitting(true);
     try {
       const data = await onlineExamApi.startAttempt(examId, true, screenShareConsented);
@@ -594,6 +632,7 @@ export default function TakeOnlineExamPage() {
     try {
       await flushAnswers();
       await onlineExamApi.submit(attemptId);
+      endingRef.current = true;
       stopScreenShare();
       if (document.fullscreenElement) {
         await document.exitFullscreen().catch(() => undefined);
@@ -606,6 +645,27 @@ export default function TakeOnlineExamPage() {
     }
   };
 
+  // Enforce continuous screen sharing when required
+  React.useEffect(() => {
+    if (!started || !needsScreenConsent || !attemptId) return;
+    const check = () => {
+      if (endingRef.current) return;
+      if (!isStreamLive(screenStreamRef.current)) {
+        setScreenSharing(false);
+        setWarnLevel("danger");
+        setWarning(t("onlineExams.take.screenShareRequired"));
+        void reportViolation("SCREEN_SHARE_STOPPED", "stream-not-live");
+        void finalizeAndExit(attemptId);
+      }
+    };
+    const id = window.setInterval(check, 4000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [started, needsScreenConsent, attemptId, reportViolation, finalizeAndExit, t]);
+
   const currentQuestion = questions[currentIndex];
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] || {} : {};
   const currentAnswered = currentQuestion
@@ -615,14 +675,11 @@ export default function TakeOnlineExamPage() {
 
   const goNextQuestion = () => {
     if (!currentAnswered) return;
-    setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
-  };
-
-  const goPrevQuestion = () => setCurrentIndex((i) => Math.max(0, i - 1));
-
-  navRef.current = (direction: 1 | -1) => {
-    if (direction === 1) goNextQuestion();
-    else goPrevQuestion();
+    setCurrentIndex((i) => {
+      const next = Math.min(i + 1, questions.length - 1);
+      setMaxReachedIndex((m) => Math.max(m, next));
+      return next;
+    });
   };
 
   if (loading) {
@@ -679,7 +736,8 @@ export default function TakeOnlineExamPage() {
 
           <SystemCheck
             screenShareRequired={needsScreenConsent}
-            screenShareReady={screenSharing || Boolean(attemptId)}
+            screenShareReady={screenSharing}
+            screenShareSupported={screenShareSupported}
           />
 
           <ExamRulesBlock
@@ -718,7 +776,7 @@ export default function TakeOnlineExamPage() {
             <button
               type="button"
               onClick={beginExam}
-              disabled={!consentChecked || submitting || (needsScreenConsent && !screenShareConsented)}
+              disabled={!consentChecked || submitting || (needsScreenConsent && (!screenShareConsented || !screenShareSupported))}
               className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -739,7 +797,7 @@ export default function TakeOnlineExamPage() {
             <button
               type="button"
               onClick={beginExam}
-              disabled={!consentChecked || submitting || (needsScreenConsent && !screenShareConsented)}
+              disabled={!consentChecked || submitting || (needsScreenConsent && (!screenShareConsented || !screenShareSupported))}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -763,21 +821,27 @@ export default function TakeOnlineExamPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 select-none">
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div className="min-h-screen bg-[#f1f5f9] select-none">
+      <div className="sticky top-0 z-20 border-b-2 border-[#0b1f3b] bg-white/95 backdrop-blur shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-extrabold tracking-tight text-slate-900 truncate">{examTitle}</p>
-            <ViolationShield count={violationCount} max={maxViolations} />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0 rounded-xl overflow-hidden bg-white p-1 border border-slate-200">
+              <SchoolLogo url={school?.logoUrl} size="sm" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#1e3a5f] truncate">{school?.name}</p>
+              <p className="font-extrabold tracking-tight text-slate-900 truncate">{examTitle}</p>
+              <div className="mt-0.5"><ViolationShield count={violationCount} max={maxViolations} /></div>
+            </div>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
             <SaveIndicator state={saveState} savedAt={lastSavedAt} offline={offline} />
             <TimerPill remainingMs={remainingMs} />
             <button
               type="button"
               onClick={() => setReviewOpen(true)}
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
+              className="bg-[#1e3a5f] hover:bg-[#172e4a] disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-sm"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {t("common:submit")}
@@ -785,161 +849,146 @@ export default function TakeOnlineExamPage() {
           </div>
         </div>
         {warning && (
-          <div
-            className={`${
-              warnLevel === "danger" ? "bg-rose-600" : "bg-amber-500"
-            } text-white text-center text-sm font-medium py-2`}
-          >
+          <div className={`${warnLevel === "danger" ? "bg-rose-600" : "bg-amber-500"} text-white text-center text-sm font-medium py-2`}>
             {warning}
           </div>
         )}
         {needsScreenConsent && screenSharing && (
-          <div className="bg-slate-900 text-emerald-300 text-center text-xs font-mono py-1">
-            ● {t("onlineExams.take.screenSharingActive")}
+          <div className="bg-[#0b1f3b] text-emerald-300 text-center text-xs font-semibold py-1.5 inline-flex w-full items-center justify-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5" /> {t("onlineExams.take.screenSharingActive")}
           </div>
         )}
         <TimeProgress remainingMs={remainingMs} totalMs={totalMs} />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-slate-600">
-            {t("onlineExams.take.questionProgress", {
-              current: questions.length ? currentIndex + 1 : 0,
-              total: questions.length,
-            })}
-          </p>
-          <ShortcutHint />
-        </div>
-        <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-indigo-500 transition-all"
-            style={{
-              width: questions.length
-                ? `${((currentIndex + 1) / questions.length) * 100}%`
-                : "0%",
-            }}
-          />
-        </div>
-
-        <QuestionPalette
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
+        <QuestionProgress
           questions={questions}
           answers={answers}
           currentIndex={currentIndex}
-          onJump={(i) => setCurrentIndex(i)}
+          maxReachedIndex={maxReachedIndex}
         />
 
         <AnimatePresence mode="wait">
           {currentQuestion && (
-            <motion.div
+            <motion.section
               key={currentQuestion.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-4"
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.18 }}
+              className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] overflow-hidden"
             >
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="font-extrabold tracking-tight text-slate-900">
-                  <span className="font-mono text-slate-400 mr-2">
-                    Q{currentIndex + 1}
+              <div className="px-5 sm:px-7 py-5 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="shrink-0 w-9 h-9 rounded-lg bg-[#0b1f3b] text-white flex items-center justify-center font-extrabold text-sm">
+                      {currentIndex + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.1em] text-slate-500 mb-1">
+                        {t("onlineExams.take.questionLabel", "Question {{n}}", { n: currentIndex + 1 })} ? {questionTypeLabel(currentQuestion.type, t)}
+                      </div>
+                      <div className="text-[15px] leading-relaxed text-slate-900 font-medium">
+                        <RichContent content={currentQuestion.prompt} />
+                      </div>
+                    </div>
+                  </div>
+                  <span className="shrink-0 inline-flex items-center rounded-full border border-[#c8d6ea] bg-[#e8eef7] px-3 py-1 text-[11.5px] font-extrabold text-[#0b1f3b] whitespace-nowrap">
+                    {t("onlineExams.take.pointsShort", { count: currentQuestion.points })}
                   </span>
-                  <RichContent content={currentQuestion.prompt} className="inline" />
-                </h2>
-                <span className="text-xs font-mono text-slate-400 shrink-0">
-                  {t("onlineExams.take.pointsShort", { count: currentQuestion.points })}
-                </span>
-              </div>
+                </div>
 
-              {(currentQuestion.type === "MULTIPLE_CHOICE" ||
-                currentQuestion.type === "TRUE_FALSE") && (
-                <div className="space-y-2">
-                  {(currentQuestion.choices || []).map((c: any) => (
-                    <label
-                      key={c.id}
-                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${
-                        currentAnswer.selectedChoiceId === c.id
-                          ? "border-indigo-300 bg-indigo-50"
-                          : "border-slate-100 hover:bg-slate-50"
-                      }`}
-                    >
+                <div className="sm:ml-12 space-y-3">
+                  {(currentQuestion.type === "MULTIPLE_CHOICE" || currentQuestion.type === "TRUE_FALSE") && (
+                    <div className="space-y-2">
+                      {(currentQuestion.choices || []).map((c: any) => {
+                        const selected = currentAnswer.selectedChoiceId === c.id;
+                        return (
+                          <label
+                            key={c.id}
+                            className={`grid grid-cols-[20px_28px_minmax(0,1fr)] items-start gap-2.5 rounded-xl border px-3.5 py-3 cursor-pointer transition-colors ${selected ? "border-[#1e3a5f] bg-[#eef4fb]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}
+                          >
+                            <span className="pt-1 leading-none">
+                              <input
+                                type="radio"
+                                name={`q-${currentQuestion.id}`}
+                                checked={selected}
+                                onChange={() => {
+                                  setAnswers((prev) => ({ ...prev, [currentQuestion.id]: { selectedChoiceId: c.id } }));
+                                  try { dirtyRef.current.add(currentQuestion.id); } catch {}
+                                }}
+                                className="w-4 h-4 accent-[#0b1f3b]"
+                              />
+                            </span>
+                            <span className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-extrabold ${selected ? "border-[#1e3a5f] text-[#0b1f3b] bg-white" : "border-slate-400 text-slate-700"}`}>
+                              {c.label}
+                            </span>
+                            <span className="text-[14.5px] leading-relaxed text-slate-800 pt-0.5 min-w-0">
+                              <RichContent content={c.text} />
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {currentQuestion.type === "FILL_BLANK" && (
+                    <div className="space-y-2">
+                      <p className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-slate-500">{t("onlineExams.take.answerLabel", "Answer")}</p>
                       <input
-                        type="radio"
-                        name={`q-${currentQuestion.id}`}
-                        checked={currentAnswer.selectedChoiceId === c.id}
-                        onChange={() => {
-                          setAnswers((prev) => ({
-                            ...prev,
-                            [currentQuestion.id]: { selectedChoiceId: c.id },
-                          }));
+                        value={currentAnswer.textAnswer || ""}
+                        onChange={(e) => {
+                          setAnswers((prev) => ({ ...prev, [currentQuestion.id]: { textAnswer: e.target.value } }));
                           try { dirtyRef.current.add(currentQuestion.id); } catch {}
                         }}
+                        className="w-full max-w-xl rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                        placeholder={t("onlineExams.take.yourAnswer")}
+                        autoComplete="off"
                       />
-                      <span className="font-mono text-slate-400 text-sm w-6">{c.label}</span>
-                      <RichContent content={c.text} className="text-slate-800" />
-                    </label>
-                  ))}
-                </div>
-              )}
+                    </div>
+                  )}
 
-              {currentQuestion.type === "FILL_BLANK" && (
-                <input
-                  value={currentAnswer.textAnswer || ""}
-                  onChange={(e) => {
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [currentQuestion.id]: { textAnswer: e.target.value },
-                    }));
-                    try { dirtyRef.current.add(currentQuestion.id); } catch {}
-                  }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3"
-                  placeholder={t("onlineExams.take.yourAnswer")}
-                  autoComplete="off"
-                />
-              )}
-
-              {currentQuestion.type === "ESSAY" && (
-                <div className="space-y-1">
-                  <textarea
-                    value={currentAnswer.textAnswer || ""}
-                    onChange={(e) => {
-                      setAnswers((prev) => ({
-                        ...prev,
-                        [currentQuestion.id]: { textAnswer: e.target.value },
-                      }));
-                      try { dirtyRef.current.add(currentQuestion.id); } catch {}
-                    }}
-                    rows={6}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3"
-                    placeholder={t("onlineExams.take.writeAnswer")}
-                  />
-                  <WordCountBadge text={currentAnswer.textAnswer} />
-                  <button
-                    type="button"
-                    onClick={() => setSketchOpen(true)}
-                    title={t("onlineExams.take.roughWorkHint")}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    {t("onlineExams.take.roughWork")}
-                  </button>
+                  {currentQuestion.type === "ESSAY" && (
+                    <div className="space-y-2">
+                      <p className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-slate-500">{t("onlineExams.take.responseLabel", "Response")}</p>
+                      <textarea
+                        value={currentAnswer.textAnswer || ""}
+                        onChange={(e) => {
+                          setAnswers((prev) => ({ ...prev, [currentQuestion.id]: { textAnswer: e.target.value } }));
+                          try { dirtyRef.current.add(currentQuestion.id); } catch {}
+                        }}
+                        rows={Math.min(16, Math.max(7, (Number(currentQuestion.points) || 1) * 2))}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] leading-7 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                        placeholder={t("onlineExams.take.writeAnswer")}
+                      />
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setSketchOpen(true)}
+                          title={t("onlineExams.take.roughWorkHint")}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          {t("onlineExams.take.roughWork")}
+                        </button>
+                        <WordCountBadge text={currentAnswer.textAnswer} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </motion.div>
+              </div>
+            </motion.section>
           )}
         </AnimatePresence>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <p className="text-sm text-slate-500">
-            {currentAnswered
-              ? t("onlineExams.take.answerRecorded")
-              : t("onlineExams.take.answerToContinue")}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <p className="text-sm text-slate-600 font-medium">
+            {currentAnswered ? t("onlineExams.take.answerRecorded") : t("onlineExams.take.answerToContinue")}
           </p>
-          <PrevNextButtons
-            isFirst={currentIndex <= 0}
+          <ForwardNavButton
             isLast={isLastQuestion}
             canAdvance={currentAnswered}
-            onPrev={goPrevQuestion}
             onNext={goNextQuestion}
             onFinish={() => setReviewOpen(true)}
             submitting={submitting}
@@ -947,12 +996,10 @@ export default function TakeOnlineExamPage() {
         </div>
       </div>
 
-      <ReviewSheet
+      <SubmitSummarySheet
         open={reviewOpen}
         questions={questions}
         answers={answers}
-        currentIndex={currentIndex}
-        onJump={(i) => setCurrentIndex(i)}
         onClose={() => setReviewOpen(false)}
         onSubmit={() => void handleSubmit()}
         submitting={submitting}
@@ -978,4 +1025,12 @@ export default function TakeOnlineExamPage() {
       />
     </div>
   );
+}
+
+function questionTypeLabel(type: string, t: any) {
+  if (type === "MULTIPLE_CHOICE") return t("onlineExams.types.multipleChoice", "Multiple choice");
+  if (type === "TRUE_FALSE") return t("onlineExams.types.trueFalse", "True/False");
+  if (type === "FILL_BLANK") return t("onlineExams.types.fillBlank", "Fill in the blank");
+  if (type === "ESSAY") return t("onlineExams.types.essay", "Essay");
+  return String(type || "");
 }

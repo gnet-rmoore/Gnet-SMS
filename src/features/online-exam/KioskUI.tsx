@@ -1,13 +1,12 @@
-/**
+﻿/**
  * Shared kiosk chrome for the student online exam and the staff demo preview.
  *
- * Both TakePage and PreviewPage render the exact same one-question-at-a-time
- * experience; every visual affordance (question palette, save state, timer,
- * review sheet, pre-flight facts) lives here so the two stay in lockstep.
+ * Forward-only, single-question-at-a-time experience with exam-paper styling
+ * cues (navy/white hierarchy) and no backtrack/jump navigation.
  */
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Clock, Keyboard, Maximize, MonitorUp, ShieldAlert, WifiOff, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowRight, Check, Clock, Maximize, MonitorUp, ShieldAlert, WifiOff, Loader2, AlertTriangle, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatRemaining } from "./types";
 
@@ -26,7 +25,7 @@ export function isQuestionAnswered(question: any, answer?: KioskAnswer | null) {
 export function firstUnansweredIndex(questions: any[], answers: KioskAnswerMap) {
   if (!questions.length) return 0;
   const idx = questions.findIndex((q) => !isQuestionAnswered(q, answers[q.id]));
-  return idx === -1 ? questions.length - 1 : idx;
+  return idx === -1 ? Math.max(0, questions.length - 1) : idx;
 }
 
 export function wordCount(text?: string | null) {
@@ -35,64 +34,52 @@ export function wordCount(text?: string | null) {
   return trimmed.split(/\s+/).length;
 }
 
-function chipState(i: number, currentIndex: number, answered: boolean) {
-  if (i === currentIndex) return "current";
-  return answered ? "answered" : "unanswered";
-}
-
-const CHIP_CLASS: Record<string, string> = {
-  current: "bg-indigo-600 border-indigo-600 text-white shadow-[0_2px_6px_rgb(79,70,229,0.35)]",
-  answered: "bg-emerald-100 border-emerald-300 text-emerald-700 hover:border-emerald-400",
-  unanswered: "bg-slate-50 border-slate-300 text-slate-600 hover:border-indigo-300 hover:text-indigo-600",
-};
-
-export function QuestionPalette({
+/** Read-only progress: shows reached/total and answered count, no navigation. */
+export function QuestionProgress({
   questions,
   answers,
   currentIndex,
-  onJump,
-  disabled,
+  maxReachedIndex,
 }: {
   questions: any[];
   answers: KioskAnswerMap;
   currentIndex: number;
-  onJump: (index: number) => void;
-  disabled?: boolean;
+  maxReachedIndex: number;
 }) {
   const { t } = useTranslation(["pages"]);
   if (!questions.length) return null;
+  const answered = questions.filter((q) => isQuestionAnswered(q, answers[q.id])).length;
+  const reached = Math.min(Math.max(maxReachedIndex + 1, 1), questions.length);
+  const pct = questions.length ? Math.round((reached / questions.length) * 100) : 0;
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          {t("onlineExams.take.questionNav")}
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 space-y-2 shadow-[0_1px_2px_rgb(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#1e3a5f]">
+          {t("onlineExams.take.progressTitle", "Exam progress")}
         </p>
-        <p className="text-[11px] text-slate-400">
-          {t("onlineExams.take.answeredCount", {
-            answered: questions.filter((q) => isQuestionAnswered(q, answers[q.id])).length,
+        <p className="text-xs font-semibold text-slate-600">
+          {t("onlineExams.take.questionProgress", {
+            current: questions.length ? currentIndex + 1 : 0,
             total: questions.length,
           })}
         </p>
       </div>
-      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1" role="group">
-        {questions.map((q: any, i: number) => {
-          const state = chipState(i, currentIndex, isQuestionAnswered(q, answers[q.id]));
-          return (
-            <button
-              key={q.id ?? i}
-              type="button"
-              disabled={disabled}
-              aria-current={i === currentIndex ? "step" : undefined}
-              aria-label={t("onlineExams.take.jumpToQuestion", { n: i + 1 })}
-              title={t("onlineExams.take.jumpToQuestion", { n: i + 1 })}
-              onClick={() => onJump(i)}
-              className={`min-w-8 h-8 px-1.5 rounded-lg border text-xs font-bold tabular-nums transition-colors disabled:opacity-50 ${CHIP_CLASS[state]}`}
-            >
-              {i + 1}
-            </button>
-          );
-        })}
+      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+        <div
+          className="h-full rounded-full bg-[#1e3a5f] transition-all"
+          style={{ width: `${pct}%` }}
+        />
       </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+        <span className="font-semibold">
+          {t("onlineExams.take.answeredCount", { answered, total: questions.length })}
+        </span>
+        <span>{t("onlineExams.take.reachedCount", "{{reached}} of {{total}} reached", { reached, total: questions.length })}</span>
+      </div>
+      <p className="text-[11px] text-slate-500 inline-flex items-start gap-1.5">
+        <Info className="w-3.5 h-3.5 mt-0.5 text-[#1e3a5f] shrink-0" />
+        {t("onlineExams.take.forwardOnlyHint", "You can move forward only. Once you continue, you cannot return to previous questions.")}
+      </p>
     </div>
   );
 }
@@ -180,12 +167,12 @@ export function ViolationShield({ count, max }: { count: number; max: number }) 
 export function TimerPill({ remainingMs }: { remainingMs: number }) {
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 font-mono font-extrabold ${
+      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 font-mono font-extrabold border ${
         remainingMs < 60_000
-          ? "bg-rose-50 text-rose-700"
+          ? "bg-rose-50 text-rose-700 border-rose-200"
           : remainingMs < 5 * 60_000
-            ? "bg-amber-50 text-amber-800"
-            : "bg-slate-100 text-slate-800"
+            ? "bg-amber-50 text-amber-800 border-amber-200"
+            : "bg-slate-50 text-slate-800 border-slate-200"
       }`}
     >
       <Clock className="w-4 h-4" />
@@ -194,25 +181,23 @@ export function TimerPill({ remainingMs }: { remainingMs: number }) {
   );
 }
 
-/** Thin elapsed-time bar pinned to the bottom edge of the sticky exam header. */
 export function TimeProgress({ remainingMs, totalMs }: { remainingMs: number; totalMs: number }) {
   const pct =
     totalMs > 0 ? Math.min(100, Math.max(0, ((totalMs - remainingMs) / totalMs) * 100)) : 0;
   const tone =
-    remainingMs < 60_000 ? "bg-rose-500" : remainingMs < 5 * 60_000 ? "bg-amber-500" : "bg-indigo-500";
+    remainingMs < 60_000 ? "bg-rose-500" : remainingMs < 5 * 60_000 ? "bg-amber-500" : "bg-[#1e3a5f]";
   return (
-    <div className="h-1 w-full bg-slate-100" aria-hidden>
+    <div className="h-1.5 w-full bg-slate-100" aria-hidden>
       <div className={`h-full ${tone} transition-all duration-500`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-export function ReviewSheet({
+/** Read-only pre-submit summary sheet (no question jumping/back navigation). */
+export function SubmitSummarySheet({
   open,
   questions,
   answers,
-  currentIndex,
-  onJump,
   onClose,
   onSubmit,
   submitting,
@@ -220,8 +205,6 @@ export function ReviewSheet({
   open: boolean;
   questions: any[];
   answers: KioskAnswerMap;
-  currentIndex: number;
-  onJump: (index: number) => void;
   onClose: () => void;
   onSubmit: () => void;
   submitting: boolean;
@@ -246,14 +229,17 @@ export function ReviewSheet({
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-[28px] w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto"
+            className="bg-white rounded-[28px] w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto border border-slate-200"
           >
-            <div>
-              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
-                {t("onlineExams.take.reviewTitle")}
+            <div className="space-y-1">
+              <h2 className="text-xl font-extrabold tracking-tight text-[#1e3a5f]">
+                {t("onlineExams.take.reviewTitle", "Submit exam")}
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-600">
                 {t("onlineExams.take.reviewSubtitle", { answered, total: questions.length })}
+              </p>
+              <p className="text-xs text-slate-500">
+                {t("onlineExams.take.forwardOnlySubmitNote", "Review your progress below, then submit. You cannot go back to earlier questions.")}
               </p>
             </div>
 
@@ -269,24 +255,10 @@ export function ReviewSheet({
               </div>
             )}
 
-            <div className="flex flex-wrap gap-1.5">
-              {questions.map((q: any, i: number) => {
-                const state = chipState(i, currentIndex, isQuestionAnswered(q, answers[q.id]));
-                return (
-                  <button
-                    key={q.id ?? i}
-                    type="button"
-                    aria-label={t("onlineExams.take.jumpToQuestion", { n: i + 1 })}
-                    onClick={() => {
-                      onJump(i);
-                      onClose();
-                    }}
-                    className={`min-w-9 h-9 px-2 rounded-lg border text-sm font-bold tabular-nums transition-colors ${CHIP_CLASS[state]}`}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
+              <p className="font-semibold text-slate-700">{t("onlineExams.take.summaryHeading", "Submission summary")}</p>
+              <p>{t("onlineExams.take.summaryAnswered", "Answered: {{answered}} of {{total}}", { answered, total: questions.length })}</p>
+              {unanswered > 0 && <p>{t("onlineExams.take.summaryUnanswered", "Unanswered: {{count}}", { count: unanswered })}</p>}
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
@@ -295,14 +267,13 @@ export function ReviewSheet({
                 onClick={onClose}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
               >
-                <ArrowLeft className="w-4 h-4" />
-                {t("onlineExams.take.reviewBack")}
+                {t("onlineExams.take.summaryClose", "Close")}
               </button>
               <button
                 type="button"
                 onClick={onSubmit}
                 disabled={submitting}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold px-5 py-2.5"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e3a5f] hover:bg-[#172e4a] disabled:opacity-60 text-white font-bold px-5 py-2.5"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {t("onlineExams.take.reviewSubmit")}
@@ -387,12 +358,8 @@ export function ExamRules({
     <div className="space-y-3">
       <ul className="text-xs sm:text-sm text-slate-300 space-y-1.5 list-disc pl-5">
         {requireFullscreen && <li>{t("onlineExams.take.secureBullets.fullscreen")}</li>}
-        {needsScreenConsent && (
-          <li className="flex items-start gap-2">
-            <MonitorUp className="w-4 h-4 mt-0.5 shrink-0 text-indigo-300" />
-            {t("onlineExams.take.secureBullets.screenShare")}
-          </li>
-        )}
+        {needsScreenConsent && <li>{t("onlineExams.take.secureBullets.screenShare", "You must share this exam tab/window for the whole sitting when required.")}</li>}
+        <li>{t("onlineExams.take.secureBullets.forwardOnly", "Questions are shown one at a time and you can move forward only.")}</li>
         <li>
           {t("onlineExams.take.secureBullets.violations", {
             suffix:
@@ -408,14 +375,15 @@ export function ExamRules({
       <p className="text-xs text-slate-500 border border-slate-800 rounded-2xl p-3 sm:p-4 leading-relaxed">
         {t("onlineExams.take.lockdownLimitations")}
       </p>
+      {needsScreenConsent && (
+        <p className="text-xs text-slate-400 border border-slate-800 rounded-2xl p-3 sm:p-4 leading-relaxed">
+          {t("onlineExams.take.screenShareBrowserNote", "Your browser controls the screen-share picker and may show a sharing indicator. This app cannot hide or suppress it. If you stop sharing or share the wrong screen, the exam will be ended according to policy.")}
+        </p>
+      )}
     </div>
   );
 }
 
-/**
- * Keeps the exam rules visible on larger screens but tucks them behind a
- * collapsible summary on phones, where the pre-flight screen was too tall.
- */
 export function ExamRulesBlock(props: {
   requireFullscreen: boolean;
   needsScreenConsent: boolean;
@@ -442,9 +410,11 @@ export function ExamRulesBlock(props: {
 export function SystemCheck({
   screenShareRequired,
   screenShareReady,
+  screenShareSupported,
 }: {
   screenShareRequired: boolean;
   screenShareReady: boolean;
+  screenShareSupported?: boolean;
 }) {
   const { t } = useTranslation(["pages"]);
   const fsSupported =
@@ -458,13 +428,17 @@ export function SystemCheck({
     },
   ];
   if (screenShareRequired) {
+    const supported = screenShareSupported !== false;
+    const ok = supported && screenShareReady;
     chips.push({
       key: "ss",
-      ok: screenShareReady,
+      ok,
       icon: <MonitorUp className="w-3.5 h-3.5" />,
-      label: screenShareReady
-        ? t("onlineExams.take.screenShareReady")
-        : t("onlineExams.take.screenShareRequiredChip"),
+      label: !supported
+        ? t("onlineExams.take.screenShareUnavailable", "Screen sharing unavailable")
+        : screenShareReady
+          ? t("onlineExams.take.screenShareReady")
+          : t("onlineExams.take.screenShareRequiredChip"),
     });
   }
   return (
@@ -489,51 +463,28 @@ export function SystemCheck({
   );
 }
 
-export function ShortcutHint() {
-  const { t } = useTranslation(["pages"]);
-  return (
-    <p className="text-[11px] text-slate-500 inline-flex items-center gap-1.5">
-      <Keyboard className="w-3.5 h-3.5" />
-      {t("onlineExams.take.shortcutHint")}
-    </p>
-  );
-}
-
-export function PrevNextButtons({
-  isFirst,
+export function ForwardNavButton({
   isLast,
   canAdvance,
-  onPrev,
   onNext,
   onFinish,
   submitting,
 }: {
-  isFirst: boolean;
   isLast: boolean;
   canAdvance: boolean;
-  onPrev: () => void;
   onNext: () => void;
   onFinish: () => void;
   submitting: boolean;
 }) {
   const { t } = useTranslation(["pages", "common"]);
   return (
-    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={isFirst}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="hidden sm:inline">{t("onlineExams.take.prevQuestion")}</span>
-      </button>
+    <div className="flex items-center justify-end w-full">
       {isLast ? (
         <button
           type="button"
           onClick={onFinish}
           disabled={submitting || !canAdvance}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
+          className="bg-[#1e3a5f] hover:bg-[#172e4a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2 shadow-sm"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {t("onlineExams.take.finishExam")}
@@ -543,7 +494,7 @@ export function PrevNextButtons({
           type="button"
           onClick={onNext}
           disabled={!canAdvance}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2"
+          className="bg-[#1e3a5f] hover:bg-[#172e4a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl inline-flex items-center gap-2 shadow-sm"
         >
           {t("onlineExams.take.nextQuestion")}
           <ArrowRight className="w-4 h-4" />
