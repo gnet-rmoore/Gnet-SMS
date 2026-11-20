@@ -801,6 +801,22 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
     built.forEach((p, i) => {
       const num = p.querySelector(".ep-page-number") as HTMLElement | null;
       if (num) num.textContent = `Page ${i + 1} of ${totalPages}`;
+
+      p.querySelectorAll<HTMLInputElement>('input[type="radio"], input[type="checkbox"]').forEach((input) => {
+        const cell = input.parentElement as HTMLElement | null;
+        const container = cell?.parentElement as HTMLElement | null;
+        if (cell && container) {
+          const cols = (container.style.gridTemplateColumns || "").replace(/\s+/g, " ").trim();
+          if (cols.startsWith("20px 24px")) {
+            container.style.gridTemplateColumns = "24px minmax(0,1fr)";
+          } else if (cols.startsWith("18px")) {
+            container.style.gridTemplateColumns = "minmax(0,1fr)";
+          }
+          cell.remove();
+        } else {
+          input.remove();
+        }
+      });
     });
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
