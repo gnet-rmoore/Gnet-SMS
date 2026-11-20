@@ -2,14 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, RotateCcw, Loader2, FileText, Eye } from "lucide-react";
+import { CheckCircle2, RotateCcw, Loader2, FileText, Eye, Download, Paperclip } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { examPaperApi } from "./api";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { alertError, confirmAction } from "../../lib/swal";
 import { format } from "date-fns";
-import { FeatureModalShell } from "../academics-shared/FeatureModalShell";
-import ExamPaperPreviewPage from "./PreviewPage";
 
 export default function ExamPaperReviewPage() {
   const { t } = useTranslation(["pages", "common"]);
@@ -91,7 +89,17 @@ export default function ExamPaperReviewPage() {
     }
   };
 
-  const previewHref = `/${school?.slug}/exam-paper-preview`;
+  const openUploadedPdf = async (examId: string, pkgId: string) => {
+    setBusyId(pkgId);
+    try {
+      const data = await examPaperApi.pdfDownload(examId);
+      if (data?.downloadUrl) window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      await alertError("Could not open uploaded PDF", err?.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
@@ -113,15 +121,6 @@ export default function ExamPaperReviewPage() {
             {t("examPaper.reviewSubtitle")}
           </p>
         </div>
-        <a
-          href={previewHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Preview how a teacher-submitted paper will look to reviewers"
-          className="inline-flex items-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
-        >
-          <Eye className="w-4 h-4" /> Test paper view
-        </a>
       </motion.div>
 
       {loading ? (
@@ -134,72 +133,99 @@ export default function ExamPaperReviewPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {rows.map((pkg) => (
-            <div
-              key={pkg.id}
-              className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-            >
-              <div className="space-y-2 min-w-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <FileText className="w-5 h-5" />
+          {rows.map((pkg) => {
+            const examId = pkg.examId || pkg.exam?.id;
+            const previewHref = `/${school?.slug}/exam-paper-preview?examId=${encodeURIComponent(examId || "")}`;
+            const downloadHref = `${previewHref}&download=1`;
+            return (
+              <div
+                key={pkg.id}
+                className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+              >
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="font-extrabold tracking-tight text-slate-900 truncate">
+                        {pkg.exam?.title || t("examPaper.examFallback")}
+                      </h2>
+                      <p className="text-sm text-slate-500 font-mono">
+                        {t("examPaper.questionsMeta", {
+                          mode: pkg.deliveryMode,
+                          revision: pkg.revision,
+                          count: pkg.questionCount ?? "—",
+                        })}
+                        {pkg.pdfFileName ? ` • Uploaded: ${pkg.pdfFileName}` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="font-extrabold tracking-tight text-slate-900">
-                      {pkg.exam?.title || t("examPaper.examFallback")}
-                    </h2>
-                    <p className="text-sm text-slate-500 font-mono">
-                      {t("examPaper.questionsMeta", {
-                        mode: pkg.deliveryMode,
-                        revision: pkg.revision,
-                        count: pkg.questionCount ?? "?",
+                  {pkg.submittedAt && (
+                    <p className="text-xs text-slate-500">
+                      {t("examPaper.submittedAt", {
+                        when: format(new Date(pkg.submittedAt), "MMM d, yyyy • p"),
                       })}
-                      {pkg.pdfFileName ? ` · ${pkg.pdfFileName}` : ""}
                     </p>
-                  </div>
+                  )}
                 </div>
-                {pkg.submittedAt && (
-                  <p className="text-xs text-slate-500">
-                    {t("examPaper.submittedAt", {
-                      when: format(new Date(pkg.submittedAt), "MMM d, yyyy · p"),
-                    })}
-                  </p>
-                )}
+
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <Link
+                    to={previewHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
+                    title="Open formatted question paper document"
+                  >
+                    <Eye className="w-4 h-4" /> View paper
+                  </Link>
+                  <Link
+                    to={downloadHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    title="Download formatted question paper as PDF"
+                  >
+                    <Download className="w-4 h-4" /> Download PDF
+                  </Link>
+                  {pkg.pdfFileName ? (
+                    <button
+                      type="button"
+                      disabled={busyId === pkg.id || !examId}
+                      onClick={() => examId && void openUploadedPdf(examId, pkg.id)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                      title="Download the original uploaded PDF"
+                    >
+                      <Paperclip className="w-4 h-4" /> Uploaded PDF
+                    </button>
+                  ) : null}
+                  <Link
+                    to={`/${school?.slug}/exams/${examId}/paper`}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    {t("examPaper.openPaper")}
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={busyId === pkg.id}
+                    onClick={() => void approve(pkg)}
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-60"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> {t("examPaper.approve")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === pkg.id}
+                    onClick={() => void returnPaper(pkg)}
+                    className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-60"
+                  >
+                    <RotateCcw className="w-4 h-4" /> {t("examPaper.returnAction")}
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                <Link
-                  to={`/${school?.slug}/exams/${pkg.examId}/paper`}
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  {t("examPaper.openPaper")}
-                </Link>
-                <a
-                  href={previewHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl text-sm py-2.5 px-4"
-                >
-                  <Eye className="w-4 h-4" /> {t("common:preview")}
-                </a>
-                <button
-                  type="button"
-                  disabled={busyId === pkg.id}
-                  onClick={() => void approve(pkg)}
-                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-60"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> {t("examPaper.approve")}
-                </button>
-                <button
-                  type="button"
-                  disabled={busyId === pkg.id}
-                  onClick={() => void returnPaper(pkg)}
-                  className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-60"
-                >
-                  <RotateCcw className="w-4 h-4" /> {t("examPaper.returnAction")}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
