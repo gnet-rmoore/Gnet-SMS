@@ -740,27 +740,29 @@ export const Settings = () => {
 
       <div className={receiptTemplateOnly ? "w-full" : "flex flex-col lg:flex-row gap-8"}>
         {!receiptTemplateOnly && (
-        <nav className={`lg:w-56 shrink-0 p-3 space-y-1 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto ${cardShell}`}>
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as TabId)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-colors ${
-                  active
-                    ? "bg-indigo-600 text-white"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+          <div className="lg:w-56 shrink-0">
+            <nav className={`w-full lg:fixed lg:top-24 lg:w-56 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:z-20 p-3 space-y-1 ${cardShell}`}>
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id as TabId)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-colors ${
+                      active
+                        ? "bg-indigo-600 text-white"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         )}
 
         <div className={`${receiptTemplateOnly ? "w-full" : "flex-1"} ${cardShell} p-8 space-y-8 min-w-0`}>
