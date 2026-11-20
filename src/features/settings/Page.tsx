@@ -740,7 +740,7 @@ export const Settings = () => {
 
       <div className={receiptTemplateOnly ? "w-full" : "flex flex-col lg:flex-row gap-8"}>
         {!receiptTemplateOnly && (
-        <nav className={`lg:w-56 shrink-0 p-3 space-y-1 ${cardShell}`}>
+        <nav className={`lg:w-56 shrink-0 p-3 space-y-1 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto ${cardShell}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;

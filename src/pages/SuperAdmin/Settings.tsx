@@ -432,7 +432,7 @@ export const Settings = () => {
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-64 shrink-0 space-y-2">
+        <div className="lg:w-64 shrink-0 space-y-2 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
