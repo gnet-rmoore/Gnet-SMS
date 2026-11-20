@@ -93,9 +93,7 @@ function InfoCard({ label, value }: { label: string; value: string }) {
         background: "#f8fafc",
         minHeight: 60,
         height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
+        display: "block",
         boxSizing: "border-box",
       }}
     >
@@ -107,12 +105,12 @@ function InfoCard({ label, value }: { label: string; value: string }) {
           textTransform: "uppercase",
           color: MUTED,
           marginBottom: 4,
-          lineHeight: 1.2,
+          lineHeight: "12px",
         }}
       >
         {label}
       </div>
-      <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>{value}</div>
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: "18px" }}>{value}</div>
     </div>
   );
 }
@@ -154,12 +152,11 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
             borderRadius: 8,
             background: NAVY,
             color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: "block",
+            textAlign: "center",
+            lineHeight: "34px",
             fontWeight: 800,
             fontSize: 14,
-            lineHeight: 1,
           }}
         >
           {qNum}
@@ -173,7 +170,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
               textTransform: "uppercase",
               color: MUTED,
               marginBottom: 5,
-              lineHeight: 1.2,
+              lineHeight: "13px",
             }}
           >
             Question {qNum} · {questionTypeLabel(q.type)}
@@ -200,8 +197,11 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
             borderRadius: 999,
             padding: "5px 12px",
             whiteSpace: "nowrap",
-            lineHeight: 1.2,
+            lineHeight: "14px",
             marginTop: 2,
+            display: "inline-block",
+            textAlign: "center",
+            boxSizing: "border-box",
           }}
         >
           {marksText}
@@ -229,12 +229,12 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                     boxSizing: "border-box",
                   }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", paddingTop: 3 }}>
+                  <span style={{ display: "block", paddingTop: 4, lineHeight: 0 }}>
                     <input
                       type="radio"
                       name={`q-${q.id || index}`}
                       aria-label={`Option ${label}`}
-                      style={{ margin: 0, width: 14, height: 14, accentColor: NAVY }}
+                      style={{ margin: 0, width: 14, height: 14, accentColor: NAVY, verticalAlign: "top" }}
                     />
                   </span>
                   <span
@@ -243,26 +243,36 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                       height: 24,
                       borderRadius: 999,
                       border: `1.5px solid ${BORDER_STRONG}`,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      display: "block",
+                      textAlign: "center",
+                      lineHeight: "21px",
                       fontSize: 11.5,
                       fontWeight: 800,
                       color: NAVY,
-                      lineHeight: 1,
+                      boxSizing: "border-box",
                       marginTop: 0,
                     }}
                   >
                     {label}
                   </span>
-                  <span style={{ fontSize: 14, lineHeight: 1.55, color: TEXT, minWidth: 0, overflowWrap: "anywhere", paddingTop: 2 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.55,
+                      color: TEXT,
+                      minWidth: 0,
+                      overflowWrap: "anywhere",
+                      paddingTop: 1,
+                      display: "block",
+                    }}
+                  >
                     <RichContent content={c.text || ""} />
                   </span>
                 </label>
               );
             })}
             {!q.choices?.length && (
-              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "8px 0" }}>
+              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "8px 0", lineHeight: "20px" }}>
                 No options provided.
               </div>
             )}
@@ -275,9 +285,10 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
               <label
                 key={label}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
+                  display: "grid",
+                  gridTemplateColumns: "18px minmax(0,1fr)",
+                  alignItems: "start",
+                  columnGap: 10,
                   minHeight: 44,
                   padding: "10px 12px",
                   border: `1px solid ${BORDER}`,
@@ -289,13 +300,15 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                   boxSizing: "border-box",
                 }}
               >
-                <input
-                  type="radio"
-                  name={`q-${q.id || index}`}
-                  aria-label={label}
-                  style={{ margin: 0, width: 15, height: 15, accentColor: NAVY }}
-                />
-                <span>{label}</span>
+                <span style={{ display: "block", paddingTop: 3, lineHeight: 0 }}>
+                  <input
+                    type="radio"
+                    name={`q-${q.id || index}`}
+                    aria-label={label}
+                    style={{ margin: 0, width: 15, height: 15, accentColor: NAVY, verticalAlign: "top" }}
+                  />
+                </span>
+                <span style={{ lineHeight: "22px", display: "block", paddingTop: 0 }}>{label}</span>
               </label>
             ))}
           </div>
@@ -311,6 +324,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
+                lineHeight: "13px",
               }}
             >
               Answer
@@ -331,6 +345,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                     borderRadius: 0,
                     padding: "4px 2px",
                     fontSize: 14,
+                    lineHeight: "22px",
                     color: TEXT,
                     background: "transparent",
                     outline: "none",
@@ -352,6 +367,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
+                lineHeight: "13px",
               }}
             >
               Response
@@ -376,6 +392,7 @@ function QuestionBlock({ q, index }: { q: PaperQuestion; index: number }) {
                 outline: "none",
                 boxSizing: "border-box",
                 fontFamily: "inherit",
+                display: "block",
               }}
             />
           </div>
@@ -437,9 +454,9 @@ function PaperHeader({
                 borderRadius: 12,
                 background: NAVY,
                 color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: "block",
+                textAlign: "center",
+                lineHeight: "68px",
                 fontWeight: 800,
                 fontSize: 22,
                 flexShrink: 0,
@@ -473,17 +490,18 @@ function PaperHeader({
               textTransform: "uppercase",
               color: MUTED,
               marginBottom: 6,
+              lineHeight: "13px",
             }}
           >
             Examination Information
           </div>
           <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1.25 }}>Examination Paper</div>
           <div style={{ marginTop: 6, display: "grid", gap: 3, fontSize: 12, color: MUTED, justifyItems: "end" }}>
-            <div>
+            <div style={{ lineHeight: "16px" }}>
               <strong style={{ color: TEXT }}>Mode:</strong> {mode}
             </div>
             {pkg?.revision ? (
-              <div>
+              <div style={{ lineHeight: "16px" }}>
                 <strong style={{ color: TEXT }}>Revision:</strong> {pkg.revision}
               </div>
             ) : null}
@@ -538,6 +556,7 @@ function InstructionsBlock({ instructions }: { instructions?: string | null }) {
           textTransform: "uppercase",
           color: NAVY,
           marginBottom: 6,
+          lineHeight: "13px",
         }}
       >
         General Instructions
@@ -580,7 +599,7 @@ export const ExamPaperDocument = React.forwardRef<
 
       <main style={{ flex: 1 }}>
         {questions.length === 0 ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: MUTED, fontSize: 14 }}>
+          <div style={{ padding: "40px 0", textAlign: "center", color: MUTED, fontSize: 14, lineHeight: "22px" }}>
             No questions available for this paper.
           </div>
         ) : (
@@ -600,6 +619,7 @@ export const ExamPaperDocument = React.forwardRef<
           gap: 12,
           fontSize: 10.5,
           color: MUTED,
+          lineHeight: "16px",
         }}
       >
         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -645,18 +665,19 @@ function createPageShell(
 
   if (compactHeader) {
     const h = document.createElement("div");
-    h.style.display = "flex";
-    h.style.justifyContent = "space-between";
+    h.style.display = "grid";
+    h.style.gridTemplateColumns = "1fr auto";
     h.style.alignItems = "center";
     h.style.borderBottom = `1.5px solid ${BORDER}`;
     h.style.paddingBottom = "8px";
     h.style.marginBottom = "14px";
-    h.style.gap = "12px";
+    h.style.columnGap = "12px";
     const left = document.createElement("div");
     left.textContent = school.name || "School";
     left.style.fontSize = "11.5px";
     left.style.fontWeight = "700";
     left.style.color = NAVY;
+    left.style.lineHeight = "16px";
     left.style.minWidth = "0";
     left.style.overflow = "hidden";
     left.style.textOverflow = "ellipsis";
@@ -666,6 +687,7 @@ function createPageShell(
     right.style.fontSize = "11px";
     right.style.color = MUTED;
     right.style.textAlign = "right";
+    right.style.lineHeight = "16px";
     right.style.minWidth = "0";
     right.style.overflow = "hidden";
     right.style.textOverflow = "ellipsis";
@@ -687,12 +709,13 @@ function createPageShell(
   footer.style.marginTop = "auto";
   footer.style.paddingTop = "10px";
   footer.style.borderTop = `1px solid ${BORDER}`;
-  footer.style.display = "flex";
-  footer.style.justifyContent = "space-between";
+  footer.style.display = "grid";
+  footer.style.gridTemplateColumns = "1fr auto";
   footer.style.alignItems = "center";
-  footer.style.gap = "12px";
+  footer.style.columnGap = "12px";
   footer.style.fontSize = "10.5px";
   footer.style.color = MUTED;
+  footer.style.lineHeight = "16px";
   const fLeft = document.createElement("span");
   fLeft.textContent = `${school.name || "School"} — ${exam.title || "Examination"}`;
   fLeft.style.minWidth = "0";
@@ -704,6 +727,7 @@ function createPageShell(
   fRight.style.whiteSpace = "nowrap";
   fRight.style.fontWeight = "700";
   fRight.style.color = NAVY_SOFT;
+  fRight.style.textAlign = "right";
   footer.appendChild(fLeft);
   footer.appendChild(fRight);
   page.appendChild(footer);
@@ -755,6 +779,7 @@ export async function downloadExamPaperPdf(element: HTMLElement, filename: strin
       empty.style.textAlign = "center";
       empty.style.color = MUTED;
       empty.style.fontSize = "14px";
+      empty.style.lineHeight = "22px";
       empty.textContent = "No questions available for this paper.";
       currentContent.appendChild(empty);
     } else {
