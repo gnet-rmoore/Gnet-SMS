@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -101,6 +101,8 @@ export default function ExamPaperReviewPage() {
     }
   };
 
+  const demoPreviewHref = `/${school?.slug}/exam-paper-preview?demo=1`;
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
       <PageToast toast={toast} />
@@ -121,6 +123,15 @@ export default function ExamPaperReviewPage() {
             {t("examPaper.reviewSubtitle")}
           </p>
         </div>
+        <Link
+          to={demoPreviewHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open a sample exam paper in the real document format"
+          className="inline-flex items-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
+        >
+          <Eye className="w-4 h-4" /> Preview demo paper
+        </Link>
       </motion.div>
 
       {loading ? (
@@ -155,7 +166,7 @@ export default function ExamPaperReviewPage() {
                         {t("examPaper.questionsMeta", {
                           mode: pkg.deliveryMode,
                           revision: pkg.revision,
-                          count: pkg.questionCount ?? "—",
+                          count: pkg.questionCount ?? "-",
                         })}
                         {pkg.pdfFileName ? ` • Uploaded: ${pkg.pdfFileName}` : ""}
                       </p>

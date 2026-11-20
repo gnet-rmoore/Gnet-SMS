@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Loader2, Printer, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -19,21 +19,121 @@ function sanitizeFilename(value: string) {
   );
 }
 
+function buildDemoPaper() {
+  return {
+    exam: {
+      id: "demo-exam",
+      title: "End of Term Examination — Integrated Science",
+      startDate: "2026-06-15T09:00:00.000Z",
+      duration: 90,
+      instructions:
+        "Read all instructions carefully before you begin.\n• Answer all questions in the spaces provided.\n• Write clearly and legibly; show all necessary working where applicable.\n• Calculators may be used unless otherwise stated.\n• Manage your time wisely and review your answers before submission.",
+      deliveryMode: "ONLINE",
+    },
+    package: {
+      status: "APPROVED",
+      deliveryMode: "ONLINE",
+      revision: 1,
+    },
+  };
+}
+
+function buildDemoQuestions(): PaperQuestion[] {
+  return [
+    {
+      id: "demo-q1",
+      type: "MULTIPLE_CHOICE",
+      prompt:
+        "Which process do green plants use to manufacture their own food using energy from sunlight?",
+      points: 2,
+      orderIndex: 0,
+      choices: [
+        { id: "demo-q1a", label: "A", text: "Respiration" },
+        { id: "demo-q1b", label: "B", text: "Photosynthesis" },
+        { id: "demo-q1c", label: "C", text: "Transpiration" },
+        { id: "demo-q1d", label: "D", text: "Germination" },
+      ],
+    },
+    {
+      id: "demo-q2",
+      type: "MULTIPLE_CHOICE",
+      prompt: "What is the SI unit of electric current?",
+      points: 2,
+      orderIndex: 1,
+      choices: [
+        { id: "demo-q2a", label: "A", text: "Volt (V)" },
+        { id: "demo-q2b", label: "B", text: "Ohm (Ω)" },
+        { id: "demo-q2c", label: "C", text: "Ampere (A)" },
+        { id: "demo-q2d", label: "D", text: "Watt (W)" },
+      ],
+    },
+    {
+      id: "demo-q3",
+      type: "TRUE_FALSE",
+      prompt: "Sound waves can travel through a vacuum.",
+      points: 1,
+      orderIndex: 2,
+      choices: [],
+    },
+    {
+      id: "demo-q4",
+      type: "FILL_BLANK",
+      prompt: "The chemical symbol for sodium is ________.",
+      points: 1,
+      orderIndex: 3,
+      choices: [],
+    },
+    {
+      id: "demo-q5",
+      type: "MULTIPLE_CHOICE",
+      prompt:
+        "Which organ in the human body is primarily responsible for pumping blood throughout the circulatory system?",
+      points: 1,
+      orderIndex: 4,
+      choices: [
+        { id: "demo-q5a", label: "A", text: "Lungs" },
+        { id: "demo-q5b", label: "B", text: "Liver" },
+        { id: "demo-q5c", label: "C", text: "Heart" },
+        { id: "demo-q5d", label: "D", text: "Kidneys" },
+      ],
+    },
+    {
+      id: "demo-q6",
+      type: "ESSAY",
+      prompt:
+        "Explain the stages of the water cycle. In your response, describe evaporation, condensation, precipitation, and collection, and state why the water cycle is important to living organisms.",
+      points: 8,
+      orderIndex: 5,
+      choices: [],
+    },
+  ];
+}
+
 export default function ExamPaperPreviewPage() {
   const [params] = useSearchParams();
   const examId = (params.get("examId") || "").trim();
+  const demoMode = params.get("demo") === "1";
   const autoDownload = params.get("download") === "1";
   const { school } = useAuthStore();
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(!demoMode);
   const [downloading, setDownloading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [paper, setPaper] = React.useState<any>(null);
-  const [questions, setQuestions] = React.useState<PaperQuestion[]>([]);
+  const [paper, setPaper] = React.useState<any>(demoMode ? buildDemoPaper() : null);
+  const [questions, setQuestions] = React.useState<PaperQuestion[]>(
+    demoMode ? buildDemoQuestions() : []
+  );
   const docRef = React.useRef<HTMLDivElement>(null);
   const autoTriggered = React.useRef(false);
 
   React.useEffect(() => {
     let cancelled = false;
+    if (demoMode) {
+      setPaper(buildDemoPaper());
+      setQuestions(buildDemoQuestions());
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!examId) {
       setError("No exam selected. Open a paper from Exam Paper Review to preview its document.");
       setLoading(false);
@@ -75,7 +175,7 @@ export default function ExamPaperPreviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [examId]);
+  }, [examId, demoMode]);
 
   const handleDownload = React.useCallback(async () => {
     if (!docRef.current) return;
@@ -140,7 +240,9 @@ export default function ExamPaperPreviewPage() {
             </Link>
             <span className="hidden sm:block h-5 w-px bg-slate-200" />
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Question paper</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                {demoMode ? "Demo question paper" : "Question paper"}
+              </p>
               <p className="font-extrabold tracking-tight text-slate-900 truncate">
                 {paper.exam?.title || "Examination"}
               </p>
@@ -161,7 +263,7 @@ export default function ExamPaperPreviewPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 disabled:opacity-60"
             >
               {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {downloading ? "Generating…" : "Download PDF"}
+              {downloading ? "Generating PDF…" : "Download PDF"}
             </button>
           </div>
         </div>
@@ -183,7 +285,7 @@ export default function ExamPaperPreviewPage() {
                 contactEmail: school?.contactEmail,
                 brandColor: school?.brandColor,
               }}
-              exam={paper.exam || { id: examId, title: "Examination" }}
+              exam={paper.exam || { id: "demo-exam", title: "Examination" }}
               pkg={paper.package}
               questions={questions}
             />
