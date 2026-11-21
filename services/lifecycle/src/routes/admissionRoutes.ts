@@ -8,6 +8,7 @@ import {
 } from "../middleware/auth";
 import { resourceLoaders } from "../middleware/resourceLoaders";
 import { admissionController } from "../controllers/admissionController";
+import { entranceController } from "../controllers/entranceController";
 
 const router = express.Router();
 
@@ -165,6 +166,11 @@ router.get(
 );
 
 // Public applicant endpoints
+router.get("/api/public/schools/:slug/classrooms", admissionController.publicClassrooms);
+router.get("/api/public/entrance/:token", entranceController.getEntrance);
+router.post("/api/public/entrance/:token/book", entranceController.book);
+router.post("/api/public/entrance/:token/reschedule", entranceController.reschedule);
+router.post("/api/public/entrance/:token/cancel", entranceController.cancel);
 router.post("/api/public/applications", admissionController.publicCreate);
 router.post("/api/public/applications/verify-returning", admissionController.publicVerifyReturning);
 router.get("/api/public/applications/lookup", admissionController.publicStatusLookup);

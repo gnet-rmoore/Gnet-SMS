@@ -1,5 +1,14 @@
 /** School admission policy shape (Identity `School.admissionPolicy` JSON). */
 
+export type AdmissionEntranceSlot = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  capacity: number;
+  location?: string | null;
+  instructions?: string | null;
+};
+
 export type AdmissionPolicy = {
   publicApplyEnabled: boolean;
   /** Allow returning students to re-register online (email + DOB match). */
@@ -9,6 +18,17 @@ export type AdmissionPolicy = {
   requireClassroomOnEnroll: boolean;
   entranceFeeAmount: number;
   applyBackgroundUrl?: string;
+  entranceSchedulingEnabled: boolean;
+  entranceSlots: AdmissionEntranceSlot[];
+  entranceBookingDeadline: string | null;
+  entranceRescheduleCutoffHours: number;
+  /** YYYY-MM-DD bounds for entrance dates (inclusive). */
+  entranceAvailableFrom: string | null;
+  entranceAvailableTo: string | null;
+  /** 0 = Sunday … 6 = Saturday. Defaults to Monday–Friday. */
+  entranceAvailableWeekdays: number[];
+  /** School-written rule shown to families on the entrance booking page. */
+  entranceAvailabilityNote: string | null;
 };
 
 export const DEFAULT_ADMISSION_POLICY: AdmissionPolicy = {
@@ -20,7 +40,48 @@ export const DEFAULT_ADMISSION_POLICY: AdmissionPolicy = {
   requireClassroomOnEnroll: false,
   entranceFeeAmount: 0,
   applyBackgroundUrl: "",
+  entranceSchedulingEnabled: false,
+  entranceSlots: [],
+  entranceBookingDeadline: null,
+  entranceRescheduleCutoffHours: 24,
+  entranceAvailableFrom: null,
+  entranceAvailableTo: null,
+  entranceAvailableWeekdays: [1, 2, 3, 4, 5],
+  entranceAvailabilityNote: null,
 };
+
+function parseDateOnly(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : value;
+}
+
+function parseWeekdays(value: unknown): number[] {
+  const input = Array.isArray(value) ? value : DEFAULT_ADMISSION_POLICY.entranceAvailableWeekdays;
+  const days = input
+    .map((day) => Number(day))
+    .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
+  const unique = Array.from(new Set(days)).sort((a, b) => a - b);
+  return unique.length ? unique : [...DEFAULT_ADMISSION_POLICY.entranceAvailableWeekdays];
+}
+
+function parseAvailabilityNote(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const note = value.trim().slice(0, 500);
+  return note || null;
+}
+
+export function isEntranceSlotWithinPolicy(
+  policy: AdmissionPolicy,
+  slot: Pick<AdmissionEntranceSlot, "startAt">
+): boolean {
+  const date = String(slot.startAt || "").slice(0, 10);
+  if (!parseDateOnly(date)) return false;
+  if (policy.entranceAvailableFrom && date < policy.entranceAvailableFrom) return false;
+  if (policy.entranceAvailableTo && date > policy.entranceAvailableTo) return false;
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return policy.entranceAvailableWeekdays.includes(weekday);
+}
 
 export function parseAdmissionPolicy(raw: unknown): AdmissionPolicy {
   let parsed: any = {};
@@ -55,6 +116,34 @@ export function parseAdmissionPolicy(raw: unknown): AdmissionPolicy {
         : DEFAULT_ADMISSION_POLICY.requireClassroomOnEnroll,
     entranceFeeAmount: Number(parsed.entranceFeeAmount || 0) || 0,
     applyBackgroundUrl: typeof parsed.applyBackgroundUrl === "string" ? parsed.applyBackgroundUrl : "",
+    entranceSchedulingEnabled:
+      parsed.entranceSchedulingEnabled !== undefined
+        ? Boolean(parsed.entranceSchedulingEnabled)
+        : DEFAULT_ADMISSION_POLICY.entranceSchedulingEnabled,
+    entranceSlots: Array.isArray(parsed.entranceSlots)
+      ? parsed.entranceSlots
+          .map((slot: any) => ({
+            id: String(slot?.id || "").trim(),
+            startAt: String(slot?.startAt || "").trim(),
+            endAt: String(slot?.endAt || "").trim(),
+            capacity: Number(slot?.capacity || 0),
+            location: slot?.location ? String(slot.location) : null,
+            instructions: slot?.instructions ? String(slot.instructions) : null,
+          }))
+          .filter((slot: AdmissionEntranceSlot) => slot.id && slot.startAt && slot.endAt && slot.capacity > 0)
+      : [],
+    entranceBookingDeadline:
+      typeof parsed.entranceBookingDeadline === "string" && parsed.entranceBookingDeadline.trim()
+        ? parsed.entranceBookingDeadline
+        : null,
+    entranceRescheduleCutoffHours:
+      Number(parsed.entranceRescheduleCutoffHours) >= 0
+        ? Number(parsed.entranceRescheduleCutoffHours)
+        : DEFAULT_ADMISSION_POLICY.entranceRescheduleCutoffHours,
+    entranceAvailableFrom: parseDateOnly(parsed.entranceAvailableFrom),
+    entranceAvailableTo: parseDateOnly(parsed.entranceAvailableTo),
+    entranceAvailableWeekdays: parseWeekdays(parsed.entranceAvailableWeekdays),
+    entranceAvailabilityNote: parseAvailabilityNote(parsed.entranceAvailabilityNote),
   };
 }
 

@@ -429,12 +429,28 @@ export function EnrollStudentModal({
                 <option value="">{t("pages:students.assignLater")}</option>
                 {classrooms
                   .filter((c: any) => !c.subjectId)
-                  .map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.gradeLevel?.name ? ` (${c.gradeLevel.name})` : ""}
-                  </option>
-                ))}
+                  .filter((c: any) => {
+                    const seats =
+                      c.seatsLeft ??
+                      (c.capacity == null
+                        ? null
+                        : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
+                    return c.capacity == null || c.allowOverfill || (seats ?? 0) > 0;
+                  })
+                  .map((c: any) => {
+                    const seats =
+                      c.seatsLeft ??
+                      (c.capacity == null
+                        ? null
+                        : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                        {c.gradeLevel?.name ? ` (${c.gradeLevel.name})` : ""}
+                        {seats != null ? ` · ${seats}` : ""}
+                      </option>
+                    );
+                  })}
               </select>
             </div>
           ) : null}

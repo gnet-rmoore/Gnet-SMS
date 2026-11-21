@@ -26,6 +26,8 @@ export type EditClassroomModalProps = {
     teacherIds?: string[];
     assistantIds?: string[];
     bannerColor?: string;
+    capacity?: string | number | null;
+    allowOverfill?: boolean;
   };
   gradeLevels: any[];
   handleUpdateClassroom: (e: React.FormEvent) => void;
@@ -120,6 +122,34 @@ export function EditClassroomModal({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className={fieldLabel}>{t("classroomModals.capacity", "Student limit")}</label>
+            <input
+              type="number"
+              min={1}
+              value={formData.capacity ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, capacity: e.target.value === "" ? "" : Number(e.target.value) })
+              }
+              placeholder={t("classroomModals.capacityPlaceholder", "Unlimited")}
+              className={fieldInput}
+            />
+            <p className="text-xs text-slate-500">
+              {t("classroomModals.capacityHint", "Leave empty for unlimited seating.")}
+            </p>
+          </div>
+          <label className="flex items-center gap-2 self-end mb-1 text-xs font-bold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(formData.allowOverfill)}
+              onChange={(e) => setFormData({ ...formData, allowOverfill: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            {t("classroomModals.allowOverfill", "Allow overfill")}
+          </label>
         </div>
 
         <div className="space-y-2">

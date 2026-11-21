@@ -48,6 +48,10 @@ type Classroom = {
   gradeLevelId?: string | null;
   subject?: { id: string; name: string } | null;
   gradeLevel?: { id: string; name: string } | null;
+  capacity?: number | null;
+  allowOverfill?: boolean;
+  studentCount?: number;
+  seatsLeft?: number | null;
 };
 
 type MemberRow = {
@@ -126,6 +130,12 @@ export function EnrollmentPage() {
     () => classGroups.find((c) => c.id === activeClassroomId) || null,
     [classGroups, activeClassroomId]
   );
+
+  const seatsLeftFor = (classroom: Classroom | null) => {
+    if (!classroom || classroom.capacity == null || classroom.allowOverfill) return null;
+    const occupied = classroom.studentCount ?? studentCountByClass[classroom.id] ?? 0;
+    return Math.max(0, Number(classroom.capacity) - occupied);
+  };
 
   const linkedSubjectCountByGroup = useMemo(() => {
     const subjectRooms = allClassrooms.filter((c) => c.subjectId);
@@ -303,6 +313,15 @@ export function EnrollmentPage() {
     keepBulkModalOpen = false
   ) => {
     if (studentIds.length === 0) return;
+    const target = classGroups.find((c) => c.id === classroomId) || null;
+    const seats = seatsLeftFor(target);
+    if (seats !== null && seats < studentIds.length) {
+      showToast(
+        t("enrollment.toast.classFull", "This class has no available seats."),
+        "error"
+      );
+      return;
+    }
     setAssigning(true);
     try {
       const response = (await enrollmentApi.addMembersBulk(classroomId, studentIds)) as {
@@ -804,6 +823,12 @@ export function EnrollmentPage() {
                         }`}
                       >
                         {t("enrollment.classGroups.studentCount", { count: studentCount })}
+                        {(() => {
+                          const seats = seatsLeftFor(c);
+                          return seats != null
+                            ? ` · ${t("enrollment.classGroups.seatsLeft", { count: seats })}`
+                            : "";
+                        })()}
                       </p>
                     </button>
                   );
@@ -833,7 +858,7 @@ export function EnrollmentPage() {
                     <button
                       type="button"
                       onClick={() => handleAssign(activeClassroom.id, [selectedStudent.id])}
-                      disabled={assigning}
+                      disabled={assigning || (seatsLeftFor(activeClassroom) ?? Infinity) <= 0}
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
                     >
                       <UserPlus className="w-4 h-4" />
@@ -877,7 +902,10 @@ export function EnrollmentPage() {
                         <button
                           type="button"
                           onClick={() => handleAssign(activeClassroom.id, [selectedStudent.id])}
-                          className="text-sm font-bold text-indigo-600 hover:underline"
+                          disabled={
+                            assigning || (seatsLeftFor(activeClassroom) ?? Infinity) <= 0
+                          }
+                          className="text-sm font-bold text-indigo-600 hover:underline disabled:opacity-50"
                         >
                           {t("enrollment.placeStudent", {
                             name: selectedStudent.name || t("enrollment.unnamedStudent"),

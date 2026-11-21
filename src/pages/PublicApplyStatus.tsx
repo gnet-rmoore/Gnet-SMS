@@ -1,16 +1,12 @@
 import React from "react";
-import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Copy, Receipt, RefreshCw } from "lucide-react";
+import { ArrowLeft, Receipt, RefreshCw } from "lucide-react";
 import { LanguageSelect } from "../i18n/LanguageSelect";
 import { getStoredLocale, normalizeLocale } from "../i18n";
 import { translateApiError } from "../i18n/apiErrors";
 import type { AppLocale } from "../i18n/locales";
-import {
-  buildApplyStatusUrl,
-  loadApplyStatusCredentials,
-  parseApplyStatusUrl,
-} from "../lib/publicApplyStatus";
+import { buildStatusUrl, loadReference, saveReference } from "../lib/publicApplyStatus";
 import { Button } from "../components/ui";
 import { OnboardingStepper } from "../components/OnboardingStepper";
 
@@ -20,6 +16,12 @@ const labelClass = "text-xs font-bold uppercase tracking-wider text-slate-500";
 
 const formatMoney = (n: number | null | undefined) =>
   `$${Number(n || 0).toFixed(2)}`;
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
 
 type StatusFee = {
   id: string;
@@ -36,6 +38,20 @@ type StatusReceipt = {
   amount?: number | null;
 };
 
+type EntranceBooking = {
+  slotId: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+};
+
+type EntranceAvailability = {
+  from: string | null;
+  to: string | null;
+  weekdays: number[];
+  note: string | null;
+};
+
 type StatusPayload = {
   id: string;
   applicationNumber?: string | null;
@@ -44,31 +60,17 @@ type StatusPayload = {
   gradeLevelName?: string | null;
   appliedAt?: string;
   feePaymentId?: string | null;
+  accessToken?: string | null;
   fee?: StatusFee | null;
   receipt?: StatusReceipt | null;
+  entranceStatus?: string | null;
+  entranceAvailability?: EntranceAvailability | null;
+  entranceBooking?: EntranceBooking | null;
+  entranceUrl?: string | null;
 };
 
-async function fetchStatusById(id: string, token: string): Promise<StatusPayload> {
-  const res = await fetch(
-    `/api/public/applications/${id}/status?token=${encodeURIComponent(token)}`
-  );
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(translateApiError(json) || json.error || "Not found");
-  }
-  return json;
-}
-
-async function fetchStatusByReference(
-  schoolId: string,
-  number: string,
-  token: string
-): Promise<StatusPayload> {
-  const params = new URLSearchParams({
-    schoolId,
-    number: number.trim(),
-    token: token.trim(),
-  });
+async function fetchStatusByReference(schoolId: string, number: string): Promise<StatusPayload> {
+  const params = new URLSearchParams({ schoolId, number: number.trim() });
   const res = await fetch(`/api/public/applications/lookup?${params.toString()}`);
   const json = await res.json();
   if (!res.ok) {
@@ -79,21 +81,13 @@ async function fetchStatusByReference(
 
 export default function PublicApplyStatusPage() {
   const { slug = "" } = useParams();
-  const navigate = useNavigate();
   const { t } = useTranslation(["public", "pages", "common"]);
-  const [params, setParams] = useSearchParams();
-  const id = params.get("id") || "";
-  const token = params.get("token") || "";
 
   const [school, setSchool] = React.useState<{ id: string; name: string } | null>(null);
   const [data, setData] = React.useState<StatusPayload | null>(null);
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [lookupMode, setLookupMode] = React.useState(!id || !token);
-
   const [reference, setReference] = React.useState("");
-  const [accessCode, setAccessCode] = React.useState("");
-  const [statusLinkPaste, setStatusLinkPaste] = React.useState("");
 
   const [locale, setLocale] = React.useState<AppLocale>(
     () => normalizeLocale(undefined) || getStoredLocale() || "en"
@@ -116,51 +110,49 @@ export default function PublicApplyStatusPage() {
   }, [slug]);
 
   React.useEffect(() => {
-    const saved = loadApplyStatusCredentials(slug);
-    if (saved?.applicationNumber && !reference) {
-      setReference(saved.applicationNumber || "");
-    }
-  }, [slug, reference]);
+    const saved = loadReference(slug);
+    if (saved) setReference(saved);
+  }, [slug]);
 
-  const loadFromCredentials = React.useCallback(
-    async (appId: string, appToken: string) => {
+  const loadStatus = React.useCallback(
+    async (value: string) => {
+      const trimmed = value.trim();
+      if (!school?.id) {
+        setError(t("public:apply.schoolNotFound"));
+        return;
+      }
+      if (!trimmed) {
+        setError(t("public:applyStatus.referenceRequired", "Enter your application reference number."));
+        return;
+      }
       setLoading(true);
       setError("");
       try {
-        const json = await fetchStatusById(appId, appToken);
+        const json = await fetchStatusByReference(school.id, trimmed);
         setData(json);
-        setLookupMode(false);
-        setParams(
-          { id: appId, token: appToken },
-          { replace: true }
-        );
+        setReference(trimmed);
+        saveReference(slug, trimmed);
       } catch (err: any) {
         setData(null);
         setError(translateApiError(err) || err.message || t("public:applyStatus.notFound"));
-        setLookupMode(true);
       } finally {
         setLoading(false);
       }
     },
-    [setParams, t]
+    [school?.id, slug, t]
   );
 
-  React.useEffect(() => {
-    if (!id || !token) return;
-    void loadFromCredentials(id, token);
-  }, [id, token, loadFromCredentials]);
+  const handleLookup = (e: React.FormEvent) => {
+    e.preventDefault();
+    void loadStatus(reference);
+  };
 
   const handlePayFee = async () => {
     if (!data?.fee?.id) return;
     setPaying(true);
     setPayError("");
     try {
-      const returnUrl =
-        slug && token
-          ? `${window.location.origin}/apply/${slug}/status?id=${encodeURIComponent(
-              data.id
-            )}&token=${encodeURIComponent(token)}`
-          : window.location.href;
+      const returnUrl = slug ? `${window.location.origin}${buildStatusUrl(slug)}` : window.location.href;
       const res = await fetch(
         `/api/public/fees/${encodeURIComponent(data.fee.id)}/checkout`,
         {
@@ -168,7 +160,7 @@ export default function PublicApplyStatusPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             applicationId: data.id,
-            token,
+            token: data.accessToken || "",
             successUrl: returnUrl,
             cancelUrl: returnUrl,
           }),
@@ -188,55 +180,6 @@ export default function PublicApplyStatusPage() {
         translateApiError(err) || err.message || t("public:applyStatus.payFeeFailed")
       );
       setPaying(false);
-    }
-  };
-
-  const handleLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    const parsed = parseApplyStatusUrl(statusLinkPaste);
-    if (parsed) {
-      navigate(`/apply/${slug}/status?id=${encodeURIComponent(parsed.id)}&token=${encodeURIComponent(parsed.token)}`);
-      return;
-    }
-
-    if (!school?.id) {
-      setError(t("public:apply.schoolNotFound"));
-      return;
-    }
-    if (!reference.trim() || !accessCode.trim()) {
-      setError(t("public:applyStatus.lookupRequired"));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const json = await fetchStatusByReference(school.id, reference, accessCode);
-      setData(json);
-      setLookupMode(false);
-      const nextToken = accessCode.trim();
-      setParams({ id: json.id, token: nextToken }, { replace: true });
-    } catch (err: any) {
-      setData(null);
-      setError(translateApiError(err) || err.message || t("public:applyStatus.notFound"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statusUrl =
-    data && slug && token
-      ? buildApplyStatusUrl(slug, data.id, token)
-      : id && token
-        ? buildApplyStatusUrl(slug, id, token)
-        : "";
-
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      /* ignore */
     }
   };
 
@@ -269,36 +212,20 @@ export default function PublicApplyStatusPage() {
             {t("public:applyStatus.title")}
           </h1>
           <p className="text-sm text-slate-500">
-            {lookupMode && !data
-              ? t("public:applyStatus.subtitleLookup")
-              : t("public:applyStatus.subtitleView")}
+            {data
+              ? t("public:applyStatus.subtitleView")
+              : t("public:applyStatus.subtitleLookup", "Enter the reference number from your confirmation email.")}
           </p>
           {school?.name ? (
             <p className="text-xs font-semibold text-slate-400">{school.name}</p>
           ) : null}
         </div>
 
-        {lookupMode && !loading ? (
+        {!data ? (
           <form onSubmit={handleLookup} className="space-y-4">
             <div className="space-y-2">
-              <label className={labelClass} htmlFor="status-link-paste">
-                {t("public:applyStatus.pasteLink")}
-              </label>
-              <input
-                id="status-link-paste"
-                type="text"
-                value={statusLinkPaste}
-                onChange={(e) => setStatusLinkPaste(e.target.value)}
-                placeholder={t("public:applyStatus.pasteLinkPlaceholder")}
-                className={inputClass}
-              />
-            </div>
-            <p className="text-xs font-semibold text-slate-400 text-center">
-              {t("public:applyStatus.orDivider")}
-            </p>
-            <div className="space-y-2">
               <label className={labelClass} htmlFor="apply-ref">
-                {t("public:applyStatus.reference")}
+                {t("public:applyStatus.reference", "Application reference number")}
               </label>
               <input
                 id="apply-ref"
@@ -306,35 +233,25 @@ export default function PublicApplyStatusPage() {
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="APP-XXXX-XXXXXX"
+                autoComplete="off"
                 className={`${inputClass} font-mono`}
               />
             </div>
-            <div className="space-y-2">
-              <label className={labelClass} htmlFor="apply-access">
-                {t("public:applyStatus.accessCode")}
-              </label>
-              <input
-                id="apply-access"
-                type="text"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                placeholder={t("public:applyStatus.accessCodePlaceholder")}
-                className={`${inputClass} font-mono text-xs`}
-              />
-            </div>
+            <p className="text-xs text-slate-500">
+              {t(
+                "public:applyStatus.referenceCheckHint",
+                "Use the reference number from your application confirmation email."
+              )}
+            </p>
             <Button type="submit" className="w-full" disabled={loading || !school?.id}>
-              {t("public:applyStatus.lookup")}
+              {loading ? t("public:applyStatus.loading") : t("public:applyStatus.lookup")}
             </Button>
           </form>
         ) : null}
 
-        {loading ? (
-          <p className="text-sm text-slate-500 font-medium">{t("public:applyStatus.loading")}</p>
-        ) : null}
-
         {error ? <p className="text-rose-600 text-sm font-medium">{error}</p> : null}
 
-        {data && !lookupMode ? (
+        {data ? (
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <OnboardingStepper status={data.status} />
@@ -368,6 +285,56 @@ export default function PublicApplyStatusPage() {
                 </p>
               ) : null}
             </div>
+
+            {data.entranceStatus || data.entranceBooking ? (
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4 space-y-2">
+                <p className="text-sm font-bold text-slate-800">
+                  {t("public:applyStatus.entranceTitle", "Entrance")}
+                </p>
+                <p className="text-sm text-slate-600">
+                  <span className="font-medium text-slate-900">
+                    {t("public:applyStatus.entranceStatusLabel", "Status")}:
+                  </span>{" "}
+                  <span className="inline-flex rounded-lg bg-white border border-slate-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-slate-800">
+                    {statusLabel(data.entranceStatus || "NOT_SCHEDULED")}
+                  </span>
+                </p>
+                {data.entranceAvailability?.note ? (
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    {t("public:applyStatus.entranceAvailabilityNote", "School note: {{note}}", {
+                      note: data.entranceAvailability.note,
+                    })}
+                  </p>
+                ) : null}
+                {data.entranceBooking ? (
+                  <div className="space-y-1 text-sm text-slate-600">
+                    <p>
+                      <span className="font-medium text-slate-900">
+                        {t("public:applyStatus.entranceDate", "Date & time")}:
+                      </span>{" "}
+                      {formatDateTime(data.entranceBooking.startAt)}
+                      {data.entranceBooking.endAt ? ` – ${formatDateTime(data.entranceBooking.endAt)}` : ""}
+                    </p>
+                    {data.entranceBooking.location ? (
+                      <p>
+                        <span className="font-medium text-slate-900">
+                          {t("public:applyStatus.entranceLocation", "Location")}:
+                        </span>{" "}
+                        {data.entranceBooking.location}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {data.entranceUrl ? (
+                  <a
+                    href={data.entranceUrl}
+                    className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700"
+                  >
+                    {t("public:applyStatus.entranceChange", "Choose/change my entrance date")}
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
 
             {data.fee ? (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-2">
@@ -421,33 +388,22 @@ export default function PublicApplyStatusPage() {
 
             <p className="text-xs text-slate-500 leading-relaxed">{t("public:applyStatus.statusHint")}</p>
 
-            {statusUrl ? (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="compact"
-                  onClick={() => void copyText(statusUrl)}
-                >
-                  <Copy className="w-4 h-4" />
-                  {t("public:applyStatus.copyLink")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="compact"
-                  onClick={() => id && token && void loadFromCredentials(id, token)}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  {t("public:applyStatus.refresh")}
-                </Button>
-              </div>
-            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                disabled={loading}
+                onClick={() => void loadStatus(reference)}
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t("public:applyStatus.refresh")}
+              </Button>
+            </div>
 
             <button
               type="button"
               onClick={() => {
-                setLookupMode(true);
                 setData(null);
                 setError("");
               }}

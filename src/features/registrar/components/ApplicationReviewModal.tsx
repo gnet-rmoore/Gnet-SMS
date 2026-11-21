@@ -382,11 +382,27 @@ export function ApplicationReviewModal({
                           <option value="">{t("admissions.review.selectClassGroup")}</option>
                           {classrooms
                             .filter((c: { subjectId?: string | null }) => !c.subjectId)
-                            .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name} ({c.gradeLevel?.name || t("admissions.review.unassignedGrade")})
-                            </option>
-                          ))}
+                            .filter((c: any) => {
+                              const seats =
+                                c.seatsLeft ??
+                                (c.capacity == null
+                                  ? null
+                                  : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
+                              return c.capacity == null || c.allowOverfill || (seats ?? 0) > 0;
+                            })
+                            .map((c: any) => {
+                              const seats =
+                                c.seatsLeft ??
+                                (c.capacity == null
+                                  ? null
+                                  : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
+                              return (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} ({c.gradeLevel?.name || t("admissions.review.unassignedGrade")})
+                                  {seats != null ? ` · ${seats}` : ""}
+                                </option>
+                              );
+                            })}
                         </select>
                         <p className="text-xs text-slate-500 font-semibold leading-relaxed">
                           {t("admissions.review.classGroupHint")}

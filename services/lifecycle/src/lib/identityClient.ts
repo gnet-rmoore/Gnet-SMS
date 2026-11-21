@@ -108,6 +108,21 @@ export async function getSchoolAdmissionPolicy(schoolId: string): Promise<{
     requireClassroomOnEnroll: boolean;
     entranceFeeAmount: number;
     applyBackgroundUrl?: string;
+    entranceSchedulingEnabled?: boolean;
+    entranceSlots?: Array<{
+      id: string;
+      startAt: string;
+      endAt: string;
+      capacity: number;
+      location?: string | null;
+      instructions?: string | null;
+    }>;
+    entranceBookingDeadline?: string | null;
+    entranceRescheduleCutoffHours?: number;
+    entranceAvailableFrom?: string | null;
+    entranceAvailableTo?: string | null;
+    entranceAvailableWeekdays?: number[];
+    entranceAvailabilityNote?: string | null;
   };
 } | null> {
   try {
@@ -117,6 +132,27 @@ export async function getSchoolAdmissionPolicy(schoolId: string): Promise<{
     if (res.status === 404) return null;
     if (!res.ok) return null;
     return res.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve a school by its public slug (used by token-free public status links). */
+export async function getPublicSchoolBySlug(slug: string): Promise<{
+  id: string;
+  name: string;
+  slug: string;
+  defaultLocale?: string | null;
+  admissionPolicy?: Record<string, unknown> | null;
+} | null> {
+  try {
+    const res = await fetch(`${IDENTITY_URL}/api/public/schools/${encodeURIComponent(slug)}`, {
+      headers: internalHeaders(),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.id) return null;
+    return data;
   } catch {
     return null;
   }

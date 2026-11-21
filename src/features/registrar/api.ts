@@ -1,6 +1,17 @@
 import { api } from "../../services/api";
 import { fetchAllItems } from "../../lib/apiEnvelope";
 
+export type AdmissionEntranceSlotPayload = {
+  id: string;
+  /** ISO date-time string. */
+  startAt: string;
+  /** ISO date-time string. */
+  endAt: string;
+  capacity: number;
+  location?: string | null;
+  instructions?: string | null;
+};
+
 export type AdmissionPolicyPayload = {
   publicApplyEnabled: boolean;
   returningApplyEnabled: boolean;
@@ -10,6 +21,15 @@ export type AdmissionPolicyPayload = {
   entranceFeeAmount: number;
   /** Custom background image for the public registration page. */
   applyBackgroundUrl?: string;
+  entranceSchedulingEnabled: boolean;
+  entranceSlots: AdmissionEntranceSlotPayload[];
+  entranceBookingDeadline: string | null;
+  entranceRescheduleCutoffHours: number;
+  entranceAvailableFrom: string | null;
+  entranceAvailableTo: string | null;
+  /** 0 = Sunday … 6 = Saturday. */
+  entranceAvailableWeekdays: number[];
+  entranceAvailabilityNote: string | null;
 };
 
 /** Thin API wrappers for the registrar feature. */

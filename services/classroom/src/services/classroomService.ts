@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 import { getIdentityUser, getIdentityUsersByIds, toAuthorRef } from "../lib/identityClient";
 import {
@@ -18,6 +19,71 @@ import {
 } from "../lib/sectionSubjectCode";
 import { fetchSubjectOfferings } from "../lib/academicClient";
 
+type CapacityClassroom = {
+  id: string;
+  capacity?: number | null;
+  allowOverfill?: boolean;
+};
+
+function withCapacityInfo<T extends CapacityClassroom>(classroom: T, studentCount: number) {
+  const capacity = classroom.capacity ?? null;
+  return {
+    ...classroom,
+    capacity,
+    allowOverfill: Boolean(classroom.allowOverfill),
+    studentCount,
+    seatsLeft: capacity === null ? null : Math.max(0, capacity - studentCount),
+  };
+}
+
+async function studentCountsByClassroom(classroomIds: string[]) {
+  if (classroomIds.length === 0) return new Map<string, number>();
+  const rows = await prisma.classroomMember.groupBy({
+    by: ["classroomId"],
+    where: { classroomId: { in: classroomIds }, role: "STUDENT" },
+    _count: { _all: true },
+  });
+  return new Map(rows.map((row) => [row.classroomId, row._count._all]));
+}
+
+function normalizeCapacity(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw Object.assign(new Error("capacity must be null or an integer greater than 0"), {
+      status: 400,
+      code: "INVALID_CAPACITY",
+    });
+  }
+  return parsed;
+}
+
+function buildCapacityPatch(
+  data: { capacity?: unknown; allowOverfill?: unknown },
+  current: { capacity?: number | null; allowOverfill?: boolean },
+  occupied: number
+) {
+  const patch: Record<string, unknown> = {};
+  const capacity = normalizeCapacity(data.capacity);
+  if (capacity !== undefined) {
+    const allowOverfill =
+      data.allowOverfill !== undefined ? Boolean(data.allowOverfill) : Boolean(current.allowOverfill);
+    if (capacity !== null && !allowOverfill && capacity < occupied) {
+      throw Object.assign(new Error("Class is below current occupancy"), {
+        status: 409,
+        code: "CLASS_BELOW_OCCUPANCY",
+        capacity,
+        occupied,
+        studentCount: occupied,
+      });
+    }
+    patch.capacity = capacity;
+  }
+  if (data.allowOverfill !== undefined) patch.allowOverfill = Boolean(data.allowOverfill);
+  return patch;
+}
+
 /**
  * Ported from src/server/services/classroomService.ts.
  * - Dropped `subject` / `gradeLevel` includes (Academic-owned) — callers get
@@ -30,7 +96,7 @@ import { fetchSubjectOfferings } from "../lib/academicClient";
  */
 export const classroomService = {
   async getClassroomsBySchool(schoolId: string, schoolYearId?: string) {
-    return prisma.classroom.findMany({
+    const classrooms = await prisma.classroom.findMany({
       where: { schoolId, ...(schoolYearId ? { schoolYearId } : {}) },
       include: {
         members: {
@@ -40,6 +106,10 @@ export const classroomService = {
       },
       orderBy: { createdAt: "desc" },
     });
+    const counts = await studentCountsByClassroom(classrooms.map((classroom) => classroom.id));
+    return classrooms.map((classroom) =>
+      withCapacityInfo(classroom as any, counts.get(classroom.id) ?? 0)
+    );
   },
 
   async createClassroom(data: any) {
@@ -57,6 +127,8 @@ export const classroomService = {
       organizationType: rawOrganizationType,
       propagateSupportStaff,
       sectionSubjectCode,
+      capacity,
+      allowOverfill,
     } = data;
     const primaryTeacherId = ownerTeacherId;
     const isClassGroup = !subjectId;
@@ -64,6 +136,7 @@ export const classroomService = {
     if (!name) throw new Error("Class name is required");
     if (!schoolId) throw new Error("School ID is required");
     if (!primaryTeacherId) throw new Error("Owner teacher ID is required");
+    const normalizedCapacity = normalizeCapacity(capacity);
 
     const organizationType = isClassGroup
       ? normalizeOrganizationType(rawOrganizationType, "SELF_CONTAINED")
@@ -93,7 +166,9 @@ export const classroomService = {
                 : Boolean(propagateSupportStaff),
             classCode: Math.random().toString(36).substring(2, 9).toUpperCase(),
             sectionSubjectCode: sectionSubjectCode || null,
-          },
+            capacity: normalizedCapacity ?? null,
+            allowOverfill: Boolean(allowOverfill),
+          } as any,
         });
 
         await tx.classroomMember.create({
@@ -210,6 +285,8 @@ export const classroomService = {
       organizationType: rawOrganizationType,
       propagateSupportStaff,
       sectionSubjectCode,
+      capacity,
+      allowOverfill,
     } = data;
 
     if (ownerTeacherId) {
@@ -222,7 +299,14 @@ export const classroomService = {
     const existing = await prisma.classroom.findUnique({ where: { id } });
     if (!existing) throw new Error("Classroom not found");
 
-    const patch: Record<string, unknown> = {};
+    const occupied = await prisma.classroomMember.count({
+      where: { classroomId: id, role: "STUDENT" },
+    });
+    const patch: Record<string, unknown> = buildCapacityPatch(
+      { capacity, allowOverfill },
+      existing as any,
+      occupied
+    );
     if (name !== undefined) patch.name = name;
     if (bannerColor !== undefined) patch.bannerColor = bannerColor;
     if (bannerImageUrl !== undefined) patch.bannerImageUrl = bannerImageUrl;
@@ -262,6 +346,62 @@ export const classroomService = {
     }
 
     return updatedClassroom;
+  },
+
+  async updateClassroomCapacity(
+    id: string,
+    data: { capacity?: unknown; allowOverfill?: unknown }
+  ) {
+    const existing = await prisma.classroom.findUnique({ where: { id } });
+    if (!existing) {
+      throw Object.assign(new Error("Classroom not found"), {
+        status: 404,
+        code: "CLASSROOM_NOT_FOUND",
+      });
+    }
+    const occupied = await prisma.classroomMember.count({
+      where: { classroomId: id, role: "STUDENT" },
+    });
+    const patch = buildCapacityPatch(data, existing as any, occupied);
+    const updated = await prisma.classroom.update({ where: { id }, data: patch });
+    return withCapacityInfo(updated as any, occupied);
+  },
+
+  async claimStudentSeat(classroomId: string, userId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT id FROM classroom."Classroom" WHERE id = ${classroomId} FOR UPDATE`
+      );
+      const classroom = await tx.classroom.findUnique({ where: { id: classroomId } });
+      if (!classroom) {
+        throw Object.assign(new Error("Classroom not found"), {
+          status: 404,
+          code: "CLASSROOM_NOT_FOUND",
+        });
+      }
+      const existingMember = await tx.classroomMember.findUnique({
+        where: { classroomId_userId: { classroomId, userId } },
+      });
+      if (existingMember) return { ok: true, alreadyMember: true };
+
+      const count = await tx.classroomMember.count({
+        where: { classroomId, role: "STUDENT" },
+      });
+      const capacity = (classroom as any).capacity ?? null;
+      const allowOverfill = Boolean((classroom as any).allowOverfill);
+      if (capacity !== null && count >= capacity && !allowOverfill) {
+        throw Object.assign(new Error("Class is full"), {
+          status: 409,
+          code: "CLASSROOM_FULL",
+          capacity,
+          occupied: count,
+        });
+      }
+      await tx.classroomMember.create({
+        data: { classroomId, userId, role: "STUDENT" },
+      });
+      return { ok: true, alreadyMember: false, capacity, occupied: count + 1 };
+    });
   },
 
   /**
@@ -501,15 +641,17 @@ export const classroomService = {
       throw new Error(`Only users with role TEACHER can be assigned with role ${role} in a classroom.`);
     }
 
-    const member = await prisma.classroomMember.create({
-      data: { classroomId, userId, role },
-    });
-
     if (role === "STUDENT") {
+      await this.claimStudentSeat(classroomId, userId);
       await this.propagateStudentToSubjectRooms(classroomId, userId, "add");
+      return prisma.classroomMember.findUnique({
+        where: { classroomId_userId: { classroomId, userId } },
+      });
     }
 
-    return member;
+    return prisma.classroomMember.create({
+      data: { classroomId, userId, role },
+    });
   },
 
   async addMembersBulk(classroomId: string, schoolId: string, userIds: string[]) {
@@ -558,8 +700,12 @@ export const classroomService = {
       try {
         await this.addMember(classroomId, userId, "STUDENT");
         results.push({ userId, success: true });
-      } catch {
-        results.push({ userId, success: false, reason: "assignment_failed" });
+      } catch (err: any) {
+        results.push({
+          userId,
+          success: false,
+          reason: err?.code === "CLASSROOM_FULL" ? "class_full" : "assignment_failed",
+        });
       }
     }
     return results;
@@ -696,7 +842,7 @@ export const classroomService = {
 
   /** Internal — classrooms owned by or assigned to a user in one of `roles`. */
   async getClassroomsByMember(userId: string, roles: string[], schoolId?: string) {
-    return prisma.classroom.findMany({
+    const classrooms = await prisma.classroom.findMany({
       where: {
         ...(schoolId && { schoolId }),
         OR: [
@@ -712,10 +858,14 @@ export const classroomService = {
         _count: { select: { members: true } },
       },
     });
+    const counts = await studentCountsByClassroom(classrooms.map((classroom) => classroom.id));
+    return classrooms.map((classroom) =>
+      withCapacityInfo(classroom as any, counts.get(classroom.id) ?? 0)
+    );
   },
 
   async getClassroomsOwnedByTeacher(schoolId: string, ownerTeacherId: string) {
-    return prisma.classroom.findMany({
+    const classrooms = await prisma.classroom.findMany({
       where: { schoolId, ownerTeacherId },
       include: {
         members: {
@@ -725,6 +875,10 @@ export const classroomService = {
       },
       orderBy: { createdAt: "desc" },
     });
+    const counts = await studentCountsByClassroom(classrooms.map((classroom) => classroom.id));
+    return classrooms.map((classroom) =>
+      withCapacityInfo(classroom as any, counts.get(classroom.id) ?? 0)
+    );
   },
 
   async enrichPosts<T extends { authorId: string }>(posts: T[]) {
@@ -1076,7 +1230,7 @@ export const classroomService = {
       userId: memberId,
       ...(roles?.length ? { role: { in: roles } } : {}),
     };
-    return prisma.classroom.findMany({
+    const classrooms = await prisma.classroom.findMany({
       where: {
         schoolId,
         ...(includeOwned && !asStudentId
@@ -1094,15 +1248,24 @@ export const classroomService = {
       },
       orderBy: { createdAt: "desc" },
     });
+    const counts = await studentCountsByClassroom(classrooms.map((classroom) => classroom.id));
+    return classrooms.map((classroom) =>
+      withCapacityInfo(classroom as any, counts.get(classroom.id) ?? 0)
+    );
   },
 
   async getClassroomById(id: string) {
-    return prisma.classroom.findUnique({
+    const classroom = await prisma.classroom.findUnique({
       where: { id },
       include: {
         _count: { select: { members: true, posts: true } },
       },
     });
+    if (!classroom) return null;
+    const studentCount = await prisma.classroomMember.count({
+      where: { classroomId: id, role: "STUDENT" },
+    });
+    return withCapacityInfo(classroom as any, studentCount);
   },
 
   async findById(id: string) {

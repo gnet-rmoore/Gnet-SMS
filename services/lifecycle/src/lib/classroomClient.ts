@@ -64,6 +64,28 @@ export async function addClassroomMember(classroomId: string, userId: string, ro
   return res.json();
 }
 
+/** Capacity-checked, idempotent student seat claim used by admissions enrollment. */
+export async function claimStudentSeat(classroomId: string, userId: string) {
+  const res = await fetch(
+    `${CLASSROOM_URL}/api/internal/classrooms/${classroomId}/members/claim`,
+    {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ userId }),
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw Object.assign(new Error(data?.error || "Classroom seat claim failed"), {
+      status: res.status,
+      code: data?.code || "CLASSROOM_CLAIM_FAILED",
+      capacity: data?.capacity,
+      occupied: data?.occupied,
+    });
+  }
+  return data as { ok: boolean; alreadyMember: boolean; capacity?: number | null; occupied?: number };
+}
+
 export type ClassroomRef = {
   id: string;
   name: string;
@@ -72,6 +94,10 @@ export type ClassroomRef = {
   ownerTeacherId?: string | null;
   gradeLevelId?: string | null;
   subjectId?: string | null;
+  capacity?: number | null;
+  allowOverfill?: boolean;
+  studentCount?: number;
+  seatsLeft?: number | null;
 };
 
 export async function getTeacherClassrooms(

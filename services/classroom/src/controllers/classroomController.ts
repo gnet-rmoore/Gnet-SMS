@@ -10,6 +10,14 @@ function isStaffRole(role: string) {
   return ["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "REGISTRAR"].includes(role);
 }
 
+function sendClassroomError(res: Response, err: any, fallback: string) {
+  const body: Record<string, unknown> = { error: err?.message || fallback };
+  if (err?.code !== undefined) body.code = err.code;
+  if (err?.capacity !== undefined) body.capacity = err.capacity;
+  if (err?.occupied !== undefined) body.occupied = err.occupied;
+  return res.status(typeof err?.status === "number" ? err.status : 400).json(body);
+}
+
 async function resolveClassroomStaff(classroomId: string, user: { id: string; role: string }) {
   const membership = await classroomService.findByIdWithUserMembership(classroomId, user.id);
   const isStaff =
@@ -111,6 +119,8 @@ export const classroomController = {
       parentClassroomId,
       organizationType,
       propagateSupportStaff,
+      capacity,
+      allowOverfill,
     } = req.body;
 
     if (!["SUPER_ADMIN", "SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "REGISTRAR"].includes(req.user.role)) {
@@ -132,6 +142,8 @@ export const classroomController = {
         parentClassroomId,
         organizationType,
         propagateSupportStaff,
+        capacity,
+        allowOverfill,
       });
       res.json(classroom);
     } catch (err: any) {
@@ -269,6 +281,22 @@ export const classroomController = {
       res.json(updatedClassroom);
     } catch (err: any) {
       res.status(400).json({ error: err.message || "Failed to update classroom" });
+    }
+  },
+
+  async updateClassroomCapacity(req: any, res: Response) {
+    const { id } = req.params;
+    const { capacity, allowOverfill } = req.body || {};
+    try {
+      const classroom = await classroomService.findById(id);
+      if (!classroom) return res.status(404).json({ error: "Classroom not found" });
+      if (req.user.schoolId !== classroom.schoolId && req.user.role !== "SUPER_ADMIN") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      const updated = await classroomService.updateClassroomCapacity(id, { capacity, allowOverfill });
+      res.json(updated);
+    } catch (err: any) {
+      return sendClassroomError(res, err, "Failed to update classroom capacity");
     }
   },
 
@@ -881,7 +909,7 @@ export const classroomController = {
   // call these internal endpoints instead.
   async getClassroomByIdInternal(req: any, res: Response) {
     try {
-      const classroom = await classroomService.findById(req.params.id);
+      const classroom = await classroomService.getClassroomById(req.params.id);
       if (!classroom) return res.status(404).json({ error: "Classroom not found" });
       res.json(classroom);
     } catch (err) {
@@ -990,6 +1018,18 @@ export const classroomController = {
       res.status(201).json(member);
     } catch (err: any) {
       res.status(400).json({ error: err.message || "Failed to add member" });
+    }
+  },
+
+  async claimMemberSeatInternal(req: any, res: Response) {
+    const { id: classroomId } = req.params;
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    try {
+      const result = await classroomService.claimStudentSeat(classroomId, userId);
+      res.status(result.alreadyMember ? 200 : 201).json(result);
+    } catch (err: any) {
+      return sendClassroomError(res, err, "Failed to claim seat");
     }
   },
 

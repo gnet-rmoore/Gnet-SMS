@@ -75,4 +75,15 @@ assert(
   "gateway special-cases auth login"
 );
 
+const publicClassroomsRouteIdx = gatewaySrc.indexOf(
+  "/api\\/public\\/schools\\/[^/]+\\/classrooms"
+);
+const genericPublicSchoolsIdx = gatewaySrc.indexOf('"/api/public/schools"');
+assert(
+  publicClassroomsRouteIdx >= 0 &&
+    genericPublicSchoolsIdx >= 0 &&
+    publicClassroomsRouteIdx < genericPublicSchoolsIdx,
+  "public classroom route resolves before generic public schools route"
+);
+
 summary("gateway-suffix");

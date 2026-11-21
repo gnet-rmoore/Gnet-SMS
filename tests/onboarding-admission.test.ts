@@ -2,7 +2,12 @@
  * Unit tests for onboarding + admission domain logic (no DB).
  * Run: npm run test:onboarding
  */
-import { assertTransition } from "../services/lifecycle/src/domain/admissionStates";
+import {
+  assertTransition,
+  generateApplicationNumber,
+} from "../services/lifecycle/src/domain/admissionStates";
+import { isEntranceSlotWithinPolicy } from "../services/lifecycle/src/domain/admissionPolicy";
+import { normalizeParentEmails } from "../services/lifecycle/src/lib/applicationEmail";
 import { isSchoolLoginAllowed } from "../services/identity/src/domain/schoolStatus";
 import { hashToken, generateRawToken } from "../services/identity/src/lib/mailer";
 
@@ -93,6 +98,53 @@ assert(
 assert(
   Array.isArray(merged.requiredDocTypes) && merged.requiredDocTypes.length === 0,
   "policy keeps documents optional (empty requiredDocTypes)"
+);
+
+console.log("\n[Reference numbers and parent contacts]");
+const refA = generateApplicationNumber("11111111-1111-1111-1111-111111111111");
+const refB = generateApplicationNumber("11111111-1111-1111-1111-111111111111");
+assert(refA !== refB, "reference numbers are high-entropy and unique");
+assert(refA.startsWith("APP-1111-"), "reference number includes a school prefix");
+const contacts = normalizeParentEmails(
+  [
+    { email: "Father@Example.com", role: "FATHER" },
+    { email: "mother@example.com", role: "MOTHER" },
+  ],
+  "other@example.com"
+);
+assert(contacts.length === 2, "parent contact list keeps father and mother emails");
+assert(contacts[0].role === "FATHER", "parent contacts preserve roles");
+
+const entrancePolicy = parseAdmissionPolicy(
+  JSON.stringify({
+    entranceSchedulingEnabled: true,
+    entranceSlots: [{ id: "slot-1", startAt: "2026-12-01T09:00:00Z", endAt: "2026-12-01T09:30:00Z", capacity: 2 }],
+    entranceRescheduleCutoffHours: 12,
+  })
+);
+assert(entrancePolicy.entranceSchedulingEnabled === true, "entrance scheduling parses");
+assert(entrancePolicy.entranceSlots.length === 1, "entrance slots parse");
+assert(entrancePolicy.entranceRescheduleCutoffHours === 12, "reschedule cutoff parses");
+
+const availabilityPolicy = parseAdmissionPolicy({
+  entranceSchedulingEnabled: true,
+  entranceAvailableFrom: "2026-11-01",
+  entranceAvailableTo: "2026-11-30",
+  entranceAvailableWeekdays: [1, 2, 3, 4, 5],
+  entranceAvailabilityNote: "Monday to Friday only.",
+});
+assert(availabilityPolicy.entranceAvailabilityNote === "Monday to Friday only.", "availability note parses");
+assert(
+  isEntranceSlotWithinPolicy(availabilityPolicy, { startAt: "2026-11-22T09:00:00Z" }) === false,
+  "Sunday slots are rejected"
+);
+assert(
+  isEntranceSlotWithinPolicy(availabilityPolicy, { startAt: "2026-11-23T09:00:00Z" }) === true,
+  "Monday slots inside the range are accepted"
+);
+assert(
+  isEntranceSlotWithinPolicy(availabilityPolicy, { startAt: "2026-12-01T09:00:00Z" }) === false,
+  "slots outside the date range are rejected"
 );
 
 console.log("\n=========================================");

@@ -15,6 +15,7 @@ export type AdmissionApplicationForm = {
   dob: string;
   gender: string;
   gradeLevelId: string;
+  classroomId: string;
   studentEmail: string;
   studentPhone: string;
   address: string;
@@ -38,6 +39,7 @@ export function emptyAdmissionApplicationForm(): AdmissionApplicationForm {
     dob: "",
     gender: "MALE",
     gradeLevelId: "",
+    classroomId: "",
     studentEmail: "",
     studentPhone: "",
     address: "",
@@ -143,7 +145,8 @@ export type AdmissionValidationCode =
   | "invalidPhone"
   | "invalidDate"
   | "dobInFuture"
-  | "gradeRequired";
+  | "gradeRequired"
+  | "parentEmailRequired";
 
 export type AdmissionFieldErrors = Partial<
   Record<keyof AdmissionApplicationForm, AdmissionValidationCode>
@@ -232,6 +235,9 @@ export function validateAdmissionStep(
     if (form.motherName && nameIssue(form.motherName)) errors.motherName = "nameTooShort";
     if (form.motherPhone && !isValidPhone(form.motherPhone)) errors.motherPhone = "invalidPhone";
     if (form.motherEmail && !isEmail(form.motherEmail)) errors.motherEmail = "invalidEmail";
+    if (!isEmail(form.fatherEmail) && !isEmail(form.motherEmail) && !errors.fatherEmail) {
+      errors.fatherEmail = "parentEmailRequired";
+    }
   }
 
   return errors;
@@ -294,6 +300,17 @@ export function buildAdmissionApiPayload({
     null;
   const parentName = form.fatherName || form.motherName || (applicantType === "RETURNING" ? "" : "Not Specified");
   const parentEmail = form.fatherEmail || form.motherEmail || null;
+  const parentEmails = Array.from(
+    new Map(
+      ([
+        { role: "FATHER", email: form.fatherEmail },
+        { role: "MOTHER", email: form.motherEmail },
+      ] as const)
+        .map(({ role, email }) => ({ role, email: String(email || "").trim().toLowerCase() }))
+        .filter(({ email }) => Boolean(email))
+        .map((item) => [item.email, item] as const)
+    ).values()
+  );
   const parentPhone =
     form.fatherPhone || form.motherPhone || (applicantType === "RETURNING" ? "" : "Not Specified");
 
@@ -328,9 +345,11 @@ export function buildAdmissionApiPayload({
     address: form.address || null,
     parentName: parentName || null,
     parentEmail,
+    parentEmails,
     parentPhone: parentPhone || null,
     gradeLevelId: form.gradeLevelId || "pending-assignment",
     gradeLevelName,
+    classroomId: form.classroomId || null,
     previousSchool: form.previousSchool || null,
     applicantType,
     ...(existingId ? { existingStudentUserId: existingId } : {}),

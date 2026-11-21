@@ -1,4 +1,5 @@
 /** Server-enforced admission status transitions. */
+import crypto from "node:crypto";
 
 export const ADMISSION_STATUSES = [
   "PENDING",
@@ -74,6 +75,6 @@ export function assertTransition(from: string, to: string) {
 
 export function generateApplicationNumber(schoolId: string): string {
   const short = schoolId.replace(/-/g, "").slice(0, 4).toUpperCase();
-  const n = Date.now().toString(36).toUpperCase().slice(-6);
-  return `APP-${short}-${n}`;
+  const random = crypto.randomBytes(9).toString("base64url").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return `APP-${short}-${random}`.slice(0, 32);
 }

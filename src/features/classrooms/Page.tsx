@@ -12,7 +12,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useClassroomsQuery } from "./hooks/useClassroomsQuery";
 import { classroomsApi } from "./api";
 import { ClassroomWizardModal } from "./components/ClassroomWizardModal";
-import { CreateClassroomModal } from "./components/CreateClassroomModal";
+import { CreateClassroomModal, type CreateClassroomFormData } from "./components/CreateClassroomModal";
 import { ManageStudentsModal } from "./components/ManageStudentsModal";
 import { EditClassroomModal } from "./components/EditClassroomModal";
 import { AssignSubjectModal } from "./components/AssignSubjectModal";
@@ -66,14 +66,16 @@ export const Classrooms = () => {
   const [wizardSelectedSubjectIds, setWizardSelectedSubjectIds] = useState<string[]>([]);
   const [wizardSubjectTeachers, setWizardSubjectTeachers] = useState<Record<string, string>>({});
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateClassroomFormData>({
     name: "",
     gradeLevelId: "",
     ownerTeacherId: "",
-    teacherIds: [] as string[],
-    assistantIds: [] as string[],
+    teacherIds: [],
+    assistantIds: [],
     organizationType: "SELF_CONTAINED" as OrganizationType,
     bannerColor: "bg-indigo-600",
+    capacity: "",
+    allowOverfill: false,
   });
   const [subjectAssignment, setSubjectAssignment] = useState({ subjectId: "", teacherId: "" });
   const [showEditModal, setShowEditModal] = useState(false);
@@ -352,6 +354,8 @@ export const Classrooms = () => {
       assistantIds: [],
       organizationType: resolveOrganizationType(classroom, classrooms.filter((c) => c.subjectId)),
       bannerColor: classroom.bannerColor || "bg-indigo-600",
+      capacity: classroom.capacity ?? "",
+      allowOverfill: Boolean(classroom.allowOverfill),
     });
     setShowEditModal(true);
     setActiveDropdown(null);
@@ -362,22 +366,39 @@ export const Classrooms = () => {
     if (!editingClassroom) return;
     setSubmitting(true);
     try {
+      const { capacity, allowOverfill, ...classroomFields } = formData;
       const response = await fetch(`/api/classrooms/${editingClassroom.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(classroomFields),
       });
-      if (response.ok) {
-        setShowEditModal(false);
-        fetchData();
-        showToast(t("classrooms.toast.classGroupUpdated"));
-      } else {
+      if (!response.ok) {
         const data = await response.json();
         showToast(data.error || t("classrooms.toast.updateFailed"), "error");
+        return;
       }
+      const capacityResponse = await fetch(`/api/classrooms/${editingClassroom.id}/capacity`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          capacity: capacity === "" || capacity == null ? null : Number(capacity),
+          allowOverfill: Boolean(allowOverfill),
+        }),
+      });
+      if (!capacityResponse.ok) {
+        const data = await capacityResponse.json();
+        showToast(data.error || t("classrooms.toast.updateFailed"), "error");
+        return;
+      }
+      setShowEditModal(false);
+      fetchData();
+      showToast(t("classrooms.toast.classGroupUpdated"));
     } catch {
       showToast(t("classrooms.toast.updateFailed"), "error");
     } finally {
@@ -476,7 +497,13 @@ export const Classrooms = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          capacity:
+            formData.capacity === "" || formData.capacity == null
+              ? null
+              : Number(formData.capacity),
+        }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -489,6 +516,8 @@ export const Classrooms = () => {
           assistantIds: [],
           organizationType: "SELF_CONTAINED",
           bannerColor: "bg-indigo-600",
+          capacity: "",
+          allowOverfill: false,
         });
         fetchData();
         showToast(t("classrooms.toast.classGroupCreated"));

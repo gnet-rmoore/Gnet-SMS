@@ -42,6 +42,7 @@ const VerifyEmailPage = lazy(() => import("./pages/VerifyEmail"));
 const InviteAcceptPage = lazy(() => import("./pages/InviteAccept"));
 const PublicApplyPage = lazy(() => import("./pages/PublicApply"));
 const PublicApplyStatusPage = lazy(() => import("./pages/PublicApplyStatus"));
+const EntranceSchedulePage = lazy(() => import("./pages/EntranceSchedule"));
 const PublicReceiptVerifyPage = lazy(() => import("./pages/PublicReceiptVerify"));
 const SchoolUnavailablePage = lazy(() => import("./pages/SchoolUnavailable"));
 const NotFoundPage = lazy(() => import("./pages/errors/NotFoundPage"));
@@ -269,6 +270,7 @@ export default function App() {
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/apply/:slug" element={<PublicApplyPage />} />
         <Route path="/apply/:slug/status" element={<PublicApplyStatusPage />} />
+        <Route path="/entrance/:slug/:token" element={<EntranceSchedulePage />} />
         <Route path="/verify/receipt/:code" element={<PublicReceiptVerifyPage />} />
         <Route path="/checkout/mock" element={<MockCheckoutPage />} />
         

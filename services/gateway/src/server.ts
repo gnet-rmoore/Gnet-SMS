@@ -153,6 +153,9 @@ export function resolveUpstream(method: string, path: string): string | null {
 
   if (USER_PAYROLLS_RE.test(path)) return urlFor("staff");
 
+  if (/^\/api\/public\/schools\/[^/]+\/classrooms(?:\?|$)/.test(path)) {
+    return urlFor("lifecycle");
+  }
   if (
     hasAnyPrefix(path, [
       "/api/public/school-registrations",
@@ -165,6 +168,9 @@ export function resolveUpstream(method: string, path: string): string | null {
     ])
   ) {
     return urlFor("identity");
+  }
+  if (hasAnyPrefix(path, ["/api/public/entrance"])) {
+    return urlFor("lifecycle");
   }
   if (hasAnyPrefix(path, ["/api/public/applications"])) {
     return urlFor("lifecycle");

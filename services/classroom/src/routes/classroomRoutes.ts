@@ -66,6 +66,14 @@ router.patch(
   classroomController.updateClassroom
 );
 
+router.patch(
+  "/api/classrooms/:id/capacity",
+  authenticate,
+  requireRoles(["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL"]),
+  requireResourceTenant(resourceLoaders.classroom),
+  classroomController.updateClassroomCapacity
+);
+
 router.post(
   "/api/classrooms/:id/members",
   authenticate,
@@ -317,6 +325,11 @@ router.post(
   "/api/internal/classrooms/:id/members",
   authenticateInternal,
   classroomController.addMemberInternal
+);
+router.post(
+  "/api/internal/classrooms/:id/members/claim",
+  authenticateInternal,
+  classroomController.claimMemberSeatInternal
 );
 router.delete(
   "/api/internal/classrooms/:id/members/:userId",

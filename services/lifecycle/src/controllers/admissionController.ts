@@ -120,6 +120,18 @@ export const admissionController = {
     try {
       const application = await admissionService.createApplication(schoolId, req.body, "STAFF_DIRECT");
       res.json(application);
+      const { getIdentitySchool } = await import("../lib/identityClient");
+      const { sendApplicationReceivedEmail } = await import("../lib/applicationEmail");
+      const school = await getIdentitySchool(schoolId);
+      void sendApplicationReceivedEmail({
+        schoolName: school?.name || "School",
+        slug: school?.slug || schoolId,
+        locale: school?.defaultLocale || null,
+        application: {
+          ...application,
+          entranceAvailabilityNote: application.entranceAvailability?.note,
+        },
+      });
     } catch (err: any) {
       console.error(err);
       res.status(err.status || 500).json({ error: err.message || "Failed to create application" });
@@ -230,7 +242,9 @@ export const admissionController = {
 
   async publicStatus(req: Request, res: Response) {
     try {
-      const token = String(req.query.token || req.body?.token || "");
+      const token = String(
+        req.query.token || req.body?.token || req.body?.accessToken || req.query.accessToken || ""
+      );
       const result = await admissionService.publicStatus(req.params.id, token);
       res.json(result);
     } catch (err: any) {
@@ -242,8 +256,7 @@ export const admissionController = {
     try {
       const schoolId = String(req.query.schoolId || "");
       const number = String(req.query.number || "");
-      const token = String(req.query.token || "");
-      const result = await admissionService.publicStatusByReference(schoolId, number, token);
+      const result = await admissionService.publicStatusByReference(schoolId, number);
       res.json(result);
     } catch (err: any) {
       res.status(err.status || 404).json({ error: err.message || "Not found" });
@@ -274,14 +287,16 @@ export const admissionController = {
       );
       res.status(201).json(application);
 
-      // Fire-and-forget: email the applicant the reference number, access code,
-      // and how to check their status.
+      // Fire-and-forget: email every parent the reference number and secure status/entrance links.
       const { sendApplicationReceivedEmail } = await import("../lib/applicationEmail");
       void sendApplicationReceivedEmail({
         schoolName: school.name,
         slug: school.slug || schoolId,
         locale: school.defaultLocale || null,
-        application,
+        application: {
+          ...application,
+          entranceAvailabilityNote: application.entranceAvailability?.note,
+        },
       });
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message, code: err.code });
@@ -310,9 +325,23 @@ export const admissionController = {
     }
   },
 
+  async publicClassrooms(req: Request, res: Response) {
+    try {
+      const result = await admissionService.listPublicClassrooms(
+        String(req.params.slug || ""),
+        req.query.gradeLevelId ? String(req.query.gradeLevelId) : null
+      );
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to load classrooms" });
+    }
+  },
+
   async publicAddDocument(req: Request, res: Response) {
     try {
-      const token = String(req.body?.token || req.query.token || "");
+      const token = String(
+        req.body?.token || req.body?.accessToken || req.query.token || req.query.accessToken || ""
+      );
       await admissionService.publicStatus(req.params.id, token);
       const doc = await admissionService.addDocument(req.params.id, req.body);
       res.status(201).json(doc);
@@ -323,8 +352,9 @@ export const admissionController = {
 
   async publicConfirmUpload(req: Request, res: Response) {
     try {
-      const token = String(req.body?.token || req.query.token || "");
-      // Validate the applicant's access code before allowing the upload to be finalized.
+      const token = String(
+        req.body?.token || req.body?.accessToken || req.query.token || req.query.accessToken || ""
+      );
       await admissionService.publicStatus(req.params.id, token);
       const doc = await admissionService.confirmDocumentUpload(req.params.id, {
         ...req.body,
@@ -362,7 +392,7 @@ export const admissionController = {
 
   async publicCreateUpload(req: Request, res: Response) {
     try {
-      const token = String(req.body?.token || "");
+      const token = String(req.body?.token || req.body?.accessToken || "");
       await admissionService.publicStatus(req.params.id, token);
       const result = await admissionService.createDocumentUpload(req.params.id, req.body);
       res.json(result);

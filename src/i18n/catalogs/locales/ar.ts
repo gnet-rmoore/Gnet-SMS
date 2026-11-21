@@ -5415,6 +5415,8 @@ export const arResources = {
       "tryLive": "Try live",
       "copied": "تم النسخ",
       "manageKeys": "Manage API keys",
+      "modeSandbox": "بيئة الاختبار",
+      "modeProduction": "الإنتاج",
       "authTitle": "Authentication",
       "authStaff": "Staff sign-in returns a Bearer JWT on each request. Permissions follow the user role and capability matrix.",
       "authApiKey": "School API keys (gnet_live_…) exchange for a short-lived token via X-API-Key or Authorization: Bearer. Keys only allow GET requests for your school.",

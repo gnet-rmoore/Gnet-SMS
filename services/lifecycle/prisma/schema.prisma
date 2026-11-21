@@ -39,6 +39,17 @@ model AdmissionApplication {
   classroomId       String?
   feePaymentId      String?
   statusTokenHash   String?   @unique
+  accessToken       String?
+  parentContacts    String?
+  entranceTokenHash String?   @unique
+  entranceToken     String?
+  entranceTokenExpiresAt DateTime?
+  entranceStatus    String    @default("NOT_SCHEDULED")
+  entranceSlotId    String?
+  entranceScheduledAt DateTime?
+  entranceLocation  String?
+  entranceRescheduleCount Int @default(0)
+  entranceNotes     String?
   reviewedBy        String?
   reviewedAt        DateTime?
   enrolledAt        DateTime?
@@ -50,6 +61,8 @@ model AdmissionApplication {
 
   @@index([schoolId])
   @@index([status])
+  @@index([schoolId, applicationNumber])
+  @@index([schoolId, entranceSlotId])
   @@schema("lifecycle")
 }
 

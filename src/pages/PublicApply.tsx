@@ -22,8 +22,23 @@ import {
 } from "../lib/publicPortalLayout";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { captchaEnabledOnClient, turnstileSiteKey } from "../lib/captcha";
-import { buildApplyStatusUrl, saveApplyStatusCredentials } from "../lib/publicApplyStatus";
+import { buildStatusUrl, saveReference } from "../lib/publicApplyStatus";
 import { unwrapItems } from "../lib/apiEnvelope";
+
+type PublicClassroom = {
+  id: string;
+  name: string;
+  gradeLevelId: string;
+  gradeLevelName: string;
+  capacity: number | null;
+  occupied: number;
+  seatsLeft: number | null;
+};
+
+type ParentEmail = {
+  role: "FATHER" | "MOTHER" | "GUARDIAN" | "STUDENT";
+  email: string;
+};
 
 /**
  * Public student application portal (/apply/:slug).
@@ -42,6 +57,7 @@ export default function PublicApplyPage() {
   const [grades, setGrades] = React.useState<any[]>([]);
   const [gradesLoading, setGradesLoading] = React.useState(false);
   const [gradesError, setGradesError] = React.useState("");
+  const [classrooms, setClassrooms] = React.useState<PublicClassroom[]>([]);
   const [applicantType, setApplicantType] = React.useState<"NEW" | "RETURNING">("NEW");
   const [form, setForm] = React.useState<AdmissionApplicationForm>(emptyAdmissionApplicationForm);
   const [website, setWebsite] = React.useState("");
@@ -104,15 +120,33 @@ export default function PublicApplyPage() {
 
   const returningEnabled = school?.admissionPolicy?.returningApplyEnabled !== false;
 
+  const previousGradeId = React.useRef(form.gradeLevelId);
+
   React.useEffect(() => {
-    if (!result?.id || !result?.statusToken || !slug) return;
-    saveApplyStatusCredentials({
-      slug,
-      id: result.id,
-      token: result.statusToken,
-      applicationNumber: result.applicationNumber,
-    });
-  }, [result, slug]);
+    if (previousGradeId.current === form.gradeLevelId) return;
+    previousGradeId.current = form.gradeLevelId;
+    setForm((prev) => (prev.classroomId ? { ...prev, classroomId: "" } : prev));
+  }, [form.gradeLevelId]);
+
+  React.useEffect(() => {
+    setClassrooms([]);
+    if (!slug || !form.gradeLevelId) return;
+    let active = true;
+    (async () => {
+      try {
+        const params = new URLSearchParams({ gradeLevelId: form.gradeLevelId });
+        const response = await fetch(`/api/public/schools/${slug}/classrooms?${params.toString()}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (active) setClassrooms(unwrapItems<PublicClassroom>(data));
+      } catch {
+        if (active) setClassrooms([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [slug, form.gradeLevelId]);
 
   const copyText = async (text: string) => {
     try {
@@ -167,6 +201,7 @@ export default function PublicApplyPage() {
       if (!res.ok) {
         throw new Error(translateApiError(data) || data.error || t("public:apply.failed"));
       }
+      if (slug && data?.applicationNumber) saveReference(slug, data.applicationNumber);
       setResult(data);
     } catch (err: any) {
       setError(translateApiError(err) || err.message);
@@ -251,9 +286,26 @@ export default function PublicApplyPage() {
         ? t("public:apply.kindReturning")
         : t("public:apply.kindNew");
     const number = result.applicationNumber ? ` (${result.applicationNumber})` : "";
-    const statusUrl =
-      result.id && result.statusToken && slug
-        ? buildApplyStatusUrl(slug, result.id, result.statusToken)
+    const parentEmails: ParentEmail[] = Array.isArray(result.parentEmails) ? result.parentEmails : [];
+    const roleLabel = (role: ParentEmail["role"]) =>
+      role === "FATHER"
+        ? t("public:apply.roleFather", "Father")
+        : role === "MOTHER"
+          ? t("public:apply.roleMother", "Mother")
+          : role === "GUARDIAN"
+            ? t("public:apply.roleGuardian", "Guardian")
+            : t("public:apply.roleStudent", "Student");
+    const deliveryText = parentEmails.length
+      ? t("public:apply.detailsSentTo", "Admission details were sent to: {{details}}", {
+          details: parentEmails.map((item) => `${roleLabel(item.role)} — ${item.email}`).join("; "),
+        })
+      : t(
+          "public:apply.noParentEmail",
+          "No parent email was provided — please contact the school for your details."
+        );
+    const entranceUrl =
+      result.entranceEnabled && result.entranceToken && slug
+        ? `/entrance/${encodeURIComponent(slug)}/${encodeURIComponent(String(result.entranceToken))}`
         : "";
     return (
       <div className="relative min-h-screen overflow-hidden">
@@ -272,68 +324,56 @@ export default function PublicApplyPage() {
             <p className="text-slate-500 font-medium">
               {t("public:apply.successDetail", { school: school.name, kind, number })}
             </p>
-            <p className="text-sm text-slate-500">{t("public:apply.successHint")}</p>
+            <p className="text-sm text-slate-500">
+              {t(
+                "public:apply.referenceOnlyHint",
+                "Save your reference number — you will need it to check your admission status."
+              )}
+            </p>
 
-            {result.applicationNumber ? (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    {t("public:apply.reference")}
-                  </p>
-                  <p className="mt-1 font-mono text-sm font-bold text-slate-900">{result.applicationNumber}</p>
-                </div>
-                {result.statusToken ? (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {t("public:apply.accessCodeLabel")}
-                    </p>
-                    <p className="mt-1 font-mono text-xs text-slate-700 break-all">{result.statusToken}</p>
-                    <p className="mt-1 text-xs text-slate-500">{t("public:apply.accessCodeHint")}</p>
-                  </div>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                {t("public:apply.reference")}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+                <p className="font-mono text-sm font-bold text-slate-900">{result.applicationNumber || "—"}</p>
+                {result.applicationNumber ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyText(result.applicationNumber)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    {t("public:apply.copyReference")}
+                  </button>
                 ) : null}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {result.applicationNumber ? (
-                    <button
-                      type="button"
-                      onClick={() => void copyText(result.applicationNumber)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {t("public:apply.copyReference")}
-                    </button>
-                  ) : null}
-                  {result.statusToken ? (
-                    <button
-                      type="button"
-                      onClick={() => void copyText(result.statusToken)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {t("public:apply.copyAccessCode")}
-                    </button>
-                  ) : null}
-                  {statusUrl ? (
-                    <button
-                      type="button"
-                      onClick={() => void copyText(statusUrl)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {t("public:apply.copyLink")}
-                    </button>
-                  ) : null}
-                </div>
               </div>
-            ) : null}
+            </div>
 
-            {statusUrl ? (
+            <Link
+              to={buildStatusUrl(slug || "")}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+            >
+              {t("public:apply.checkAdmissionStatus", "Check my admission status")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            {entranceUrl ? (
               <Link
-                to={`/apply/${slug}/status?id=${result.id}&token=${result.statusToken || ""}`}
-                className="inline-flex items-center gap-2 text-indigo-600 font-semibold"
+                to={entranceUrl}
+                className="inline-flex items-center gap-2 font-semibold text-indigo-600 hover:text-indigo-700"
               >
-                {t("public:apply.checkStatus")} <ArrowRight className="w-4 h-4" />
+                {t("public:apply.scheduleEntrance", "Schedule my entrance")}
+                <ArrowRight className="h-4 w-4" />
               </Link>
             ) : null}
+            {result.entranceAvailability?.note ? (
+              <p className="text-xs leading-relaxed text-slate-600">
+                {t("public:applyStatus.entranceAvailabilityNote", "School note: {{note}}", {
+                  note: result.entranceAvailability.note,
+                })}
+              </p>
+            ) : null}
+            <p className="text-sm font-medium text-slate-600">{deliveryText}</p>
           </motion.div>
         </div>
       </div>
@@ -342,6 +382,7 @@ export default function PublicApplyPage() {
 
   const publicInput =
     "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white";
+  const selectedClassroom = classrooms.find((item) => item.id === form.classroomId) || null;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -465,6 +506,52 @@ export default function PublicApplyPage() {
                   onChange={(e) => setWebsite(e.target.value)}
                 />
               </label>
+            }
+            firstStepExtra={
+              classrooms.length > 0 ? (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="preferred-classroom">
+                    {t("public:apply.preferredClass", "Preferred class (optional)")}
+                  </label>
+                  <select
+                    id="preferred-classroom"
+                    className={publicInput}
+                    value={form.classroomId}
+                    disabled={submitting}
+                    onChange={(e) => setForm((prev) => ({ ...prev, classroomId: e.target.value }))}
+                  >
+                    <option value="">
+                      {t("public:apply.noPreferredClass", "No preference — assign a class later")}
+                    </option>
+                    {classrooms.map((item) => (
+                      <option key={item.id} value={item.id} disabled={item.seatsLeft === 0}>
+                        {item.name}
+                        {item.seatsLeft !== null
+                          ? ` — ${t("public:apply.seatsLeft", "{{count}} seats left", { count: item.seatsLeft })}`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedClassroom ? (
+                    <p
+                      className={
+                        selectedClassroom.seatsLeft === 0
+                          ? "text-xs font-medium text-rose-600"
+                          : "text-xs font-medium text-slate-500"
+                      }
+                    >
+                      {selectedClassroom.seatsLeft === 0
+                        ? t("public:apply.classFull", "Class is full")
+                        : selectedClassroom.seatsLeft !== null
+                          ? t("public:apply.seatsLeft", "{{count}} seats left", { count: selectedClassroom.seatsLeft })
+                          : null}
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-slate-500">
+                    {t("public:apply.classSeatHint", "A seat is confirmed only after enrollment.")}
+                  </p>
+                </div>
+              ) : null
             }
             finalStepExtra={
               captchaRequired ? (

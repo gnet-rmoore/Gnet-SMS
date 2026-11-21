@@ -2,7 +2,12 @@ import crypto from "node:crypto";
 import prisma from "../lib/prisma";
 import { findOrCreateIdentityUser, getSchoolStudentTotal, linkParentStudent, getIdentitySchool, verifyReturningStudent } from "../lib/identityClient";
 import { createEntranceFee, getFee, getFeeReceipt, linkFeeToStudent, randomPassword } from "../lib/financeClient";
-import { addClassroomMember, getHomeroomPlacedStudentIds, resolveStudentNextGrade } from "../lib/classroomClient";
+import {
+  claimStudentSeat,
+  getClassroomById,
+  getHomeroomPlacedStudentIds,
+  resolveStudentNextGrade,
+} from "../lib/classroomClient";
 import { assertTransition, generateApplicationNumber, resolveApprovalPath } from "../domain/admissionStates";
 import {
   parseAdmissionPolicy,
@@ -14,6 +19,8 @@ import {
 import { notifyAdmissionStatusChange } from "../lib/admissionNotifications";
 import { getParentChildIds } from "../lib/identityClient";
 import { nextActionFor } from "../domain/admissionFunnel";
+import { buildEntranceUrl, normalizeParentEmails } from "../lib/applicationEmail";
+import { entranceService } from "./entranceService";
 
 const parseDateSafely = (dateStr: any) => {
   if (!dateStr || String(dateStr).trim() === "") return null;
@@ -23,6 +30,65 @@ const parseDateSafely = (dateStr: any) => {
 
 function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
+}
+
+function parseParentContacts(value: unknown) {
+  return normalizeParentEmails(value);
+}
+
+function parentContactsFromData(data: any) {
+  const list: Array<{ email: string; role: "FATHER" | "MOTHER" | "GUARDIAN" | "STUDENT" }> = [];
+  const push = (email: unknown, role: "FATHER" | "MOTHER" | "GUARDIAN" | "STUDENT") => {
+    const value = String(email || "").trim().toLowerCase();
+    if (value && value.includes("@") && !list.some((entry) => entry.email === value)) {
+      list.push({ email: value, role });
+    }
+  };
+  if (Array.isArray(data?.parentEmails)) {
+    for (const entry of data.parentEmails) {
+      const rawRole = String(entry?.role || "").toUpperCase();
+      const role =
+        rawRole === "FATHER" || rawRole === "MOTHER" || rawRole === "GUARDIAN"
+          ? rawRole
+          : "GUARDIAN";
+      push(entry?.email, role);
+    }
+  }
+  push(data?.fatherEmail, "FATHER");
+  push(data?.motherEmail, "MOTHER");
+  push(data?.parentEmail, "GUARDIAN");
+  if (!list.length) push(data?.studentEmail, "STUDENT");
+  return list;
+}
+
+async function assertClassroomAvailable(schoolId: string, classroomId: string, gradeLevelId?: string | null) {
+  const room = await getClassroomById(classroomId);
+  if (!room) {
+    throw Object.assign(new Error("Classroom not found"), { status: 404, code: "CLASSROOM_NOT_FOUND" });
+  }
+  if (room.schoolId && room.schoolId !== schoolId) {
+    throw Object.assign(new Error("Classroom does not belong to this school"), {
+      status: 400,
+      code: "CLASSROOM_SCHOOL_MISMATCH",
+    });
+  }
+  if (gradeLevelId && gradeLevelId !== "pending-assignment" && room.gradeLevelId && room.gradeLevelId !== gradeLevelId) {
+    throw Object.assign(new Error("Classroom grade level does not match the application"), {
+      status: 400,
+      code: "CLASSROOM_GRADE_MISMATCH",
+    });
+  }
+  const capacity = room.capacity ?? null;
+  const occupied = room.studentCount ?? 0;
+  if (capacity !== null && !room.allowOverfill && occupied >= capacity) {
+    throw Object.assign(new Error("Classroom is full"), {
+      status: 409,
+      code: "CLASSROOM_FULL",
+      capacity,
+      occupied,
+    });
+  }
+  return room;
 }
 
 /**
@@ -82,6 +148,7 @@ function buildReviewPatch(currentNotes: string | null, data: any): Record<string
 
 async function formatPublicStatus(app: {
   id: string;
+  schoolId: string;
   applicationNumber: string | null;
   studentIdNumber: string | null;
   status: string;
@@ -89,6 +156,13 @@ async function formatPublicStatus(app: {
   gradeLevelName: string | null;
   appliedAt: Date;
   feePaymentId: string | null;
+  accessToken?: string | null;
+  parentContacts?: string | null;
+  entranceStatus?: string | null;
+  entranceToken?: string | null;
+  entranceSlotId?: string | null;
+  entranceScheduledAt?: Date | null;
+  entranceLocation?: string | null;
   admissionDocuments?: { docType: string; status: string }[];
 }) {
   let fee: {
@@ -137,6 +211,21 @@ async function formatPublicStatus(app: {
       console.warn("[lifecycle] public status fee lookup failed:", err?.message || err);
     }
   }
+  let entrance: Awaited<ReturnType<typeof entranceService.publicSummary>> | null = null;
+  let entranceUrl: string | null = null;
+  try {
+    const [policy, school] = await Promise.all([
+      loadSchoolPolicy(app.schoolId),
+      getIdentitySchool(app.schoolId),
+    ]);
+    entrance = await entranceService.publicSummary(app, policy);
+    if (entrance?.enabled && app.entranceToken && school?.slug) {
+      entranceUrl = buildEntranceUrl(school.slug, app.entranceToken);
+    }
+  } catch (err: any) {
+    console.warn("[lifecycle] public entrance summary failed:", err?.message || err);
+  }
+
   return {
     id: app.id,
     applicationNumber: app.applicationNumber,
@@ -147,6 +236,13 @@ async function formatPublicStatus(app: {
     appliedAt: app.appliedAt,
     documents: app.admissionDocuments ?? [],
     feePaymentId: app.feePaymentId,
+    parentEmails: parseParentContacts(app.parentContacts),
+    entrance,
+    entranceAvailability: entrance?.availability || null,
+    entranceStatus: entrance?.status || "NOT_SCHEDULED",
+    entranceBooking: entrance?.booking || null,
+    entranceUrl,
+    accessToken: app.accessToken || null,
     fee,
     receipt,
   };
@@ -371,6 +467,18 @@ export const admissionService = {
     };
 
     const rawStatusToken = crypto.randomBytes(24).toString("hex");
+    const parentContacts = parentContactsFromData(data);
+    const policy = await loadSchoolPolicy(schoolId).catch(() => parseAdmissionPolicy(null));
+    let rawEntranceToken: string | null = null;
+    let entranceTokenExpiresAt: Date | null = null;
+    if (policy.entranceSchedulingEnabled) {
+      rawEntranceToken = crypto.randomBytes(24).toString("hex");
+      const deadline = parseDateSafely(policy.entranceBookingDeadline);
+      if (deadline) entranceTokenExpiresAt = deadline;
+    }
+    if (data.classroomId) {
+      await assertClassroomAvailable(schoolId, String(data.classroomId), gradeLevelId);
+    }
 
     return prisma.admissionApplication
       .create({
@@ -394,17 +502,42 @@ export const admissionService = {
           source,
           status: "PENDING",
           statusTokenHash: hashToken(rawStatusToken),
+          accessToken: rawStatusToken,
+          parentContacts: JSON.stringify(parentContacts),
+          entranceTokenHash: rawEntranceToken ? hashToken(rawEntranceToken) : null,
+          entranceToken: rawEntranceToken,
+          entranceTokenExpiresAt,
+          entranceStatus: "NOT_SCHEDULED",
           classroomId: data.classroomId || null,
           studentUserId: existingStudentUserId,
         },
       })
-      .then((app) => ({ ...app, statusToken: rawStatusToken, applicantType }));
+      .then((app) => ({
+        ...app,
+        statusToken: rawStatusToken,
+        accessToken: rawStatusToken,
+        entranceToken: rawEntranceToken,
+        entranceEnabled: Boolean(rawEntranceToken),
+        entranceDeadline: policy.entranceBookingDeadline || null,
+        entranceAvailability: {
+          from: policy.entranceAvailableFrom,
+          to: policy.entranceAvailableTo,
+          weekdays: policy.entranceAvailableWeekdays,
+          note: policy.entranceAvailabilityNote,
+        },
+        parentEmails: parentContacts,
+        applicantType,
+      }));
   },
 
   async updateApplication(id: string, data: any) {
     const current = await prisma.admissionApplication.findUnique({ where: { id } });
     if (!current) {
       throw Object.assign(new Error("Application not found"), { status: 404 });
+    }
+
+    if (data.classroomId && data.classroomId !== current.classroomId) {
+      await assertClassroomAvailable(current.schoolId, String(data.classroomId), current.gradeLevelId);
     }
 
     const hasStatusChange = data.status !== undefined && data.status !== current.status;
@@ -663,10 +796,12 @@ export const admissionService = {
     let classAssignFailed = false;
     const classroomId = opts.classroomId || app.classroomId;
     if (classroomId) {
+      await assertClassroomAvailable(app.schoolId, classroomId, app.gradeLevelId);
       try {
-        await addClassroomMember(classroomId, studentUser.id, "STUDENT");
+        await claimStudentSeat(classroomId, studentUser.id);
       } catch (err: any) {
-        console.warn("[lifecycle] classroom assign failed:", err.message);
+        if (err?.code === "CLASSROOM_FULL") throw err;
+        console.warn("[lifecycle] classroom seat claim failed:", err.message);
         classAssignFailed = true;
       }
     }
@@ -852,15 +987,10 @@ export const admissionService = {
     return formatPublicStatus(app);
   },
 
-  async publicStatusByReference(
-    schoolId: string,
-    applicationNumber: string,
-    rawToken: string
-  ) {
+  async publicStatusByReference(schoolId: string, applicationNumber: string) {
     const number = String(applicationNumber || "").trim();
-    const token = String(rawToken || "").trim();
-    if (!schoolId || !number || !token) {
-      throw Object.assign(new Error("Reference number and access code are required"), {
+    if (!schoolId || !number) {
+      throw Object.assign(new Error("Reference number is required"), {
         status: 400,
       });
     }
@@ -871,10 +1001,38 @@ export const admissionService = {
       },
       include: { admissionDocuments: { select: { docType: true, status: true } } },
     });
-    if (!app || !app.statusTokenHash || app.statusTokenHash !== hashToken(token)) {
-      throw Object.assign(new Error("Not found"), { status: 404 });
-    }
+    if (!app) throw Object.assign(new Error("Not found"), { status: 404 });
     return formatPublicStatus(app);
+  },
+
+  async listPublicClassrooms(slug: string, gradeLevelId?: string | null) {
+    const { getPublicSchoolBySlug } = await import("../lib/identityClient");
+    const school = await getPublicSchoolBySlug(slug);
+    if (!school) throw Object.assign(new Error("School not found"), { status: 404 });
+    const { listSchoolClassrooms, fetchGradeLevelsForSchool } = await import("../lib/classroomClient");
+    const [rooms, grades] = await Promise.all([
+      listSchoolClassrooms(school.id),
+      fetchGradeLevelsForSchool(school.id),
+    ]);
+    const gradeNames = new Map(grades.map((grade) => [grade.id, grade.name]));
+    const items = rooms
+      .filter((room) => !room.subjectId)
+      .filter((room) => !gradeLevelId || room.gradeLevelId === gradeLevelId)
+      .filter((room) => {
+        const capacity = room.capacity ?? null;
+        const occupied = room.studentCount ?? 0;
+        return capacity === null || room.allowOverfill || occupied < capacity;
+      })
+      .map((room) => ({
+        id: room.id,
+        name: room.name,
+        gradeLevelId: room.gradeLevelId || null,
+        gradeLevelName: room.gradeLevelId ? gradeNames.get(room.gradeLevelId) || null : null,
+        capacity: room.capacity ?? null,
+        occupied: room.studentCount ?? 0,
+        seatsLeft: room.capacity == null ? null : Math.max(0, room.capacity - (room.studentCount ?? 0)),
+      }));
+    return { items };
   },
 
   /** Public "look me up" for returning students: verify identity and return prefill + promotion-aware locked grade. */
@@ -935,7 +1093,8 @@ export const admissionService = {
     if (app.status !== "ENROLLED" || !app.studentUserId) {
       throw Object.assign(new Error("Application must be enrolled"), { status: 400 });
     }
-    await addClassroomMember(classroomId, app.studentUserId, "STUDENT");
+    await assertClassroomAvailable(app.schoolId, classroomId, app.gradeLevelId);
+    await claimStudentSeat(classroomId, app.studentUserId);
     return prisma.admissionApplication.update({
       where: { id },
       data: { classroomId, classAssignFailed: false },
