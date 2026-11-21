@@ -58,13 +58,13 @@ export type ReceiptPdfInput = {
 
 /** Normalize to #RRGGBB (PDFKit needs hex or 0–1 RGB — never raw 0–255). */
 function normalizeHex(hex?: string | null): string {
-  if (!hex || typeof hex !== "string") return "#2563EB";
+  if (!hex || typeof hex !== "string") return "#000000";
   let h = hex.trim();
   if (!h.startsWith("#")) h = `#${h}`;
   if (/^#[0-9a-fA-F]{3}$/.test(h)) {
     h = `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}`;
   }
-  if (!/^#[0-9a-fA-F]{6}$/.test(h)) return "#2563EB";
+  if (!/^#[0-9a-fA-F]{6}$/.test(h)) return "#000000";
   return h.toUpperCase();
 }
 

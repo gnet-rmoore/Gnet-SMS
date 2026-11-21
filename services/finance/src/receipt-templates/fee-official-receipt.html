@@ -3,8 +3,8 @@
 <style>
 @page{size:A4;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--b:#7a1f2b;--t:#eef3f8;--void:#be123c}
-body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+:root{--b:#000;--t:#eef3f8;--void:#000}
+body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .page{position:relative;width:210mm;min-height:297mm;margin:0 auto;padding:15mm 16mm;overflow:hidden}
 .band{height:8px;background:var(--b);margin:-15mm -16mm 14mm}
 .mono{width:46px;height:46px;border-radius:10px;background:var(--b);color:#fff;font-weight:700;font-size:16px;display:grid;place-items:center;letter-spacing:.04em;margin:0 auto 8px}
@@ -25,11 +25,11 @@ tr.hl td{background:var(--t);font-weight:700}
 .cardrow{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:16px;background:var(--t);border-radius:12px;padding:16px 18px}
 .big{font-size:24px;font-weight:700;color:var(--b)}
 .w{font-size:11.5px;color:#6b7686;font-style:italic;max-width:260px;text-align:right}
-.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #1b2430;padding-top:6px;font-size:10.5px;color:#6b7686}
+.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #000;padding-top:6px;font-size:10.5px;color:#6b7686}
 .ft{position:absolute;left:16mm;right:16mm;bottom:13mm;display:flex;gap:14px;align-items:center;border-top:1px solid #dfe4ea;padding-top:12px;font-size:10px;color:#6b7686}
-.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #1b2430}
-.ft b{color:#1b2430}
-.pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 8px;border-radius:99px;background:#e3f4ea;color:#1c7a45}
+.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #000}
+.ft b{color:#000}
+.pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 8px;border-radius:99px;background:#000;color:#fff}
 .void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:70px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 34px;border-radius:8px;z-index:5}
 .page.is-voided .void-stamp{display:block}
 @media print{body{background:#fff}}

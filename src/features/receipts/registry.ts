@@ -27,8 +27,8 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
     id: "FEE_OFFICIAL_RECEIPT",
     name: "Official Receipt",
     description:
-      "Burgundy institutional fee receipt with payment details, balance summary, and verification footer.",
-    accent: "#7a1f2b",
+      "Institutional fee receipt with payment details, balance summary, and verification footer.",
+    accent: "#000000",
     engine: "html",
     recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
   },
@@ -36,8 +36,8 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
     id: "FEE_PAYMENT_CONFIRMATION",
     name: "Payment Confirmation",
     description:
-      "Blue payment confirmation with a success card, balance progress bar, and payer/learner details.",
-    accent: "#1d4ed8",
+      "Payment confirmation with a success card, balance progress bar, and payer/learner details.",
+    accent: "#000000",
     engine: "html",
     recommendedFor: ["FEE_PAYMENT", "TRANSACTION"],
   },
@@ -53,8 +53,8 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
   {
     id: "PAYSLIP_NET_PAY_HERO",
     name: "Net Pay Hero",
-    description: "Teal payslip with a large net-pay panel and a compact salary breakdown.",
-    accent: "#0b5d6b",
+    description: "Payslip with a large net-pay panel and a compact salary breakdown.",
+    accent: "#000000",
     engine: "html",
     recommendedFor: ["PAYSLIP"],
   },
@@ -63,7 +63,7 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
     name: "Executive Voucher",
     description:
       "A4 expense voucher with a bold amount hero, payee/payer grid, itemised charges, and verification.",
-    accent: "#0f3d5e",
+    accent: "#000000",
     engine: "html",
     recommendedFor: ["EXPENSE"],
   },
@@ -71,8 +71,8 @@ export const RECEIPT_TEMPLATES: ReceiptTemplateDef[] = [
     id: "EXPENSE_CLEAN_LEDGER",
     name: "Clean Ledger",
     description:
-      "Green payment voucher with numbered itemised charges, a status panel, and a signature line.",
-    accent: "#14532d",
+      "Payment voucher with numbered itemised charges, a status panel, and a signature line.",
+    accent: "#000000",
     engine: "html",
     recommendedFor: ["EXPENSE"],
   },

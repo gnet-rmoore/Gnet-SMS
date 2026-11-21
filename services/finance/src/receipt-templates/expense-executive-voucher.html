@@ -3,8 +3,8 @@
 <style>
 @page{size:A4;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--b:#0f3d5e;--t:#eef3f8;--void:#be123c}
-body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+:root{--b:#000;--t:#eef3f8;--void:#000}
+body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .page{position:relative;width:210mm;min-height:297mm;margin:0 auto;padding:15mm 16mm;overflow:hidden}
 .band{height:8px;background:var(--b);margin:-15mm -16mm 14mm}
 .row{display:flex;justify-content:space-between;gap:14px}
@@ -15,9 +15,9 @@ body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;background:#fff;-we
 .v{font-size:13px;font-weight:600;margin-top:2px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 20px;margin-top:22px}
 .hero{background:var(--b);color:#fff;border-radius:12px;padding:18px 22px;margin-top:22px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
-.hero .l{color:rgba(255,255,255,.7)}.hero .big{font-size:32px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
-.hero .w{font-size:11.5px;opacity:.85;margin-top:3px}
-.pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 10px;border-radius:99px;background:#e3f4ea;color:#1c7a45}
+.hero .l{color:#fff}.hero .big{font-size:32px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+.hero .w{font-size:11.5px;margin-top:3px}
+.pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 10px;border-radius:99px;background:#fff;color:#000}
 .sec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--b);margin:24px 0 8px}
 table{width:100%;border-collapse:collapse}
 th{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;text-align:left;padding:9px 10px;color:#fff;background:var(--b)}
@@ -27,10 +27,10 @@ tr.tot td{border:0;font-weight:700}
 tr.tot td.r{font-size:15px;color:var(--b)}
 .card{background:var(--t);border-radius:12px;padding:16px 18px;margin-top:18px;border-left:4px solid var(--b)}
 .w{font-size:11.5px;color:#6b7686;font-style:italic}
-.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #1b2430;padding-top:6px;font-size:10.5px;color:#6b7686}
+.sig{display:flex;gap:40px;margin-top:34px}.sig>div{flex:1;border-top:1px solid #000;padding-top:6px;font-size:10.5px;color:#6b7686}
 .ft{position:absolute;left:16mm;right:16mm;bottom:13mm;display:flex;gap:14px;align-items:center;border-top:1px solid #dfe4ea;padding-top:12px;font-size:10px;color:#6b7686}
-.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #1b2430}
-.ft b{color:#1b2430}
+.ft img.qr{width:62px;height:62px;flex:none;border:5px solid #fff;outline:1px solid #000}
+.ft b{color:#000}
 .void-stamp{display:none;position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:70px;font-weight:800;color:var(--void);opacity:.18;border:6px solid var(--void);padding:6px 34px;border-radius:8px;z-index:5}
 .page.is-voided .void-stamp{display:block}
 @media print{body{background:#fff}}
@@ -48,7 +48,7 @@ tr.tot td.r{font-size:15px;color:var(--b)}
   </div>
   <div class="hero">
     <div><div class="l">Amount paid</div><div class="big">{{amountDisplay}}</div><div class="w">{{amountInWords}}</div></div>
-    <div style="text-align:right"><span class="pill">{{statusLabelUpper}}</span><div class="w" style="opacity:.85;margin-top:8px;color:#fff">{{issuedAtLongDisplay}}</div></div>
+    <div style="text-align:right"><span class="pill">{{statusLabelUpper}}</span><div class="w" style="margin-top:8px;color:#fff">{{issuedAtLongDisplay}}</div></div>
   </div>
   <div class="g3">
     <div><div class="l">Paid to (Payee)</div><div class="v">{{payeeName}}</div></div>

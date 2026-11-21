@@ -35,7 +35,7 @@ function A4PreviewFrame({
 }) {
   const { t } = useTranslation(["pages", "common"]);
   const wrapRef = React.useRef<HTMLDivElement>(null);
-  const [fitScale, setFitScale] = React.useState(1);
+  const [fitZoom, setFitZoom] = React.useState(1);
   const [zoom, setZoom] = React.useState(1);
 
   React.useEffect(() => {
@@ -52,7 +52,7 @@ function A4PreviewFrame({
       const widthScale = width / A4_WIDTH_PX;
       const maxHeight = Math.min(window.innerHeight * 0.58, A4_HEIGHT_PX);
       const heightScale = maxHeight / A4_HEIGHT_PX;
-      setFitScale(Math.min(widthScale, heightScale, 1));
+      setFitZoom(clampZoom(Math.min(widthScale, heightScale, 1)));
     };
 
     update();
@@ -65,7 +65,7 @@ function A4PreviewFrame({
     };
   }, []);
 
-  const effectiveScale = fitScale * zoom;
+  const effectiveScale = zoom;
   const scaledWidth = A4_WIDTH_PX * effectiveScale;
   const scaledHeight = A4_HEIGHT_PX * effectiveScale;
   const zoomLabel = `${Math.round(zoom * 100)}%`;
@@ -106,8 +106,8 @@ function A4PreviewFrame({
           </button>
           <button
             type="button"
-            onClick={() => setZoom(1)}
-            disabled={zoom === 1}
+            onClick={() => setZoom(fitZoom)}
+            disabled={zoom === fitZoom}
             className="p-2 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none border-l border-slate-100 ml-0.5 pl-2.5"
             aria-label={m("zoomFit")}
             title={m("zoomFit")}
