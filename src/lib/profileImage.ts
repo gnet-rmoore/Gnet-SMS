@@ -7,14 +7,45 @@ const MAX_EDGE = 512;
 const JPEG_QUALITY = 0.85;
 const MAX_BYTES = 900_000; // ~900KB after base64
 
-export function validateProfileImageFile(file: File): string | null {
-  if (!file.type.startsWith("image/")) {
-    return "Choose an image file (JPEG, PNG, or WebP)";
-  }
-  if (file.size > 8 * 1024 * 1024) {
-    return "Image must be under 8MB";
-  }
+export type ProfileImageValidationCode =
+  | "invalidType"
+  | "tooLarge"
+  | "readFailed"
+  | "tooLargeAfterCompression";
+
+const VALIDATION_MESSAGES: Record<ProfileImageValidationCode, string> = {
+  invalidType: "Choose an image file (JPEG, PNG, WebP, or GIF)",
+  tooLarge: "Image must be under 8MB",
+  readFailed: "Could not read image",
+  tooLargeAfterCompression: "Image is still too large after compression — try another photo",
+};
+
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+export function profileImageValidationCode(file: File): ProfileImageValidationCode | null {
+  if (!ACCEPTED_IMAGE_TYPES.has(file.type)) return "invalidType";
+  if (file.size > 8 * 1024 * 1024) return "tooLarge";
   return null;
+}
+
+export function profileImageErrorCodeFromMessage(message: string): ProfileImageValidationCode | null {
+  const value = String(message || "");
+  if (value === VALIDATION_MESSAGES.invalidType || value.startsWith("Choose an image file")) {
+    return "invalidType";
+  }
+  if (value === VALIDATION_MESSAGES.tooLarge || value.includes("under 8MB")) {
+    return "tooLarge";
+  }
+  if (value === VALIDATION_MESSAGES.readFailed || value.includes("Could not read image")) {
+    return "readFailed";
+  }
+  if (value.startsWith("Image is still too large")) return "tooLargeAfterCompression";
+  return null;
+}
+
+export function validateProfileImageFile(file: File): string | null {
+  const code = profileImageValidationCode(file);
+  return code ? VALIDATION_MESSAGES[code] : null;
 }
 
 /** Load a File into an HTMLImageElement. */

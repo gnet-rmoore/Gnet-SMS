@@ -5,6 +5,10 @@
  */
 import { readFileSync } from "fs";
 import path from "path";
+import {
+  emptyAdmissionApplicationForm,
+  isAdmissionFormEmpty,
+} from "../src/features/admission-form/schema";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -32,6 +36,10 @@ const schedulePage = read("src/features/class-schedule/Page.tsx");
 const feesPageActions = read("src/features/fees/hooks/usePageActions.ts");
 const applicationReviewModal = read("src/features/registrar/components/ApplicationReviewModal.tsx");
 const registrarApi = read("src/features/registrar/api.ts");
+const manualAdmissionTab = read("src/features/registrar/components/ManualAdmissionTab.tsx");
+const newEnrollmentDrawer = read("src/features/registrar/components/NewEnrollmentDrawer.tsx");
+const adminWizard = read("src/features/admission-form/AdmissionFormWizard.tsx");
+const manualAdmissionForm = read("src/features/registrar/lib/manualAdmissionForm.ts");
 
 console.log("=========================================");
 console.log(" UX WIRING REGRESSION TESTS");
@@ -74,6 +82,44 @@ assert(
 assert(
   registrarApi.includes("/entrance-complete"),
   "registrar API exposes server entrance-completion action"
+);
+assert(
+  manualAdmissionTab.includes("NewEnrollmentDrawer") &&
+    newEnrollmentDrawer.includes("w-full max-w-[960px]") &&
+    newEnrollmentDrawer.includes("h-[100dvh]") &&
+    newEnrollmentDrawer.includes("AdmissionFormWizard"),
+  "direct admission uses a wide full-height enrollment drawer"
+);
+assert(
+  newEnrollmentDrawer.includes("role=\"dialog\"") &&
+    newEnrollmentDrawer.includes("aria-modal=\"true\"") &&
+    newEnrollmentDrawer.includes("event.key === \"Escape\"") &&
+    newEnrollmentDrawer.includes("FOCUSABLE"),
+  "enrollment drawer traps focus and closes on Escape"
+);
+assert(
+  newEnrollmentDrawer.includes("confirmAction") &&
+    newEnrollmentDrawer.includes("admissions.manualAdmission.discardTitle"),
+  "enrollment drawer confirms discarding unsaved details"
+);
+assert(
+  newEnrollmentDrawer.includes("AdmissionApplicantPhoto") &&
+    manualAdmissionForm.includes("pendingPhotoUrl"),
+  "direct admission supports pending or linked profile photos"
+);
+assert(
+  adminWizard.includes("changedFields") &&
+    adminWizard.includes("studentPhotoSlot") &&
+    adminWizard.includes("applicantType"),
+  "admission wizard supports changed-field markers, photo slot, and applicant source"
+);
+assert(
+  isAdmissionFormEmpty({
+    ...emptyAdmissionApplicationForm(),
+    existingStudentId: "",
+    pendingPhotoUrl: null,
+  } as any),
+  "empty manual admission form is treated as empty"
 );
 
 assert(

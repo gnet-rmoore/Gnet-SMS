@@ -9,12 +9,14 @@ import {
 
 export type ManualAdmissionForm = AdmissionApplicationForm & {
   existingStudentId: string;
+  pendingPhotoUrl: string | null;
 };
 
 export function emptyManualAdmissionForm(): ManualAdmissionForm {
   return {
     ...emptyAdmissionApplicationForm(),
     existingStudentId: "",
+    pendingPhotoUrl: null,
   };
 }
 
@@ -33,5 +35,6 @@ export function studentToManualAdmissionForm(
   return {
     ...studentToAdmissionApplicationForm(student, base),
     existingStudentId: String(student?.id || ""),
+    pendingPhotoUrl: null,
   };
 }

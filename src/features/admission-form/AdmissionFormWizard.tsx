@@ -24,21 +24,15 @@ export type AdmissionFormWizardProps = {
   onChange: (patch: Partial<AdmissionApplicationForm>) => void;
   gradeLevels: Array<{ id: string; name: string }>;
   mode?: AdmissionFieldsMode;
-  /** Final submit — receives the original form event (already prevented). */
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   submitting?: boolean;
-  /** Label for the final-step submit button. */
   submitLabel?: React.ReactNode;
   inputClassName?: string;
   labelClassName?: string;
   sectionTitleClassName?: string;
-  /** Rendered on step 1 above the fields (e.g. returning-student picker). */
   firstStepExtra?: React.ReactNode;
-  /** Rendered on the final step after the fields (e.g. CAPTCHA). */
   finalStepExtra?: React.ReactNode;
-  /** Form-level error, shown on the final step. */
   error?: React.ReactNode;
-  /** Rendered first inside the form, outside the steps (honeypot fields). */
   hiddenSlot?: React.ReactNode;
   className?: string;
   gradeLoadState?: "loading" | "error" | "empty" | "ready";
@@ -49,26 +43,41 @@ export type AdmissionFormWizardProps = {
     empty: string;
     retry: string;
   };
+  changedFields?: string[];
+  studentPhotoSlot?: React.ReactNode;
+  applicantType?: "new" | "returning";
 };
 
-/** Field key → label for the error summary and review rows (matches field labels). */
-const FIELD_LABELS: Record<string, string> = {
-  firstName: "First name",
-  middleName: "Middle name",
-  lastName: "Last name",
-  dob: "Date of birth",
-  gender: "Gender",
-  gradeLevelId: "Grade applying for",
-  studentEmail: "Student email",
-  studentPhone: "Student phone",
-  address: "Home address",
-  fatherName: "Father / guardian name",
-  fatherPhone: "Father / guardian phone",
-  fatherEmail: "Father / guardian email",
-  motherName: "Mother name",
-  motherPhone: "Mother phone",
-  motherEmail: "Mother email",
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  firstName: "admissions.manualAdmission.form.field.firstName",
+  middleName: "admissions.manualAdmission.form.field.middleName",
+  lastName: "admissions.manualAdmission.form.field.lastName",
+  dob: "admissions.manualAdmission.form.field.dob",
+  gender: "admissions.manualAdmission.form.field.gender",
+  gradeLevelId: "admissions.manualAdmission.form.field.gradeApplyingFor",
+  studentEmail: "admissions.manualAdmission.form.field.studentEmail",
+  studentPhone: "admissions.manualAdmission.form.field.studentPhone",
+  address: "admissions.manualAdmission.form.field.address",
+  fatherName: "admissions.manualAdmission.form.field.fatherGuardianName",
+  fatherPhone: "admissions.manualAdmission.form.field.fatherPhone",
+  fatherEmail: "admissions.manualAdmission.form.field.fatherEmail",
+  motherName: "admissions.manualAdmission.form.field.motherName",
+  motherPhone: "admissions.manualAdmission.form.field.motherPhone",
+  motherEmail: "admissions.manualAdmission.form.field.motherEmail",
+  previousSchool: "admissions.manualAdmission.form.field.previousSchool",
+  gradeCompleted: "admissions.manualAdmission.form.field.gradeCompleted",
+  notes: "admissions.manualAdmission.form.field.notes",
 };
+
+const FAMILY_OPTION_KEYS: Record<string, string> = {
+  "Both parents living together": "admissions.manualAdmission.form.familyOption.bothParents",
+  "Parents divorced/separated": "admissions.manualAdmission.form.familyOption.separated",
+  "Single parent household": "admissions.manualAdmission.form.familyOption.singleParent",
+  "Guardian / relative care": "admissions.manualAdmission.form.familyOption.relativeCare",
+  "Other family arrangement": "admissions.manualAdmission.form.familyOption.other",
+};
+
+type ReviewSectionKey = "identity" | "personal" | "guardians" | "family" | "schooling";
 
 function humanize(value: string): string {
   const v = String(value || "").trim();
@@ -98,12 +107,16 @@ export function AdmissionFormWizard({
   gradeLoadState,
   onRetryGrades,
   gradesStateLabels,
+  changedFields = [],
+  studentPhotoSlot,
+  applicantType = "new",
 }: AdmissionFormWizardProps) {
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["pages", "common"]);
   const total = ADMISSION_FORM_STEPS.length;
   const [stepIndex, setStepIndex] = React.useState(0);
   const [maxVisited, setMaxVisited] = React.useState(0);
   const [errors, setErrors] = React.useState<AdmissionFieldErrors>({});
+  const [returnToReview, setReturnToReview] = React.useState(false);
   const containerRef = React.useRef<HTMLFormElement>(null);
   const step = ADMISSION_FORM_STEPS[Math.min(stepIndex, total - 1)];
   const isFinalStep = stepIndex === total - 1;
@@ -117,8 +130,8 @@ export function AdmissionFormWizard({
       setStepIndex(0);
       setMaxVisited(0);
       setErrors({});
+      setReturnToReview(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- signature covers form contents
   }, [signature]);
 
   const focusFirstProblem = React.useCallback(() => {
@@ -145,6 +158,16 @@ export function AdmissionFormWizard({
     });
   };
 
+  const editReviewSection = (stepNumber: number) => {
+    setReturnToReview(true);
+    goToStep(stepNumber);
+  };
+
+  const backToReview = () => {
+    setReturnToReview(false);
+    goToStep(total - 1);
+  };
+
   const handleNext = () => {
     const stepErrors = validateAdmissionStep(step, form, mode);
     if (Object.keys(stepErrors).length > 0) {
@@ -153,6 +176,11 @@ export function AdmissionFormWizard({
       return;
     }
     setErrors({});
+    if (returnToReview) {
+      setReturnToReview(false);
+      goToStep(total - 1);
+      return;
+    }
     const next = Math.min(stepIndex + 1, total - 1);
     setStepIndex(next);
     setMaxVisited((v) => Math.max(v, next));
@@ -193,25 +221,178 @@ export function AdmissionFormWizard({
     [keyof AdmissionApplicationForm, AdmissionValidationCode]
   >;
 
-  const stepLabel = (s: AdmissionFormStep) => t(`admissionForm.step.${s}`);
+  const issueCount = React.useMemo(() => {
+    const results = validateAdmissionForm(form, mode);
+    return Object.values(results).reduce(
+      (sum, stepErrors) => sum + Object.values(stepErrors || {}).filter(Boolean).length,
+      0
+    );
+  }, [form, mode]);
 
-  const reviewRows: Array<{ field: keyof AdmissionApplicationForm; step: number; label: string; value: string }> = [];
+  const stepLabel = (s: AdmissionFormStep) => t(`common:admissionForm.step.${s}`);
+  const fieldLabel = (field: keyof AdmissionApplicationForm) =>
+    t(FIELD_LABEL_KEYS[field] || `admissions.manualAdmission.form.field.${field}`);
+
+  type ReviewRow = {
+    field: keyof AdmissionApplicationForm;
+    step: number;
+    section: ReviewSectionKey;
+    label: string;
+    value: string;
+  };
+
+  const reviewRows: ReviewRow[] = [];
   const gradeName = gradeLevels.find((g) => g.id === form.gradeLevelId)?.name || form.gradeLevelId;
   const fullName = composeStudentName(form);
-  if (fullName) reviewRows.push({ field: "firstName", step: 0, label: t("admissionForm.review.fullName"), value: fullName });
-  if (form.dob) reviewRows.push({ field: "dob", step: 0, label: t("admissionForm.review.dob"), value: form.dob });
-  if (form.gender) reviewRows.push({ field: "gender", step: 0, label: t("admissionForm.review.gender"), value: humanize(form.gender) });
-  if (gradeName) reviewRows.push({ field: "gradeLevelId", step: 0, label: t("admissionForm.review.grade"), value: gradeName });
-  if (form.studentEmail) reviewRows.push({ field: "studentEmail", step: 0, label: t("admissionForm.review.email"), value: form.studentEmail });
-  if (form.studentPhone) reviewRows.push({ field: "studentPhone", step: 0, label: t("admissionForm.review.phone"), value: form.studentPhone });
-  if (form.address) reviewRows.push({ field: "address", step: 0, label: t("admissionForm.review.address"), value: form.address });
-  const guardianValue = [form.fatherName, form.fatherPhone].filter(Boolean).join(" · ");
-  if (guardianValue) reviewRows.push({ field: "fatherName", step: 1, label: t("admissionForm.review.guardian"), value: guardianValue });
-  const motherValue = [form.motherName, form.motherPhone].filter(Boolean).join(" · ");
-  if (motherValue) reviewRows.push({ field: "motherName", step: 1, label: t("admissionForm.review.mother"), value: motherValue });
+  if (fullName)
+    reviewRows.push({
+      field: "firstName",
+      step: 0,
+      section: "identity",
+      label: t("common:admissionForm.review.fullName"),
+      value: fullName,
+    });
+  if (form.dob)
+    reviewRows.push({
+      field: "dob",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.dob"),
+      value: form.dob,
+    });
+  if (form.gender)
+    reviewRows.push({
+      field: "gender",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.gender"),
+      value: humanize(form.gender),
+    });
+  if (gradeName)
+    reviewRows.push({
+      field: "gradeLevelId",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.grade"),
+      value: gradeName,
+    });
+  if (form.studentEmail)
+    reviewRows.push({
+      field: "studentEmail",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.email"),
+      value: form.studentEmail,
+    });
+  if (form.studentPhone)
+    reviewRows.push({
+      field: "studentPhone",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.phone"),
+      value: form.studentPhone,
+    });
+  if (form.address)
+    reviewRows.push({
+      field: "address",
+      step: 0,
+      section: "personal",
+      label: t("common:admissionForm.review.address"),
+      value: form.address,
+    });
+  const guardianValue = [form.fatherName, form.fatherPhone, form.fatherEmail].filter(Boolean).join(" · ");
+  if (guardianValue)
+    reviewRows.push({
+      field: "fatherName",
+      step: 1,
+      section: "guardians",
+      label: t("common:admissionForm.review.guardian"),
+      value: guardianValue,
+    });
+  const motherValue = [form.motherName, form.motherPhone, form.motherEmail].filter(Boolean).join(" · ");
+  if (motherValue)
+    reviewRows.push({
+      field: "motherName",
+      step: 1,
+      section: "guardians",
+      label: t("common:admissionForm.review.mother"),
+      value: motherValue,
+    });
+  if ((form.familyInformation || []).length > 0)
+    reviewRows.push({
+      field: "familyInformation",
+      step: 1,
+      section: "family",
+      label: t("admissions.manualAdmission.review.family"),
+      value: form.familyInformation
+        .map((option) => t(FAMILY_OPTION_KEYS[option] || option))
+        .join(" · "),
+    });
+  if (form.previousSchool)
+    reviewRows.push({
+      field: "previousSchool",
+      step: 2,
+      section: "schooling",
+      label: fieldLabel("previousSchool"),
+      value: form.previousSchool,
+    });
+  if (form.gradeCompleted)
+    reviewRows.push({
+      field: "gradeCompleted",
+      step: 2,
+      section: "schooling",
+      label: fieldLabel("gradeCompleted"),
+      value: form.gradeCompleted,
+    });
+  if (form.notes)
+    reviewRows.push({
+      field: "notes",
+      step: 2,
+      section: "schooling",
+      label: fieldLabel("notes"),
+      value: form.notes,
+    });
+
+  const reviewSections: Array<{
+    key: ReviewSectionKey;
+    step: number;
+    title: string;
+  }> = [
+    {
+      key: "identity",
+      step: 0,
+      title: t("admissions.manualAdmission.review.identity"),
+    },
+    {
+      key: "personal",
+      step: 0,
+      title: t("admissions.manualAdmission.review.personal"),
+    },
+    {
+      key: "guardians",
+      step: 1,
+      title: t("admissions.manualAdmission.review.guardians"),
+    },
+    {
+      key: "family",
+      step: 1,
+      title: t("admissions.manualAdmission.review.family"),
+    },
+    {
+      key: "schooling",
+      step: 2,
+      title: t("admissions.manualAdmission.review.schooling"),
+    },
+  ];
 
   return (
-    <form noValidate onSubmit={handleSubmit} className={cn("space-y-8", className)} ref={containerRef} tabIndex={-1}>
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      className={cn("space-y-8", className)}
+      ref={containerRef}
+      tabIndex={-1}
+    >
       {hiddenSlot}
 
       <div className="space-y-3">
@@ -262,7 +443,7 @@ export function AdmissionFormWizard({
             })}
           </ol>
           <span className="hidden shrink-0 text-xs font-bold text-slate-400 sm:inline">
-            {t("admissionForm.stepOf", { current: stepIndex + 1, total })}
+            {t("common:admissionForm.stepOf", { current: stepIndex + 1, total })}
           </span>
         </div>
         <p className="text-center text-sm font-bold text-slate-700 sm:hidden" aria-live="polite">
@@ -285,12 +466,12 @@ export function AdmissionFormWizard({
         >
           <p className="flex items-center gap-2 text-sm font-extrabold">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            {t("admissionForm.fixErrors")}
+            {t("common:admissionForm.fixErrors")}
           </p>
           <ul className="mt-2 space-y-1 text-sm font-medium">
             {errorEntries.map(([field, code]) => (
               <li key={field}>
-                {FIELD_LABELS[field] || field}: {t(`admissionForm.err.${code}`)}
+                {fieldLabel(field)}: {t(`common:admissionForm.err.${code}`)}
               </li>
             ))}
           </ul>
@@ -320,47 +501,96 @@ export function AdmissionFormWizard({
           onRetryGrades={onRetryGrades}
           gradesStateLabels={gradesStateLabels}
           submitting={submitting}
+          changedFields={changedFields}
+          studentPhotoSlot={studentPhotoSlot}
         />
 
         {isFinalStep ? (
-          <div className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+          <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h5 className="text-xs font-black uppercase tracking-widest text-slate-500">
-                  {t("admissionForm.reviewTitle")}
+                  {t("common:admissionForm.reviewTitle")}
                 </h5>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  {t("admissionForm.reviewHint")}
+                <p className="mt-0.5 text-xs font-medium text-slate-500">
+                  {t("common:admissionForm.reviewHint")}
                 </p>
               </div>
+              {issueCount > 0 ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                  {t("admissions.manualAdmission.form.issues", { count: issueCount })}
+                </span>
+              ) : null}
             </div>
-            {reviewRows.length > 0 ? (
-              <dl className="divide-y divide-slate-100">
-                {reviewRows.map((row) => (
-                  <div key={row.label} className="flex items-start justify-between gap-3 py-2">
-                    <dt className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
-                      {row.label}
-                    </dt>
-                    <dd className="min-w-0 text-right">
-                      <span className="block break-words text-sm font-semibold text-slate-800">
-                        {row.value}
-                      </span>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {reviewSections.map((section) => {
+                const rows = reviewRows.filter((row) => row.section === section.key);
+                return (
+                  <section
+                    key={section.key}
+                    className="rounded-2xl border border-slate-200 bg-white p-4"
+                    aria-label={section.title}
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                      <h6 className="text-sm font-extrabold text-slate-900">{section.title}</h6>
                       <button
                         type="button"
-                        onClick={() => goToStep(row.step)}
                         disabled={submitting}
-                        className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                        onClick={() => editReviewSection(section.step)}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
                       >
                         <Pencil className="h-3 w-3" />
-                        {t("edit")}
+                        {t("common:edit")}
                       </button>
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="text-xs font-medium text-slate-500">{t("admissionForm.reviewEmpty")}</p>
-            )}
+                    </div>
+                    {section.key === "identity" && studentPhotoSlot ? (
+                      <div className="mb-3">{studentPhotoSlot}</div>
+                    ) : null}
+                    {rows.length > 0 ? (
+                      <dl className="divide-y divide-slate-100">
+                        {rows.map((row) => (
+                          <div key={row.label} className="flex items-start justify-between gap-3 py-2">
+                            <dt className="shrink-0 text-xs font-bold uppercase tracking-wider text-slate-400">
+                              {row.label}
+                            </dt>
+                            <dd className="min-w-0 text-right text-sm font-semibold text-slate-800">
+                              <span className="block break-words">{row.value}</span>
+                              {changedFields.includes(row.field) ? (
+                                <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                                  {t("admissions.manualAdmission.form.changedFromExisting")}
+                                </span>
+                              ) : null}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : (
+                      <p className="text-xs font-medium text-slate-500">
+                        {t("common:admissionForm.reviewEmpty")}
+                      </p>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+
+            <section
+              className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4"
+              aria-label={t("admissions.manualAdmission.review.source")}
+            >
+              <h6 className="text-sm font-extrabold text-indigo-900">
+                {t("admissions.manualAdmission.review.source")}
+              </h6>
+              <p className="mt-1 text-sm font-medium text-indigo-800">
+                {applicantType === "returning"
+                  ? t("admissions.manualAdmission.review.returningApplication")
+                  : t("admissions.manualAdmission.review.newApplication")}
+              </p>
+              <p className="mt-1 text-xs font-medium text-indigo-700">
+                {t("admissions.manualAdmission.review.noDocuments")}
+              </p>
+            </section>
           </div>
         ) : null}
 
@@ -368,22 +598,39 @@ export function AdmissionFormWizard({
         {isFinalStep && error ? <div className="text-sm font-medium text-rose-600">{error}</div> : null}
       </motion.div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-5">
+      <div className="sticky bottom-0 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white/95 px-5 pb-1 pt-4 backdrop-blur sm:-mx-7 sm:px-7 lg:-mx-8 lg:px-8">
         <button
           type="button"
           onClick={() => goToStep(stepIndex - 1)}
           disabled={stepIndex === 0 || submitting}
-          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
           {t("common:back")}
         </button>
 
+        {returnToReview && !isFinalStep ? (
+          <button
+            type="button"
+            onClick={backToReview}
+            disabled={submitting}
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-40"
+          >
+            {t("admissions.manualAdmission.review.backToReview")}
+          </button>
+        ) : null}
+
+        {isFinalStep && issueCount > 0 ? (
+          <span className="hidden text-xs font-bold text-amber-700 sm:inline">
+            {t("admissions.manualAdmission.form.issues", { count: issueCount })}
+          </span>
+        ) : null}
+
         {isFinalStep ? (
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-40"
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-40"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {submitLabel ?? t("common:next")}
@@ -393,7 +640,7 @@ export function AdmissionFormWizard({
             type="button"
             onClick={handleNext}
             disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-40"
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-40"
           >
             {t("common:next")}
             <ArrowRight className="h-4 w-4 rtl:rotate-180" />

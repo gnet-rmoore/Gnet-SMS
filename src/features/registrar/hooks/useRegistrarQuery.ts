@@ -40,6 +40,7 @@ export function useRegistrarQuery() {
     classrooms: query.data?.classrooms ?? [],
     loading: query.isLoading,
     gradeLevelsLoading: query.isLoading,
+    gradeLevelsError: query.error,
     refetchAll: () => query.refetch(),
     invalidate,
   };

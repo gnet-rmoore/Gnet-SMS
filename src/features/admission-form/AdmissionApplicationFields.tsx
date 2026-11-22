@@ -33,22 +33,55 @@ export type AdmissionApplicationFieldsProps = {
     retry: string;
   };
   submitting?: boolean;
+  /** Field keys that differ from a prefilled returning-student record. */
+  changedFields?: string[];
+  /** Profile-photo control rendered in the student identity card. */
+  studentPhotoSlot?: React.ReactNode;
 };
 
 const DEFAULT_INPUT =
-  "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500";
-const DEFAULT_LABEL = "text-xs font-black text-slate-500 uppercase tracking-wider";
-const DEFAULT_SECTION = "text-xs font-black uppercase tracking-widest text-slate-500";
+  "min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100";
+const DEFAULT_LABEL = "text-xs font-black uppercase tracking-[0.12em] text-slate-500";
+const DEFAULT_SECTION = "text-sm font-extrabold tracking-tight text-slate-900";
 
-const ERROR_INPUT =
-  "border-rose-300 bg-rose-50/50 focus:ring-rose-400 focus:border-rose-400";
+const ERROR_INPUT = "border-rose-300 bg-rose-50/50 focus:ring-rose-400 focus:border-rose-400";
+const CHANGED_INPUT = "border-amber-300 bg-amber-50/40 focus:border-amber-400 focus:ring-amber-100";
+
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  firstName: "admissions.manualAdmission.form.field.firstName",
+  middleName: "admissions.manualAdmission.form.field.middleName",
+  lastName: "admissions.manualAdmission.form.field.lastName",
+  dob: "admissions.manualAdmission.form.field.dob",
+  gender: "admissions.manualAdmission.form.field.gender",
+  gradeLevelId: "admissions.manualAdmission.form.field.gradeApplyingFor",
+  studentEmail: "admissions.manualAdmission.form.field.studentEmail",
+  studentPhone: "admissions.manualAdmission.form.field.studentPhone",
+  address: "admissions.manualAdmission.form.field.address",
+  fatherName: "admissions.manualAdmission.form.field.fatherGuardianName",
+  fatherPhone: "admissions.manualAdmission.form.field.fatherPhone",
+  fatherEmail: "admissions.manualAdmission.form.field.fatherEmail",
+  motherName: "admissions.manualAdmission.form.field.motherName",
+  motherPhone: "admissions.manualAdmission.form.field.motherPhone",
+  motherEmail: "admissions.manualAdmission.form.field.motherEmail",
+  previousSchool: "admissions.manualAdmission.form.field.previousSchool",
+  gradeCompleted: "admissions.manualAdmission.form.field.gradeCompleted",
+  notes: "admissions.manualAdmission.form.field.notes",
+};
+
+const FAMILY_OPTION_KEYS: Record<string, string> = {
+  "Both parents living together": "admissions.manualAdmission.form.familyOption.bothParents",
+  "Parents divorced/separated": "admissions.manualAdmission.form.familyOption.separated",
+  "Single parent household": "admissions.manualAdmission.form.familyOption.singleParent",
+  "Guardian / relative care": "admissions.manualAdmission.form.familyOption.relativeCare",
+  "Other family arrangement": "admissions.manualAdmission.form.familyOption.other",
+};
 
 function FieldError({ code }: { code?: AdmissionValidationCode }) {
   const { t } = useTranslation(["common"]);
   if (!code) return null;
   return (
     <p role="alert" className="text-xs font-semibold text-rose-600 mt-1">
-      {t(`admissionForm.err.${code}`)}
+      {t(`common:admissionForm.err.${code}`)}
     </p>
   );
 }
@@ -67,15 +100,55 @@ export function AdmissionApplicationFields({
   onRetryGrades,
   gradesStateLabels,
   submitting = false,
+  changedFields = [],
+  studentPhotoSlot,
 }: AdmissionApplicationFieldsProps) {
+  const { t } = useTranslation(["pages", "common"]);
   const set = (patch: Partial<AdmissionApplicationForm>) => onChange(patch);
   const isReturningPublic = mode === "public-returning";
   const nameRequired = mode !== "public-returning";
   const gradeRequired = mode === "staff" || mode === "public-new";
   const parentRequired = mode === "public-new";
+  const changedSet = React.useMemo(() => new Set(changedFields), [changedFields]);
+
+  const fieldLabel = (key: keyof AdmissionApplicationForm) =>
+    t(FIELD_LABEL_KEYS[key] || `admissions.manualAdmission.form.field.${key}`);
 
   const inputCls = (key: keyof AdmissionApplicationForm) =>
-    cn(inputClassName, errors?.[key] && ERROR_INPUT);
+    cn(
+      inputClassName,
+      errors?.[key] && ERROR_INPUT,
+      changedSet.has(key) && !errors?.[key] && CHANGED_INPUT
+    );
+
+  const label = (
+    key: keyof AdmissionApplicationForm,
+    options?: { required?: boolean; optional?: boolean }
+  ) => (
+    <label htmlFor={`admission-${key}`} className={labelClassName}>
+      {fieldLabel(key)}
+      {options?.required ? ` *` : ""}
+      {options?.optional ? ` (${t("common:optional")})` : ""}
+      {isReturningPublic && key === "dob" ? ` (${t("common:required")})` : ""}
+      {changedSet.has(key) ? (
+        <span className="ms-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-black normal-case tracking-normal text-amber-700">
+          {t("admissions.manualAdmission.form.changedFromExisting")}
+        </span>
+      ) : null}
+    </label>
+  );
+
+  const sectionHeader = (number: string, title: string, hint: string) => (
+    <div className="flex items-start gap-3 border-b border-slate-100 pb-4">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-700">
+        {number}
+      </span>
+      <div>
+        <h4 className={sectionTitleClassName}>{title}</h4>
+        <p className="mt-0.5 text-xs font-medium text-slate-500">{hint}</p>
+      </div>
+    </div>
+  );
 
   const showStudent = step === "all" || step === "student";
   const showGuardians = step === "all" || step === "guardians";
@@ -84,205 +157,41 @@ export function AdmissionApplicationFields({
   return (
     <div className="space-y-8">
       {showStudent ? (
-        <section className="space-y-4" aria-label="Student identity">
-          <h4 className={sectionTitleClassName}>Student Identity</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(
-              [
-                ["firstName", "First Name", nameRequired],
-                ["middleName", "Middle Name", false],
-                ["lastName", "Last Name", nameRequired],
-              ] as const
-            ).map(([key, label, req]) => (
-              <div key={key} className="space-y-1">
-                <label className={labelClassName}>
-                  {label}
-                  {isReturningPublic && key !== "middleName" ? " (optional)" : ""}
-                </label>
-                <input
-                  type="text"
-                  required={req}
-                  aria-required={req || undefined}
-                  aria-invalid={Boolean(errors?.[key])}
-                  value={f[key]}
-                  onChange={(e) => set({ [key]: e.target.value })}
-                  className={inputCls(key)}
-                  placeholder={
-                    isReturningPublic && key === "firstName"
-                      ? "Leave blank to use school record"
-                      : undefined
-                  }
-                />
-                <FieldError code={errors?.[key]} />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className={labelClassName}>
-                Date of Birth{isReturningPublic ? " (required)" : ""}
-              </label>
-              <input
-                type="date"
-                required={isReturningPublic}
-                aria-required={isReturningPublic || undefined}
-                aria-invalid={Boolean(errors?.dob)}
-                value={f.dob}
-                onChange={(e) => set({ dob: e.target.value })}
-                className={inputCls("dob")}
-              />
-              <FieldError code={errors?.dob} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelClassName}>Gender</label>
-              <select
-                aria-invalid={Boolean(errors?.gender)}
-                value={f.gender}
-                onChange={(e) => set({ gender: e.target.value })}
-                className={cn(`${inputClassName} font-bold`, errors?.gender && ERROR_INPUT)}
-              >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-              <FieldError code={errors?.gender} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelClassName}>
-                {isReturningPublic ? "Grade Applying For (optional)" : "Grade Applying For"}
-              </label>
-              <select
-                aria-invalid={Boolean(errors?.gradeLevelId)}
-                value={f.gradeLevelId}
-                onChange={(e) => set({ gradeLevelId: e.target.value })}
-                required={gradeRequired}
-                aria-required={gradeRequired || undefined}
-                disabled={submitting || gradeLoadState === "loading" || gradeLoadState === "error"}
-                className={cn(`${inputClassName} font-bold`, errors?.gradeLevelId && ERROR_INPUT)}
-              >
-                <option value="">
-                  {gradeLoadState === "loading"
-                    ? gradesStateLabels?.loading || "Loading grades..."
-                    : isReturningPublic
-                      ? "Keep current grade"
-                      : gradeLoadState === "error"
-                        ? gradesStateLabels?.error || "Could not load grades"
-                        : gradeLoadState === "empty"
-                          ? gradesStateLabels?.empty || "No grades available for this school"
-                          : "Select grade..."}
-                </option>
-                {gradeLevels.map((gl) => (
-                  <option key={gl.id} value={gl.id}>
-                    {gl.name}
-                  </option>
-                ))}
-              </select>
-              {gradeLoadState === "error" && onRetryGrades ? (
-                <button
-                  type="button"
-                  onClick={onRetryGrades}
-                  className="min-h-11 text-sm font-bold text-indigo-700 underline underline-offset-2"
-                >
-                  {gradesStateLabels?.retry || "Retry"}
-                </button>
-              ) : null}
-              <FieldError code={errors?.gradeLevelId} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className={labelClassName}>
-                Student email{isReturningPublic ? " (required)" : ""}
-              </label>
-              <input
-                type="email"
-                required={isReturningPublic}
-                aria-required={isReturningPublic || undefined}
-                aria-invalid={Boolean(errors?.studentEmail)}
-                value={f.studentEmail}
-                onChange={(e) => set({ studentEmail: e.target.value })}
-                className={inputCls("studentEmail")}
-              />
-              <FieldError code={errors?.studentEmail} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelClassName}>Student phone</label>
-              <input
-                type="text"
-                aria-invalid={Boolean(errors?.studentPhone)}
-                value={f.studentPhone}
-                onChange={(e) => set({ studentPhone: e.target.value })}
-                className={inputCls("studentPhone")}
-              />
-              <FieldError code={errors?.studentPhone} />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className={labelClassName}>Home Address</label>
-            <textarea
-              rows={3}
-              maxLength={500}
-              aria-invalid={Boolean(errors?.address)}
-              value={f.address}
-              onChange={(e) => set({ address: e.target.value })}
-              className={`${inputCls("address")} resize-y`}
-            />
-            <p className="text-xs text-slate-500">{f.address.length}/500</p>
-            <FieldError code={errors?.address} />
-          </div>
-        </section>
-      ) : null}
-
-      {showGuardians ? (
         <>
-          <section className="space-y-4" aria-label="Parents and guardians">
-            <h4 className={sectionTitleClassName}>Parents / Guardians</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              <div className="space-y-4">
-                <p className={`${labelClassName} mb-1`}>
-                  Father / Guardian{parentRequired ? " *" : ""}
-                </p>
-                {(
-                  [
-                    ["fatherName", "Name", parentRequired],
-                    ["fatherPhone", "Phone", parentRequired],
-                    ["fatherEmail", "Email", false],
-                  ] as const
-                ).map(([key, label, req]) => (
+          <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.studentIdentity")}>
+            {sectionHeader(
+              "1",
+              t("admissions.manualAdmission.form.section.studentIdentity"),
+              t("admissions.manualAdmission.form.section.studentIdentityHint")
+            )}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {studentPhotoSlot ? <div className="md:col-span-1">{studentPhotoSlot}</div> : null}
+              <div
+                className={cn(
+                  "grid grid-cols-1 gap-4 sm:grid-cols-3",
+                  studentPhotoSlot ? "md:col-span-2" : "md:col-span-3"
+                )}
+              >
+                {(["firstName", "middleName", "lastName"] as const).map((key) => (
                   <div key={key} className="space-y-1">
-                    <label className={labelClassName}>{label}</label>
+                    {label(key, {
+                      required: nameRequired && key !== "middleName",
+                      optional: key === "middleName",
+                    })}
                     <input
-                      type={key.includes("Email") ? "email" : "text"}
-                      required={req}
-                      aria-required={req || undefined}
+                      id={`admission-${key}`}
+                      type="text"
+                      required={nameRequired && key !== "middleName"}
+                      aria-required={(nameRequired && key !== "middleName") || undefined}
                       aria-invalid={Boolean(errors?.[key])}
                       value={f[key]}
                       onChange={(e) => set({ [key]: e.target.value })}
                       className={inputCls(key)}
-                    />
-                    <FieldError code={errors?.[key]} />
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-4">
-                <p className={`${labelClassName} mb-1`}>Mother</p>
-                {(
-                  [
-                    ["motherName", "Name", false],
-                    ["motherPhone", "Phone", false],
-                    ["motherEmail", "Email", false],
-                  ] as const
-                ).map(([key, label, req]) => (
-                  <div key={key} className="space-y-1">
-                    <label className={labelClassName}>{label}</label>
-                    <input
-                      type={key.includes("Email") ? "email" : "text"}
-                      required={req}
-                      aria-required={req || undefined}
-                      aria-invalid={Boolean(errors?.[key])}
-                      value={f[key]}
-                      onChange={(e) => set({ [key]: e.target.value })}
-                      className={inputCls(key)}
+                      placeholder={
+                        isReturningPublic && key === "firstName"
+                          ? t("admissions.manualAdmission.form.placeholder.keepSchoolRecord")
+                          : undefined
+                      }
                     />
                     <FieldError code={errors?.[key]} />
                   </div>
@@ -291,15 +200,202 @@ export function AdmissionApplicationFields({
             </div>
           </section>
 
-          <section className="space-y-3" aria-label="Family information">
-            <h4 className={sectionTitleClassName}>Family Information</h4>
-            <div className="space-y-2">
+          <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.personalDetails")}>
+            {sectionHeader(
+              "2",
+              t("admissions.manualAdmission.form.section.personalDetails"),
+              t("admissions.manualAdmission.form.section.personalDetailsHint")
+            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                {label("dob")}
+                <input
+                  id="admission-dob"
+                  type="date"
+                  required={isReturningPublic}
+                  aria-required={isReturningPublic || undefined}
+                  aria-invalid={Boolean(errors?.dob)}
+                  value={f.dob}
+                  onChange={(e) => set({ dob: e.target.value })}
+                  className={inputCls("dob")}
+                />
+                <FieldError code={errors?.dob} />
+              </div>
+              <div className="space-y-1">
+                {label("gender")}
+                <select
+                  id="admission-gender"
+                  aria-invalid={Boolean(errors?.gender)}
+                  value={f.gender}
+                  onChange={(e) => set({ gender: e.target.value })}
+                  className={cn(inputCls("gender"), "font-bold")}
+                >
+                  <option value="MALE">{t("common:male")}</option>
+                  <option value="FEMALE">{t("common:female")}</option>
+                  <option value="OTHER">{t("common:other")}</option>
+                </select>
+                <FieldError code={errors?.gender} />
+              </div>
+              <div className="space-y-1">
+                {label("gradeLevelId")}
+                <select
+                  id="admission-gradeLevelId"
+                  aria-invalid={Boolean(errors?.gradeLevelId)}
+                  value={f.gradeLevelId}
+                  onChange={(e) => set({ gradeLevelId: e.target.value })}
+                  required={gradeRequired}
+                  aria-required={gradeRequired || undefined}
+                  disabled={submitting || gradeLoadState === "loading" || gradeLoadState === "error"}
+                  className={cn(inputCls("gradeLevelId"), "font-bold")}
+                >
+                  <option value="">
+                    {gradeLoadState === "loading"
+                      ? gradesStateLabels?.loading
+                      : isReturningPublic
+                        ? t("admissions.manualAdmission.form.placeholder.keepCurrentGrade")
+                        : gradeLoadState === "error"
+                          ? gradesStateLabels?.error
+                          : gradeLoadState === "empty"
+                            ? gradesStateLabels?.empty
+                            : t("admissions.manualAdmission.form.placeholder.selectGrade")}
+                  </option>
+                  {gradeLevels.map((gl) => (
+                    <option key={gl.id} value={gl.id}>
+                      {gl.name}
+                    </option>
+                  ))}
+                </select>
+                {gradeLoadState === "error" && onRetryGrades ? (
+                  <button
+                    type="button"
+                    onClick={onRetryGrades}
+                    className="min-h-11 text-sm font-bold text-indigo-700 underline underline-offset-2"
+                  >
+                    {gradesStateLabels?.retry || t("admissions.manualAdmission.gradesRetry")}
+                  </button>
+                ) : null}
+                <FieldError code={errors?.gradeLevelId} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                {label("studentEmail")}
+                <input
+                  id="admission-studentEmail"
+                  type="email"
+                  required={isReturningPublic}
+                  aria-required={isReturningPublic || undefined}
+                  aria-invalid={Boolean(errors?.studentEmail)}
+                  value={f.studentEmail}
+                  onChange={(e) => set({ studentEmail: e.target.value })}
+                  className={inputCls("studentEmail")}
+                />
+                <FieldError code={errors?.studentEmail} />
+              </div>
+              <div className="space-y-1">
+                {label("studentPhone")}
+                <input
+                  id="admission-studentPhone"
+                  type="text"
+                  aria-invalid={Boolean(errors?.studentPhone)}
+                  value={f.studentPhone}
+                  onChange={(e) => set({ studentPhone: e.target.value })}
+                  className={inputCls("studentPhone")}
+                />
+                <FieldError code={errors?.studentPhone} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              {label("address")}
+              <textarea
+                id="admission-address"
+                rows={3}
+                maxLength={500}
+                aria-invalid={Boolean(errors?.address)}
+                value={f.address}
+                onChange={(e) => set({ address: e.target.value })}
+                className={cn(inputCls("address"), "resize-y")}
+              />
+              <p className="text-xs text-slate-500">
+                {t("admissions.manualAdmission.form.characterCount", { count: f.address.length, max: 500 })}
+              </p>
+              <FieldError code={errors?.address} />
+            </div>
+          </section>
+        </>
+      ) : null}
+
+      {showGuardians ? (
+        <>
+          <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.parentsGuardians")}>
+            {sectionHeader(
+              "3",
+              t("admissions.manualAdmission.form.section.parentsGuardians"),
+              t("admissions.manualAdmission.form.section.parentsGuardiansHint")
+            )}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className={cn(labelClassName, "mb-1")}>
+                  {t("admissions.manualAdmission.form.section.fatherGuardian")}
+                  {parentRequired ? " *" : ""}
+                </p>
+                {(["fatherName", "fatherPhone", "fatherEmail"] as const).map((key) => (
+                  <div key={key} className="space-y-1">
+                    {label(key, { optional: !parentRequired && key === "fatherEmail" })}
+                    <input
+                      id={`admission-${key}`}
+                      type={key.includes("Email") ? "email" : "text"}
+                      required={parentRequired}
+                      aria-required={parentRequired || undefined}
+                      aria-invalid={Boolean(errors?.[key])}
+                      value={f[key]}
+                      onChange={(e) => set({ [key]: e.target.value })}
+                      className={inputCls(key)}
+                    />
+                    <FieldError code={errors?.[key]} />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className={cn(labelClassName, "mb-1")}>{t("admissions.manualAdmission.form.section.mother")}</p>
+                {(["motherName", "motherPhone", "motherEmail"] as const).map((key) => (
+                  <div key={key} className="space-y-1">
+                    {label(key, { optional: true })}
+                    <input
+                      id={`admission-${key}`}
+                      type={key.includes("Email") ? "email" : "text"}
+                      aria-invalid={Boolean(errors?.[key])}
+                      value={f[key]}
+                      onChange={(e) => set({ [key]: e.target.value })}
+                      className={inputCls(key)}
+                    />
+                    <FieldError code={errors?.[key]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {!f.fatherEmail && !f.motherEmail ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                {t("admissions.manualAdmission.form.noGuardianEmail")}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="space-y-4" aria-label={t("admissions.manualAdmission.form.section.familyInformation")}>
+            <h4 className={sectionTitleClassName}>{t("admissions.manualAdmission.form.section.familyInformation")}</h4>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {FAMILY_OPTIONS.map((opt) => {
                 const isChecked = (f.familyInformation || []).includes(opt);
+                const optionLabel = t(FAMILY_OPTION_KEYS[opt] || opt);
                 return (
                   <label
                     key={opt}
-                    className="flex items-center gap-3 text-sm font-medium text-slate-700 cursor-pointer"
+                    className={cn(
+                      "flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                      isChecked
+                        ? "border-indigo-300 bg-indigo-50 text-indigo-800"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200"
+                    )}
                   >
                     <input
                       type="checkbox"
@@ -309,9 +405,9 @@ export function AdmissionApplicationFields({
                           familyInformation: toggleFamilyInformation(f.familyInformation, opt),
                         })
                       }
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    {opt}
+                    {optionLabel}
                   </label>
                 );
               })}
@@ -321,36 +417,50 @@ export function AdmissionApplicationFields({
       ) : null}
 
       {showSchooling ? (
-        <section className="space-y-4" aria-label="Prior schooling">
-          <h4 className={sectionTitleClassName}>Prior Schooling</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.priorSchooling")}>
+          {sectionHeader(
+            "4",
+            t("admissions.manualAdmission.form.section.priorSchooling"),
+            t("admissions.manualAdmission.form.section.priorSchoolingHint")
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className={labelClassName}>Previous School</label>
+              {label("previousSchool", { optional: true })}
               <input
+                id="admission-previousSchool"
                 type="text"
                 value={f.previousSchool}
                 onChange={(e) => set({ previousSchool: e.target.value })}
-                className={inputClassName}
+                className={inputCls("previousSchool")}
               />
+              <FieldError code={errors?.previousSchool} />
             </div>
             <div className="space-y-1">
-              <label className={labelClassName}>Grade Completed</label>
+              {label("gradeCompleted", { optional: true })}
               <input
+                id="admission-gradeCompleted"
                 type="text"
                 value={f.gradeCompleted}
                 onChange={(e) => set({ gradeCompleted: e.target.value })}
-                className={inputClassName}
+                className={inputCls("gradeCompleted")}
               />
+              <FieldError code={errors?.gradeCompleted} />
             </div>
           </div>
           <div className="space-y-1">
-            <label className={labelClassName}>Notes</label>
+            {label("notes", { optional: true })}
             <textarea
+              id="admission-notes"
               value={f.notes}
               onChange={(e) => set({ notes: e.target.value })}
-              rows={3}
-              className={`${inputClassName} resize-none`}
+              rows={4}
+              maxLength={500}
+              className={cn(inputCls("notes"), "resize-y")}
             />
+            <p className="text-xs text-slate-500">
+              {t("admissions.manualAdmission.form.characterCount", { count: f.notes.length, max: 500 })}
+            </p>
+            <FieldError code={errors?.notes} />
           </div>
         </section>
       ) : null}

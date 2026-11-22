@@ -331,6 +331,13 @@ export function usePageActions(deps: PageActionsDeps) {
         gradeLevelName,
         sourceNote: "Direct offline entry",
       });
+      if (manualAdmissionForm.pendingPhotoUrl) {
+        const notes = payload.notes ? JSON.parse(payload.notes) : {};
+        payload.notes = JSON.stringify({
+          ...notes,
+          pendingPhotoUrl: manualAdmissionForm.pendingPhotoUrl,
+        });
+      }
 
       const response = await registrarApi.createApplication(school?.id, payload);
 

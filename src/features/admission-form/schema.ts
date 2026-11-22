@@ -269,6 +269,7 @@ export function isAdmissionFormEmpty(form: AdmissionApplicationForm): boolean {
   const entries = Object.entries(form as unknown as Record<string, unknown>);
   return entries.every(([key, value]) => {
     if (key === "gender") return true;
+    if (value == null) return true;
     if (Array.isArray(value)) return value.length === 0;
     return typeof value === "string" && value.trim() === "";
   });

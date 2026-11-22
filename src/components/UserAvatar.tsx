@@ -11,7 +11,7 @@ const SIZE: Record<Size, string> = {
   sm: "w-8 h-8 text-xs",
   md: "w-10 h-10 text-sm",
   lg: "w-12 h-12 text-base",
-  xl: "w-28 h-28 text-3xl",
+  xl: "w-32 h-32 text-3xl",
 };
 
 const FALLBACK = [

@@ -139,9 +139,22 @@ assert(
   typeof (enResources.pages as any).workOrders?.list?.ordersTitle === "string",
   "en workOrders.list.ordersTitle present"
 );
+const manualAdmission = (enResources.pages as any).admissions?.manualAdmission;
 assert(
-  typeof (enResources.pages as any).admissions?.manualAdmission?.title === "string",
+  typeof manualAdmission?.title === "string",
   "en admissions.manualAdmission.title present"
+);
+assert(
+  typeof manualAdmission?.drawerTitle === "string" &&
+    typeof manualAdmission?.applicantType === "string" &&
+    typeof manualAdmission?.form?.changedFromExisting === "string",
+  "enrollment drawer and changed-field copy present"
+);
+assert(
+  typeof (enResources.pages as any).studentPhoto?.requirements === "string" &&
+    typeof (enResources.pages as any).studentPhoto?.invalidType === "string" &&
+    typeof (enResources.pages as any).studentPhoto?.tooLargeAfterCompression === "string",
+  "student photo validation copy present"
 );
 assert(
   typeof (enResources.pages as any).admissions?.onlineRegistration?.copyLink === "string",
@@ -155,6 +168,19 @@ assert(
   typeof (enResources.pages as any).classSchedule?.modals?.class === "string",
   "en classSchedule.modals.class present"
 );
+assert(
+  (enResources.pages as any).apiDocs?.modeSandbox === "Sandbox",
+  "en apiDocs.modeSandbox label present"
+);
+assert(
+  (enResources.pages as any).apiDocs?.modeProduction === "Production",
+  "en apiDocs.modeProduction label present"
+);
+for (const code of ["fr", "ar", "es", "de", "zh-Hans", "hi"] as const) {
+  const apiDocs = (localeResources[code] as any).pages?.apiDocs;
+  assert(typeof apiDocs?.modeSandbox === "string", `${code} apiDocs.modeSandbox label present`);
+  assert(typeof apiDocs?.modeProduction === "string", `${code} apiDocs.modeProduction label present`);
+}
 
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`);

@@ -36,10 +36,21 @@ export const Registrar = () => {
     classrooms,
     loading,
     gradeLevelsLoading,
+    gradeLevelsError,
     invalidate: refetchRegistrar,
   } = useRegistrarQuery();
 
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    const valid: TabType[] = [
+      "overview",
+      "directory",
+      "admissions",
+      "promotion_statement",
+      "new_admission",
+    ];
+    return valid.includes(requested as TabType) ? (requested as TabType) : "overview";
+  });
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -429,6 +440,17 @@ export const Registrar = () => {
             <ManualAdmissionTab
               gradeLevels={gradeLevels}
               students={students}
+              studentsLoading={loading}
+              gradeLoadState={
+                gradeLevelsError
+                  ? "error"
+                  : gradeLevelsLoading
+                    ? "loading"
+                    : gradeLevels.length === 0
+                      ? "empty"
+                      : "ready"
+              }
+              onRetryGrades={() => void refetchRegistrar()}
               handleManualAdmissionSubmit={handleManualAdmissionSubmit}
               manualAdmissionForm={manualAdmissionForm}
               setManualAdmissionForm={setManualAdmissionForm}

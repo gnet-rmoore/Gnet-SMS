@@ -102,7 +102,7 @@ export const ROLE_DASHBOARD_REGISTRY: Record<string, RoleDashboardDef> = {
     quickActions: [
       { labelKey: "dashboard.actions.gradeReview", path: "grade-review", icon: ClipboardCheck },
       { labelKey: "dashboard.actions.curriculum", path: "curriculum", icon: BookMarked },
-      { labelKey: "dashboard.actions.newAdmission", path: "admissions", icon: Users },
+      { labelKey: "dashboard.actions.newAdmission", path: "admissions?tab=new_admission", icon: Users },
       { labelKey: "dashboard.actions.dailyReport", path: "reports", icon: PieChart },
       { labelKey: "dashboard.actions.leave", path: "leave-approval", icon: ClipboardList },
     ],
@@ -142,7 +142,7 @@ export const ROLE_DASHBOARD_REGISTRY: Record<string, RoleDashboardDef> = {
     subtitleKey: "dashboard.subtitles.registrar",
     leadershipKpis: "registrar",
     quickActions: [
-      { labelKey: "dashboard.actions.newAdmission", path: "admissions", icon: Users },
+      { labelKey: "dashboard.actions.newAdmission", path: "admissions?tab=new_admission", icon: Users },
       { labelKey: "dashboard.actions.enrollStudent", path: "students", icon: UserCheck },
       { labelKey: "dashboard.actions.issueTranscript", path: "transcripts", icon: FileText },
       { labelKey: "dashboard.actions.certificates", path: "certificates", icon: Award },

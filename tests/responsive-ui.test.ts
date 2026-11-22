@@ -55,6 +55,18 @@ assert(gradebook.includes("MatrixScrollHint"), "Gradebook shows matrix scroll ti
 const schedule = fs.readFileSync(path.join(root, "src/features/class-schedule/Page.tsx"), "utf8");
 assert(schedule.includes("MatrixScrollHint"), "Class schedule shows matrix scroll tip");
 
+const drawer = fs.readFileSync(
+  path.join(root, "src/features/registrar/components/NewEnrollmentDrawer.tsx"),
+  "utf8"
+);
+assert(
+  drawer.includes("w-full max-w-[960px]") &&
+    drawer.includes("h-[100dvh]") &&
+    drawer.includes("grid grid-cols-1 gap-3 sm:grid-cols-2") &&
+    drawer.includes("overflow-y-auto overscroll-contain"),
+  "enrollment drawer is full-screen on phones and scrolls independently"
+);
+
 // Soft drift: interactive files should not introduce bare grid-cols-2 without grid-cols-1
 const allow = /(Template|ReportCard|GradeSheet|gradesheets|Pdf\.tsx$|print|report-cards|RichTextEditor|PageSkeleton|CalendarMainGrid|WeekStrip)/i;
 // Frozen reviewed count of bare grid-cols-2..6 still awaiting a mobile
