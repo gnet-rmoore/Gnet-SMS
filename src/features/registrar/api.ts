@@ -66,6 +66,8 @@ export const registrarApi = {
       headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
     }),
   getNextAction: (applicationId: string) => api.get(`/api/applications/${applicationId}/next-action`),
+  completeEntrance: (applicationId: string, data: { entranceResult: string; entranceNotes?: string }) =>
+    api.post(`/api/applications/${applicationId}/entrance-complete`, data),
   createEntranceFee: (applicationId: string, amount: number) =>
     api.post(`/api/applications/${applicationId}/create-entrance-fee`, { amount }),
   presignDocument: (applicationId: string, data: unknown) =>

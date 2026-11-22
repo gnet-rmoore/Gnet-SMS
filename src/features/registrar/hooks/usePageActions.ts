@@ -427,6 +427,30 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
+  const handleCompleteEntrance = async (entranceResult: string, entranceNotes?: string) => {
+    if (!selectedApp) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const updated = await registrarApi.completeEntrance(selectedApp.id, {
+        entranceResult,
+        entranceNotes,
+      });
+      setSelectedApp((prev: any) => (prev ? { ...prev, ...updated } : prev));
+      setSuccessMessage(t("admissions.toast.entranceCompleted", {
+        defaultValue: "Entrance completion recorded.",
+      }));
+      fetchData();
+    } catch (error) {
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.entranceCompleteFailed", {
+        defaultValue: "Could not record entrance completion.",
+      })));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCreateEntranceFee = async (amount?: number) => {
     if (!selectedApp) return;
     const feeAmount = Number(amount || 0);
@@ -474,6 +498,7 @@ export function usePageActions(deps: PageActionsDeps) {
     handleManualAdmissionSubmit,
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,
+    handleCompleteEntrance,
     handleCreateEntranceFee,
   };
 }

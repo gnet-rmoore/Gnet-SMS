@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import prisma from "../lib/prisma";
-import { findOrCreateIdentityUser, getSchoolStudentTotal, linkParentStudent, getIdentitySchool, verifyReturningStudent } from "../lib/identityClient";
+import { findOrCreateIdentityUser, getSchoolStudentTotal, linkParentStudent, getIdentitySchool, getIdentityUser, verifyReturningStudent } from "../lib/identityClient";
 import { createEntranceFee, getFee, getFeeReceipt, linkFeeToStudent, randomPassword } from "../lib/financeClient";
 import {
   claimStudentSeat,
@@ -21,6 +21,7 @@ import { getParentChildIds } from "../lib/identityClient";
 import { nextActionFor } from "../domain/admissionFunnel";
 import { buildEntranceUrl, normalizeParentEmails } from "../lib/applicationEmail";
 import { entranceService } from "./entranceService";
+import { documentEligibilityFor, type DocumentEligibility } from "../domain/documentEligibility";
 
 const parseDateSafely = (dateStr: any) => {
   if (!dateStr || String(dateStr).trim() === "") return null;
@@ -159,6 +160,10 @@ async function formatPublicStatus(app: {
   accessToken?: string | null;
   parentContacts?: string | null;
   entranceStatus?: string | null;
+  studentUserId?: string | null;
+  entranceCompletedAt?: Date | null;
+  entranceResult?: string | null;
+  admissionDecision?: string | null;
   entranceToken?: string | null;
   entranceSlotId?: string | null;
   entranceScheduledAt?: Date | null;
@@ -226,6 +231,23 @@ async function formatPublicStatus(app: {
     console.warn("[lifecycle] public entrance summary failed:", err?.message || err);
   }
 
+  let student = null;
+  if (app.studentUserId) {
+    student = await getIdentityUser(app.studentUserId);
+  }
+  const documentEligibility = documentEligibilityFor(
+    {
+      status: app.status,
+      schoolId: app.schoolId,
+      studentUserId: app.studentUserId || null,
+      entranceCompletedAt: app.entranceCompletedAt || null,
+      entranceResult: app.entranceResult || null,
+      entranceStatus: app.entranceStatus || "NOT_SCHEDULED",
+      admissionDecision: app.admissionDecision || null,
+    },
+    student
+  );
+
   return {
     id: app.id,
     applicationNumber: app.applicationNumber,
@@ -234,7 +256,7 @@ async function formatPublicStatus(app: {
     studentName: app.studentName,
     gradeLevelName: app.gradeLevelName,
     appliedAt: app.appliedAt,
-    documents: app.admissionDocuments ?? [],
+    documents: documentEligibility.eligible ? (app.admissionDocuments ?? []) : [],
     feePaymentId: app.feePaymentId,
     parentEmails: parseParentContacts(app.parentContacts),
     entrance,
@@ -245,6 +267,7 @@ async function formatPublicStatus(app: {
     accessToken: app.accessToken || null,
     fee,
     receipt,
+    documentEligibility,
   };
 }
 
@@ -379,6 +402,7 @@ export const admissionService = {
       fee,
       policy,
     });
+    const documentEligibility = await this.getDocumentEligibility(app);
     return {
       id: app.id,
       status: app.status,
@@ -386,12 +410,101 @@ export const admissionService = {
       nextAction: step.action,
       blockedBy: step.blockedBy,
       required: step.required,
+      documentEligibility,
       fee,
       documents: (app.admissionDocuments ?? []).map((d: any) => ({
         docType: d.docType,
         status: d.status,
       })),
     };
+  },
+
+  async getDocumentEligibility(app: any): Promise<DocumentEligibility> {
+    let student = null;
+    if (app.studentUserId) {
+      student = await getIdentityUser(app.studentUserId);
+    }
+    return documentEligibilityFor(app, student);
+  },
+
+  async assertDocumentEligibility(applicationId: string) {
+    const app = await prisma.admissionApplication.findUnique({
+      where: { id: applicationId },
+      include: { admissionDocuments: true },
+    });
+    if (!app) throw Object.assign(new Error("Application not found"), { status: 404 });
+    const eligibility = await this.getDocumentEligibility(app);
+    if (!eligibility.eligible) {
+      throw Object.assign(
+        new Error("Student document collection is not available for this application"),
+        {
+          status: 409,
+          code: "DOCUMENT_COLLECTION_NOT_ELIGIBLE",
+          reason: eligibility.reason,
+        }
+      );
+    }
+    return app;
+  },
+
+  async completeEntrance(applicationId: string, data: any, completedBy?: string) {
+    const app = await prisma.admissionApplication.findUnique({ where: { id: applicationId } });
+    if (!app) throw Object.assign(new Error("Application not found"), { status: 404 });
+    const result = String(data?.entranceResult || "SAT").toUpperCase();
+    if (!["SAT", "EXEMPT", "PASSED", "NOT_PASSED"].includes(result)) {
+      throw Object.assign(new Error("Invalid entrance result"), {
+        status: 400,
+        code: "INVALID_ENTRANCE_RESULT",
+      });
+    }
+    const requestedDecision = String(data?.admissionDecision || "").toUpperCase();
+    if (requestedDecision && !["ADMITTED", "NOT_ADMITTED"].includes(requestedDecision)) {
+      throw Object.assign(new Error("Invalid admission decision"), {
+        status: 400,
+        code: "INVALID_ADMISSION_DECISION",
+      });
+    }
+    const admissionDecision =
+      requestedDecision ||
+      (result === "NOT_PASSED" ? "NOT_ADMITTED" : "ADMITTED");
+    if (app.status !== "ENROLLED") {
+      throw Object.assign(new Error("Entrance completion can only be recorded after enrollment"), {
+        status: 409,
+        code: "ENTRANCE_COMPLETION_REQUIRES_ENROLLMENT",
+      });
+    }
+    if (!app.studentUserId) {
+      throw Object.assign(new Error("A linked student record is required"), {
+        status: 409,
+        code: "STUDENT_RECORD_MISSING",
+      });
+    }
+    const student = await getIdentityUser(app.studentUserId);
+    if (
+      !student ||
+      student.role !== "STUDENT" ||
+      student.schoolId !== app.schoolId ||
+      student.isActive !== true
+    ) {
+      throw Object.assign(new Error("The linked active student record is invalid"), {
+        status: 409,
+        code: "STUDENT_RECORD_INVALID",
+      });
+    }
+    return prisma.admissionApplication.update({
+      where: { id: applicationId },
+      data: {
+        entranceStatus: "COMPLETED",
+        entranceCompletedAt: new Date(),
+        entranceResult: result,
+        entranceCompletedBy: completedBy || null,
+        entranceNotes: String(data?.entranceNotes || "").trim() || app.entranceNotes,
+        admissionDecision,
+        reviewedBy: completedBy || app.reviewedBy,
+        reviewedAt: new Date(),
+      },
+      include: { admissionDocuments: true },
+    });
   },
 
   async createApplication(schoolId: string, data: any, source = "STAFF_DIRECT") {
@@ -879,8 +992,7 @@ export const admissionService = {
   },
 
   async addDocument(applicationId: string, data: any) {
-    const app = await prisma.admissionApplication.findUnique({ where: { id: applicationId } });
-    if (!app) throw Object.assign(new Error("Application not found"), { status: 404 });
+    const app = await this.assertDocumentEligibility(applicationId);
 
     const fileUrl = String(data.fileUrl || "");
     if (!fileUrl) throw Object.assign(new Error("fileUrl required"), { status: 400 });
@@ -911,8 +1023,7 @@ export const admissionService = {
   },
 
   async createDocumentUpload(applicationId: string, data: any) {
-    const app = await prisma.admissionApplication.findUnique({ where: { id: applicationId } });
-    if (!app) throw Object.assign(new Error("Application not found"), { status: 404 });
+    const app = await this.assertDocumentEligibility(applicationId);
     const { createAdmissionUploadUrl, assertAllowedMime } = await import("../lib/storage");
     const mimeType = String(data.mimeType || "application/pdf");
     assertAllowedMime(mimeType);
@@ -951,7 +1062,22 @@ export const admissionService = {
     return app;
   },
 
-  async reviewDocument(docId: string, status: "APPROVED" | "REJECTED", reviewerId?: string, reason?: string) {
+  async reviewDocument(applicationId: string, docId: string, status: "APPROVED" | "REJECTED", reviewerId?: string, reason?: string) {
+    const document = await prisma.admissionDocument.findUnique({
+      where: { id: docId },
+      include: { application: true },
+    });
+    if (!document) throw Object.assign(new Error("Admission document not found"), { status: 404 });
+    if (document.applicationId !== applicationId) {
+      throw Object.assign(new Error("Admission document does not belong to this application"), {
+        status: 400,
+        code: "DOCUMENT_APPLICATION_MISMATCH",
+      });
+    }
+    if (!document.application || document.application.id !== document.applicationId) {
+      throw Object.assign(new Error("Invalid admission document application"), { status: 400 });
+    }
+    await this.assertDocumentEligibility(document.applicationId);
     return prisma.admissionDocument.update({
       where: { id: docId },
       data: {

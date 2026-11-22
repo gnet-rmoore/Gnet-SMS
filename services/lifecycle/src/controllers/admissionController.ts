@@ -184,12 +184,33 @@ export const admissionController = {
     }
   },
 
+  async completeEntrance(req: Request, res: Response) {
+    try {
+      const result = await admissionService.completeEntrance(
+        req.params.id,
+        req.body,
+        (req as any).user?.id
+      );
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 500).json({
+        error: err.message,
+        code: err.code,
+        reason: err.reason,
+      });
+    }
+  },
+
   async withdraw(req: Request, res: Response) {
     try {
       const result = await admissionService.withdraw(req.params.id);
       res.json(result);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      res.status(err.status || 500).json({
+        error: err.message,
+        code: err.code,
+        reason: err.reason,
+      });
     }
   },
 
@@ -201,7 +222,11 @@ export const admissionController = {
       });
       res.status(201).json(doc);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      res.status(err.status || 500).json({
+        error: err.message,
+        code: err.code,
+        reason: err.reason,
+      });
     }
   },
 
@@ -209,6 +234,7 @@ export const admissionController = {
     try {
       const status = req.body?.status === "REJECTED" ? "REJECTED" : "APPROVED";
       const doc = await admissionService.reviewDocument(
+        req.params.id,
         req.params.docId,
         status,
         (req as any).user?.id,
@@ -216,7 +242,11 @@ export const admissionController = {
       );
       res.json(doc);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      res.status(err.status || 500).json({
+        error: err.message,
+        code: err.code,
+        reason: err.reason,
+      });
     }
   },
 
@@ -346,7 +376,11 @@ export const admissionController = {
       const doc = await admissionService.addDocument(req.params.id, req.body);
       res.status(201).json(doc);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      res.status(err.status || 500).json({
+        error: err.message,
+        code: err.code,
+        reason: err.reason,
+      });
     }
   },
 

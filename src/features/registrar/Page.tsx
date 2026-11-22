@@ -230,6 +230,7 @@ export const Registrar = () => {
     handleManualAdmissionSubmit,
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,
+    handleCompleteEntrance,
     handleCreateEntranceFee,
   } = usePageActions({
     school,
@@ -465,6 +466,7 @@ export const Registrar = () => {
           submitting={submitting}
           handleUploadAdmissionDoc={handleUploadAdmissionDoc}
           handleReviewAdmissionDoc={handleReviewAdmissionDoc}
+          handleCompleteEntrance={handleCompleteEntrance}
           waiveFee={waiveFee}
           setWaiveFee={setWaiveFee}
           waiveDocs={waiveDocs}

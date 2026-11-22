@@ -102,6 +102,14 @@ router.post(
   admissionController.enroll
 );
 
+router.post(
+  "/api/applications/:id/entrance-complete",
+  authenticate,
+  requireCapability("action.admissions.manage", ["SCHOOL_ADMIN", "REGISTRAR"]),
+  requireResourceTenant(resourceLoaders.application),
+  admissionController.completeEntrance
+);
+
 router.delete(
   "/api/applications/:id",
   authenticate,

@@ -22,6 +22,7 @@ export type IdentityUserRef = {
   name: string;
   role: string;
   schoolId: string | null;
+  isActive?: boolean;
 };
 
 /** Find-or-create a user in Identity (idempotent by email). Used on ENROLLED transition. */

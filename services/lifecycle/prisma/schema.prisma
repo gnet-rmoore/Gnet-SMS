@@ -50,6 +50,10 @@ model AdmissionApplication {
   entranceLocation  String?
   entranceRescheduleCount Int @default(0)
   entranceNotes     String?
+  entranceCompletedAt DateTime?
+  entranceResult    String?
+  entranceCompletedBy String?
+  admissionDecision String?
   reviewedBy        String?
   reviewedAt        DateTime?
   enrolledAt        DateTime?

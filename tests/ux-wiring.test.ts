@@ -30,6 +30,8 @@ const gradebook = read("src/features/gradebook/Page.tsx");
 const curriculumHook = read("src/features/curriculum/hooks/useCurriculumQuery.ts");
 const schedulePage = read("src/features/class-schedule/Page.tsx");
 const feesPageActions = read("src/features/fees/hooks/usePageActions.ts");
+const applicationReviewModal = read("src/features/registrar/components/ApplicationReviewModal.tsx");
+const registrarApi = read("src/features/registrar/api.ts");
 
 console.log("=========================================");
 console.log(" UX WIRING REGRESSION TESTS");
@@ -63,6 +65,15 @@ assert(registrarHook.includes("unwrapItems"), "registrar unwraps paged grade lev
 assert(
   editStudent.includes("gradeLevelsLoading") && editStudent.includes("disabled={gradeLevelsLoading}"),
   "registrar edit-student grade select has a loading/disabled state"
+);
+assert(
+  applicationReviewModal.includes("documentEligibility?.eligible") &&
+    applicationReviewModal.includes("Record entrance complete"),
+  "registrar application review gates documents and exposes entrance completion"
+);
+assert(
+  registrarApi.includes("/entrance-complete"),
+  "registrar API exposes server entrance-completion action"
 );
 
 assert(

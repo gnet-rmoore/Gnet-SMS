@@ -43,6 +43,7 @@ export type ApplicationReviewModalProps = {
   entranceFeeAmount?: string;
   setEntranceFeeAmount?: (v: string) => void;
   handleCreateEntranceFee?: (amount?: number) => Promise<void>;
+  handleCompleteEntrance?: (entranceResult: string, entranceNotes?: string) => Promise<void>;
   students?: Array<{ id: string; photoUrl?: string | null }>;
   onPhotoError?: (message: string) => void;
   onPhotoSuccess?: (message: string) => void;
@@ -72,6 +73,7 @@ export function ApplicationReviewModal({
   entranceFeeAmount = "",
   setEntranceFeeAmount,
   handleCreateEntranceFee,
+  handleCompleteEntrance,
   students = [],
   onPhotoError,
   onPhotoSuccess,
@@ -87,6 +89,12 @@ export function ApplicationReviewModal({
     : [];
   const [nextAction, setNextAction] = useState<string | null>(null);
   const [blockedBy, setBlockedBy] = useState<string[]>([]);
+  const [documentEligibility, setDocumentEligibility] = useState<{
+    eligible: boolean;
+    reason?: string;
+  } | null>(null);
+  const [entranceResult, setEntranceResult] = useState("SAT");
+  const [entranceNotes, setEntranceNotes] = useState("");
 
   useEffect(() => {
     const id = selectedApp?.id;
@@ -98,18 +106,20 @@ export function ApplicationReviewModal({
         if (!cancelled) {
           setNextAction(data?.nextAction || null);
           setBlockedBy(Array.isArray(data?.blockedBy) ? data.blockedBy : []);
+          setDocumentEligibility(data?.documentEligibility || null);
         }
       } catch {
         if (!cancelled) {
           setNextAction(null);
           setBlockedBy([]);
+          setDocumentEligibility(null);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [selectedApp?.id]);
+  }, [selectedApp?.id, selectedApp?.entranceCompletedAt, selectedApp?.status]);
 
   const interviewOptions = (["1", "2", "3", "4", "5"] as const).map((n) => ({
     value: n,
@@ -223,6 +233,7 @@ export function ApplicationReviewModal({
                       </div>
                     </div>
 
+                    {documentEligibility?.eligible ? (
                     <div>
                       <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.docsChecklistTitle")}</h4>
                       <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
@@ -259,8 +270,20 @@ export function ApplicationReviewModal({
                         })}
                       </div>
                     </div>
+                    ) : (
+                      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-amber-700">
+                          {t("admissions.review.documentsUnavailable", { defaultValue: "Document collection unavailable" })}
+                        </p>
+                        <p className="mt-1 text-xs font-medium leading-relaxed text-amber-800">
+                          {t("admissions.review.documentsUnavailableHint", {
+                            defaultValue: "Documents can be collected only after admission, entrance completion, enrollment, and a valid active student link.",
+                          })}
+                        </p>
+                      </div>
+                    )}
 
-                    {handleUploadAdmissionDoc && (
+                    {documentEligibility?.eligible && handleUploadAdmissionDoc && (
                       <div>
                         <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.uploadedFilesTitle")}</h4>
                         <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
@@ -366,6 +389,46 @@ export function ApplicationReviewModal({
                         </div>
                       </div>
                     </div>
+
+                    {selectedApp.status === "ENROLLED" && !documentEligibility?.eligible ? (
+                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-3">
+                        <p className="text-xs font-black uppercase tracking-wider text-indigo-700">
+                          {t("admissions.review.entranceCompletionTitle", { defaultValue: "Entrance completion" })}
+                        </p>
+                        <p className="text-xs font-medium leading-relaxed text-slate-600">
+                          {t("admissions.review.entranceCompletionHint", {
+                            defaultValue: "Record that the student has sat or was exempted from the entrance before enabling documents.",
+                          })}
+                        </p>
+                        <select
+                          value={entranceResult}
+                          onChange={(e) => setEntranceResult(e.target.value)}
+                          className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                        >
+                          <option value="SAT">SAT</option>
+                          <option value="EXEMPT">EXEMPT</option>
+                          <option value="PASSED">PASSED</option>
+                          <option value="NOT_PASSED">NOT PASSED</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={entranceNotes}
+                          onChange={(e) => setEntranceNotes(e.target.value)}
+                          placeholder={t("admissions.review.entranceNotes", { defaultValue: "Optional entrance notes" })}
+                          className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-medium"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="compact"
+                          disabled={submitting || !handleCompleteEntrance}
+                          onClick={() => handleCompleteEntrance?.(entranceResult, entranceNotes)}
+                          className="w-full rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                        >
+                          {t("admissions.review.markEntranceComplete", { defaultValue: "Record entrance complete" })}
+                        </Button>
+                      </div>
+                    ) : null}
 
                     <div className="space-y-4">
                       <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider">{t("admissions.review.registryActions")}</h4>
