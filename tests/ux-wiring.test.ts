@@ -76,9 +76,12 @@ assert(
 );
 const reviewShell = read("src/features/registrar/components/review/ReviewDrawerShell.tsx");
 const enrolledStage = read("src/features/registrar/components/review/stages/EnrolledStage.tsx");
+const approvedStage = read("src/features/registrar/components/review/stages/ApprovedStage.tsx");
+const entranceStage = read("src/features/registrar/components/review/stages/EntranceStage.tsx");
 assert(
-  enrolledStage.includes("documentEligibility") &&
-    enrolledStage.includes("admissions.review.entranceCompletionTitle") &&
+  enrolledStage.includes("classroomId") &&
+    approvedStage.includes("documentEligibility") &&
+    entranceStage.includes("entranceResult") &&
     reviewShell.includes('role="dialog"') &&
     reviewShell.includes('aria-modal="true"') &&
     reviewShell.includes("h-[100dvh]") &&
@@ -86,7 +89,7 @@ assert(
     reviewShell.includes("xl:max-w-[880px]") &&
     applicationReviewModal.includes("StageFrame") &&
     applicationReviewModal.includes("onStageSelect"),
-  "registrar application review uses a full-height stage drawer and gates documents/entrance completion"
+  "registrar application review uses a full-height stage drawer with entrance, documents, and placement stages"
 );
 assert(
   registrarApi.includes("/entrance-complete"),

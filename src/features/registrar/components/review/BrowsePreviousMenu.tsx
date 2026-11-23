@@ -20,8 +20,8 @@ export function BrowsePreviousMenu({ browsableStages, onSelect }: { browsableSta
   const labels: Record<BrowsableStage, string> = {
     SUBMITTED: t("admissions.stepper.submitted"),
     REVIEW: t("admissions.stepper.review"),
+    ENTRANCE: t("admissions.stepper.entrance"),
     APPROVED: t("admissions.stepper.approved"),
-    ENTRANCE_FEE: t("admissions.stepper.fee"),
   };
   return (
     <div ref={wrapRef} className="relative" onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}>

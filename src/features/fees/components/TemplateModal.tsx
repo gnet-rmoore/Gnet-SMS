@@ -17,6 +17,7 @@ export type TemplateModalProps = {
   submitting?: boolean;
   gradeLevels?: { id: string; name: string }[];
   divisions?: { id: string; name: string }[];
+  templateClassrooms?: { id: string; name: string }[];
   isEditing?: boolean;
 };
 
@@ -28,6 +29,7 @@ export function TemplateModal({
   submitting,
   gradeLevels = [],
   divisions = [],
+  templateClassrooms = [],
   isEditing = false,
 }: TemplateModalProps) {
   const { t } = useTranslation(["pages", "common"]);
@@ -40,6 +42,7 @@ export function TemplateModal({
       amount: 0,
       description: "",
       customType: "",
+      classroomId: "",
     };
     setTemplateForm({ ...defaultForm, ...templateForm });
   }, []);
@@ -107,7 +110,7 @@ export function TemplateModal({
               }
               className={fieldSelect}
             >
-              {FEE_TYPES.filter((ft) => ft.value !== "ENTRANCE").map((ft) => (
+              {FEE_TYPES.map((ft) => (
                 <option key={ft.value} value={ft.value}>
                   {t(`fees.feeTypes.${ft.value}`, { defaultValue: ft.label })}
                 </option>
@@ -140,6 +143,7 @@ export function TemplateModal({
                   scopeMode: e.target.value,
                   gradeLevelId: "",
                   divisionId: "",
+                  classroomId: "",
                 })
               }
               className={fieldSelect}
@@ -147,6 +151,9 @@ export function TemplateModal({
               <option value="SCHOOL">{t("pages:fees.scopeSchool")}</option>
               <option value="GRADE">{t("pages:fees.scopeGrade")}</option>
               <option value="DIVISION">{t("pages:fees.scopeDivision")}</option>
+              <option value="CLASS">
+                {t("pages:fees.scopeClass", { defaultValue: "Classroom" })}
+              </option>
             </select>
           </div>
 
@@ -208,6 +215,40 @@ export function TemplateModal({
             {divisions.length === 0 && (
               <p className="text-xs text-slate-500 mt-1">
                 {t("pages:fees.noDivisions")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {scopeMode === "CLASS" && (
+          <div className="space-y-1.5">
+            <label className={fieldLabel}>
+              {t("pages:fees.scopeClass", { defaultValue: "Classroom" })}
+            </label>
+            <select
+              value={templateForm.classroomId || ""}
+              onChange={(e) =>
+                setTemplateForm({ ...templateForm, classroomId: e.target.value })
+              }
+              className={fieldSelect}
+              required
+            >
+              <option value="">
+                {t("pages:fees.selectClassroom", {
+                  defaultValue: "Select classroom…",
+                })}
+              </option>
+              {templateClassrooms.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {templateClassrooms.length === 0 && (
+              <p className="text-xs text-slate-500 mt-1">
+                {t("pages:fees.noClassrooms", {
+                  defaultValue: "No classrooms yet — create one under Classrooms.",
+                })}
               </p>
             )}
           </div>

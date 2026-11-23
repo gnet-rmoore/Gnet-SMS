@@ -5,7 +5,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { feesApi } from "../api";
 import { receiptsApi } from "../../../services/receiptsApi";
-import type { FeePayment, FeeTemplate } from "../types";
+import type { FeeClassroom, FeePayment, FeeTemplate } from "../types";
 import { feeAmountPaid, feeBalance, isFeeOpen, isFeeOverdue } from "../types";
 import { confirmAction } from "../../../lib/swal";
 import { formatMoney } from "../../../i18n/format";
@@ -89,6 +89,7 @@ export function usePageActions(deps: PageActionsDeps) {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [gradeLevels, setGradeLevels] = useState<{ id: string; name: string }[]>([]);
   const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
+  const [templateClassrooms, setTemplateClassrooms] = useState<FeeClassroom[]>([]);
   const [batchResultSummary, setBatchResultSummary] = useState<string | null>(null);
 
   const loadTemplates = async () => {
@@ -112,15 +113,18 @@ export function usePageActions(deps: PageActionsDeps) {
   const loadScopeLookups = async () => {
     if (!school?.id || !isAdminOrAccountant) return;
     try {
-      const [grades, divs] = await Promise.all([
+      const [grades, divs, rooms] = await Promise.all([
         feesApi.fetchGradeLevels(school.id),
         feesApi.fetchDivisions(school.id).catch(() => []),
+        feesApi.fetchClassrooms(school.id).catch(() => []),
       ]);
       setGradeLevels(unwrapItems(grades));
       setDivisions(Array.isArray(divs) ? divs : []);
+      setTemplateClassrooms(unwrapItems<FeeClassroom>(rooms));
     } catch {
       setGradeLevels([]);
       setDivisions([]);
+      setTemplateClassrooms([]);
     }
   };
 
@@ -554,8 +558,6 @@ export function usePageActions(deps: PageActionsDeps) {
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!school?.id) return showToast(t("fees.toast.sessionMissing"), "error");
-    // School admins and accountants can only view, not create templates
-    if (isAdminOrAccountant) return showToast(t("fees.toast.viewOnly"), "error");
     const parsedAmount = parseFloat(templateForm.amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return showToast(t("fees.toast.invalidAmount"), "error");
@@ -567,6 +569,14 @@ export function usePageActions(deps: PageActionsDeps) {
     if (scopeMode === "DIVISION" && !templateForm.divisionId) {
       return showToast(t("fees.toast.selectDivisionRequired"), "error");
     }
+    if (scopeMode === "CLASS" && !templateForm.classroomId) {
+      return showToast(
+        t("fees.toast.selectClassroomRequired", {
+          defaultValue: "Select a classroom for this template.",
+        }),
+        "error"
+      );
+    }
     setSubmitting(true);
     const payload = {
       name: templateForm.name,
@@ -576,6 +586,7 @@ export function usePageActions(deps: PageActionsDeps) {
       scopeMode,
       gradeLevelId: scopeMode === "GRADE" ? templateForm.gradeLevelId : null,
       divisionId: scopeMode === "DIVISION" ? templateForm.divisionId : null,
+      classroomId: scopeMode === "CLASS" ? templateForm.classroomId : null,
       cohort: templateForm.cohort || "ALL",
       schoolYearKey: templateForm.schoolYearKey || null,
     };
@@ -597,6 +608,7 @@ export function usePageActions(deps: PageActionsDeps) {
         scopeMode: "SCHOOL",
         gradeLevelId: "",
         divisionId: "",
+        classroomId: "",
         cohort: "ALL",
         schoolYearKey: "",
       });
@@ -618,6 +630,7 @@ export function usePageActions(deps: PageActionsDeps) {
       scopeMode: templ.scopeMode || "SCHOOL",
       gradeLevelId: templ.gradeLevelId || "",
       divisionId: templ.divisionId || "",
+      classroomId: templ.classroomId || "",
       cohort: templ.cohort || "ALL",
       schoolYearKey: templ.schoolYearKey || "",
     });
@@ -992,6 +1005,7 @@ const handleExportLedgerPDF = () => {
     templatesLoading,
     gradeLevels,
     divisions,
+    templateClassrooms,
     batchResultSummary,
   };
 }

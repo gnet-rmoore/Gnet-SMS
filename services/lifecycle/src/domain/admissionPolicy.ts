@@ -31,6 +31,22 @@ export type AdmissionPolicy = {
   entranceAvailabilityNote: string | null;
 };
 
+/** Fields required to decide whether entrance-fee gating is enabled. */
+export type EntranceFeeGate = Pick<AdmissionPolicy, "requireEntranceFee" | "entranceFeeAmount">;
+
+/**
+ * Single enable signal used by every entrance-fee gate (next-action, enroll, auto-invoice).
+ * The finance-owned `requireEntranceFee` flag is authoritative; the legacy amount is only
+ * a fallback for policies saved before the flag existed.
+ */
+export function requiresEntranceFee(policy: Partial<EntranceFeeGate> | null | undefined): boolean {
+  if (!policy) return false;
+  if (policy.requireEntranceFee !== undefined && policy.requireEntranceFee !== null) {
+    return Boolean(policy.requireEntranceFee);
+  }
+  return Number(policy.entranceFeeAmount) > 0;
+}
+
 export const DEFAULT_ADMISSION_POLICY: AdmissionPolicy = {
   publicApplyEnabled: true,
   returningApplyEnabled: true,

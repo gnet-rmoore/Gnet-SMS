@@ -1,15 +1,15 @@
 import type { ApplicationReviewModalProps } from "../components/ApplicationReviewModal";
 
-export type AdmissionStage = "SUBMITTED" | "REVIEW" | "APPROVED" | "ENTRANCE_FEE" | "ENROLLED" | "TERMINAL";
-export type StepperStage = "SUBMITTED" | "REVIEW" | "APPROVED" | "FEE" | "ENROLLED";
+export type AdmissionStage = "SUBMITTED" | "REVIEW" | "ENTRANCE" | "APPROVED" | "ENROLLED" | "TERMINAL";
+export type StepperStage = Exclude<AdmissionStage, "TERMINAL">;
 export type BrowsableStage = Exclude<AdmissionStage, "TERMINAL" | "ENROLLED">;
-export type EnrolledSubstep = "entrance" | "documents" | "waiting" | null;
+export type EnrolledSubstep = null;
 
 export type NextActionState = "loading" | "loaded" | "error";
 
 export type StageSnapshot = Pick<
   ApplicationReviewModalProps,
-  "selectedApp" | "evaluationData" | "docsChecklist" | "selectedClassroomId" | "entranceFeeAmount" | "waiveFee" | "waiveDocs"
+  "selectedApp" | "evaluationData" | "docsChecklist" | "selectedClassroomId" | "waiveFee" | "waiveDocs"
 > & {
   nextAction: Record<string, unknown> | null;
   entranceResult: string;
@@ -34,21 +34,19 @@ export type StageHistorySummary = {
   rows: Array<{ labelKey: string; value: string }>;
 };
 
-export const STAGE_ORDER: AdmissionStage[] = ["SUBMITTED", "REVIEW", "APPROVED", "ENTRANCE_FEE", "ENROLLED"];
-export const BROWSABLE_STAGES: BrowsableStage[] = ["SUBMITTED", "REVIEW", "APPROVED", "ENTRANCE_FEE"];
+export const STAGE_ORDER: AdmissionStage[] = ["SUBMITTED", "REVIEW", "ENTRANCE", "APPROVED", "ENROLLED"];
+export const BROWSABLE_STAGES: BrowsableStage[] = ["SUBMITTED", "REVIEW", "ENTRANCE", "APPROVED"];
 
 const STAGE_INDEX: Record<AdmissionStage, number> = {
-  SUBMITTED: 0, REVIEW: 1, APPROVED: 2, ENTRANCE_FEE: 3, ENROLLED: 4, TERMINAL: -1,
+  SUBMITTED: 0, REVIEW: 1, ENTRANCE: 2, APPROVED: 3, ENROLLED: 4, TERMINAL: -1,
 };
 
 export function stageToStepper(stage: AdmissionStage): StepperStage | null {
-  if (stage === "ENTRANCE_FEE") return "FEE";
-  if (stage === "TERMINAL") return null;
-  return stage;
+  return stage === "TERMINAL" ? null : stage;
 }
 
 export function stepperToStage(stage: StepperStage): AdmissionStage {
-  return stage === "FEE" ? "ENTRANCE_FEE" : stage;
+  return stage;
 }
 
 export function canBrowseStage(stage: AdmissionStage, activeStage: AdmissionStage): stage is BrowsableStage {
@@ -67,27 +65,39 @@ type ResolveInput = {
   nextAction?: string | null;
   blockedBy?: string[] | null;
   entranceStatus?: string | null;
+  entranceResult?: string | null;
+  reviewComplete?: boolean;
   documentEligibility?: { eligible?: boolean; reason?: string } | null;
-  entranceFeeAmount?: string | number | null;
+  feePaymentId?: string | null;
+  feeStatus?: string | null;
 };
 
 function titleDesc(stage: AdmissionStage) {
   switch (stage) {
     case "SUBMITTED": return { titleKey: "admissions.review.stage.submitted.title", descriptionKey: "admissions.review.stage.submitted.description" };
     case "REVIEW": return { titleKey: "admissions.review.stage.review.title", descriptionKey: "admissions.review.stage.review.description" };
+    case "ENTRANCE": return { titleKey: "admissions.review.stage.entrance.title", descriptionKey: "admissions.review.stage.entrance.description" };
     case "APPROVED": return { titleKey: "admissions.review.stage.approved.title", descriptionKey: "admissions.review.stage.approved.description" };
-    case "ENTRANCE_FEE": return { titleKey: "admissions.review.stage.entranceFee.title", descriptionKey: "admissions.review.stage.entranceFee.description" };
     case "ENROLLED": return { titleKey: "admissions.review.stage.enrolled.title", descriptionKey: "admissions.review.stage.enrolled.description" };
     default: return { titleKey: "admissions.review.stage.terminalTitle", descriptionKey: "admissions.review.stage.terminalHint" };
   }
 }
 
+function entrancePassed(result?: string | null): boolean {
+  return ["SAT", "EXEMPT", "PASSED"].includes(String(result || "").toUpperCase());
+}
+
+function entranceDone(status?: string | null): boolean {
+  return String(status || "").toUpperCase() === "COMPLETED";
+}
+
 export function resolveAdmissionStage(input: ResolveInput): AdmissionStageView {
   const status = String(input.status || "PENDING").toUpperCase();
-  const nextAction = input.nextAction ? String(input.nextAction).toUpperCase() : null;
   const blockedBy = Array.isArray(input.blockedBy) ? input.blockedBy.map(String) : [];
-  const feeAmount = Number(input.entranceFeeAmount ?? 0);
   const td = titleDesc;
+  const result = String(input.entranceResult || "").toUpperCase();
+  const passed = entrancePassed(result);
+  const done = entranceDone(input.entranceStatus) || passed;
 
   if (status === "REJECTED" || status === "WITHDRAWN") {
     return { stage: "TERMINAL", step: null, ...td("TERMINAL"), fieldKeys: [], primaryActionKey: null, secondaryActionKeys: [], blockedBy: [], substep: null };
@@ -96,52 +106,62 @@ export function resolveAdmissionStage(input: ResolveInput): AdmissionStageView {
   if (status === "PENDING") {
     return {
       stage: "SUBMITTED", step: 1, ...td("SUBMITTED"), fieldKeys: ["photo"],
-      primaryActionKey: nextAction === "REVIEW" ? "confirmDetails" : null,
+      primaryActionKey: input.nextAction === "REVIEW" ? "confirmDetails" : null,
       secondaryActionKeys: [], blockedBy, substep: null,
     };
   }
 
   if (status === "UNDER_REVIEW" || status === "WAITLISTED") {
+    if (!input.reviewComplete) {
+      return {
+        stage: "REVIEW", step: 2, ...td("REVIEW"), fieldKeys: ["score", "interview", "comments"],
+        primaryActionKey: "saveReview",
+        secondaryActionKeys: status === "WAITLISTED" ? ["returnToReview", "reject"] : ["moveToWaitlist", "reject"],
+        blockedBy, substep: null,
+      };
+    }
+    if (!done || !passed) {
+      return {
+        stage: "ENTRANCE", step: 3, ...td("ENTRANCE"), fieldKeys: ["entranceResult", "entranceNotes", "feeStatus"],
+        primaryActionKey: "recordEntrance",
+        secondaryActionKeys: ["reject"],
+        blockedBy: !passed && done ? [...blockedBy, "ENTRANCE_NOT_PASSED"] : blockedBy,
+        substep: null,
+      };
+    }
     return {
-      stage: "REVIEW", step: 2, ...td("REVIEW"), fieldKeys: ["score", "interview", "comments"],
+      stage: "APPROVED", step: 4, ...td("APPROVED"), fieldKeys: [],
       primaryActionKey: "approve",
-      secondaryActionKeys: status === "WAITLISTED" ? ["returnToReview", "reject"] : ["moveToWaitlist", "reject"],
+      secondaryActionKeys: status === "WAITLISTED" ? ["returnToReview", "reject"] : ["reject"],
       blockedBy, substep: null,
     };
   }
 
-  const isFeeStage = nextAction === "PAY_FEE" || nextAction === "WAIT_DOCS" || (status === "APPROVED" && nextAction === "APPROVE" && blockedBy.includes("FEE_REQUIRED"));
-  if ((status === "APPROVED" || status === "FEE_PENDING" || status === "DOCS_PENDING") && isFeeStage) {
+  if (["APPROVED", "FEE_PENDING", "DOCS_PENDING"].includes(status)) {
+    const canFinalize = input.documentEligibility?.eligible === true;
+    const feeBlocked = blockedBy.includes("FEE_REQUIRED") || blockedBy.includes("CLASSROOM_REQUIRED");
     return {
-      stage: "ENTRANCE_FEE", step: 4, ...td("ENTRANCE_FEE"), fieldKeys: ["feeAmount", "waiveFee", "waiveDocs"],
-      primaryActionKey: feeAmount > 0 ? "createEntranceFee" : null,
-      secondaryActionKeys: [], blockedBy, substep: null,
-      primaryActionDisabledReasonKey: feeAmount > 0 ? null : "admissions.review.stage.feeNotRequired",
-    };
-  }
-
-  if ((status === "APPROVED" || status === "FEE_PENDING" || status === "DOCS_PENDING") && (nextAction === "ASSIGN_CLASS" || nextAction === "ENROLL")) {
-    const needsClass = blockedBy.includes("CLASSROOM_REQUIRED") || nextAction === "ASSIGN_CLASS";
-    return {
-      stage: "APPROVED", step: 3, ...td("APPROVED"), fieldKeys: ["classroom"],
-      primaryActionKey: needsClass ? "confirmClass" : "finalizeEnrollment",
-      secondaryActionKeys: [], blockedBy, substep: null,
+      stage: "APPROVED", step: 4, ...td("APPROVED"),
+      fieldKeys: canFinalize ? ["documents", "feeStatus"] : [],
+      primaryActionKey: canFinalize ? "finalizeEnrollment" : null,
+      secondaryActionKeys: canFinalize ? [] : ["refresh"],
+      blockedBy,
+      substep: null,
+      primaryActionDisabledReasonKey: canFinalize && feeBlocked ? "admissions.review.blocker.FEE_REQUIRED" : null,
     };
   }
 
   if (status === "ENROLLED") {
-    const entranceDone = String(input.entranceStatus || "").toUpperCase() === "COMPLETED";
-    if (!entranceDone) {
-      return { stage: "ENROLLED", step: 5, ...td("ENROLLED"), fieldKeys: ["entranceResult", "entranceNotes"], primaryActionKey: "recordEntrance", secondaryActionKeys: [], blockedBy, substep: "entrance" };
-    }
-    if (input.documentEligibility?.eligible) {
-      return { stage: "ENROLLED", step: 5, ...td("ENROLLED"), fieldKeys: ["documents"], primaryActionKey: "saveDocuments", secondaryActionKeys: [], blockedBy, substep: "documents" };
-    }
-    return { stage: "ENROLLED", step: 5, ...td("ENROLLED"), fieldKeys: [], primaryActionKey: null, secondaryActionKeys: [], blockedBy, substep: "waiting" };
+    return {
+      stage: "ENROLLED", step: 5, ...td("ENROLLED"), fieldKeys: ["classroom"],
+      primaryActionKey: "confirmPlacement", secondaryActionKeys: [], blockedBy, substep: null,
+    };
   }
 
-  // Unknown status fallback
-  return { stage: "REVIEW", step: 2, ...td("REVIEW"), fieldKeys: ["score", "interview", "comments"], primaryActionKey: nextAction === "REVIEW" ? "approve" : "approve", secondaryActionKeys: ["moveToWaitlist", "reject"], blockedBy, substep: null };
+  return {
+    stage: "REVIEW", step: 2, ...td("REVIEW"), fieldKeys: ["score", "interview", "comments"],
+    primaryActionKey: "saveReview", secondaryActionKeys: ["moveToWaitlist", "reject"], blockedBy, substep: null,
+  };
 }
 
 export function getStageHistorySummary(stage: BrowsableStage, snapshot: Partial<StageSnapshot>): StageHistorySummary["rows"] {
@@ -162,15 +182,14 @@ export function getStageHistorySummary(stage: BrowsableStage, snapshot: Partial<
     rows.push({ labelKey: "admissions.review.stage.summary.score", value: String(evalData.testScore ?? "-") });
     rows.push({ labelKey: "admissions.review.stage.summary.interview", value: String(evalData.interviewRating ?? "-") });
     rows.push({ labelKey: "admissions.review.stage.summary.decision", value: String(app.status || "-") });
+  } else if (stage === "ENTRANCE") {
+    rows.push({ labelKey: "admissions.review.stage.enrolled.entranceTitle", value: String(app.entranceResult || snapshot.entranceResult || "-") });
+    if (app.entranceNotes || snapshot.entranceNotes) rows.push({ labelKey: "admissions.review.entranceNotes", value: String(app.entranceNotes || snapshot.entranceNotes) });
+    rows.push({ labelKey: "admissions.review.feePaymentId", value: String(app.feePaymentId || "-") });
   } else if (stage === "APPROVED") {
-    rows.push({ labelKey: "admissions.review.stage.summary.class", value: String(snapshot.selectedClassroomId || app.classroomId || "-") });
-    rows.push({ labelKey: "admissions.review.stage.summary.fee", value: String(app.feePaymentId || snapshot.entranceFeeAmount || "-") });
-  } else if (stage === "ENTRANCE_FEE") {
-    rows.push({ labelKey: "admissions.review.stage.summary.fee", value: String(snapshot.entranceFeeAmount || app.feeAmount || "-") });
-    rows.push({ labelKey: "admissions.review.feeStatus", value: String(app.status || "-") });
-    rows.push({ labelKey: "admissions.review.waiveFee", value: snapshot.waiveFee ? "Yes" : "No" });
-    rows.push({ labelKey: "admissions.review.waiveDocs", value: snapshot.waiveDocs ? "Yes" : "No" });
     rows.push({ labelKey: "admissions.review.stage.summary.documents", value: `${docChecked}/4` });
+    rows.push({ labelKey: "admissions.review.stage.summary.decision", value: String(app.admissionDecision || app.status || "-") });
+    rows.push({ labelKey: "admissions.review.feeStatus", value: String(app.feeStatus || app.status || "-") });
   }
   return rows;
 }

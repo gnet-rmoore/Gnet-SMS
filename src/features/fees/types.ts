@@ -60,6 +60,13 @@ export interface FeePaymentTxn {
   checkoutSessionId?: string | null;
 }
 
+export type FeeScopeMode = "SCHOOL" | "GRADE" | "DIVISION" | "CLASS";
+
+export interface FeeClassroom {
+  id: string;
+  name: string;
+}
+
 export interface FeeTemplate {
   id: string;
   schoolId?: string;
@@ -67,12 +74,36 @@ export interface FeeTemplate {
   type: string;
   amount: number;
   description: string;
-  scopeMode?: "SCHOOL" | "GRADE" | "DIVISION" | string;
+  scopeMode?: FeeScopeMode | string;
   gradeLevelId?: string | null;
   divisionId?: string | null;
+  classroomId?: string | null;
   cohort?: "ALL" | "NEW" | "RETURNING" | string;
   schoolYearKey?: string | null;
 }
+
+export interface FeeTemplatePayload {
+  name: string;
+  type: string;
+  amount: number;
+  description: string;
+  scopeMode: FeeScopeMode | string;
+  gradeLevelId?: string | null;
+  divisionId?: string | null;
+  classroomId?: string | null;
+  cohort?: "ALL" | "NEW" | "RETURNING" | string;
+  schoolYearKey?: string | null;
+}
+
+export interface FeeBillingSettings {
+  schoolId?: string;
+  minPaymentAmount: number;
+  entranceFeesEnabled: boolean;
+}
+
+export type FeeBillingSettingsUpdate = Partial<
+  Pick<FeeBillingSettings, "minPaymentAmount" | "entranceFeesEnabled">
+>;
 
 export const FEE_TYPES = [
   { value: "TUITION", label: "Tuition" },

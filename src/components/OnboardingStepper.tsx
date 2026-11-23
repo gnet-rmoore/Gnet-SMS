@@ -12,7 +12,7 @@ export type OnboardingNextAction =
   | "REJECTED"
   | "WITHDRAWN";
 
-export type StepperStage = "SUBMITTED" | "REVIEW" | "APPROVED" | "FEE" | "ENROLLED";
+export type StepperStage = "SUBMITTED" | "REVIEW" | "ENTRANCE" | "APPROVED" | "ENROLLED";
 
 export type OnboardingStepperProps = {
   status?: string | null;
@@ -27,14 +27,14 @@ export type OnboardingStepperProps = {
   onStageSelect?: (stage: StepperStage) => void;
 };
 
-const ORDER: readonly StepperStage[] = ["SUBMITTED", "REVIEW", "APPROVED", "FEE", "ENROLLED"];
+const ORDER: readonly StepperStage[] = ["SUBMITTED", "REVIEW", "ENTRANCE", "APPROVED", "ENROLLED"];
 
 function stepIndexForStatus(status: string): number {
   switch (status) {
     case "PENDING": return 0;
     case "UNDER_REVIEW":
     case "WAITLISTED": return 1;
-    case "APPROVED": return 2;
+    case "APPROVED":
     case "FEE_PENDING":
     case "DOCS_PENDING": return 3;
     case "ENROLLED": return 4;
@@ -45,7 +45,7 @@ function stepIndexForStatus(status: string): number {
 function stepIndexForAction(action: string | null | undefined, fallback: number): number {
   switch (action) {
     case "REVIEW": return 1;
-    case "APPROVE": return 2;
+    case "APPROVE":
     case "PAY_FEE":
     case "WAIT_DOCS": return 3;
     case "ENROLL":
@@ -77,8 +77,8 @@ export function OnboardingStepper({
   const labels: Record<StepperStage, string> = {
     SUBMITTED: t("admissions.stepper.submitted", { defaultValue: "Submitted" }),
     REVIEW: t("admissions.stepper.review", { defaultValue: "Review" }),
+    ENTRANCE: t("admissions.stepper.entrance", { defaultValue: "Entrance" }),
     APPROVED: t("admissions.stepper.approved", { defaultValue: "Approved" }),
-    FEE: t("admissions.stepper.fee", { defaultValue: "Entrance fee" }),
     ENROLLED: t("admissions.stepper.enrolled", { defaultValue: "Enrolled" }),
   };
 

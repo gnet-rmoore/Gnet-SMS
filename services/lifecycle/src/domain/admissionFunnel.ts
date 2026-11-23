@@ -5,7 +5,7 @@
  * frontend so no UI re-implements the status machine. Pure — no Prisma, no IO.
  */
 import { isEnrollableStatus } from "./admissionStates";
-import type { AdmissionPolicy } from "./admissionPolicy";
+import { requiresEntranceFee, type AdmissionPolicy } from "./admissionPolicy";
 
 export type OnboardingNextAction =
   | "REVIEW"
@@ -56,7 +56,7 @@ function feeIsPaid(fee: OnboardingFeeInfo, feePaymentId?: string | null): boolea
 export function nextActionFor(input: NextActionInput): OnboardingNextStep {
   const status = String(input.status || "PENDING").toUpperCase();
   const policy = input.policy;
-  const feeRequired = Boolean(policy.requireEntranceFee && Number(policy.entranceFeeAmount) > 0);
+  const feeRequired = requiresEntranceFee(policy);
   const feePaid = feeIsPaid(input.fee, input.feePaymentId);
 
   const blockedBy: string[] = [];

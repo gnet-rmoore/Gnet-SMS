@@ -242,6 +242,7 @@ export const Registrar = () => {
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,
     handleCompleteEntrance,
+    handleAssignClassroom,
     handleCreateEntranceFee,
   } = usePageActions({
     school,
@@ -489,6 +490,7 @@ export const Registrar = () => {
           handleUploadAdmissionDoc={handleUploadAdmissionDoc}
           handleReviewAdmissionDoc={handleReviewAdmissionDoc}
           handleCompleteEntrance={handleCompleteEntrance}
+          handleAssignClassroom={handleAssignClassroom}
           waiveFee={waiveFee}
           setWaiveFee={setWaiveFee}
           waiveDocs={waiveDocs}

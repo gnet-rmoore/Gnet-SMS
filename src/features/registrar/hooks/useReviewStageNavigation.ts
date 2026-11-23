@@ -11,7 +11,6 @@ export function createSnapshot(input: Partial<StageSnapshot>): StageSnapshot {
     evaluationData: input.evaluationData ?? null,
     docsChecklist: input.docsChecklist ?? null,
     selectedClassroomId: input.selectedClassroomId ?? "",
-    entranceFeeAmount: input.entranceFeeAmount ?? "",
     waiveFee: input.waiveFee ?? false,
     waiveDocs: input.waiveDocs ?? false,
     nextAction: input.nextAction ?? null,

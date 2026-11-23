@@ -35,6 +35,73 @@ export async function createEntranceFee(data: {
   return res.json();
 }
 
+export type EntranceFeeResolution = {
+  applied: boolean;
+  fee?: any;
+  reason?: "DISABLED" | "NO_TEMPLATE" | "EXISTING";
+};
+
+/** Ask Finance to resolve the correct entrance fee (template, cohort, duplicates). */
+export async function resolveEntranceFee(data: {
+  schoolId: string;
+  applicationId: string;
+  gradeLevelId: string;
+  classroomId?: string | null;
+  divisionId?: string | null;
+  cohort?: string | null;
+}): Promise<EntranceFeeResolution> {
+  const res = await fetch(`${FINANCE_URL}/api/internal/entrance-fees/resolve`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({
+      schoolId: data.schoolId,
+      applicationId: data.applicationId,
+      gradeLevelId: data.gradeLevelId,
+      classroomId: data.classroomId || null,
+      divisionId: data.divisionId || undefined,
+      cohort: data.cohort || undefined,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Finance resolveEntranceFee failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+/**
+ * Resolve billing through Finance first. A flat fee is only raised when the caller supplied
+ * an explicit amount and Finance did not resolve/apply a fee of its own.
+ */
+export async function resolveOrCreateEntranceFee(data: {
+  schoolId: string;
+  applicationId: string;
+  gradeLevelId: string;
+  classroomId?: string | null;
+  divisionId?: string | null;
+  cohort?: string | null;
+  studentId?: string | null;
+  amount?: number | null;
+  dueDate?: string;
+}): Promise<any | null> {
+  let resolution: EntranceFeeResolution | null = null;
+  try {
+    resolution = await resolveEntranceFee(data);
+  } catch (err: any) {
+    console.warn("[lifecycle] entrance fee resolution failed:", err?.message || err);
+  }
+  if (resolution?.applied || resolution?.reason === "EXISTING") return resolution.fee ?? null;
+
+  const amount = Number(data.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return createEntranceFee({
+    schoolId: data.schoolId,
+    applicationId: data.applicationId,
+    studentId: data.studentId,
+    amount,
+    dueDate: data.dueDate,
+  });
+}
+
 export async function getFee(feeId: string) {
   const res = await fetch(`${FINANCE_URL}/api/internal/fees/${feeId}`, {
     headers: headers(),

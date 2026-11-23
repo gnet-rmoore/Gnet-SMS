@@ -127,6 +127,21 @@ export function computeInvoiceAmounts(input: {
 
 export const DEFAULT_MIN_PAYMENT = 1;
 
+export function serializeBillingSettings(
+  schoolId: string,
+  row: {
+    minPaymentAmount?: number | string | null;
+    entranceFeesEnabled?: boolean | null;
+  } | null
+) {
+  const rawMin = row ? Number(row.minPaymentAmount) : NaN;
+  return {
+    schoolId,
+    minPaymentAmount: Number.isFinite(rawMin) ? roundMoney(rawMin) : DEFAULT_MIN_PAYMENT,
+    entranceFeesEnabled: Boolean(row?.entranceFeesEnabled),
+  };
+}
+
 export const PAYMENT_METHODS = [
   "CASH",
   "CHECK",

@@ -65,6 +65,8 @@ export const registrarApi = {
     api.post(`/api/applications/${applicationId}/enroll`, data || {}, {
       headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
     }),
+  assignClassroom: (applicationId: string, classroomId: string) =>
+    api.post(`/api/applications/${applicationId}/assign-classroom`, { classroomId }),
   getNextAction: (applicationId: string) => api.get(`/api/applications/${applicationId}/next-action`),
   completeEntrance: (applicationId: string, data: { entranceResult: string; entranceNotes?: string }) =>
     api.post(`/api/applications/${applicationId}/entrance-complete`, data),

@@ -1,11 +1,12 @@
 /** Fee template scope + student eligibility helpers (Finance). */
 
-export type FeeScopeMode = "SCHOOL" | "GRADE" | "DIVISION";
+export type FeeScopeMode = "SCHOOL" | "GRADE" | "DIVISION" | "CLASS";
 export type FeeCohort = "ALL" | "NEW" | "RETURNING";
 
 export type FeeTemplateScope = {
   scopeMode: FeeScopeMode;
   gradeLevelId?: string | null;
+  classroomId?: string | null;
   divisionId?: string | null;
   cohort?: FeeCohort | string | null;
   schoolYearKey?: string | null;
@@ -17,6 +18,7 @@ export type StudentFeeProfile = {
   name?: string;
   schoolId?: string | null;
   gradeLevelId?: string | null;
+  classroomId?: string | null;
   feeCohort?: string | null;
   /** Resolved from Academic GradeLevel.divisionId */
   divisionId?: string | null;
@@ -32,7 +34,7 @@ export function normalizeCohort(raw?: string | null): FeeCohort {
 
 export function normalizeScopeMode(raw?: string | null): FeeScopeMode {
   const v = String(raw || "SCHOOL").toUpperCase();
-  if (v === "GRADE" || v === "DIVISION") return v;
+  if (v === "GRADE" || v === "DIVISION" || v === "CLASS") return v;
   return "SCHOOL";
 }
 
@@ -40,6 +42,7 @@ export function scopeSnapshotJson(scope: FeeTemplateScope): string {
   return JSON.stringify({
     scopeMode: normalizeScopeMode(scope.scopeMode),
     gradeLevelId: scope.gradeLevelId || null,
+    classroomId: scope.classroomId || null,
     divisionId: scope.divisionId || null,
     cohort: normalizeCohort(scope.cohort),
     schoolYearKey: scope.schoolYearKey || null,
@@ -54,6 +57,7 @@ export function parseScopeSnapshot(raw?: string | null): FeeTemplateScope | null
     return {
       scopeMode: normalizeScopeMode(p.scopeMode),
       gradeLevelId: p.gradeLevelId || null,
+      classroomId: p.classroomId || null,
       divisionId: p.divisionId || null,
       cohort: normalizeCohort(p.cohort),
       schoolYearKey: p.schoolYearKey || null,
@@ -62,6 +66,62 @@ export function parseScopeSnapshot(raw?: string | null): FeeTemplateScope | null
   } catch {
     return null;
   }
+}
+
+export type EntranceFeeTemplateRef = {
+  id?: string;
+  name?: string;
+  scopeMode?: string | null;
+  classroomId?: string | null;
+  gradeLevelId?: string | null;
+  divisionId?: string | null;
+  cohort?: string | null;
+  schoolYearKey?: string | null;
+  active?: boolean;
+};
+
+/** Entrance fee scope precedence: CLASS > GRADE > DIVISION > SCHOOL. */
+export function pickEntranceFeeTemplate<T extends EntranceFeeTemplateRef>(
+  templates: T[],
+  context: {
+    classroomId?: string | null;
+    gradeLevelId?: string | null;
+    divisionId?: string | null;
+    cohort?: string | null;
+  }
+): T | null {
+  const cohort = normalizeCohort(context.cohort);
+  const tiers: Array<(template: T) => boolean> = [
+    (t) =>
+      normalizeScopeMode(t.scopeMode) === "CLASS" &&
+      !!context.classroomId &&
+      t.classroomId === context.classroomId,
+    (t) =>
+      normalizeScopeMode(t.scopeMode) === "GRADE" &&
+      !!context.gradeLevelId &&
+      t.gradeLevelId === context.gradeLevelId,
+    (t) =>
+      normalizeScopeMode(t.scopeMode) === "DIVISION" &&
+      !!context.divisionId &&
+      t.divisionId === context.divisionId,
+    (t) => normalizeScopeMode(t.scopeMode) === "SCHOOL",
+  ];
+
+  for (const matchesScope of tiers) {
+    const candidates = templates.filter(
+      (t) =>
+        t.active !== false &&
+        matchesScope(t) &&
+        (cohort === "ALL" ||
+          normalizeCohort(t.cohort) === "ALL" ||
+          normalizeCohort(t.cohort) === cohort)
+    );
+    if (!candidates.length) continue;
+    const exact = candidates.find((t) => normalizeCohort(t.cohort) === cohort);
+    if (exact) return exact;
+    return candidates.find((t) => normalizeCohort(t.cohort) === "ALL") || candidates[0];
+  }
+  return null;
 }
 
 function cohortLabel(c: FeeCohort): string {
@@ -96,6 +156,18 @@ export function feeScopeMismatchMessage(
     }
     if (student.gradeLevelId !== scope.gradeLevelId) {
       return `This fee is for grade ${scope.name || scope.gradeLevelId} (${cohortLabel(cohort)}). Selected student is ${student.gradeLevelName || student.gradeLevelId} (${cohortLabel(normalizeCohort(student.feeCohort))}). Transaction rejected.`;
+    }
+  }
+
+  if (mode === "CLASS") {
+    if (!scope.classroomId) {
+      return "This fee template is missing a classroom.";
+    }
+    if (!student.classroomId) {
+      return `This fee is for a specific class. Student ${student.name || student.id} has no classroom assigned.`;
+    }
+    if (student.classroomId !== scope.classroomId) {
+      return `This fee is for class ${scope.name || scope.classroomId} (${cohortLabel(cohort)}). Selected student is in class ${student.classroomId} (${cohortLabel(normalizeCohort(student.feeCohort))}). Transaction rejected.`;
     }
   }
 

@@ -28,6 +28,22 @@ export const ALLOWED: Record<string, string[]> = {
   ENROLLED: [],
 };
 
+/** Statuses where the entrance exam may be scheduled/recorded, including before approval. */
+export const ENTRANCE_COMPLETION_STATUSES = [
+  "UNDER_REVIEW",
+  "WAITLISTED",
+  "APPROVED",
+  "FEE_PENDING",
+  "DOCS_PENDING",
+  "ENROLLED",
+] as const;
+
+export function canCompleteEntrance(status: string): boolean {
+  return (ENTRANCE_COMPLETION_STATUSES as readonly string[]).includes(
+    String(status || "").toUpperCase()
+  );
+}
+
 /** Statuses the state machine permits a direct transition into ENROLLED. */
 export const ENROLLABLE_STATUSES = Object.keys(ALLOWED).filter((from) =>
   (ALLOWED[from] || []).includes("ENROLLED")

@@ -151,7 +151,7 @@ export function InvoiceModal({
               }
               className={fieldSelect}
             >
-              {FEE_TYPES.filter((ft) => ft.value !== "ENTRANCE").map((ft) => (
+              {FEE_TYPES.map((ft) => (
                 <option key={ft.value} value={ft.value}>
                   {feeTypeLabel(ft.value)}
                 </option>

@@ -30,8 +30,18 @@ export function TemplatesTab({
   const feeTypeLabel = (type: string) =>
     t(`fees.feeTypes.${type}`, { defaultValue: type.replace(/_/g, " ") });
 
+  const scopeLabel = (mode: string) => {
+    if (mode === "SCHOOL") return t("fees.scopeSchool");
+    if (mode === "GRADE") return t("fees.scopeGrade");
+    if (mode === "DIVISION") return t("fees.scopeDivision");
+    if (mode === "CLASS") {
+      return t("fees.scopeClass", { defaultValue: "Classroom" });
+    }
+    return mode.replace(/_/g, " ");
+  };
+
   const scopeDisplay = (templ: FeeTemplate) => {
-    const mode = (templ.scopeMode || "SCHOOL").replace(/_/g, " ");
+    const mode = scopeLabel(templ.scopeMode || "SCHOOL");
     const cohort =
       templ.cohort && templ.cohort !== "ALL"
         ? ` · ${templ.cohort === "NEW" ? t("fees.batch.cohortNew") : templ.cohort === "RETURNING" ? t("fees.batch.cohortReturning") : templ.cohort}`
@@ -115,6 +125,13 @@ export function TemplatesTab({
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                     {templ.description || t("fees.templatesTab.noDescription")}
                   </p>
+                  {templ.type === "ENTRANCE" && (
+                    <p className="text-xs font-medium text-sky-600 mt-1">
+                      {t("fees.templatesTab.entranceHint", {
+                        defaultValue: "Used for new student admissions.",
+                      })}
+                    </p>
+                  )}
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-2">
                     {scopeDisplay(templ)}
                   </p>

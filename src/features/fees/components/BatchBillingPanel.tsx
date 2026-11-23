@@ -51,6 +51,9 @@ export function BatchBillingPanel({
         : "";
     if (scopeMode === "GRADE") return `${t("fees.batch.scopeGrade")}${cohort}`;
     if (scopeMode === "DIVISION") return `${t("fees.batch.scopeDivision")}${cohort}`;
+    if (scopeMode === "CLASS") {
+      return `${t("fees.scopeClass", { defaultValue: "Classroom" })}${cohort}`;
+    }
     return `${t("fees.batch.scopeSchool")}${cohort}`;
   };
 
@@ -217,7 +220,7 @@ export function BatchBillingPanel({
                   }
                   className={fieldSelect}
                 >
-                  {FEE_TYPES.filter((ft) => ft.value !== "ENTRANCE").map((ft) => (
+                  {FEE_TYPES.map((ft) => (
                     <option key={ft.value} value={ft.value}>
                       {feeTypeLabel(ft.value)}
                     </option>

@@ -1,19 +1,25 @@
 import crypto from "node:crypto";
 import prisma from "../lib/prisma";
 import { findOrCreateIdentityUser, getSchoolStudentTotal, linkParentStudent, getIdentitySchool, getIdentityUser, verifyReturningStudent } from "../lib/identityClient";
-import { createEntranceFee, getFee, getFeeReceipt, linkFeeToStudent, randomPassword } from "../lib/financeClient";
+import { getFee, getFeeReceipt, linkFeeToStudent, randomPassword, resolveOrCreateEntranceFee } from "../lib/financeClient";
 import {
   claimStudentSeat,
   getClassroomById,
   getHomeroomPlacedStudentIds,
   resolveStudentNextGrade,
 } from "../lib/classroomClient";
-import { assertTransition, generateApplicationNumber, resolveApprovalPath } from "../domain/admissionStates";
+import {
+  assertTransition,
+  canCompleteEntrance,
+  generateApplicationNumber,
+  resolveApprovalPath,
+} from "../domain/admissionStates";
 import {
   parseAdmissionPolicy,
   isEnrollableStatus,
   parseApplicationNotes,
   applicantTypeFromNotes,
+  requiresEntranceFee,
   type AdmissionPolicy,
 } from "../domain/admissionPolicy";
 import { notifyAdmissionStatusChange } from "../lib/admissionNotifications";
@@ -21,7 +27,11 @@ import { getParentChildIds } from "../lib/identityClient";
 import { nextActionFor } from "../domain/admissionFunnel";
 import { buildEntranceUrl, normalizeParentEmails } from "../lib/applicationEmail";
 import { entranceService } from "./entranceService";
-import { documentEligibilityFor, type DocumentEligibility } from "../domain/documentEligibility";
+import {
+  documentEligibilityFor,
+  DOCUMENT_ELIGIBILITY_MESSAGES,
+  type DocumentEligibility,
+} from "../domain/documentEligibility";
 
 const parseDateSafely = (dateStr: any) => {
   if (!dateStr || String(dateStr).trim() === "") return null;
@@ -35,6 +45,14 @@ function hashToken(raw: string) {
 
 function parseParentContacts(value: unknown) {
   return normalizeParentEmails(value);
+}
+
+function entranceFeeContext(app: { notes?: string | null }) {
+  const notes = parseApplicationNotes(app.notes);
+  return {
+    cohort: notes.applicantType === "RETURNING" ? "RETURNING" : "NEW",
+    divisionId: typeof notes.divisionId === "string" ? notes.divisionId : undefined,
+  };
 }
 
 function parentContactsFromData(data: any) {
@@ -441,6 +459,7 @@ export const admissionService = {
           status: 409,
           code: "DOCUMENT_COLLECTION_NOT_ELIGIBLE",
           reason: eligibility.reason,
+          reasonMessage: DOCUMENT_ELIGIBILITY_MESSAGES[eligibility.reason],
         }
       );
     }
@@ -467,29 +486,33 @@ export const admissionService = {
     const admissionDecision =
       requestedDecision ||
       (result === "NOT_PASSED" ? "NOT_ADMITTED" : "ADMITTED");
-    if (app.status !== "ENROLLED") {
-      throw Object.assign(new Error("Entrance completion can only be recorded after enrollment"), {
+    const status = String(app.status || "").toUpperCase();
+    if (!canCompleteEntrance(status)) {
+      throw Object.assign(new Error("Entrance completion is not available for this application status"), {
         status: 409,
-        code: "ENTRANCE_COMPLETION_REQUIRES_ENROLLMENT",
+        code: "ENTRANCE_COMPLETION_STATUS_INVALID",
       });
     }
-    if (!app.studentUserId) {
-      throw Object.assign(new Error("A linked student record is required"), {
-        status: 409,
-        code: "STUDENT_RECORD_MISSING",
-      });
-    }
-    const student = await getIdentityUser(app.studentUserId);
-    if (
-      !student ||
-      student.role !== "STUDENT" ||
-      student.schoolId !== app.schoolId ||
-      student.isActive !== true
-    ) {
-      throw Object.assign(new Error("The linked active student record is invalid"), {
-        status: 409,
-        code: "STUDENT_RECORD_INVALID",
-      });
+    const isEnrolled = status === "ENROLLED";
+    if (isEnrolled) {
+      if (!app.studentUserId) {
+        throw Object.assign(new Error("A linked student record is required"), {
+          status: 409,
+          code: "STUDENT_RECORD_MISSING",
+        });
+      }
+      const student = await getIdentityUser(app.studentUserId);
+      if (
+        !student ||
+        student.role !== "STUDENT" ||
+        student.schoolId !== app.schoolId ||
+        student.isActive !== true
+      ) {
+        throw Object.assign(new Error("The linked active student record is invalid"), {
+          status: 409,
+          code: "STUDENT_RECORD_INVALID",
+        });
+      }
     }
     return prisma.admissionApplication.update({
       where: { id: applicationId },
@@ -500,8 +523,9 @@ export const admissionService = {
         entranceCompletedBy: completedBy || null,
         entranceNotes: String(data?.entranceNotes || "").trim() || app.entranceNotes,
         admissionDecision,
-        reviewedBy: completedBy || app.reviewedBy,
-        reviewedAt: new Date(),
+        ...(isEnrolled
+          ? { reviewedBy: completedBy || app.reviewedBy, reviewedAt: new Date() }
+          : {}),
       },
       include: { admissionDocuments: true },
     });
@@ -710,33 +734,32 @@ export const admissionService = {
     }
 
     if (to === "APPROVED" || to === "FEE_PENDING") {
-      // Approving a fee-required application auto-raises the entrance invoice and parks
-      // the application on FEE_PENDING, so staff never forget to bill the applicant.
+      // Fee resolution belongs to Finance; only an explicit caller amount may become a flat fee.
       const policy = to === "APPROVED" ? await loadSchoolPolicy(current.schoolId) : null;
-      const autoAmount =
-        policy && policy.requireEntranceFee ? Number(policy.entranceFeeAmount) || 0 : 0;
-      const needsAutoFee = to === "APPROVED" && autoAmount > 0 && !current.feePaymentId;
-      const amount = Number(
-        opts.amount || opts.entranceFeeAmount || (needsAutoFee ? autoAmount : 0)
-      );
-      const shouldCreate =
-        !current.feePaymentId && amount > 0 && (to === "FEE_PENDING" || opts.createFee || needsAutoFee);
+      const explicitAmount = Number(opts.amount ?? opts.entranceFeeAmount ?? 0);
+      const wantsFee =
+        to === "FEE_PENDING" || opts.createFee === true || (to === "APPROVED" && requiresEntranceFee(policy));
       let feePaymentId = current.feePaymentId;
       let target = to;
-      if (shouldCreate) {
+      if (!feePaymentId && wantsFee) {
         try {
-          const fee = await createEntranceFee({
+          const fee = await resolveOrCreateEntranceFee({
             schoolId: current.schoolId,
             applicationId: current.id,
+            gradeLevelId: current.gradeLevelId,
+            classroomId: current.classroomId,
             studentId: current.studentUserId,
-            amount,
+            amount: explicitAmount > 0 ? explicitAmount : null,
+            ...entranceFeeContext(current),
           });
-          feePaymentId = fee.id;
-          target = "FEE_PENDING";
+          if (fee?.id) {
+            feePaymentId = fee.id;
+            target = "FEE_PENDING";
+          }
         } catch (err: any) {
           // Finance unavailable: keep the approval, let staff retry the invoice explicitly.
           console.warn("[lifecycle] auto entrance fee failed:", err?.message || err);
-          target = "APPROVED";
+          if (to === "FEE_PENDING") target = "APPROVED";
         }
       }
       const updated = await prisma.admissionApplication.update({
@@ -764,7 +787,7 @@ export const admissionService = {
   async assertEnrollGates(app: any, opts: { waiveFee?: boolean; waiveDocs?: boolean; policy?: AdmissionPolicy }) {
     const policy = opts.policy || (await loadSchoolPolicy(app.schoolId));
 
-    if (policy.requireEntranceFee && !opts.waiveFee) {
+    if (requiresEntranceFee(policy) && !opts.waiveFee) {
       if (!app.feePaymentId) {
         throw Object.assign(new Error("Entrance fee required before enroll"), {
           status: 400,
@@ -1200,12 +1223,21 @@ export const admissionService = {
     if (app.feePaymentId) {
       return { feePaymentId: app.feePaymentId, existing: true };
     }
-    const fee = await createEntranceFee({
+    const fee = await resolveOrCreateEntranceFee({
       schoolId: app.schoolId,
       applicationId: app.id,
+      gradeLevelId: app.gradeLevelId,
+      classroomId: app.classroomId,
       studentId: app.studentUserId,
       amount,
+      ...entranceFeeContext(app),
     });
+    if (!fee?.id) {
+      throw Object.assign(new Error("Entrance fee is not configured for this school"), {
+        status: 409,
+        code: "ENTRANCE_FEE_NOT_AVAILABLE",
+      });
+    }
     const updated = await prisma.admissionApplication.update({
       where: { id },
       data: { feePaymentId: fee.id, status: app.status === "APPROVED" ? "FEE_PENDING" : app.status },

@@ -1,5 +1,12 @@
 import { api } from "../../services/api";
 import { fetchAllItems } from "../../lib/apiEnvelope";
+import type {
+  FeeBillingSettings,
+  FeeBillingSettingsUpdate,
+  FeeClassroom,
+  FeeTemplate,
+  FeeTemplatePayload,
+} from "./types";
 
 /** Thin API wrappers for the fees feature. */
 export const feesApi = {
@@ -15,7 +22,8 @@ export const feesApi = {
   },
   fetchMyFees: (_?: void) => api.get(`/api/my-fees`),
   fetchStudents: (schoolId: string) => api.get(`/api/schools/${schoolId}/students`),
-  fetchClassrooms: (schoolId: string) => api.get(`/api/schools/${schoolId}/classrooms`),
+  fetchClassrooms: (schoolId: string): Promise<FeeClassroom[]> =>
+    api.get(`/api/schools/${schoolId}/classrooms`),
   fetchMembers: (classroomId: string) => api.get(`/api/classrooms/${classroomId}/members`),
   createFee: (schoolId: string, data: unknown) =>
     api.post(`/api/schools/${schoolId}/fees`, data),
@@ -25,9 +33,9 @@ export const feesApi = {
     api.post(`/api/schools/${schoolId}/fees/${feeId}/void`, {}),
   writeOffFee: (schoolId: string, feeId: string, data: unknown = {}) =>
     api.post(`/api/schools/${schoolId}/fees/${feeId}/write-off`, data),
-  fetchBillingSettings: (schoolId: string) =>
+  fetchBillingSettings: (schoolId: string): Promise<FeeBillingSettings> =>
     api.get(`/api/schools/${schoolId}/fee-billing-settings`),
-  updateBillingSettings: (schoolId: string, data: unknown) =>
+  updateBillingSettings: (schoolId: string, data: FeeBillingSettingsUpdate): Promise<FeeBillingSettings> =>
     api.patch(`/api/schools/${schoolId}/fee-billing-settings`, data),
   backfillLegacyTxns: (schoolId: string) =>
     api.post(`/api/schools/${schoolId}/fee-payment-txns/backfill-legacy`, {}),
@@ -61,11 +69,11 @@ export const feesApi = {
     feeId: string,
     data: { successUrl?: string; cancelUrl?: string; email?: string; amount?: number } = {}
   ) => api.post(`/api/fees/${feeId}/checkout`, data),
-  fetchTemplates: (schoolId: string) =>
+  fetchTemplates: (schoolId: string): Promise<FeeTemplate[]> =>
     api.get(`/api/schools/${schoolId}/fee-templates`),
-  createTemplate: (schoolId: string, data: unknown) =>
+  createTemplate: (schoolId: string, data: FeeTemplatePayload) =>
     api.post(`/api/schools/${schoolId}/fee-templates`, data),
-  updateTemplate: (schoolId: string, templateId: string, data: unknown) =>
+  updateTemplate: (schoolId: string, templateId: string, data: FeeTemplatePayload) =>
     api.patch(`/api/schools/${schoolId}/fee-templates/${templateId}`, data),
   deleteTemplate: (schoolId: string, templateId: string) =>
     api.delete(`/api/schools/${schoolId}/fee-templates/${templateId}`),

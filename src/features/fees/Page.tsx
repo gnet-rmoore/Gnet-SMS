@@ -97,6 +97,7 @@ export const Fees = () => {
     scopeMode: "SCHOOL",
     gradeLevelId: "",
     divisionId: "",
+    classroomId: "",
     cohort: "ALL",
     schoolYearKey: "",
   });
@@ -195,6 +196,7 @@ export const Fees = () => {
     templatesLoading,
     gradeLevels,
     divisions,
+    templateClassrooms,
     batchResultSummary,
   } = usePageActions({
     school,
@@ -398,6 +400,7 @@ export const Fees = () => {
                 scopeMode: "SCHOOL",
                 gradeLevelId: "",
                 divisionId: "",
+                classroomId: "",
                 cohort: "ALL",
                 schoolYearKey: "",
               });
@@ -448,6 +451,7 @@ export const Fees = () => {
           submitting={submitting}
           gradeLevels={gradeLevels}
           divisions={divisions}
+          templateClassrooms={templateClassrooms}
           isEditing={Boolean(templateForm.id)}
         />
       )}

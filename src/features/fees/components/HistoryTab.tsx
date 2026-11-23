@@ -31,6 +31,7 @@ export function HistoryTab({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [minPayment, setMinPayment] = useState("1");
+  const [entranceFeesEnabled, setEntranceFeesEnabled] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
 
@@ -130,6 +131,9 @@ export function HistoryTab({
         if (!cancelled && s?.minPaymentAmount != null) {
           setMinPayment(String(s.minPaymentAmount));
         }
+        if (!cancelled && typeof s?.entranceFeesEnabled === "boolean") {
+          setEntranceFeesEnabled(s.entranceFeesEnabled);
+        }
       } catch {
         /* soft-fail */
       }
@@ -149,6 +153,34 @@ export function HistoryTab({
       showToast(t("fees.toast.minPaymentUpdated"), "success");
     } catch (err: any) {
       showToast(err?.message || t("fees.toast.minPaymentSaveFailed"), "error");
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const saveEntranceFeesEnabled = async (enabled: boolean) => {
+    setSettingsSaving(true);
+    try {
+      const s: any = await feesApi.updateBillingSettings(schoolId, {
+        entranceFeesEnabled: enabled,
+      });
+      const next =
+        typeof s?.entranceFeesEnabled === "boolean" ? s.entranceFeesEnabled : enabled;
+      setEntranceFeesEnabled(next);
+      showToast(
+        t("fees.toast.automaticEntranceFeesUpdated", {
+          defaultValue: `Automatic entrance fees ${next ? "enabled" : "disabled"}.`,
+        }),
+        "success"
+      );
+    } catch (err: any) {
+      showToast(
+        err?.message ||
+          t("fees.toast.automaticEntranceFeesSaveFailed", {
+            defaultValue: "Failed to update automatic entrance fees.",
+          }),
+        "error"
+      );
     } finally {
       setSettingsSaving(false);
     }
@@ -277,6 +309,42 @@ export function HistoryTab({
           </Button>
           <p className="text-xs text-slate-500 sm:max-w-xs">{t("fees.history.minInstallmentHint")}</p>
         </div>
+
+        <label className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={entranceFeesEnabled}
+            onChange={(e) => void saveEntranceFeesEnabled(e.target.checked)}
+            disabled={settingsSaving}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className="flex-1 space-y-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="block text-sm font-bold text-slate-800">
+                {t("fees.history.automaticEntranceFees", {
+                  defaultValue: "Automatic entrance fees",
+                })}
+              </span>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                  entranceFeesEnabled
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {entranceFeesEnabled
+                  ? t("fees.history.automaticEntranceFeesOn", { defaultValue: "Enabled" })
+                  : t("fees.history.automaticEntranceFeesOff", { defaultValue: "Disabled" })}
+              </span>
+            </span>
+            <span className="block text-xs text-slate-500">
+              {t("fees.history.automaticEntranceFeesHint", {
+                defaultValue:
+                  "When enabled, matching ENTRANCE fee templates apply automatically to new applications.",
+              })}
+            </span>
+          </span>
+        </label>
 
         <ListFilterBar
           fields={fields}

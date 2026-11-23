@@ -5,7 +5,7 @@ import { resourceLoaders } from "../middleware/resourceLoaders";
 import { financeController } from "../controllers/financeController";
 import { receiptController } from "../controllers/receiptController";
 import { auditController } from "../controllers/auditController";
-import { feeCreateSchema, feeUpdateSchema, feeTemplateSchema, feeBatchApplySchema, feeCollectSchema } from "../validation/schemas";
+import { feeCreateSchema, feeUpdateSchema, feeTemplateSchema, feeBatchApplySchema, feeCollectSchema, billingSettingsSchema, entranceFeeResolveSchema } from "../validation/schemas";
 
 const router = express.Router();
 
@@ -87,6 +87,7 @@ router.patch(
   authenticate,
   requireTenant,
   requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT"]),
+  validateBody(billingSettingsSchema),
   financeController.updateBillingSettings
 );
 
@@ -236,6 +237,13 @@ router.get(
   requireTenant,
   requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "VPA"]),
   financeController.getFinanceSummary
+);
+
+router.post(
+  "/api/internal/entrance-fees/resolve",
+  authenticateInternal,
+  validateBody(entranceFeeResolveSchema),
+  financeController.resolveEntranceFee
 );
 
 router.post("/api/internal/fees", authenticateInternal, financeController.createFeeInternal);

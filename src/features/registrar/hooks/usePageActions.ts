@@ -94,6 +94,7 @@ export function usePageActions(deps: PageActionsDeps) {
           applicantType: "NEW",
           existingStudentUserId: "",
           pendingPhotoUrl: null as string | null,
+          reviewCompleted: false,
         };
       }
       const parsed = JSON.parse(notesStr);
@@ -107,6 +108,8 @@ export function usePageActions(deps: PageActionsDeps) {
           existingStudentUserId: parsed.existingStudentUserId || "",
           pendingPhotoUrl:
             typeof parsed.pendingPhotoUrl === "string" ? parsed.pendingPhotoUrl : null,
+          reviewCompleted:
+            parsed.reviewCompleted === true || ["APPROVED", "FEE_PENDING", "DOCS_PENDING", "ENROLLED"].includes(parsed.status),
         };
       }
     } catch (e) {
@@ -236,12 +239,17 @@ export function usePageActions(deps: PageActionsDeps) {
     setSuccessMessage("");
 
     const newStatus = updatedStatus || selectedApp.status;
+    const reviewCompleted =
+      evaluationData.reviewCompleted === true ||
+      (!updatedStatus && newStatus === "UNDER_REVIEW") ||
+      ["APPROVED", "FEE_PENDING", "DOCS_PENDING", "ENROLLED"].includes(newStatus);
     const finalNotes = JSON.stringify({
       testScore: evaluationData.testScore,
       interviewRating: evaluationData.interviewRating,
       comments: evaluationData.comments,
       generalNotes: evaluationData.generalNotes,
       applicantType: evaluationData.applicantType === "RETURNING" ? "RETURNING" : "NEW",
+      reviewCompleted,
       ...(evaluationData.existingStudentUserId
         ? { existingStudentUserId: evaluationData.existingStudentUserId }
         : {}),
@@ -461,6 +469,28 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
+  const handleAssignClassroom = async (classroomId: string) => {
+    if (!selectedApp || !classroomId) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const updated = await registrarApi.assignClassroom(selectedApp.id, classroomId);
+      setSelectedApp((prev: any) => (prev ? { ...prev, ...(updated?.application || {}), ...(updated?.admissionApplication || {}), classroomId: updated?.classroomId || updated?.application?.classroomId || updated?.admissionApplication?.classroomId || classroomId } : prev));
+      setSelectedClassroomId("");
+      setSuccessMessage(t("admissions.toast.classroomAssigned", {
+        defaultValue: "Class placement confirmed.",
+      }));
+      fetchData();
+    } catch (error) {
+      setErrorMessage(apiErrorMessage(error, t("admissions.toast.classroomAssignFailed", {
+        defaultValue: "Could not confirm class placement.",
+      })));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCreateEntranceFee = async (amount?: number) => {
     if (!selectedApp) return;
     const feeAmount = Number(amount || 0);
@@ -509,6 +539,7 @@ export function usePageActions(deps: PageActionsDeps) {
     handleUploadAdmissionDoc,
     handleReviewAdmissionDoc,
     handleCompleteEntrance,
+    handleAssignClassroom,
     handleCreateEntranceFee,
   };
 }

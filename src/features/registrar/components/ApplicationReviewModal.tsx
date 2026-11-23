@@ -41,6 +41,7 @@ export type ApplicationReviewModalProps = {
   setEntranceFeeAmount?: (v: string) => void;
   handleCreateEntranceFee?: (amount?: number) => Promise<void>;
   handleCompleteEntrance?: (entranceResult: string, entranceNotes?: string) => Promise<void>;
+  handleAssignClassroom?: (classroomId: string) => Promise<void>;
   students?: Array<{ id: string; photoUrl?: string | null }>;
   onPhotoError?: (message: string) => void;
   onPhotoSuccess?: (message: string) => void;
@@ -67,10 +68,8 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
     setWaiveFee,
     waiveDocs = false,
     setWaiveDocs,
-    entranceFeeAmount = "",
-    setEntranceFeeAmount,
-    handleCreateEntranceFee,
     handleCompleteEntrance,
+    handleAssignClassroom,
     students = [],
     onPhotoError,
     onPhotoSuccess,
@@ -90,6 +89,8 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
   const refreshRef = useRef<() => void>(() => undefined);
 
   const entranceStatus = selectedApp?.entranceStatus || (selectedApp?.entranceCompletedAt ? "COMPLETED" : "PENDING");
+  const reviewComplete = Boolean(evaluationData?.reviewCompleted) || ["APPROVED", "FEE_PENDING", "DOCS_PENDING", "ENROLLED"].includes(String(selectedApp?.status));
+  const placementClassroomId = selectedClassroomId || selectedApp?.classroomId || "";
   const stageView = useMemo(() => {
     if (nextActionState !== "loaded") return null;
     return resolveAdmissionStage({
@@ -97,18 +98,21 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
       nextAction: nextActionData.nextAction,
       blockedBy: nextActionData.blockedBy,
       entranceStatus,
+      entranceResult: selectedApp?.entranceResult,
+      reviewComplete,
       documentEligibility: nextActionData.documentEligibility,
-      entranceFeeAmount,
+      feePaymentId: selectedApp?.feePaymentId,
+      feeStatus: selectedApp?.feeStatus,
     });
-  }, [nextActionState, nextActionData, selectedApp?.status, entranceStatus, entranceFeeAmount]);
+  }, [nextActionState, nextActionData, selectedApp?.status, entranceStatus, selectedApp?.entranceResult, selectedApp?.feePaymentId, selectedApp?.feeStatus, reviewComplete]);
   const activeStage: AdmissionStage = stageView?.stage || "SUBMITTED";
   const nav = useReviewStageNavigation(activeStage);
   const completedStages = getCompletedStages(activeStage);
 
   const liveSnapshot = useMemo(() => createSnapshot({
-    selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs,
+    selectedApp, evaluationData, docsChecklist, selectedClassroomId, waiveFee, waiveDocs,
     nextAction: nextActionData as any, entranceResult, entranceNotes,
-  }), [selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes]);
+  }), [selectedApp, evaluationData, docsChecklist, selectedClassroomId, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes]);
   const dirty = !snapshotsEqual(liveSnapshot, nav.snapshot);
 
   const refreshNextAction = useCallback(async () => {
@@ -128,7 +132,14 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
   useEffect(() => { void refreshNextAction(); }, [refreshNextAction, selectedApp?.status, selectedApp?.entranceCompletedAt]);
 
   useEffect(() => {
-    nav.captureSnapshot({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes });
+    setEntranceResult(selectedApp?.entranceResult ? String(selectedApp.entranceResult) : "SAT");
+    setEntranceNotes(selectedApp?.entranceNotes || "");
+    if (selectedApp?.classroomId) setSelectedClassroomId(String(selectedApp.classroomId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedApp?.id]);
+
+  useEffect(() => {
+    nav.captureSnapshot({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedApp?.id, selectedApp?.status, selectedApp?.entranceCompletedAt, nextActionState]);
 
@@ -153,20 +164,20 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
 
   const afterMutation = useCallback(async () => {
     await refreshNextAction();
-    nav.resetOnMutation({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes }, activeStage, t(stageView?.titleKey || "", { defaultValue: activeStage }));
-  }, [refreshNextAction, nav, selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes, activeStage, stageView, t]);
+    nav.resetOnMutation({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes }, activeStage, t(stageView?.titleKey || "", { defaultValue: activeStage }));
+  }, [refreshNextAction, nav, selectedApp, evaluationData, docsChecklist, selectedClassroomId, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes, activeStage, stageView, t]);
 
   const runPrimary = useCallback(async () => {
     const key = stageView?.primaryActionKey;
     if (!key) return;
     if (key === "confirmDetails") await handleSaveReview?.("UNDER_REVIEW", { close: false });
-    else if (key === "approve") await handleSaveReview?.("APPROVED", { close: false });
-    else if (key === "confirmClass" || key === "finalizeEnrollment") await handleSaveReview?.("ENROLLED", { close: false });
-    else if (key === "createEntranceFee") await handleCreateEntranceFee?.(Number(entranceFeeAmount));
+    else if (key === "saveReview") await handleSaveReview?.(undefined, { close: false });
     else if (key === "recordEntrance") await handleCompleteEntrance?.(entranceResult, entranceNotes);
-    else if (key === "saveDocuments") await handleSaveReview?.(undefined, { close: false });
+    else if (key === "approve") await handleSaveReview?.("APPROVED", { close: false });
+    else if (key === "finalizeEnrollment") await handleSaveReview?.("ENROLLED", { close: false });
+    else if (key === "confirmPlacement") await handleAssignClassroom?.(placementClassroomId);
     await afterMutation();
-  }, [stageView, handleSaveReview, handleCreateEntranceFee, handleCompleteEntrance, entranceFeeAmount, entranceResult, entranceNotes, afterMutation]);
+  }, [stageView, handleSaveReview, handleCompleteEntrance, handleAssignClassroom, entranceResult, entranceNotes, placementClassroomId, afterMutation]);
 
   const runSecondary = useCallback(async (key: string) => {
     if (key === "moveToWaitlist") await handleSaveReview?.("WAITLISTED", { close: false });
@@ -177,17 +188,17 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
   }, [handleSaveReview, afterMutation, refreshNextAction]);
 
   const selectStage = useCallback((stage: AdmissionStage) => {
-    const label = t(`admissions.stepper.${stage === "ENTRANCE_FEE" ? "fee" : stage.toLowerCase()}`, { defaultValue: stage });
+    const label = t(`admissions.stepper.${stage.toLowerCase()}`, { defaultValue: stage });
     nav.selectStage(stage, activeStage, label);
   }, [nav, activeStage, t]);
 
   const primaryLabelKey = !stageView?.primaryActionKey ? null
     : activeStage === "SUBMITTED" ? "admissions.review.stage.submitted.primary"
-    : activeStage === "REVIEW" ? "admissions.review.stage.review.primary"
-    : activeStage === "APPROVED" ? (stageView.primaryActionKey === "confirmClass" ? "admissions.review.stage.approved.confirmClass" : "admissions.review.stage.approved.finalizeEnrollment")
-    : activeStage === "ENTRANCE_FEE" ? "admissions.review.stage.entranceFee.createFee"
-    : stageView.substep === "entrance" ? "admissions.review.markEntranceComplete"
-    : "admissions.review.stage.enrolled.saveDocuments";
+    : activeStage === "REVIEW" ? "admissions.review.stage.review.save"
+    : activeStage === "ENTRANCE" ? "admissions.review.stage.entrance.primary"
+    : activeStage === "APPROVED" ? (stageView.primaryActionKey === "approve" ? "admissions.review.stage.approved.approve" : "admissions.review.stage.approved.finalizeEnrollment")
+    : activeStage === "ENROLLED" ? "admissions.review.stage.enrolled.confirmPlacement"
+    : "admissions.review.stage.submitted.primary";
 
   const headerMeta = (
     <div>
@@ -211,7 +222,7 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
           </Button>
         ))}
         {stageView?.primaryActionKey ? (
-          <Button type="button" variant="primary" loading={submitting} disabled={submitting || (stageView.primaryActionKey === "confirmClass" && !selectedClassroomId)} onClick={runPrimary} className="min-h-11 bg-slate-900 hover:bg-slate-800 text-white border border-slate-900">
+          <Button type="button" variant="primary" loading={submitting} disabled={submitting || (stageView.primaryActionKey === "confirmPlacement" && !placementClassroomId)} onClick={runPrimary} className="min-h-11 bg-slate-900 hover:bg-slate-800 text-white border border-slate-900">
             {primaryLabelKey ? t(primaryLabelKey) : null}
           </Button>
         ) : null}
@@ -252,7 +263,7 @@ export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
         title={t("admissions.review.evaluating", { name: selectedApp?.studentName })}
         headerMeta={headerMeta}
         stageRail={<StageRail status={selectedApp?.status} nextAction={nextActionData.nextAction} blockedBy={nextActionData.blockedBy} activeStage={activeStage} browsableStages={completedStages} onStageSelect={selectStage} />}
-        historyBanner={nav.view.mode === "history" ? <StageHistoryBanner stageLabel={t(`admissions.stepper.${nav.view.stage === "ENTRANCE_FEE" ? "fee" : nav.view.stage.toLowerCase()}`, { defaultValue: nav.view.stage })} onReturn={() => nav.returnToCurrent(t(stageView?.titleKey || "", { defaultValue: activeStage }))} headingRef={historyRef} /> : undefined}
+        historyBanner={nav.view.mode === "history" ? <StageHistoryBanner stageLabel={t(`admissions.stepper.${nav.view.stage.toLowerCase()}`, { defaultValue: nav.view.stage })} onReturn={() => nav.returnToCurrent(t(stageView?.titleKey || "", { defaultValue: activeStage }))} headingRef={historyRef} /> : undefined}
         footer={footer}
         overlay={confirmDialog}
       >

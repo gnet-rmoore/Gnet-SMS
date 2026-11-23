@@ -18,6 +18,7 @@ import {
   normalizeCohort,
   normalizeScopeMode,
   parseScopeSnapshot,
+  pickEntranceFeeTemplate,
   scopeSnapshotJson,
   staleScopeMismatchMessage,
   type FeeTemplateScope,
@@ -26,11 +27,11 @@ import {
 import {
   assertMinPaymentAmount,
   computeInvoiceAmounts,
-  DEFAULT_MIN_PAYMENT,
   effectiveAmountPaid,
   invoiceBalance,
   normalizePaymentMethod,
   roundMoney,
+  serializeBillingSettings,
   serializeFeeInvoice,
   statusFromBalances,
 } from "../lib/feePaymentMath";
@@ -104,8 +105,7 @@ async function resolveStudentName(studentId: string): Promise<string | null> {
 
 async function getMinPaymentAmount(schoolId: string): Promise<number> {
   const row = await prisma.schoolBillingSettings.findUnique({ where: { schoolId } });
-  if (!row) return DEFAULT_MIN_PAYMENT;
-  return roundMoney(Number(row.minPaymentAmount) || DEFAULT_MIN_PAYMENT);
+  return serializeBillingSettings(schoolId, row).minPaymentAmount;
 }
 
 async function buildStudentFeeProfile(
@@ -153,6 +153,7 @@ async function buildStudentFeeProfile(
 function templateToScope(template: {
   scopeMode?: string | null;
   gradeLevelId?: string | null;
+  classroomId?: string | null;
   divisionId?: string | null;
   cohort?: string | null;
   schoolYearKey?: string | null;
@@ -161,6 +162,7 @@ function templateToScope(template: {
   return {
     scopeMode: normalizeScopeMode(template.scopeMode),
     gradeLevelId: template.gradeLevelId || null,
+    classroomId: template.classroomId || null,
     divisionId: template.divisionId || null,
     cohort: normalizeCohort(template.cohort),
     schoolYearKey: template.schoolYearKey || null,
@@ -315,10 +317,11 @@ export const financeService = {
         new Error("Accountants must create invoices from a fee template"),
         { status: 400, code: "TEMPLATE_REQUIRED" }
       );
-    } else if (data.scopeMode || data.gradeLevelId || data.divisionId) {
+    } else if (data.scopeMode || data.gradeLevelId || data.classroomId || data.divisionId) {
       scope = {
         scopeMode: normalizeScopeMode(data.scopeMode),
         gradeLevelId: data.gradeLevelId || null,
+        classroomId: data.classroomId || null,
         divisionId: data.divisionId || null,
         cohort: normalizeCohort(data.cohort),
         schoolYearKey: data.schoolYearKey || null,
@@ -425,6 +428,69 @@ export const financeService = {
       role: "SCHOOL_ADMIN",
       skipEligibility: true,
     });
+  },
+
+  async resolveEntranceFee(input: {
+    schoolId: string;
+    applicationId: string;
+    gradeLevelId?: string | null;
+    classroomId?: string | null;
+    divisionId?: string | null;
+    cohort?: string | null;
+  }) {
+    const settings = await prisma.schoolBillingSettings.findUnique({
+      where: { schoolId: input.schoolId },
+    });
+    if (!settings?.entranceFeesEnabled) {
+      return { applied: false as const, reason: "DISABLED" as const };
+    }
+
+    const existing = await prisma.feePayment.findFirst({
+      where: {
+        schoolId: input.schoolId,
+        applicationId: input.applicationId,
+        type: "ENTRANCE",
+        status: { in: ["PENDING", "PARTIAL", "PAID"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (existing) {
+      return {
+        applied: true as const,
+        fee: serializeFeeInvoice(existing),
+        reason: "EXISTING" as const,
+      };
+    }
+
+    const templates = await prisma.feeTemplate.findMany({
+      where: { schoolId: input.schoolId, type: "ENTRANCE", active: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const template = pickEntranceFeeTemplate(templates, {
+      classroomId: input.classroomId,
+      gradeLevelId: input.gradeLevelId,
+      divisionId: input.divisionId,
+      cohort: input.cohort,
+    });
+    if (!template) {
+      return { applied: false as const, reason: "NO_TEMPLATE" as const };
+    }
+
+    const dueDate = new Date(Date.now() + 14 * 86400000).toISOString();
+    const fee = await this.createFee(
+      input.schoolId,
+      {
+        studentId: `application:${input.applicationId}`,
+        applicationId: input.applicationId,
+        templateId: template.id,
+        type: "ENTRANCE",
+        status: "PENDING",
+        dueDate,
+        schoolYearKey: template.schoolYearKey || undefined,
+      },
+      { role: "SCHOOL_ADMIN", skipEligibility: true }
+    );
+    return { applied: true as const, fee };
   },
 
   async getFeeById(id: string) {
@@ -1316,11 +1382,18 @@ export const financeService = {
     const cohort = normalizeCohort(data.cohort);
     const gradeLevelId =
       scopeMode === "GRADE" ? String(data.gradeLevelId || "").trim() || null : null;
+    const classroomId =
+      scopeMode === "CLASS" ? String(data.classroomId || "").trim() || null : null;
     const divisionId =
       scopeMode === "DIVISION" ? String(data.divisionId || "").trim() || null : null;
 
     if (scopeMode === "GRADE" && !gradeLevelId) {
       throw Object.assign(new Error("Grade-scoped templates require a grade level"), {
+        status: 400,
+      });
+    }
+    if (scopeMode === "CLASS" && !classroomId) {
+      throw Object.assign(new Error("Class-scoped templates require a classroom"), {
         status: 400,
       });
     }
@@ -1345,6 +1418,7 @@ export const financeService = {
         description: String(data.description || "").trim(),
         scopeMode,
         gradeLevelId,
+        classroomId,
         divisionId,
         cohort,
         schoolYearKey: data.schoolYearKey
@@ -1383,6 +1457,11 @@ export const financeService = {
         ? String((data.gradeLevelId !== undefined ? data.gradeLevelId : existing.gradeLevelId) || "").trim() ||
           null
         : null;
+    const classroomId =
+      scopeMode === "CLASS"
+        ? String((data.classroomId !== undefined ? data.classroomId : existing.classroomId) || "").trim() ||
+          null
+        : null;
     const divisionId =
       scopeMode === "DIVISION"
         ? String((data.divisionId !== undefined ? data.divisionId : existing.divisionId) || "").trim() ||
@@ -1391,6 +1470,11 @@ export const financeService = {
 
     if (scopeMode === "GRADE" && !gradeLevelId) {
       throw Object.assign(new Error("Grade-scoped templates require a grade level"), {
+        status: 400,
+      });
+    }
+    if (scopeMode === "CLASS" && !classroomId) {
+      throw Object.assign(new Error("Class-scoped templates require a classroom"), {
         status: 400,
       });
     }
@@ -1428,6 +1512,7 @@ export const financeService = {
             : existing.description,
         scopeMode,
         gradeLevelId,
+        classroomId,
         divisionId,
         cohort,
         schoolYearKey:
@@ -1845,31 +1930,34 @@ export const financeService = {
 
   async getBillingSettings(schoolId: string) {
     const row = await prisma.schoolBillingSettings.findUnique({ where: { schoolId } });
-    return {
-      schoolId,
-      minPaymentAmount: row
-        ? roundMoney(Number(row.minPaymentAmount) || DEFAULT_MIN_PAYMENT)
-        : DEFAULT_MIN_PAYMENT,
-    };
+    return serializeBillingSettings(schoolId, row);
   },
 
-  async updateBillingSettings(schoolId: string, data: { minPaymentAmount?: number | string }) {
-    const min = roundMoney(Number(data.minPaymentAmount));
+  async updateBillingSettings(
+    schoolId: string,
+    data: { minPaymentAmount?: number | string; entranceFeesEnabled?: boolean }
+  ) {
+    const existing = await prisma.schoolBillingSettings.findUnique({ where: { schoolId } });
+    const min =
+      data.minPaymentAmount !== undefined
+        ? roundMoney(Number(data.minPaymentAmount))
+        : serializeBillingSettings(schoolId, existing).minPaymentAmount;
     if (!Number.isFinite(min) || min < 0) {
       throw Object.assign(new Error("Minimum payment must be zero or greater"), { status: 400 });
     }
     if (min > 100000) {
       throw Object.assign(new Error("Minimum payment is unreasonably large"), { status: 400 });
     }
+    const entranceFeesEnabled =
+      data.entranceFeesEnabled !== undefined
+        ? Boolean(data.entranceFeesEnabled)
+        : Boolean(existing?.entranceFeesEnabled);
     const row = await prisma.schoolBillingSettings.upsert({
       where: { schoolId },
-      create: { schoolId, minPaymentAmount: min },
-      update: { minPaymentAmount: min },
+      create: { schoolId, minPaymentAmount: min, entranceFeesEnabled },
+      update: { minPaymentAmount: min, entranceFeesEnabled },
     });
-    return {
-      schoolId,
-      minPaymentAmount: roundMoney(row.minPaymentAmount),
-    };
+    return serializeBillingSettings(schoolId, row);
   },
 
   /**

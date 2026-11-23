@@ -429,6 +429,17 @@ export const financeController = {
     }
   },
 
+  async resolveEntranceFee(req: Request, res: Response) {
+    try {
+      const result = await financeService.resolveEntranceFee(req.body);
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 500).json({
+        error: err.message || "Failed to resolve entrance fee",
+      });
+    }
+  },
+
   async createFeeInternal(req: Request, res: Response) {
     try {
       const fee = await financeService.createFeeInternal(req.body);

@@ -8,9 +8,11 @@ import {
   normalizeCohort,
   normalizeScopeMode,
   parseScopeSnapshot,
+  pickEntranceFeeTemplate,
   scopeSnapshotJson,
   staleScopeMismatchMessage,
 } from "../services/finance/src/lib/feeScope.ts";
+import { serializeBillingSettings } from "../services/finance/src/lib/feePaymentMath.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -29,6 +31,7 @@ console.log("=========================================\n");
 assert(normalizeScopeMode(undefined) === "SCHOOL", "default scope SCHOOL");
 assert(normalizeScopeMode("grade") === "GRADE", "normalize GRADE");
 assert(normalizeScopeMode("DIVISION") === "DIVISION", "normalize DIVISION");
+assert(normalizeScopeMode("class") === "CLASS", "normalize CLASS");
 assert(normalizeCohort(null) === "ALL", "default cohort ALL");
 assert(normalizeCohort("new") === "NEW", "normalize NEW");
 
@@ -104,6 +107,42 @@ assert(
   "division mismatch rejected"
 );
 
+const class8A = {
+  scopeMode: "CLASS" as const,
+  classroomId: "c8a",
+  cohort: "ALL" as const,
+  name: "Grade 8A",
+};
+
+assert(
+  feeScopeMismatchMessage(class8A, {
+    id: "s9",
+    classroomId: "c8a",
+    feeCohort: "RETURNING",
+  }) === null,
+  "class match"
+);
+
+assert(
+  !!feeScopeMismatchMessage(class8A, {
+    id: "s10",
+    classroomId: "c8b",
+  }),
+  "class mismatch rejected"
+);
+
+assert(
+  !!feeScopeMismatchMessage(class8A, {
+    id: "s11",
+    feeCohort: "NEW",
+  }),
+  "missing classroom rejected"
+);
+
+const classSnapshot = parseScopeSnapshot(scopeSnapshotJson(class8A));
+assert(classSnapshot?.scopeMode === "CLASS", "snapshot round-trip class mode");
+assert(classSnapshot?.classroomId === "c8a", "snapshot round-trip classroom");
+
 try {
   assertFeeScopeEligible(grade8New, {
     id: "s7",
@@ -128,6 +167,89 @@ assert(
   }),
   "stale scope detects grade change"
 );
+
+const entranceTemplates = [
+  { id: "school", scopeMode: "SCHOOL", cohort: "ALL" },
+  { id: "division", scopeMode: "DIVISION", divisionId: "high", cohort: "ALL" },
+  { id: "grade", scopeMode: "GRADE", gradeLevelId: "g8", cohort: "ALL" },
+  { id: "class", scopeMode: "CLASS", classroomId: "c8a", cohort: "ALL" },
+  { id: "archived-class", scopeMode: "CLASS", classroomId: "c8a", cohort: "ALL", active: false },
+];
+
+assert(
+  pickEntranceFeeTemplate(entranceTemplates, {
+    classroomId: "c8a",
+    gradeLevelId: "g8",
+    divisionId: "high",
+    cohort: "NEW",
+  })?.id === "class",
+  "CLASS scope wins entrance precedence"
+);
+assert(
+  pickEntranceFeeTemplate(entranceTemplates, {
+    classroomId: "other",
+    gradeLevelId: "g8",
+    divisionId: "high",
+  })?.id === "grade",
+  "GRADE scope wins when CLASS does not match"
+);
+assert(
+  pickEntranceFeeTemplate(entranceTemplates, {
+    gradeLevelId: "other",
+    divisionId: "high",
+  })?.id === "division",
+  "DIVISION scope wins when GRADE does not match"
+);
+assert(
+  pickEntranceFeeTemplate(entranceTemplates, { divisionId: "other" })?.id === "school",
+  "SCHOOL scope is the final fallback"
+);
+assert(
+  pickEntranceFeeTemplate(
+    [{ id: "archived", scopeMode: "CLASS", classroomId: "c8a", cohort: "ALL", active: false }],
+    { classroomId: "c8a" }
+  ) === null,
+  "archived templates are ignored"
+);
+
+const cohortTemplates = [
+  { id: "general", scopeMode: "CLASS", classroomId: "c8a", cohort: "ALL" },
+  { id: "new", scopeMode: "CLASS", classroomId: "c8a", cohort: "NEW" },
+  { id: "returning", scopeMode: "CLASS", classroomId: "c8a", cohort: "RETURNING" },
+];
+
+assert(
+  pickEntranceFeeTemplate(cohortTemplates, { classroomId: "c8a", cohort: "new" })?.id === "new",
+  "cohort-specific template preferred"
+);
+assert(
+  pickEntranceFeeTemplate(cohortTemplates, {
+    classroomId: "c8a",
+    cohort: "returning",
+  })?.id === "returning",
+  "returning cohort template preferred"
+);
+assert(
+  pickEntranceFeeTemplate(
+    [
+      { id: "general", scopeMode: "CLASS", classroomId: "c8a", cohort: "ALL" },
+      { id: "new", scopeMode: "CLASS", classroomId: "c8a", cohort: "NEW" },
+    ],
+    { classroomId: "c8a", cohort: "unknown" }
+  )?.id === "general",
+  "ALL-cohort template preferred when cohort is unknown"
+);
+
+const defaultSettings = serializeBillingSettings("s1", null);
+assert(defaultSettings.entranceFeesEnabled === false, "entrance fees default to disabled");
+assert(defaultSettings.minPaymentAmount === 1, "default minimum payment serialized");
+
+const enabledSettings = serializeBillingSettings("s1", {
+  minPaymentAmount: 2.5,
+  entranceFeesEnabled: true,
+});
+assert(enabledSettings.entranceFeesEnabled === true, "entrance fees switch serialized");
+assert(enabledSettings.minPaymentAmount === 2.5, "minimum payment serialized");
 
 console.log("\n=========================================");
 if (failed > 0) {

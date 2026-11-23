@@ -13,8 +13,9 @@ export const feeCreateSchema = z.object({
   applicationId: z.string().optional(),
   templateId: z.string().optional(),
   schoolYearKey: z.string().max(32).optional().nullable(),
-  scopeMode: z.enum(["SCHOOL", "GRADE", "DIVISION"]).optional(),
+  scopeMode: z.enum(["SCHOOL", "GRADE", "DIVISION", "CLASS"]).optional(),
   gradeLevelId: z.string().optional().nullable(),
+  classroomId: z.string().optional().nullable(),
   divisionId: z.string().optional().nullable(),
   cohort: z.enum(["ALL", "NEW", "RETURNING"]).optional(),
   discountPercent: z.coerce.number().min(0).max(100).optional(),
@@ -35,8 +36,9 @@ export const feeTemplateSchema = z.object({
   type: z.string().min(1).max(40),
   amount: z.coerce.number().positive(),
   description: z.string().max(500).optional(),
-  scopeMode: z.enum(["SCHOOL", "GRADE", "DIVISION"]).optional(),
+  scopeMode: z.enum(["SCHOOL", "GRADE", "DIVISION", "CLASS"]).optional(),
   gradeLevelId: z.string().optional().nullable(),
+  classroomId: z.string().optional().nullable(),
   divisionId: z.string().optional().nullable(),
   cohort: z.enum(["ALL", "NEW", "RETURNING"]).optional(),
   schoolYearKey: z.string().max(32).optional().nullable(),
@@ -58,4 +60,22 @@ export const feeCollectSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
   payerUserId: z.string().optional().nullable(),
   confirmStale: z.boolean().optional(),
+});
+
+export const billingSettingsSchema = z
+  .object({
+    minPaymentAmount: z.coerce.number().min(0).max(100000).optional(),
+    entranceFeesEnabled: z.boolean().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one billing setting is required",
+  });
+
+export const entranceFeeResolveSchema = z.object({
+  schoolId: z.string().min(1),
+  applicationId: z.string().min(1),
+  gradeLevelId: z.string().optional().nullable(),
+  classroomId: z.string().optional().nullable(),
+  divisionId: z.string().optional().nullable(),
+  cohort: z.string().optional().nullable(),
 });

@@ -37,6 +37,7 @@
     "test:fee-partial": "tsx tests/fee-partial-payments.test.ts",
     "test:fee-invoice-amounts": "tsx tests/fee-invoice-amounts.test.ts",
     "test:admission-funnel": "tsx tests/admission-funnel.test.ts",
+    "test:admission-document-eligibility": "tsx tests/admission-document-eligibility.test.ts",
     "test:admission-review-stage": "tsx tests/admission-review-stage.test.ts",
     "test:admission-review-drawer": "tsx tests/admission-review-drawer.test.ts",
     "test:enroll-approval-path": "tsx tests/enroll-approval-path.test.ts",

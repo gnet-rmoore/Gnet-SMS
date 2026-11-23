@@ -95,6 +95,8 @@ model SchoolBillingSettings {
   schoolId          String   @id
   /// Minimum accepted installment / portal payment (USD). Full remaining balance always allowed even if below min.
   minPaymentAmount  Float    @default(1)
+  /// Global switch for Lifecycle-managed entrance fees (Finance-owned).
+  entranceFeesEnabled Boolean @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -109,9 +111,10 @@ model FeeTemplate {
   type          String
   amount        Float
   description   String   @default("")
-  /// SCHOOL | GRADE | DIVISION
+  /// SCHOOL | GRADE | DIVISION | CLASS
   scopeMode     String   @default("SCHOOL")
   gradeLevelId  String?
+  classroomId   String?
   divisionId    String?
   /// ALL | NEW | RETURNING
   cohort        String   @default("ALL")

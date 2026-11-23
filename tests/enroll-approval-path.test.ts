@@ -2,7 +2,10 @@
  * Server-owned enroll approval path (Lifecycle state machine).
  * Run: npx tsx tests/enroll-approval-path.test.ts
  */
-import { resolveApprovalPath } from "../services/lifecycle/src/domain/admissionStates.ts";
+import {
+  canCompleteEntrance,
+  resolveApprovalPath,
+} from "../services/lifecycle/src/domain/admissionStates.ts";
 
 let failed = 0;
 function assert(cond: boolean, msg: string) {
@@ -36,6 +39,14 @@ assert(resolveApprovalPath("ENROLLED") === null, "ENROLLED → null (terminal)")
 
 // Unknown status → null (nothing we can safely do server-side).
 assert(resolveApprovalPath("SOMETHING_ELSE") === null, "unknown → null");
+
+// Entrance results can be recorded from review onward, including before approval.
+for (const status of ["UNDER_REVIEW", "WAITLISTED", "APPROVED", "FEE_PENDING", "DOCS_PENDING", "ENROLLED"]) {
+  assert(canCompleteEntrance(status) === true, `${status} accepts entrance completion`);
+}
+for (const status of ["PENDING", "REJECTED", "WITHDRAWN", "SOMETHING_ELSE"]) {
+  assert(canCompleteEntrance(status) === false, `${status} rejects entrance completion`);
+}
 
 console.log("\n=========================================");
 if (failed > 0) {

@@ -191,8 +191,8 @@ assert(typeof review?.stage?.saveAndClose === "string", "en admissions.review.st
 assert(typeof review?.stage?.feeNotRequired === "string", "en admissions.review.stage.feeNotRequired present");
 assert(typeof review?.stage?.submitted?.primary === "string", "en admissions.review.stage.submitted.primary present");
 assert(typeof review?.stage?.review?.returnToReview === "string", "en admissions.review.stage.review.returnToReview present");
-assert(typeof review?.stage?.approved?.confirmClass === "string", "en admissions.review.stage.approved.confirmClass present");
-assert(typeof review?.stage?.enrolled?.saveDocuments === "string", "en admissions.review.stage.enrolled.saveDocuments present");
+assert(typeof review?.stage?.approved?.approve === "string", "en admissions.review.stage.approved.approve present");
+assert(typeof review?.stage?.enrolled?.confirmPlacement === "string", "en admissions.review.stage.enrolled.confirmPlacement present");
 assert(typeof review?.blocker?.FEE_REQUIRED === "string", "en admissions.review.blocker.FEE_REQUIRED present");
 assert(typeof review?.blocker?.CLASSROOM_REQUIRED === "string", "en admissions.review.blocker.CLASSROOM_REQUIRED present");
 assert(typeof review?.blocker?.fallback === "string", "en admissions.review.blocker.fallback present");

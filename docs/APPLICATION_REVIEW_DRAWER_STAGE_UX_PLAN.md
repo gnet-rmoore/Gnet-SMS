@@ -1,10 +1,21 @@
 # Application Review Drawer — Stage-Focused UX/UI Implementation Plan
 
-> Status: Implemented (automated contracts pass; manual smoke pending)
+> Status: Implemented, then corrected for stage ownership (automated contracts pass; manual smoke pending)
 > Date: 2026-11-23
 > Goal: one stage view at a time, previous stages browsable read-only, at most one primary action.
-> Scope: registrar application review drawer only.
-> Non-goals: no server state-machine changes, no new route, no payment automation, no audit-log rebuild.
+> Scope: registrar application review drawer, lifecycle admission gates, and finance entrance-fee automation.
+> Non-goals: no audit-log rebuild.
+>
+> **Current correction (authoritative over older sections below):** the revised domain order is
+> `Submitted → Review → Entrance → Approved → Enrolled`. Entrance is recorded before approval.
+> Documents are collected in **Approved** after approval. **Enrolled** only confirms class
+> placement, prefilled from the public application's `classroomId` and editable by the registrar.
+> Registrar no longer creates or waives entrance fees. Finance owns entrance-fee templates by
+> `CLASS` / `GRADE` / `DIVISION` / `SCHOOL`, toggled by `entranceFeesEnabled`, and applies them
+> automatically through `POST /api/internal/entrance-fees/resolve`. The fee is shown as read-only
+> context in Entrance and Approved. Older references to a registrar `Entrance fee` / `FEE` stage,
+> `confirmClass`, `Enrolled` substeps, and registrar fee amount/waive controls are historical and
+> no longer describe the shipped UI.
 
 ---
 
@@ -24,13 +35,13 @@ The registrar review drawer currently renders almost everything at once:
 
 The requested redesign is: **separate the stages into distinct views inside a persistent drawer shell, show only the fields and action needed for the current stage, allow browsing completed stages in read-only mode, and narrow the drawer to a professional working width.** The drawer must behave like a small stage workbench, not one long form with every section stacked together.
 
-Note: the trailing `5` in `SubmittedReviewApprovedEntrance fee5Enrolled` is treated as a typo. This plan uses five stages:
+The original plan used five stages with `Entrance fee` before `Enrolled`. After the domain correction, the implemented five stages are:
 
 1. Submitted
 2. Review
-3. Approved
-4. Entrance fee
-5. Enrolled
+3. Entrance
+4. Approved (documents)
+5. Enrolled (class placement confirmation)
 
 ---
 
@@ -784,6 +795,10 @@ Known baseline failures to preserve, not expand:
 18. Completed steps in the stage rail are clickable and open a read-only history view; `Enrolled` is never offered as a history target.
 19. History mode renders zero `input`, `select`, `textarea`, upload controls, save buttons, and status actions.
 20. History mode shows a distinct `Read-only history` banner with `Return to current stage`; the footer shows only `Close`.
+21. After the domain correction, the active stage order is `Submitted → Review → Entrance → Approved → Enrolled`; no registrar `FEE`/`ENTRANCE_FEE` stage remains.
+22. Entrance result and notes are recorded in Entrance before approval; documents are collected only in Approved.
+23. Enrolled exposes only editable class placement, prefilled from `selectedApp.classroomId`.
+24. Entrance fees are finance-owned and applied automatically; registrar shows read-only fee status only.
 21. Future steps are locked labels, are not clickable, and render no fields.
 22. Browsing history does not mutate or clear live draft/form state, and history shows only `StageSnapshot` values, never unsaved edits.
 23. After a successful mutation, the drawer recaptures the snapshot, returns to the new active stage, and clears the history selection.
