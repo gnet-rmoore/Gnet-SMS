@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
@@ -20,6 +20,8 @@ const REGISTRY_CHARCOAL =
   "bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 shadow-sm";
 const REGISTRY_PILL_ACTION =
   "inline-flex items-center gap-2 px-3 py-2 min-h-0 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100 hover:bg-indigo-100";
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export type ApplicationReviewModalProps = {
   classrooms?: any;
@@ -95,6 +97,45 @@ export function ApplicationReviewModal({
   } | null>(null);
   const [entranceResult, setEntranceResult] = useState("SAT");
   const [entranceNotes, setEntranceNotes] = useState("");
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const closeRequestRef = useRef<() => void>(() => undefined);
+  closeRequestRef.current = () => setShowAppReviewModal(false);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = requestAnimationFrame(() => closeRef.current?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeRequestRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const nodes = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (node) => node.offsetParent !== null || node === document.activeElement
+      );
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, []);
 
   useEffect(() => {
     const id = selectedApp?.id;
@@ -127,10 +168,21 @@ export function ApplicationReviewModal({
   }));
 
   return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowAppReviewModal(false)} />
-              <div className="relative w-full max-w-4xl bg-white rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col max-h-[92vh]">
-                <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-950 to-slate-900 text-white flex-shrink-0">
+    <div className="fixed inset-0 z-[100] flex items-stretch justify-end">
+      <button
+        type="button"
+        aria-label={t("common:close")}
+        onClick={() => setShowAppReviewModal(false)}
+        className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-review-drawer-title"
+        className="relative z-10 flex h-[100dvh] w-full max-w-[1040px] flex-col overflow-hidden border-l border-slate-200 bg-white shadow-[-20px_0_60px_rgb(15,23,42,0.18)]"
+      >
+        <div className="flex shrink-0 items-start justify-between gap-5 border-b border-slate-800 bg-gradient-to-br from-slate-950 to-slate-900 px-5 py-5 text-white sm:px-8 sm:py-6">
                   <div>
                     <span className="text-xs font-black tracking-widest uppercase bg-white/10 px-2 py-0.5 rounded text-white mr-2">
                       {t("admissions.review.hubBadge")}
@@ -158,14 +210,16 @@ export function ApplicationReviewModal({
                         </span>
                       );
                     })()}
-                    <h3 className="font-extrabold text-lg mt-1">
+                    <h3 id="application-review-drawer-title" className="mt-1 text-lg font-extrabold tracking-tight">
                       {t("admissions.review.evaluating", { name: selectedApp.studentName })}
                     </h3>
                   </div>
                   <Button
+                    ref={closeRef}
                     type="button"
                     variant="ghost"
                     size="icon"
+                    aria-label={t("common:close")}
                     onClick={() => setShowAppReviewModal(false)}
                     className="text-white hover:bg-white/10"
                   >
@@ -173,7 +227,7 @@ export function ApplicationReviewModal({
                   </Button>
                 </div>
 
-                <div className="px-6 pt-5 pb-1 bg-white shrink-0 border-b border-slate-100">
+                <div className="shrink-0 border-b border-slate-100 bg-white px-5 pb-1 pt-5 sm:px-8">
                   <OnboardingStepper
                     status={selectedApp.status}
                     nextAction={nextAction}
@@ -181,7 +235,7 @@ export function ApplicationReviewModal({
                   />
                 </div>
 
-                <div className="p-6 space-y-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid flex-1 grid-cols-1 gap-6 overflow-y-auto overscroll-contain bg-white p-5 md:grid-cols-2 md:gap-8 md:p-7">
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.demographicsTitle")}</h4>
@@ -582,26 +636,26 @@ export function ApplicationReviewModal({
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  <div className="col-span-full border-t border-slate-100 pt-4 flex justify-between items-center flex-shrink-0">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      onClick={() => handleSaveReview()}
-                      className={`text-xs ${REGISTRY_CHARCOAL}`}
-                      disabled={submitting}
-                    >
-                      {t("admissions.review.saveWithoutStatus")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setShowAppReviewModal(false)}
-                      className="text-xs text-slate-500"
-                    >
-                      {t("common:close")}
-                    </Button>
-                  </div>
+                <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-5 py-4 sm:px-8">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => handleSaveReview()}
+                    className={`text-xs ${REGISTRY_CHARCOAL}`}
+                    disabled={submitting}
+                  >
+                    {t("admissions.review.saveWithoutStatus")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowAppReviewModal(false)}
+                    className="text-xs text-slate-500"
+                  >
+                    {t("common:close")}
+                  </Button>
                 </div>
               </div>
             </div>

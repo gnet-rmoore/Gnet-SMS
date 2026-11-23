@@ -67,6 +67,18 @@ assert(
   "enrollment drawer is full-screen on phones and scrolls independently"
 );
 
+const reviewDrawer = fs.readFileSync(
+  path.join(root, "src/features/registrar/components/ApplicationReviewModal.tsx"),
+  "utf8"
+);
+assert(
+  reviewDrawer.includes('role="dialog"') &&
+    reviewDrawer.includes("h-[100dvh]") &&
+    reviewDrawer.includes("w-full max-w-[1040px]") &&
+    reviewDrawer.includes("overflow-y-auto overscroll-contain"),
+  "application review is a full-height right-side drawer"
+);
+
 // Soft drift: interactive files should not introduce bare grid-cols-2 without grid-cols-1
 const allow = /(Template|ReportCard|GradeSheet|gradesheets|Pdf\.tsx$|print|report-cards|RichTextEditor|PageSkeleton|CalendarMainGrid|WeekStrip)/i;
 // Frozen reviewed count of bare grid-cols-2..6 still awaiting a mobile

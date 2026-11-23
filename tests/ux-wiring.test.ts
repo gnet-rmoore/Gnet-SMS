@@ -76,8 +76,12 @@ assert(
 );
 assert(
   applicationReviewModal.includes("documentEligibility?.eligible") &&
-    applicationReviewModal.includes("Record entrance complete"),
-  "registrar application review gates documents and exposes entrance completion"
+    applicationReviewModal.includes("Record entrance complete") &&
+    applicationReviewModal.includes('role="dialog"') &&
+    applicationReviewModal.includes('aria-modal="true"') &&
+    applicationReviewModal.includes("h-[100dvh]") &&
+    applicationReviewModal.includes("max-w-[1040px]"),
+  "registrar application review uses a full-height drawer and gates documents/entrance completion"
 );
 assert(
   registrarApi.includes("/entrance-complete"),
