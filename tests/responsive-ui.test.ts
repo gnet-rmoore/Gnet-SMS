@@ -68,14 +68,14 @@ assert(
 );
 
 const reviewDrawer = fs.readFileSync(
-  path.join(root, "src/features/registrar/components/ApplicationReviewModal.tsx"),
+  path.join(root, "src/features/registrar/components/review/ReviewDrawerShell.tsx"),
   "utf8"
 );
 assert(
   reviewDrawer.includes('role="dialog"') &&
     reviewDrawer.includes("h-[100dvh]") &&
-    reviewDrawer.includes("w-full max-w-[1040px]") &&
-    reviewDrawer.includes("overflow-y-auto overscroll-contain"),
+    reviewDrawer.includes("w-full max-w-[720px] xl:max-w-[880px]") &&
+    reviewDrawer.includes("min-h-0 flex-1 overflow-y-auto overscroll-contain"),
   "application review is a full-height right-side drawer"
 );
 

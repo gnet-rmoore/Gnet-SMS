@@ -182,6 +182,30 @@ for (const code of ["fr", "ar", "es", "de", "zh-Hans", "hi"] as const) {
   assert(typeof apiDocs?.modeProduction === "string", `${code} apiDocs.modeProduction label present`);
 }
 
+const review = (enResources.pages as any).admissions?.review;
+assert(typeof review?.stage?.stepOf === "string", "en admissions.review.stage.stepOf present");
+assert(typeof review?.stage?.historyTitle === "string", "en admissions.review.stage.historyTitle present");
+assert(typeof review?.stage?.returnToCurrent === "string", "en admissions.review.stage.returnToCurrent present");
+assert(typeof review?.stage?.browsePrevious === "string", "en admissions.review.stage.browsePrevious present");
+assert(typeof review?.stage?.saveAndClose === "string", "en admissions.review.stage.saveAndClose present");
+assert(typeof review?.stage?.feeNotRequired === "string", "en admissions.review.stage.feeNotRequired present");
+assert(typeof review?.stage?.submitted?.primary === "string", "en admissions.review.stage.submitted.primary present");
+assert(typeof review?.stage?.review?.returnToReview === "string", "en admissions.review.stage.review.returnToReview present");
+assert(typeof review?.stage?.approved?.confirmClass === "string", "en admissions.review.stage.approved.confirmClass present");
+assert(typeof review?.stage?.enrolled?.saveDocuments === "string", "en admissions.review.stage.enrolled.saveDocuments present");
+assert(typeof review?.blocker?.FEE_REQUIRED === "string", "en admissions.review.blocker.FEE_REQUIRED present");
+assert(typeof review?.blocker?.CLASSROOM_REQUIRED === "string", "en admissions.review.blocker.CLASSROOM_REQUIRED present");
+assert(typeof review?.blocker?.fallback === "string", "en admissions.review.blocker.fallback present");
+for (const reason of ["NOT_ENROLLED", "ENTRANCE_NOT_COMPLETED", "STUDENT_RECORD_MISSING", "STUDENT_INACTIVE", "STUDENT_SCHOOL_MISMATCH", "fallback"]) {
+  assert(typeof review?.documentReason?.[reason] === "string", `en admissions.review.documentReason.${reason} present`);
+}
+assert(typeof review?.confirm?.reject?.confirm === "string", "en admissions.review.confirm.reject.confirm present");
+assert(typeof review?.confirm?.dirtyClose?.save === "string", "en admissions.review.confirm.dirtyClose.save present");
+assert(typeof review?.confirm?.dirtyClose?.discard === "string", "en admissions.review.confirm.dirtyClose.discard present");
+assert(typeof review?.confirm?.dirtyClose?.cancel === "string", "en admissions.review.confirm.dirtyClose.cancel present");
+assert(typeof review?.entranceCompletionTitle === "string", "en admissions.review.entranceCompletionTitle present");
+assert(typeof review?.markEntranceComplete === "string", "en admissions.review.markEntranceComplete present");
+
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`);
   process.exit(1);

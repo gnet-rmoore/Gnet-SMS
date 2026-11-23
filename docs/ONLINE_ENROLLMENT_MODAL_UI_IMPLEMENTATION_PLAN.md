@@ -1,5 +1,7 @@
 # New Online Enrollment Review Modal — UI/UX Implementation Plan
 
+> Superseded by `docs/APPLICATION_REVIEW_DRAWER_STAGE_UX_PLAN.md` (stage-separated review drawer). Kept for historical context only.
+
 ## 1. Goal
 
 Modernize the Registrar's online enrollment review experience so it looks and behaves like a polished, professional back-office workspace:

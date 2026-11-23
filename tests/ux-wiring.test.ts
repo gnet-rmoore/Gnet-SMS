@@ -74,14 +74,19 @@ assert(
   editStudent.includes("gradeLevelsLoading") && editStudent.includes("disabled={gradeLevelsLoading}"),
   "registrar edit-student grade select has a loading/disabled state"
 );
+const reviewShell = read("src/features/registrar/components/review/ReviewDrawerShell.tsx");
+const enrolledStage = read("src/features/registrar/components/review/stages/EnrolledStage.tsx");
 assert(
-  applicationReviewModal.includes("documentEligibility?.eligible") &&
-    applicationReviewModal.includes("Record entrance complete") &&
-    applicationReviewModal.includes('role="dialog"') &&
-    applicationReviewModal.includes('aria-modal="true"') &&
-    applicationReviewModal.includes("h-[100dvh]") &&
-    applicationReviewModal.includes("max-w-[1040px]"),
-  "registrar application review uses a full-height drawer and gates documents/entrance completion"
+  enrolledStage.includes("documentEligibility") &&
+    enrolledStage.includes("admissions.review.entranceCompletionTitle") &&
+    reviewShell.includes('role="dialog"') &&
+    reviewShell.includes('aria-modal="true"') &&
+    reviewShell.includes("h-[100dvh]") &&
+    reviewShell.includes("max-w-[720px]") &&
+    reviewShell.includes("xl:max-w-[880px]") &&
+    applicationReviewModal.includes("StageFrame") &&
+    applicationReviewModal.includes("onStageSelect"),
+  "registrar application review uses a full-height stage drawer and gates documents/entrance completion"
 );
 assert(
   registrarApi.includes("/entrance-complete"),
@@ -94,11 +99,13 @@ assert(
     newEnrollmentDrawer.includes("AdmissionFormWizard"),
   "direct admission uses a wide full-height enrollment drawer"
 );
+const drawerA11y = read("src/hooks/useDrawerA11y.ts");
 assert(
   newEnrollmentDrawer.includes("role=\"dialog\"") &&
     newEnrollmentDrawer.includes("aria-modal=\"true\"") &&
-    newEnrollmentDrawer.includes("event.key === \"Escape\"") &&
-    newEnrollmentDrawer.includes("FOCUSABLE"),
+    newEnrollmentDrawer.includes("useDrawerA11y") &&
+    drawerA11y.includes("event.key === \"Escape\"") &&
+    drawerA11y.includes("FOCUSABLE"),
   "enrollment drawer traps focus and closes on Escape"
 );
 assert(

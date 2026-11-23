@@ -13,6 +13,7 @@ import { Button } from "../../../components/ui";
 import { isAdmissionFormEmpty } from "../../admission-form";
 import { confirmAction } from "../../../lib/swal";
 import { cn } from "../../../lib/cn";
+import { useDrawerA11y } from "../../../hooks/useDrawerA11y";
 
 export type NewEnrollmentDrawerProps = {
   gradeLevels: any[];
@@ -25,9 +26,6 @@ export type NewEnrollmentDrawerProps = {
   setManualAdmissionForm: (v: ManualAdmissionForm) => void;
   submitting: boolean;
 };
-
-const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 const PREFILL_FIELDS: Array<keyof ManualAdmissionForm> = [
   "firstName",
@@ -106,42 +104,13 @@ export function NewEnrollmentDrawer({
     setDrawerOpen(true);
   };
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const focusTarget = focusSearchRef.current ? searchRef.current : closeRef.current;
-    requestAnimationFrame(() => focusTarget?.focus());
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        void requestCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const nodes = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (node) => node.offsetParent !== null || node === document.activeElement
-      );
-      if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-      restoreTriggerRef.current?.focus();
-    };
-  }, [drawerOpen]);
+  useDrawerA11y({
+    open: drawerOpen,
+    panelRef,
+    initialFocusRef: focusSearchRef.current ? searchRef : closeRef,
+    restoreTriggerRef,
+    onRequestClose: () => { void requestCloseRef.current(); },
+  });
 
   useEffect(() => {
     if (wasSubmitting.current && !submitting && !form.existingStudentId && isAdmissionFormEmpty(form)) {

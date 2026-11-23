@@ -228,8 +228,9 @@ export function usePageActions(deps: PageActionsDeps) {
     }));
   };
 
-  const handleSaveReview = async (updatedStatus?: string) => {
+  const handleSaveReview = async (updatedStatus?: string, options?: { close?: boolean }) => {
     if (!selectedApp) return;
+    const shouldClose = options?.close !== false;
     setSubmitting(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -289,7 +290,8 @@ export function usePageActions(deps: PageActionsDeps) {
           : "";
         setSuccessMessage(`${t("admissions.toast.enrolled")}${classHint}`);
         setSelectedClassroomId("");
-        setShowAppReviewModal(false);
+        setSelectedApp((prev: any) => (prev ? { ...prev, status: "ENROLLED" } : prev));
+        if (shouldClose) setShowAppReviewModal(false);
         fetchData();
         return;
       }
@@ -301,7 +303,8 @@ export function usePageActions(deps: PageActionsDeps) {
       });
       setSuccessMessage(t("admissions.toast.candidateUpdated"));
       setSelectedClassroomId("");
-      setShowAppReviewModal(false);
+      setSelectedApp((prev: any) => (prev ? { ...prev, status: newStatus } : prev));
+      if (shouldClose) setShowAppReviewModal(false);
       fetchData();
     } catch (error) {
       setErrorMessage(apiErrorMessage(error, t("admissions.toast.reviewSaveFailed")));

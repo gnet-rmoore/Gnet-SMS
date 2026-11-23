@@ -1,27 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  CheckCircle2,
-  Clock,
-  X,
-  Phone,
-  Mail,
-  MapPin,
-  UserCheck,
-  Upload,
-} from "lucide-react";
-import { format } from "date-fns";
 import { Button } from "../../../components/ui";
-import { AdmissionApplicantPhoto } from "./AdmissionApplicantPhoto";
-import { OnboardingStepper } from "../../../components/OnboardingStepper";
+import { useDrawerA11y } from "../../../hooks/useDrawerA11y";
 import { registrarApi } from "../api";
-
-const REGISTRY_CHARCOAL =
-  "bg-slate-900 hover:bg-slate-800 text-white border border-slate-900 shadow-sm";
-const REGISTRY_PILL_ACTION =
-  "inline-flex items-center gap-2 px-3 py-2 min-h-0 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100 hover:bg-indigo-100";
-const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+import {
+  canBrowseStage,
+  getCompletedStages,
+  resolveAdmissionStage,
+  type AdmissionStage,
+  type BrowsableStage,
+  type NextActionState,
+} from "../lib/admissionStage";
+import { createSnapshot, snapshotsEqual, useReviewStageNavigation } from "../hooks/useReviewStageNavigation";
+import { ReviewDrawerShell } from "./review/ReviewDrawerShell";
+import { StageRail } from "./review/StageRail";
+import { StageHistoryBanner } from "./review/StageHistoryBanner";
+import { BrowsePreviousMenu } from "./review/BrowsePreviousMenu";
+import { StageFrame } from "./review/StageFrame";
 
 export type ApplicationReviewModalProps = {
   classrooms?: any;
@@ -52,612 +47,246 @@ export type ApplicationReviewModalProps = {
   [key: string]: any;
 };
 
-/** Presentational extract from Page.tsx lines 2298-2522. */
-export function ApplicationReviewModal({
-  classrooms,
-  docsChecklist,
-  evaluationData,
-  handleSaveReview,
-  handleToggleDoc,
-  selectedApp,
-  selectedClassroomId,
-  setEvaluationData,
-  setSelectedClassroomId,
-  setShowAppReviewModal,
-  submitting,
-  handleUploadAdmissionDoc,
-  handleReviewAdmissionDoc,
-  uploadingDoc,
-  waiveFee = false,
-  setWaiveFee,
-  waiveDocs = false,
-  setWaiveDocs,
-  entranceFeeAmount = "",
-  setEntranceFeeAmount,
-  handleCreateEntranceFee,
-  handleCompleteEntrance,
-  students = [],
-  onPhotoError,
-  onPhotoSuccess,
-}: ApplicationReviewModalProps) {
+export function ApplicationReviewModal(props: ApplicationReviewModalProps) {
+  const {
+    classrooms,
+    docsChecklist,
+    evaluationData,
+    handleSaveReview,
+    handleToggleDoc,
+    selectedApp,
+    selectedClassroomId,
+    setEvaluationData,
+    setSelectedClassroomId,
+    setShowAppReviewModal,
+    submitting,
+    handleUploadAdmissionDoc,
+    handleReviewAdmissionDoc,
+    uploadingDoc,
+    waiveFee = false,
+    setWaiveFee,
+    waiveDocs = false,
+    setWaiveDocs,
+    entranceFeeAmount = "",
+    setEntranceFeeAmount,
+    handleCreateEntranceFee,
+    handleCompleteEntrance,
+    students = [],
+    onPhotoError,
+    onPhotoSuccess,
+  } = props;
   const { t } = useTranslation(["pages", "common"]);
-  const linkedUserId =
-    selectedApp?.studentUserId || evaluationData?.existingStudentUserId || null;
-  const linkedStudent = linkedUserId
-    ? students.find((s) => s.id === linkedUserId)
-    : undefined;
-  const fileDocs = Array.isArray(selectedApp?.admissionDocuments)
-    ? selectedApp.admissionDocuments
-    : [];
-  const [nextAction, setNextAction] = useState<string | null>(null);
-  const [blockedBy, setBlockedBy] = useState<string[]>([]);
-  const [documentEligibility, setDocumentEligibility] = useState<{
-    eligible: boolean;
-    reason?: string;
-  } | null>(null);
+  const [nextActionState, setNextActionState] = useState<NextActionState>("loading");
+  const [nextActionData, setNextActionData] = useState<{ nextAction: string | null; blockedBy: string[]; documentEligibility: { eligible: boolean; reason?: string } | null }>({ nextAction: null, blockedBy: [], documentEligibility: null });
   const [entranceResult, setEntranceResult] = useState("SAT");
   const [entranceNotes, setEntranceNotes] = useState("");
+  const [confirm, setConfirm] = useState<null | "reject" | "dirty">(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const closeRequestRef = useRef<() => void>(() => undefined);
-  closeRequestRef.current = () => setShowAppReviewModal(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
+  const rejectRef = useRef<HTMLButtonElement>(null);
+  const confirmDialogRef = useRef<HTMLDivElement>(null);
+  const refreshRef = useRef<() => void>(() => undefined);
 
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const frame = requestAnimationFrame(() => closeRef.current?.focus());
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeRequestRef.current();
-        return;
-      }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const nodes = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (node) => node.offsetParent !== null || node === document.activeElement
-      );
-      if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      cancelAnimationFrame(frame);
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-      previouslyFocused?.focus();
-    };
-  }, []);
+  const entranceStatus = selectedApp?.entranceStatus || (selectedApp?.entranceCompletedAt ? "COMPLETED" : "PENDING");
+  const stageView = useMemo(() => {
+    if (nextActionState !== "loaded") return null;
+    return resolveAdmissionStage({
+      status: selectedApp?.status,
+      nextAction: nextActionData.nextAction,
+      blockedBy: nextActionData.blockedBy,
+      entranceStatus,
+      documentEligibility: nextActionData.documentEligibility,
+      entranceFeeAmount,
+    });
+  }, [nextActionState, nextActionData, selectedApp?.status, entranceStatus, entranceFeeAmount]);
+  const activeStage: AdmissionStage = stageView?.stage || "SUBMITTED";
+  const nav = useReviewStageNavigation(activeStage);
+  const completedStages = getCompletedStages(activeStage);
 
-  useEffect(() => {
+  const liveSnapshot = useMemo(() => createSnapshot({
+    selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs,
+    nextAction: nextActionData as any, entranceResult, entranceNotes,
+  }), [selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes]);
+  const dirty = !snapshotsEqual(liveSnapshot, nav.snapshot);
+
+  const refreshNextAction = useCallback(async () => {
     const id = selectedApp?.id;
     if (!id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await registrarApi.getNextAction(id);
-        if (!cancelled) {
-          setNextAction(data?.nextAction || null);
-          setBlockedBy(Array.isArray(data?.blockedBy) ? data.blockedBy : []);
-          setDocumentEligibility(data?.documentEligibility || null);
-        }
-      } catch {
-        if (!cancelled) {
-          setNextAction(null);
-          setBlockedBy([]);
-          setDocumentEligibility(null);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedApp?.id, selectedApp?.entranceCompletedAt, selectedApp?.status]);
+    setNextActionState("loading");
+    try {
+      const data = await registrarApi.getNextAction(id);
+      setNextActionData({ nextAction: data?.nextAction || null, blockedBy: Array.isArray(data?.blockedBy) ? data.blockedBy : [], documentEligibility: data?.documentEligibility || null });
+      setNextActionState("loaded");
+    } catch {
+      setNextActionState("error");
+    }
+  }, [selectedApp?.id]);
+  refreshRef.current = () => { void refreshNextAction(); };
 
-  const interviewOptions = (["1", "2", "3", "4", "5"] as const).map((n) => ({
-    value: n,
-    label: t(`admissions.review.interview.${n}`, { defaultValue: `${n} / 5` }),
-  }));
+  useEffect(() => { void refreshNextAction(); }, [refreshNextAction, selectedApp?.status, selectedApp?.entranceCompletedAt]);
+
+  useEffect(() => {
+    nav.captureSnapshot({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedApp?.id, selectedApp?.status, selectedApp?.entranceCompletedAt, nextActionState]);
+
+  useEffect(() => {
+    if (nav.view.mode === "history") historyRef.current?.focus();
+    else titleRef.current?.focus();
+  }, [nav.view.mode, nav.view.stage]);
+
+  const requestClose = useCallback(() => {
+    if (confirm) {
+      setConfirm(null);
+      if (confirm === "reject") rejectRef.current?.focus();
+      else closeRef.current?.focus();
+      return;
+    }
+    if (dirty) { setConfirm("dirty"); return; }
+    setShowAppReviewModal(false);
+  }, [confirm, dirty, setShowAppReviewModal]);
+  const closeRequestRef = useRef(requestClose);
+  closeRequestRef.current = requestClose;
+  useDrawerA11y({ open: true, panelRef, initialFocusRef: closeRef, trapRef: confirm ? confirmDialogRef : panelRef, onRequestClose: () => closeRequestRef.current() });
+
+  const afterMutation = useCallback(async () => {
+    await refreshNextAction();
+    nav.resetOnMutation({ selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextAction: nextActionData as any, entranceResult, entranceNotes }, activeStage, t(stageView?.titleKey || "", { defaultValue: activeStage }));
+  }, [refreshNextAction, nav, selectedApp, evaluationData, docsChecklist, selectedClassroomId, entranceFeeAmount, waiveFee, waiveDocs, nextActionData, entranceResult, entranceNotes, activeStage, stageView, t]);
+
+  const runPrimary = useCallback(async () => {
+    const key = stageView?.primaryActionKey;
+    if (!key) return;
+    if (key === "confirmDetails") await handleSaveReview?.("UNDER_REVIEW", { close: false });
+    else if (key === "approve") await handleSaveReview?.("APPROVED", { close: false });
+    else if (key === "confirmClass" || key === "finalizeEnrollment") await handleSaveReview?.("ENROLLED", { close: false });
+    else if (key === "createEntranceFee") await handleCreateEntranceFee?.(Number(entranceFeeAmount));
+    else if (key === "recordEntrance") await handleCompleteEntrance?.(entranceResult, entranceNotes);
+    else if (key === "saveDocuments") await handleSaveReview?.(undefined, { close: false });
+    await afterMutation();
+  }, [stageView, handleSaveReview, handleCreateEntranceFee, handleCompleteEntrance, entranceFeeAmount, entranceResult, entranceNotes, afterMutation]);
+
+  const runSecondary = useCallback(async (key: string) => {
+    if (key === "moveToWaitlist") await handleSaveReview?.("WAITLISTED", { close: false });
+    else if (key === "returnToReview") await handleSaveReview?.("UNDER_REVIEW", { close: false });
+    else if (key === "reject") { setConfirm("reject"); return; }
+    else if (key === "refresh") { await refreshNextAction(); return; }
+    await afterMutation();
+  }, [handleSaveReview, afterMutation, refreshNextAction]);
+
+  const selectStage = useCallback((stage: AdmissionStage) => {
+    const label = t(`admissions.stepper.${stage === "ENTRANCE_FEE" ? "fee" : stage.toLowerCase()}`, { defaultValue: stage });
+    nav.selectStage(stage, activeStage, label);
+  }, [nav, activeStage, t]);
+
+  const primaryLabelKey = !stageView?.primaryActionKey ? null
+    : activeStage === "SUBMITTED" ? "admissions.review.stage.submitted.primary"
+    : activeStage === "REVIEW" ? "admissions.review.stage.review.primary"
+    : activeStage === "APPROVED" ? (stageView.primaryActionKey === "confirmClass" ? "admissions.review.stage.approved.confirmClass" : "admissions.review.stage.approved.finalizeEnrollment")
+    : activeStage === "ENTRANCE_FEE" ? "admissions.review.stage.entranceFee.createFee"
+    : stageView.substep === "entrance" ? "admissions.review.markEntranceComplete"
+    : "admissions.review.stage.enrolled.saveDocuments";
+
+  const headerMeta = (
+    <div>
+      <span className="text-xs font-black tracking-widest uppercase bg-white/10 px-2 py-0.5 rounded text-white mr-2">{t("admissions.review.hubBadge")}</span>
+      <span className="ml-2 text-xs font-black tracking-wider uppercase px-2 py-0.5 rounded bg-white/10 text-slate-100">{selectedApp?.status}</span>
+    </div>
+  );
+
+  const footer = nav.view.mode === "history" || activeStage === "TERMINAL" || nextActionState !== "loaded" ? (
+    <Button type="button" variant="secondary" onClick={requestClose}>{t("common:close")}</Button>
+  ) : (
+    <>
+      <div className="flex items-center gap-3">
+        <BrowsePreviousMenu browsableStages={completedStages} onSelect={(s) => selectStage(s)} />
+        <Button type="button" variant="secondary" disabled={submitting} onClick={async () => { await handleSaveReview?.(undefined, { close: true }); }}>{t("admissions.review.stage.saveAndClose")}</Button>
+      </div>
+      <div className="flex items-center gap-2">
+        {stageView?.secondaryActionKeys.map((key) => (
+          <Button key={key} ref={key === "reject" ? rejectRef : undefined} type="button" variant={key === "reject" ? "danger" : "ghost"} disabled={submitting} onClick={() => runSecondary(key)} className={key === "reject" ? "bg-red-50 hover:bg-red-100 border border-red-200 text-red-700" : undefined}>
+            {t(key === "refresh" ? "admissions.review.stage.refresh" : `admissions.review.stage.review.${key}`)}
+          </Button>
+        ))}
+        {stageView?.primaryActionKey ? (
+          <Button type="button" variant="primary" loading={submitting} disabled={submitting || (stageView.primaryActionKey === "confirmClass" && !selectedClassroomId)} onClick={runPrimary} className="min-h-11 bg-slate-900 hover:bg-slate-800 text-white border border-slate-900">
+            {primaryLabelKey ? t(primaryLabelKey) : null}
+          </Button>
+        ) : null}
+      </div>
+    </>
+  );
+
+  const confirmDialog = confirm ? (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center">
+      <button type="button" aria-label={t("common:close")} onClick={() => setConfirm(null)} className="absolute inset-0 bg-slate-950/50" />
+      <div ref={confirmDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="review-confirm-title" className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h4 id="review-confirm-title" className="text-lg font-extrabold text-slate-900">{t(`admissions.review.confirm.${confirm === "reject" ? "reject.title" : "dirtyClose.title"}`)}</h4>
+        <p className="mt-2 text-sm text-slate-600">{t(`admissions.review.confirm.${confirm === "reject" ? "reject.body" : "dirtyClose.body"}`)}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => { setConfirm(null); rejectRef.current?.focus(); }}>{t(`admissions.review.confirm.${confirm === "reject" ? "reject.cancel" : "dirtyClose.cancel"}`)}</Button>
+          {confirm === "dirty" ? (
+            <>
+              <Button type="button" variant="secondary" onClick={() => { setConfirm(null); setShowAppReviewModal(false); }}>{t("admissions.review.confirm.dirtyClose.discard")}</Button>
+              <Button type="button" variant="primary" autoFocus onClick={async () => { setConfirm(null); await handleSaveReview?.(undefined, { close: true }); }}>{t("admissions.review.confirm.dirtyClose.save")}</Button>
+            </>
+          ) : (
+            <Button type="button" variant="danger" autoFocus onClick={async () => { setConfirm(null); await handleSaveReview?.("REJECTED", { close: false }); await afterMutation(); }}>{t("admissions.review.confirm.reject.confirm")}</Button>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-stretch justify-end">
-      <button
-        type="button"
-        aria-label={t("common:close")}
-        onClick={() => setShowAppReviewModal(false)}
-        className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="application-review-drawer-title"
-        className="relative z-10 flex h-[100dvh] w-full max-w-[1040px] flex-col overflow-hidden border-l border-slate-200 bg-white shadow-[-20px_0_60px_rgb(15,23,42,0.18)]"
+    <>
+      <ReviewDrawerShell
+        panelRef={panelRef}
+        closeRef={closeRef}
+        onClose={requestClose}
+        titleId="application-review-drawer-title"
+        descriptionId="application-review-drawer-desc"
+        description={stageView ? t(stageView.descriptionKey) : t("admissions.review.stage.terminalHint")}
+        title={t("admissions.review.evaluating", { name: selectedApp?.studentName })}
+        headerMeta={headerMeta}
+        stageRail={<StageRail status={selectedApp?.status} nextAction={nextActionData.nextAction} blockedBy={nextActionData.blockedBy} activeStage={activeStage} browsableStages={completedStages} onStageSelect={selectStage} />}
+        historyBanner={nav.view.mode === "history" ? <StageHistoryBanner stageLabel={t(`admissions.stepper.${nav.view.stage === "ENTRANCE_FEE" ? "fee" : nav.view.stage.toLowerCase()}`, { defaultValue: nav.view.stage })} onReturn={() => nav.returnToCurrent(t(stageView?.titleKey || "", { defaultValue: activeStage }))} headingRef={historyRef} /> : undefined}
+        footer={footer}
+        overlay={confirmDialog}
       >
-        <div className="flex shrink-0 items-start justify-between gap-5 border-b border-slate-800 bg-gradient-to-br from-slate-950 to-slate-900 px-5 py-5 text-white sm:px-8 sm:py-6">
-                  <div>
-                    <span className="text-xs font-black tracking-widest uppercase bg-white/10 px-2 py-0.5 rounded text-white mr-2">
-                      {t("admissions.review.hubBadge")}
-                    </span>
-                    {(() => {
-                      let applicantType = "NEW";
-                      try {
-                        const n = selectedApp?.notes ? JSON.parse(selectedApp.notes) : null;
-                        if (n?.applicantType === "RETURNING") applicantType = "RETURNING";
-                      } catch {
-                        /* ignore */
-                      }
-                      return (
-                        <span
-                          className={`ml-2 text-xs font-black tracking-wider uppercase px-2 py-0.5 rounded ${
-                            applicantType === "RETURNING"
-                              ? "bg-emerald-400/20 text-emerald-50"
-                              : "bg-white/10 text-slate-100"
-                          }`}
-                        >
-                          {applicantType === "RETURNING"
-                            ? t("admissions.review.returningStudent")
-                            : t("admissions.review.newStudent")}
-                          {selectedApp?.source === "PUBLIC" ? t("admissions.review.onlineSuffix") : ""}
-                        </span>
-                      );
-                    })()}
-                    <h3 id="application-review-drawer-title" className="mt-1 text-lg font-extrabold tracking-tight">
-                      {t("admissions.review.evaluating", { name: selectedApp.studentName })}
-                    </h3>
-                  </div>
-                  <Button
-                    ref={closeRef}
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t("common:close")}
-                    onClick={() => setShowAppReviewModal(false)}
-                    className="text-white hover:bg-white/10"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                <div className="shrink-0 border-b border-slate-100 bg-white px-5 pb-1 pt-5 sm:px-8">
-                  <OnboardingStepper
-                    status={selectedApp.status}
-                    nextAction={nextAction}
-                    blockedBy={blockedBy}
-                  />
-                </div>
-
-                <div className="grid flex-1 grid-cols-1 gap-6 overflow-y-auto overscroll-contain bg-white p-5 md:grid-cols-2 md:gap-8 md:p-7">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.demographicsTitle")}</h4>
-                      <div className="bg-slate-50 p-4 rounded-2xl space-y-3.5 text-sm">
-                        <AdmissionApplicantPhoto
-                          studentName={selectedApp.studentName}
-                          linkedUserId={linkedUserId}
-                          linkedPhotoUrl={linkedStudent?.photoUrl}
-                          pendingPhotoUrl={evaluationData?.pendingPhotoUrl || null}
-                          onPendingPhotoChange={(pendingPhotoUrl) =>
-                            setEvaluationData({ ...evaluationData, pendingPhotoUrl })
-                          }
-                          onError={onPhotoError}
-                          onSuccess={onPhotoSuccess}
-                        />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <p className="text-slate-400 font-bold">{t("admissions.review.gender")}</p>
-                            <p className="font-extrabold text-slate-800 mt-0.5">{selectedApp.gender || t("common:male")}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-bold">{t("admissions.review.dateOfBirth")}</p>
-                            <p className="font-extrabold text-slate-800 mt-0.5">
-                              {selectedApp.dob ? format(new Date(selectedApp.dob), "MMMM d, yyyy") : t("admissions.review.unspecified")}
-                            </p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-slate-500 text-xs font-bold">{t("admissions.review.appliedGrade")}</p>
-                          <p className="font-black text-slate-800 mt-0.5 text-sm">{selectedApp.gradeLevel?.name || selectedApp.gradeLevelName || t("admissions.review.none")}</p>
-                        </div>
-                        {selectedApp.address && (
-                          <div>
-                            <p className="text-slate-500 text-xs font-bold">{t("admissions.review.homeAddress")}</p>
-                            <p className="font-semibold text-slate-800 mt-0.5 flex items-start gap-1">
-                              <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                              {selectedApp.address}
-                            </p>
-                          </div>
-                        )}
-                        <div className="border-t border-slate-200/50 pt-3">
-                          <p className="text-slate-500 text-xs font-bold">{t("admissions.review.guardianDetails")}</p>
-                          <p className="font-extrabold text-slate-850 mt-1">{selectedApp.parentName}</p>
-                          <p className="text-xs text-slate-500 font-semibold mt-0.5 flex items-center gap-2">
-                            <span><Mail className="w-3.5 h-3.5 inline mr-1 text-slate-400" />{selectedApp.parentEmail || t("admissions.review.noEmail")}</span>
-                            <span><Phone className="w-3.5 h-3.5 inline mr-1 text-slate-400" />{selectedApp.parentPhone}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {documentEligibility?.eligible ? (
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.docsChecklistTitle")}</h4>
-                      <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-                        {(
-                          [
-                            { key: "birthCertificate" as const, labelKey: "birthCertificate" },
-                            { key: "transcripts" as const, labelKey: "transcripts" },
-                            { key: "idCopy" as const, labelKey: "idCopy" },
-                            { key: "medicalRecords" as const, labelKey: "medicalRecords" },
-                          ] as const
-                        ).map((doc) => {
-                          const isChecked = docsChecklist[doc.key];
-                          return (
-                            <div 
-                              key={doc.key}
-                              onClick={() => handleToggleDoc(doc.key)}
-                              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs font-bold ${
-                                isChecked 
-                                  ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
-                                  : "bg-white border-slate-100 hover:border-slate-200 text-slate-500"
-                              }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                {isChecked ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-slate-300" />}
-                                {t(`admissions.review.docs.${doc.labelKey}`)}
-                              </span>
-                              <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${
-                                isChecked ? "bg-emerald-100/60" : "bg-slate-100"
-                              }`}>
-                                {isChecked ? t("admissions.review.verified") : t("admissions.review.missing")}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    ) : (
-                      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                        <p className="text-xs font-black uppercase tracking-wider text-amber-700">
-                          {t("admissions.review.documentsUnavailable", { defaultValue: "Document collection unavailable" })}
-                        </p>
-                        <p className="mt-1 text-xs font-medium leading-relaxed text-amber-800">
-                          {t("admissions.review.documentsUnavailableHint", {
-                            defaultValue: "Documents can be collected only after admission, entrance completion, enrollment, and a valid active student link.",
-                          })}
-                        </p>
-                      </div>
-                    )}
-
-                    {documentEligibility?.eligible && handleUploadAdmissionDoc && (
-                      <div>
-                        <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.uploadedFilesTitle")}</h4>
-                        <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-                          {fileDocs.length === 0 && (
-                            <p className="text-xs text-slate-500 font-medium">{t("admissions.review.noFilesUploaded")}</p>
-                          )}
-                          {fileDocs.map((doc: any) => (
-                            <div
-                              key={doc.id}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-white border border-slate-200 text-xs"
-                            >
-                              <div className="min-w-0">
-                                <p className="font-bold text-slate-800 truncate">{doc.docType}</p>
-                                <p className="text-slate-500 truncate">{doc.fileName || doc.fileUrl}</p>
-                                <p className="text-xs font-black uppercase text-slate-400 mt-1">{doc.status}</p>
-                              </div>
-                              {handleReviewAdmissionDoc && doc.status !== "APPROVED" && (
-                                <div className="flex gap-2 shrink-0">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="compact"
-                                    disabled={submitting}
-                                    onClick={() => handleReviewAdmissionDoc(doc.id, "APPROVED")}
-                                    className="px-2 py-1 min-h-0 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                  >
-                                    {t("admissions.review.approveDoc")}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="compact"
-                                    disabled={submitting}
-                                    onClick={() => handleReviewAdmissionDoc(doc.id, "REJECTED")}
-                                    className="px-2 py-1 min-h-0 rounded-lg bg-rose-50 text-rose-700 border border-rose-100"
-                                  >
-                                    {t("admissions.review.rejectDoc")}
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100 cursor-pointer hover:bg-indigo-100">
-                            <Upload className="w-3.5 h-3.5" />
-                            {uploadingDoc ? t("admissions.review.uploading") : t("admissions.review.uploadDoc")}
-                            <input
-                              type="file"
-                              accept="application/pdf,image/jpeg,image/png,image/webp,image/gif"
-                              className="hidden"
-                              disabled={uploadingDoc || submitting}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                e.target.value = "";
-                                if (!file) return;
-                                await handleUploadAdmissionDoc("OTHER", file);
-                              }}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider mb-3">{t("admissions.review.placementTitle")}</h4>
-                      <div className="bg-slate-50 p-4 rounded-2xl space-y-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-black text-slate-500 uppercase tracking-wider">{t("admissions.review.placementScore")}</label>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="100"
-                            value={evaluationData.testScore}
-                            onChange={(e) => setEvaluationData({...evaluationData, testScore: e.target.value})}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold"
-                            placeholder={t("admissions.review.scorePlaceholder")}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-black text-slate-500 uppercase tracking-wider">{t("admissions.review.interviewRating")}</label>
-                          <select 
-                            value={evaluationData.interviewRating}
-                            onChange={(e) => setEvaluationData({...evaluationData, interviewRating: e.target.value})}
-                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:ring-2 focus:ring-slate-400 text-sm font-semibold"
-                          >
-                            {interviewOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-black text-slate-500 uppercase tracking-wider">{t("admissions.review.evaluationComments")}</label>
-                          <textarea
-                            rows={3}
-                            value={evaluationData.comments}
-                            onChange={(e) => setEvaluationData({...evaluationData, comments: e.target.value})}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium"
-                            placeholder={t("admissions.review.commentsPlaceholder")}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedApp.status === "ENROLLED" && !documentEligibility?.eligible ? (
-                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-3">
-                        <p className="text-xs font-black uppercase tracking-wider text-indigo-700">
-                          {t("admissions.review.entranceCompletionTitle", { defaultValue: "Entrance completion" })}
-                        </p>
-                        <p className="text-xs font-medium leading-relaxed text-slate-600">
-                          {t("admissions.review.entranceCompletionHint", {
-                            defaultValue: "Record that the student has sat or was exempted from the entrance before enabling documents.",
-                          })}
-                        </p>
-                        <select
-                          value={entranceResult}
-                          onChange={(e) => setEntranceResult(e.target.value)}
-                          className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-bold text-slate-700"
-                        >
-                          <option value="SAT">SAT</option>
-                          <option value="EXEMPT">EXEMPT</option>
-                          <option value="PASSED">PASSED</option>
-                          <option value="NOT_PASSED">NOT PASSED</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={entranceNotes}
-                          onChange={(e) => setEntranceNotes(e.target.value)}
-                          placeholder={t("admissions.review.entranceNotes", { defaultValue: "Optional entrance notes" })}
-                          className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-medium"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="compact"
-                          disabled={submitting || !handleCompleteEntrance}
-                          onClick={() => handleCompleteEntrance?.(entranceResult, entranceNotes)}
-                          className="w-full rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700"
-                        >
-                          {t("admissions.review.markEntranceComplete", { defaultValue: "Record entrance complete" })}
-                        </Button>
-                      </div>
-                    ) : null}
-
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase text-indigo-600 tracking-wider">{t("admissions.review.registryActions")}</h4>
-                      
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
-                        <label className="text-xs font-black text-indigo-600 uppercase tracking-wider block">
-                          {t("admissions.review.classGroupLabel")}
-                        </label>
-                        <select
-                          value={selectedClassroomId}
-                          onChange={(e) => setSelectedClassroomId(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option value="">{t("admissions.review.selectClassGroup")}</option>
-                          {classrooms
-                            .filter((c: { subjectId?: string | null }) => !c.subjectId)
-                            .filter((c: any) => {
-                              const seats =
-                                c.seatsLeft ??
-                                (c.capacity == null
-                                  ? null
-                                  : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
-                              return c.capacity == null || c.allowOverfill || (seats ?? 0) > 0;
-                            })
-                            .map((c: any) => {
-                              const seats =
-                                c.seatsLeft ??
-                                (c.capacity == null
-                                  ? null
-                                  : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
-                              return (
-                                <option key={c.id} value={c.id}>
-                                  {c.name} ({c.gradeLevel?.name || t("admissions.review.unassignedGrade")})
-                                  {seats != null ? ` · ${seats}` : ""}
-                                </option>
-                              );
-                            })}
-                        </select>
-                        <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                          {t("admissions.review.classGroupHint")}
-                        </p>
-                      </div>
-
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-                        <p className="text-xs font-black text-indigo-600 uppercase tracking-wider">
-                          {t("admissions.review.entranceFeeTitle")}
-                        </p>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                          {t("admissions.review.entranceFeeHint")}
-                        </p>
-                        <p className="text-xs text-slate-500 font-medium">
-                          {t("admissions.review.feePaymentId")}{" "}
-                          <span className="font-mono text-slate-700">
-                            {selectedApp.feePaymentId || t("admissions.review.none")}
-                          </span>
-                          {" · "}{t("admissions.review.feeStatus")} {selectedApp.status}
-                        </p>
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={entranceFeeAmount}
-                            onChange={(e) => setEntranceFeeAmount?.(e.target.value)}
-                            placeholder={t("admissions.review.amountPlaceholder")}
-                            className="w-28 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="compact"
-                            disabled={submitting || !handleCreateEntranceFee}
-                            onClick={() =>
-                              handleCreateEntranceFee?.(Number(entranceFeeAmount))
-                            }
-                            className={REGISTRY_PILL_ACTION}
-                          >
-                            {t("admissions.review.createEntranceFee")}
-                          </Button>
-                        </div>
-                        <label className="flex items-center gap-2 text-sm text-slate-700 font-medium cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={waiveFee}
-                            onChange={(e) => setWaiveFee?.(e.target.checked)}
-                            className="rounded border-slate-300"
-                          />
-                          {t("admissions.review.waiveFee")}
-                        </label>
-                        <label className="flex items-center gap-2 text-sm text-slate-700 font-medium cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={waiveDocs}
-                            onChange={(e) => setWaiveDocs?.(e.target.checked)}
-                            className="rounded border-slate-300"
-                          />
-                          {t("admissions.review.waiveDocs")}
-                        </label>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="compact"
-                          onClick={() => handleSaveReview("UNDER_REVIEW")}
-                          className={REGISTRY_PILL_ACTION}
-                          disabled={submitting}
-                        >
-                          {t("admissions.review.markInReview")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => handleSaveReview("APPROVED")}
-                          className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold"
-                          disabled={submitting}
-                        >
-                          {t("admissions.review.approveCandidate")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => handleSaveReview("REJECTED")}
-                          className="bg-red-50 hover:bg-red-150 border border-red-200 text-red-700 text-xs"
-                          disabled={submitting}
-                        >
-                          {t("admissions.review.rejectApplication")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => handleSaveReview("WAITLISTED")}
-                          className="bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs"
-                          disabled={submitting}
-                        >
-                          {t("admissions.review.moveWaitlist")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => handleSaveReview("ENROLLED")}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-100 col-span-2"
-                          disabled={submitting}
-                        >
-                          <UserCheck className="w-4 h-4" /> {t("admissions.review.finalizeEnrollment")}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                        {t("admissions.review.enrollHint")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-5 py-4 sm:px-8">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() => handleSaveReview()}
-                    className={`text-xs ${REGISTRY_CHARCOAL}`}
-                    disabled={submitting}
-                  >
-                    {t("admissions.review.saveWithoutStatus")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowAppReviewModal(false)}
-                    className="text-xs text-slate-500"
-                  >
-                    {t("common:close")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+        {nextActionState !== "loaded" || !stageView ? (
+          <div className="space-y-4" aria-busy="true">
+            <div className="h-6 w-40 rounded bg-slate-100" />
+            <div className="h-32 rounded-2xl bg-slate-100" />
+            <div className="h-10 w-48 rounded bg-slate-100" />
+          </div>
+        ) : (
+          <StageFrame
+            key={`${nav.view.mode}-${nav.view.stage}`}
+            mode={nav.view.mode}
+            activeStage={activeStage}
+            historyStage={nav.view.mode === "history" ? nav.view.stage : undefined}
+            stageView={stageView}
+            snapshot={nav.snapshot}
+            titleRef={titleRef}
+            {...props}
+            entranceResult={entranceResult}
+            setEntranceResult={setEntranceResult}
+            entranceNotes={entranceNotes}
+            setEntranceNotes={setEntranceNotes}
+            documentEligibility={nextActionData.documentEligibility}
+            substep={stageView.substep}
+            onRefresh={() => refreshRef.current()}
+            onSecondary={runSecondary}
+            students={students}
+            onPhotoError={onPhotoError}
+            onPhotoSuccess={onPhotoSuccess}
+          />
+        )}
+        <p aria-live="polite" className="sr-only">{nav.announcement ? t(nav.announcement.key, { stage: nav.announcement.stage }) : ""}</p>
+      </ReviewDrawerShell>
+    </>
   );
 }

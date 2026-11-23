@@ -76,7 +76,7 @@ Header (&lt; `lg`): compact height; search icon-only or opens full-screen/modal 
 ### 2.5 Modals, drawers, forms
 
 - Modals: `max-h-[90dvh] overflow-y-auto`; full-width on phone (`w-full sm:max-w-lg|…`).
-- Drawers: already edge sheets — ensure width `w-full max-w-md` and safe-area padding.
+- Drawers: edge sheets with task-specific widths. Application review uses `w-full max-w-[720px] xl:max-w-[880px]`; direct admission uses `w-full max-w-[960px]`. Keep safe-area padding and a single internal scroller.
 - Forms: one column on mobile; `sm:grid-cols-2` only when labels stay readable.
 - Touch: prefer ≥44px tap targets on primary actions (align with UI consistency a11y notes).
 
