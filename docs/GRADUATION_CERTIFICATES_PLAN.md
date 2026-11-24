@@ -4,7 +4,7 @@
 > **Owner:** frontend-spa (`src/features/certificates`), Settings appearance, Certificates page; identity `School.certificateTemplate` + `certificateDefaults`
 > **Source assets:** `docs/SMS Certificcate Templates/` (`certificates.tsx`, `fonts-and-demo.tsx`, `preview.html`, `README.md`)
 > **Confirmed:** A4 landscape; roles School Admin / Principal / VPI / Registrar; persist `certificateTemplate` on school
-> **Branding:** per-tenant logo, brand color accents, address line, saved signatory defaults
+> **Branding:** per-tenant logo, name/text, address line, saved signatory defaults; template colors stay fixed to the supplied designs
 
 ## Goal
 
@@ -26,7 +26,6 @@ Persisted ids stay stable so existing school settings keep working; the supplied
 ```ts
 type CertificateData = {
   school: { name: string; logoUrl?: string | null; address?: string | null };
-  brandColor: string | null;
   title: string;
   leadIn: string;
   studentName: string;
@@ -38,14 +37,14 @@ type CertificateData = {
 };
 ```
 
-Assembler fills from school settings + selected student + optional overrides. Tenant logo comes from `school.logoUrl`, official signature images from `signatureUrl`, and brand color overrides the template's primary palette. Missing signatory names stay as blank lines.
+Assembler fills from school settings + selected student + optional overrides. Tenant logo comes from `school.logoUrl`, name/text/address come from the school profile, and official signature images come from `signatureUrl`. Template palettes stay fixed to the supplied colors; missing signatory names stay as blank lines.
 
 ## Architecture
 
 ```
 src/features/certificates/
   types.ts
-  registry.ts              # id → label, description, page size, fallback brand
+  registry.ts              # id → label, description, page size, supplied palette
   assembleCertificate.ts   # school + student → CertificateData
   sampleData.ts            # Settings preview sample
   components/
@@ -80,7 +79,7 @@ src/components/CertificateTemplates.tsx  # thin re-export
 - [x] All four supplied designs render in Settings and print at A4 landscape without clipping.
 - [x] Changing Settings template changes Certificates page output for that school.
 - [x] Student name / school name / signatories come from real data; blanks when missing.
-- [x] School logo, brand color, and official signature images feed the supplied slots.
+- [x] School logo, name/text, address, and official signature images feed the supplied slots; supplied colors are unchanged.
 - [x] PDF download uses the A4 landscape canvas.
 - [x] Old four template components and scoped CSS files are removed.
 - [x] Fonts and print CSS mirror the supplied setup without `next/font`.

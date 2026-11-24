@@ -53,7 +53,6 @@ export type CertificateData = {
     logoUrl?: string | null;
     address?: string | null;
   };
-  brandColor: string | null;
   title: string;
   leadIn: string;
   studentName: string;
@@ -71,5 +70,5 @@ export type CertificateTemplateDef = {
   cssPageSize: string;
   pdfFormat: "a4";
   orientation: "landscape";
-  fallbackBrand: string;
+  primaryColor: string;
 };

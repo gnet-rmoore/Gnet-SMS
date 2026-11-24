@@ -4400,7 +4400,7 @@ export const hiResources = {
       "transcriptTemplate": "ट्रांसक्रिप्ट टेम्पलेट",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "स्नातक प्रमाणपत्र टेम्पलेट",
-      "certificateTemplateHint": "स्नातक छात्रों के लिए चार A4 लैंडस्केप प्रमाणपत्र। विद्यालय लोगो, ब्रांड रंग और पता उपयोग करता है। प्रमाणपत्र पृष्ठ पर।",
+      "certificateTemplateHint": "स्नातक छात्रों के लिए चार A4 लैंडस्केप प्रमाणपत्र। विद्यालय लोगो, नाम, पता और टेम्पलेट के मूल रंग उपयोग करता है। प्रमाणपत्र पृष्ठ पर।",
       "receiptTemplate": "आधिकारिक रसीद टेम्पलेट",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "शुल्क भुगतान रसीदें",

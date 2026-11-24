@@ -10,7 +10,7 @@ export { DEFAULT_CERTIFICATE_DEFAULTS } from "./types";
 export {
   CERTIFICATE_TEMPLATES,
   getCertificateTemplateDef,
-  resolveCertificateBrand,
+  getCertificatePrimaryColor,
   resolveCertificateTemplateKey,
 } from "./registry";
 export {

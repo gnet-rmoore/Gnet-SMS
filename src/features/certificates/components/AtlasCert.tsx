@@ -1,6 +1,6 @@
 import React from "react";
 import type { CertificateData } from "../types";
-import { resolveCertificateBrand } from "../registry";
+import { getCertificatePrimaryColor } from "../registry";
 import {
   Canvas,
   DateBlock,
@@ -20,7 +20,7 @@ type Props = {
 };
 
 export function AtlasCert({ data, compact }: Props) {
-  const indigo = resolveCertificateBrand("CERT_HERITAGE_TAN", data.brandColor);
+  const indigo = getCertificatePrimaryColor("CERT_HERITAGE_TAN");
   const coral = "#C8553D";
   const ink = "#171A2E";
   const sealId = React.useId().replace(/:/g, "");
@@ -29,7 +29,7 @@ export function AtlasCert({ data, compact }: Props) {
     backgroundImage: `repeating-linear-gradient(90deg, ${indigo} 0 1px, transparent 1px 12px)`, opacity: 0.55,
   });
   return (
-    <Canvas scale={compact ? 0.68 : 1} background="#FDFDFB" brand={indigo}>
+    <Canvas scale={compact ? 0.68 : 1} background="#FDFDFB">
       <Texture color={indigo} rosette={0.06} rx={250} ry={60} />
       <div style={{ position: "absolute", inset: 0, border: `14px solid ${indigo}`, boxSizing: "border-box" }} />
       <div style={{ position: "absolute", inset: 30, border: `1px solid ${indigo}` }} />

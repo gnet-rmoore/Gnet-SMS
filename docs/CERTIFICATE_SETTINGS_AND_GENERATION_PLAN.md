@@ -35,7 +35,7 @@
   - certificate ID prefix and preview/serial override
   - default issue date and academic year
   - signatory names, titles, staff/signature slots
-  - school logo, brand color, address, and school name (with note that school profile is the source)
+  - school logo, address, and school name (with note that school profile is the source); template colors stay original
   - student roster: searchable selectable list, add/remove, clear, enable/disable restriction
 - Save through `settingsApi.updateCertificateSettings`; SCHOOL_ADMIN/PRINCIPAL/VPI all use this endpoint. Keep existing appearance fields working for other roles.
 - Pass saved wording/defaults/signatories into `TemplatePreviewModal` so preview matches issuance.

@@ -18,7 +18,6 @@ export type AssembleCertificateInput = {
   signatories?: [CertificateSignatory, CertificateSignatory] | null;
   logoUrl?: string | null;
   address?: string | null;
-  brandColor?: string | null;
 };
 
 function currentAcademicYear(): string {
@@ -70,15 +69,12 @@ export function assembleCertificateData(
     { name: "", title: "Education Chairman", signatureUrl: null },
   ];
 
-  const brand = (input.brandColor || "").trim() || null;
-
   return {
     school: {
       name: schoolName,
       logoUrl: input.logoUrl ?? null,
       address: (input.address || "").trim() || null,
     },
-    brandColor: brand && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(brand) ? brand : null,
     title:
       interpolate((input.title || "").trim() || DEFAULT_CERTIFICATE_DEFAULTS.title, values) ||
       DEFAULT_CERTIFICATE_DEFAULTS.title,

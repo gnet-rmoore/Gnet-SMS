@@ -8,7 +8,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
     cssPageSize: "a4 landscape",
     pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#14264A",
+    primaryColor: "#14264A",
   },
   {
     id: "CERT_GOLD_LAURELS",
@@ -17,7 +17,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
     cssPageSize: "a4 landscape",
     pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#0E3B36",
+    primaryColor: "#0E3B36",
   },
   {
     id: "CERT_RED_SEAL",
@@ -26,7 +26,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
     cssPageSize: "a4 landscape",
     pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#14161A",
+    primaryColor: "#14161A",
   },
   {
     id: "CERT_HERITAGE_TAN",
@@ -35,7 +35,7 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
     cssPageSize: "a4 landscape",
     pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#1C2766",
+    primaryColor: "#1C2766",
   },
 ];
 
@@ -70,15 +70,8 @@ export function getCertificateTemplateDef(
   return byId[resolveCertificateTemplateKey(raw)] ?? CERTIFICATE_TEMPLATES[0];
 }
 
-/** Resolve accent color: school brand when valid hex, else template fallback. */
-export function resolveCertificateBrand(
-  templateId: string | null | undefined,
-  brandColor?: string | null
+export function getCertificatePrimaryColor(
+  templateId: string | null | undefined
 ): string {
-  const def = getCertificateTemplateDef(templateId);
-  const raw = (brandColor || "").trim();
-  if (/^#[0-9A-Fa-f]{6}$/.test(raw) || /^#[0-9A-Fa-f]{3}$/.test(raw)) {
-    return raw;
-  }
-  return def.fallbackBrand;
+  return getCertificateTemplateDef(templateId).primaryColor;
 }

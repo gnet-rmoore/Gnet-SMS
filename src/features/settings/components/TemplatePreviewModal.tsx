@@ -8,6 +8,7 @@ import {
 } from "../../report-cards";
 import { getGradeSheetTemplateDef, resolveGradeSheetTemplateKey } from "../../gradesheets";
 import {
+  exportCertificatesPdf,
   getCertificateTemplateDef,
   resolveCertificateTemplateKey,
 } from "../../certificates";
@@ -64,6 +65,8 @@ export function TemplatePreviewModal({
   schoolId = "",
 }: TemplatePreviewModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const certPreviewRef = React.useRef<HTMLDivElement | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = React.useState(false);
   const m = (key: string, opts?: Record<string, unknown>) =>
     t(`settings.templatePreviewModal.${key}`, opts);
 
@@ -134,6 +137,20 @@ export function TemplatePreviewModal({
                 ? m("a4Portrait", { name: templateName })
                 : templateName;
 
+  const downloadCertificatePdf = async () => {
+    const container = certPreviewRef.current;
+    if (!container || !certDef || downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      await exportCertificatesPdf(
+        [container],
+        `${certDef.name.toLowerCase()}-certificate-preview.pdf`
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   return (
     <FeatureModalShell
       wide
@@ -144,6 +161,16 @@ export function TemplatePreviewModal({
       onClose={() => setPreviewTemplate(null)}
       footer={
         <div className="flex gap-3 justify-end">
+          {certDef && (
+            <button
+              type="button"
+              onClick={downloadCertificatePdf}
+              disabled={downloadingPdf}
+              className="px-5 py-3 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-60 text-sm"
+            >
+              {downloadingPdf ? "…" : t("pages:certificates.downloadPdf")}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPreviewTemplate(null)}
@@ -174,7 +201,10 @@ export function TemplatePreviewModal({
         </div>
       }
     >
-      <div className={previewType === "RECEIPT" ? "bg-slate-50 p-4 sm:p-6" : `bg-slate-50 ${widePrint ? "p-3 sm:p-4" : "p-6 sm:p-8"}`}>
+      <div
+        ref={certDef ? certPreviewRef : undefined}
+        className={previewType === "RECEIPT" ? "bg-slate-50 p-4 sm:p-6" : `bg-slate-50 ${widePrint ? "p-3 sm:p-4" : "p-6 sm:p-8"}`}
+      >
         <div
           className={
             previewType === "RECEIPT"

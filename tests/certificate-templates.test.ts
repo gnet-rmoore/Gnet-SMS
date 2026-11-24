@@ -11,8 +11,8 @@ import {
 } from "../src/features/certificates/assembleCertificate.ts";
 import {
   CERTIFICATE_TEMPLATES,
+  getCertificatePrimaryColor,
   getCertificateTemplateDef,
-  resolveCertificateBrand,
   resolveCertificateTemplateKey,
 } from "../src/features/certificates/registry.ts";
 import { sampleCertificateData } from "../src/features/certificates/sampleData.ts";
@@ -54,8 +54,8 @@ assert(
   "heritage is landscape"
 );
 assert(
-  getCertificateTemplateDef("CERT_GOLD_LAURELS").fallbackBrand === "#0E3B36",
-  "meridian fallback brand"
+  getCertificateTemplateDef("CERT_GOLD_LAURELS").primaryColor === "#0E3B36",
+  "meridian supplied palette color"
 );
 assert(
   getCertificateTemplateDef("CERT_RED_SEAL").name === "Noir",
@@ -119,16 +119,13 @@ const branded = assembleCertificateData({
   studentName: "Test",
   logoUrl: "https://example.com/logo.png",
   address: "1 Main St",
-  brandColor: "#2563eb",
 });
 assert(branded.school.logoUrl === "https://example.com/logo.png", "logo passed");
 assert(branded.school.address === "1 Main St", "address passed");
-assert(branded.brandColor === "#2563eb", "brand color kept");
-assert(resolveCertificateBrand("heritage", "#2563eb") === "#2563eb", "brand wins");
+assert(!("brandColor" in branded), "school brand color not carried into certificate data");
 assert(
-  resolveCertificateBrand("noir", null) ===
-    getCertificateTemplateDef("CERT_RED_SEAL").fallbackBrand,
-  "fallback brand when unset"
+  getCertificatePrimaryColor("noir") === "#14161A",
+  "noir uses supplied palette color"
 );
 
 const defs = parseCertificateDefaults({
@@ -147,7 +144,7 @@ const blank = assembleCertificateData({
 assert(blank.school.name === "School", "empty school → School");
 assert(blank.studentName === "—", "empty student → em dash");
 assert(blank.signatories[0].name === "", "blank sig name honest empty");
-assert(blank.brandColor === null, "no brand when unset");
+assert(!("brandColor" in blank), "no brand field in certificate data");
 
 const interpolated = assembleCertificateData({
   schoolName: "Greendale Academy",
@@ -194,13 +191,12 @@ assert(
 );
 
 const sample = sampleCertificateData("Test High", {
-  brandColor: "#10b981",
   logoUrl: "/logo.png",
   address: "Campus Rd",
 });
 assert(sample.studentName === "Sample Student", "sample student");
 assert(sample.school.name === "Test High", "sample school");
-assert(sample.brandColor === "#10b981", "sample brand");
+assert(!("brandColor" in sample), "sample has no brand color");
 assert(sample.school.logoUrl === "/logo.png", "sample logo");
 
 const primitives = read("src/features/certificates/components/CertificatePrimitives.tsx");
@@ -212,6 +208,7 @@ const view = read("src/features/certificates/components/CertificateView.tsx");
 const fonts = read("src/features/certificates/styles/fonts.css");
 const exportHelper = read("src/features/certificates/lib/exportCertificate.ts");
 const issuePage = read("src/pages/School/Certificates.tsx");
+const previewModal = read("src/features/settings/components/TemplatePreviewModal.tsx");
 
 assert(primitives.includes("CERT_W = 1123") && primitives.includes("CERT_H = 794"), "original 1123×794 canvas");
 assert(primitives.includes("feTurbulence") && primitives.includes("rx={rx} ry={ry}"), "paper grain + guilloche preserved");
@@ -220,6 +217,32 @@ assert(heritage.includes("#FBFAF6") && heritage.includes("letterSpacing: 5") && 
 assert(meridian.includes("radial-gradient(ellipse at 50% 0%, #EEF4F2 0%, #FFFFFF 55%)") && meridian.includes("strokeWidth=\"5\""), "meridian styling preserved");
 assert(noir.includes("linear-gradient(100deg, color-mix(in srgb,") && noir.includes("backgroundClip: \"text\""), "noir gradient title preserved");
 assert(atlas.includes("repeating-linear-gradient(90deg") && atlas.includes("14px solid") && atlas.includes("#C8553D"), "atlas ruler frame preserved");
+assert(
+  getCertificatePrimaryColor("CERT_CLASSIC_BROWN") === "#14264A" &&
+    heritage.includes("getCertificatePrimaryColor") &&
+    !heritage.includes("data.brandColor"),
+  "heritage keeps supplied navy"
+);
+assert(
+  getCertificatePrimaryColor("CERT_GOLD_LAURELS") === "#0E3B36" &&
+    meridian.includes("getCertificatePrimaryColor") &&
+    !meridian.includes("data.brandColor"),
+  "meridian keeps supplied emerald"
+);
+assert(
+  getCertificatePrimaryColor("CERT_RED_SEAL") === "#14161A" &&
+    noir.includes("getCertificatePrimaryColor") &&
+    !noir.includes("data.brandColor"),
+  "noir keeps supplied charcoal"
+);
+assert(
+  getCertificatePrimaryColor("CERT_HERITAGE_TAN") === "#1C2766" &&
+    atlas.includes("getCertificatePrimaryColor") &&
+    !atlas.includes("data.brandColor"),
+  "atlas keeps supplied indigo"
+);
+assert(!primitives.includes("--cert-brand"), "no brand color CSS variable");
+assert(!issuePage.includes("brandColor:"), "generation page does not pass brand color");
 assert(
   fonts.includes("Allura") && fonts.includes("Cormorant") && fonts.includes("DM+Serif") && fonts.includes("DM+Sans") && fonts.includes("Instrument+Serif") && fonts.includes("Manrope") && fonts.includes("Playfair") && fonts.includes("Inter"),
   "all supplied font families are loaded"
@@ -232,6 +255,12 @@ assert(
   "renderer routes to all four supplied designs"
 );
 assert(!view.includes("certificate-print.css"), "global print CSS no longer imported");
+assert(
+  previewModal.includes("exportCertificatesPdf") &&
+    previewModal.includes("pages:certificates.downloadPdf") &&
+    previewModal.includes("certPreviewRef"),
+  "certificate preview modal downloads PDF"
+);
 assert(
   !["ClassicBrownCert", "GoldLaurelsCert", "RedSealCert", "HeritageTanCert", "Seals", "CertChrome"].some((s) => view.includes(s)),
   "renderer no longer references the removed templates"

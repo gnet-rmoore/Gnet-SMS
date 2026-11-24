@@ -28,13 +28,11 @@ const grain = (rgb: 0 | 255) =>
 export function Canvas({
   scale = 1,
   background,
-  brand,
   backgroundClassName,
   children,
 }: {
   scale?: number;
   background: string;
-  brand?: string;
   backgroundClassName?: string;
   children: React.ReactNode;
 }) {
@@ -42,7 +40,6 @@ export function Canvas({
     width: CERT_W * scale,
     height: CERT_H * scale,
     overflow: "hidden",
-    ...(brand ? ({ ["--cert-brand" as string]: brand } as React.CSSProperties) : {}),
   } as React.CSSProperties;
   return (
     <div className="cert-print" data-cert-canvas="true" data-page-size="a4-landscape" style={rootStyle}>

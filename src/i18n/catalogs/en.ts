@@ -4433,7 +4433,7 @@ export const enPages = {
       "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
     certificateTemplate: "Graduation certificate template",
     certificateTemplateHint:
-      "Four A4 landscape certificates for graduating students. Uses your school logo, brand color, and address. Used on the Certificates page.",
+      "Four A4 landscape certificates for graduating students. Uses your school logo, name, address, and the template's original colors. Used on the Certificates page.",
     receiptTemplate: "Official receipt templates",
     receiptTemplateHint:
       "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",

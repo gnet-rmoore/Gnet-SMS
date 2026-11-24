@@ -369,7 +369,6 @@ export function renderTemplatePreview({
             ...opts?.certificateDefaults,
             address: school.address,
             logoUrl: school.logoUrl,
-            brandColor: school.brandColor,
           })}
           compact
         />

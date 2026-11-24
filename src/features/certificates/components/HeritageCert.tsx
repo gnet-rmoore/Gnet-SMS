@@ -1,6 +1,6 @@
 import React from "react";
 import type { CertificateData } from "../types";
-import { resolveCertificateBrand } from "../registry";
+import { getCertificatePrimaryColor } from "../registry";
 import {
   Canvas,
   DateBlock,
@@ -39,12 +39,12 @@ function Corner({ rotate, color, accent }: { rotate: number; color: string; acce
 }
 
 export function HeritageCert({ data, compact }: Props) {
-  const navy = resolveCertificateBrand("CERT_CLASSIC_BROWN", data.brandColor);
+  const navy = getCertificatePrimaryColor("CERT_CLASSIC_BROWN");
   const gold = "#B08D3C";
   const paper = "#FBFAF6";
   const sealId = React.useId().replace(/:/g, "");
   return (
-    <Canvas scale={compact ? 0.68 : 1} background={paper} brand={navy}>
+    <Canvas scale={compact ? 0.68 : 1} background={paper}>
       <Texture color={gold} rosette={0.1} />
       <div style={{ position: "absolute", inset: 22, border: `3px solid ${navy}` }} />
       <div style={{ position: "absolute", inset: 32, border: `1px solid ${gold}` }} />

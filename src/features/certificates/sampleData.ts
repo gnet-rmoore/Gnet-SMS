@@ -5,7 +5,6 @@ export function sampleCertificateData(
   schoolName = "Sample School",
   opts?: Partial<CertificateDefaults> & {
     logoUrl?: string | null;
-    brandColor?: string | null;
     address?: string | null;
   }
 ): CertificateData {
@@ -30,7 +29,6 @@ export function sampleCertificateData(
       : null,
     logoUrl: opts?.logoUrl,
     address: opts?.address,
-    brandColor: opts?.brandColor,
     signatories: [
       {
         name: opts?.sig1Name || "School Principal",

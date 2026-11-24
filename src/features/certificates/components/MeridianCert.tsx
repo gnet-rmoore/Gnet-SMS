@@ -1,6 +1,6 @@
 import React from "react";
 import type { CertificateData } from "../types";
-import { resolveCertificateBrand } from "../registry";
+import { getCertificatePrimaryColor } from "../registry";
 import {
   Canvas,
   CERT_H,
@@ -27,11 +27,11 @@ function chamfer(inset: number, c: number) {
 }
 
 export function MeridianCert({ data, compact }: Props) {
-  const ink = resolveCertificateBrand("CERT_GOLD_LAURELS", data.brandColor);
+  const ink = getCertificatePrimaryColor("CERT_GOLD_LAURELS");
   const brass = "#B38B4D";
   const sealId = React.useId().replace(/:/g, "");
   return (
-    <Canvas scale={compact ? 0.68 : 1} background="#FFFFFF" brand={ink} backgroundClassName="cert-meridian-bg">
+    <Canvas scale={compact ? 0.68 : 1} background="#FFFFFF" backgroundClassName="cert-meridian-bg">
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, #EEF4F2 0%, #FFFFFF 55%)" }} />
       <Texture color={ink} rosette={0.07} />
       <svg width={CERT_W} height={CERT_H} style={{ position: "absolute", inset: 0 }} aria-hidden="true">

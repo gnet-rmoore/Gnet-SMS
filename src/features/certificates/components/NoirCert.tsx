@@ -1,6 +1,6 @@
 import React from "react";
 import type { CertificateData } from "../types";
-import { resolveCertificateBrand } from "../registry";
+import { getCertificatePrimaryColor } from "../registry";
 import {
   Canvas,
   DateBlock,
@@ -21,7 +21,7 @@ type Props = {
 };
 
 export function NoirCert({ data, compact }: Props) {
-  const base = resolveCertificateBrand("CERT_RED_SEAL", data.brandColor);
+  const base = getCertificatePrimaryColor("CERT_RED_SEAL");
   const gold = "#C9A96B";
   const paper = "#ECE6D8";
   const sealId = React.useId().replace(/:/g, "");
@@ -31,7 +31,7 @@ export function NoirCert({ data, compact }: Props) {
   };
   const bracket = (pos: React.CSSProperties, b: React.CSSProperties): React.CSSProperties => ({ position: "absolute", width: 70, height: 70, borderColor: gold, borderStyle: "solid", borderWidth: 0, ...pos, ...b });
   return (
-    <Canvas scale={compact ? 0.68 : 1} background={`radial-gradient(ellipse at 50% 40%, color-mix(in srgb, ${base} 84%, white) 0%, ${base} 75%)`} brand={base} backgroundClassName="cert-noir-bg">
+    <Canvas scale={compact ? 0.68 : 1} background={`radial-gradient(ellipse at 50% 40%, color-mix(in srgb, ${base} 84%, white) 0%, ${base} 75%)`} backgroundClassName="cert-noir-bg">
       <Texture color={gold} grainRgb={255} grainOpacity={0.07} rosette={0.12} />
       <div style={{ position: "absolute", inset: 24, border: `1px solid ${gold}`, opacity: 0.55 }} />
       <div style={{ position: "absolute", inset: 34, border: `1px solid ${gold}`, opacity: 0.3 }} />

@@ -4400,7 +4400,7 @@ export const arResources = {
       "transcriptTemplate": "قالب كشف الدرجات",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "قالب شهادة التخرج",
-      "certificateTemplateHint": "أربع شهادات A4 أفقية للخريجين. تستخدم شعار المدرسة ولون العلامة والعنوان. تُستخدم في صفحة الشهادات.",
+      "certificateTemplateHint": "أربع شهادات A4 أفقية للخريجين. تستخدم شعار المدرسة واسمها وعنوانها والألوان الأصلية للقالب. تُستخدم في صفحة الشهادات.",
       "receiptTemplate": "قوالب الإيصالات الرسمية",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "إيصالات دفع الرسوم",

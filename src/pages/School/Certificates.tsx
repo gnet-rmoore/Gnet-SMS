@@ -173,7 +173,6 @@ export default function CertificatesPage() {
       issueDate,
       logoUrl: school?.logoUrl,
       address: school?.address,
-      brandColor: school?.brandColor,
       title,
       leadIn,
       body,
