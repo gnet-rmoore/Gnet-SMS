@@ -4400,7 +4400,7 @@ export const esResources = {
       "transcriptTemplate": "Plantilla de expediente",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "Plantilla de certificado de graduación",
-      "certificateTemplateHint": "Cuatro certificados A4 apaisados para graduados. Usa el logo, el nombre y la dirección de la escuela y los colores originales de la plantilla. Se usa en la página Certificados.",
+      "certificateTemplateHint": "Ocho certificados A4 apaisados para graduados. Usa el logo, el nombre y la dirección de la escuela y los colores originales de la plantilla. Se usa en la página Certificados.",
       "receiptTemplate": "Plantillas de recibos oficiales",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "Recibos de pago de cuotas",

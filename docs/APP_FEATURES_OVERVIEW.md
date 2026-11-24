@@ -117,7 +117,7 @@ Grouped by **what the school is doing**, with primary roles. Paths are relative 
 | International report cards | Settings Appearance + `report-card/…` | Admin picks among 10 A4 packs + 2 Wisteria quarterly layouts | v1 shipped; **full 10-template visual redesign planned** — `docs/INTERNATIONAL_REPORT_CARD_TEMPLATES_PLAN.md` |
 | Year transition | `year-transition` | School Admin, Principal, VPI, VPA, Registrar | Opening census, promotion runs, draft/commit decisions |
 | Promotion statement | `promotion-statement` | Same leadership roles | School-wide printable promotion grid (gender / division / class / pass-fail) |
-| Graduation certificates | `certificates` | Admin, Principal, VPI, Registrar | A4 landscape print templates (Heritage, Meridian, Noir, Atlas) with tenant logo/text/address and original colors |
+| Graduation certificates | `certificates` | Admin, Principal, VPI, Registrar | Eight A4 landscape print templates (Heritage, Meridian, Noir, Atlas, Sovereign, Regent, Deco, Imperial) with tenant logo/text/address and original colors |
 | Staff tasks (admin) | `staff-tasks` | School Admin, Principal, VPI, VPA | Assign tasks; assignees update in Staff Portal |
 
 **Docs:** `docs/EXAM_PAPER_APPROVAL_PLAN.md`, `docs/ONLINE_EXAMS_PLAN.md`, `docs/TEACHER_GRADEBOOK_PLAN.md`, `docs/GRADE_REVIEW_PLAN.md`, `docs/GRADE_EDIT_ACCESS_GRANT_PLAN.md`, `docs/ACADEMIC_GRADING_PLAN.md`, `docs/LIBERIAN_REPORT_CARD_TEMPLATES_PLAN.md`, `docs/YEAR_TRANSITION_PLAN.md`, `docs/GRADUATION_CERTIFICATES_PLAN.md`

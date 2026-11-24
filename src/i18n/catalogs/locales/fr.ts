@@ -4400,7 +4400,7 @@ export const frResources = {
       "transcriptTemplate": "Modèle de relevé",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "Modèle de certificat de fin d'études",
-      "certificateTemplateHint": "Quatre certificats A4 en paysage pour les diplômés. Utilise le logo, le nom et l'adresse de l'établissement ainsi que les couleurs d'origine du modèle. Utilisé sur la page Certificats.",
+      "certificateTemplateHint": "Huit certificats A4 en paysage pour les diplômés. Utilise le logo, le nom et l'adresse de l'établissement ainsi que les couleurs d'origine du modèle. Utilisé sur la page Certificats.",
       "receiptTemplate": "Modèles de reçus officiels",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "Reçus de paiement de frais",

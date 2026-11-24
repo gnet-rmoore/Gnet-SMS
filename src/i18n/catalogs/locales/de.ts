@@ -4400,7 +4400,7 @@ export const deResources = {
       "transcriptTemplate": "Transkriptvorlage",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "Abschlusszertifikat-Vorlage",
-      "certificateTemplateHint": "Vier A4-Querformat-Zertifikate für Absolventen. Verwendet Schullogo, Schulname, Adresse und die Originalfarben der Vorlage. Wird auf der Zertifikatsseite verwendet.",
+      "certificateTemplateHint": "Acht A4-Querformat-Zertifikate für Absolventen. Verwendet Schullogo, Schulname, Adresse und die Originalfarben der Vorlage. Wird auf der Zertifikatsseite verwendet.",
       "receiptTemplate": "Offizielle Belegvorlagen",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "Gebührenzahlungsbelege",

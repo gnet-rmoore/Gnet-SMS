@@ -13,6 +13,11 @@ export const SANS_DM = f("--font-dm-sans", "'DM Sans', system-ui, sans-serif");
 export const SERIF_PLAY = f("--font-playfair", "'Playfair Display', Georgia, serif");
 export const SANS_MANROPE = f("--font-manrope", "Manrope, system-ui, sans-serif");
 export const SERIF_INSTR = f("--font-instrument", "'Instrument Serif', Georgia, serif");
+export const SERIF_CINZEL = f("--font-cinzel", "Cinzel, 'Trajan Pro', Georgia, serif");
+export const SERIF_BODONI = f("--font-bodoni", "'Bodoni Moda', 'Didot', Georgia, serif");
+export const SERIF_ITALIANA = f("--font-italiana", "Italiana, Georgia, serif");
+export const SANS_JOSEFIN = f("--font-josefin", "'Josefin Sans', system-ui, sans-serif");
+export const SERIF_MARCELLUS = f("--font-marcellus", "Marcellus, Georgia, serif");
 
 export const monogram = (s: string) =>
   s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -246,6 +251,48 @@ export function Footer({ left, center, right }: { left: React.ReactNode; center:
       <div style={{ justifySelf: "start" }}>{left}</div>
       <div>{center}</div>
       <div style={{ justifySelf: "end" }}>{right}</div>
+    </div>
+  );
+}
+
+export function Laurel({ color, flip = false, w = 96, h = 40 }: { color: string; flip?: boolean; w?: number; h?: number }) {
+  const p0 = [2, 30];
+  const p1 = [50, 34];
+  const p2 = [94, 8];
+  const point = (t: number) => [
+    (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0],
+    (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1],
+  ];
+  const ts = [0.12, 0.26, 0.4, 0.54, 0.68, 0.82, 0.95];
+  return (
+    <svg width={w} height={h} viewBox="0 0 96 40" style={flip ? { transform: "scaleX(-1)" } : undefined} aria-hidden="true">
+      <path d={`M${p0} Q${p1} ${p2}`} fill="none" stroke={color} strokeWidth="1.2" />
+      {ts.flatMap((t) => {
+        const [x, y] = point(t);
+        const [x2, y2] = point(Math.min(t + 0.02, 1));
+        const angle = (Math.atan2(y2 - y, x2 - x) * 180) / Math.PI;
+        return [-38, 38].map((offset) => (
+          <ellipse
+            key={`${t}-${offset}`}
+            cx={x}
+            cy={y}
+            rx="7"
+            ry="2.7"
+            fill={color}
+            transform={`rotate(${angle + offset} ${x} ${y}) translate(6 0)`}
+          />
+        ));
+      })}
+    </svg>
+  );
+}
+
+export function LaurelRule({ color }: { color: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <Laurel color={color} />
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0l7 7-7 7-7-7z" fill={color} /></svg>
+      <Laurel color={color} flip />
     </div>
   );
 }

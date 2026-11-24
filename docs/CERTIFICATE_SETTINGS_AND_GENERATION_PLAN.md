@@ -3,11 +3,11 @@
 ## Audit findings to fix first
 
 - Global certificate print CSS leaks to unrelated print jobs: `certificate-print.css:1-6` sets a global A4 page and hides all body content whenever the chunk is loaded. Replace with scoped print markup/CSS injected only while printing a certificate.
-- PDF export is brittle: `src/pages/School/Certificates.tsx:180-199` uses a global `.cert-sheet` selector and does not wait for fonts/images; html2canvas also mishandles `color-mix()` and `background-clip: text` used by Noir/Meridian. Use refs per generated certificate, await `document.fonts.ready` and image decode, and add capture-safe fallbacks for unsupported CSS.
+- PDF export is brittle: `src/pages/School/Certificates.tsx:180-199` uses a global `.cert-sheet` selector and does not wait for fonts/images; html2canvas also mishandles `color-mix()` and `background-clip: text` used by Noir/Meridian/Deco/Regent. Use refs per generated certificate, await `document.fonts.ready` and image decode, and add capture-safe fallbacks for unsupported CSS.
 - Stale signatory names: selecting a different staff member only fills a blank name at `Certificates.tsx:303-310,339-346`; a stale name can sit above a different signature. Always sync name/title from the selected staff unless the user later overrides them.
 - Malformed persisted template IDs can resolve to inherited object properties (`registry.ts:42-65`). Use own-property checks/`Map` and always return a valid template definition.
 - Empty state used a duplicate i18n key `pages:certificates.pickHint` (`Certificates.tsx:397`); catalogs now define both `selectHint` and `pickHint`.
-- Assembled fields are ignored by templates: `leadIn`, `body`, `address`, `academicYear`, and `certificateId` are assembled but several are hardcoded or hidden in all four designs. Render all certificate fields in the templates.
+- Assembled fields are ignored by templates: `leadIn`, `body`, `address`, `academicYear`, and `certificateId` are assembled but several are hardcoded or hidden in all eight designs. Render all certificate fields in the templates.
 - Settings preview uses sample signatories instead of configured signatories; pass real defaults/signatures into the preview.
 - Clearing a document-signatory slot leaves stale certificate defaults in `AppearanceSettingsTab.tsx`; clear matching `sig*UserId` values too.
 - SVG/canvas IDs are static (`CertificatePrimitives.tsx:46,169-179`), so multiple certificates on one page can cross-reference gradients. Use `React.useId()`.
@@ -61,7 +61,7 @@
   - `exportCertificatesPdf()` resolves refs, awaits `document.fonts.ready` and all `<img>` load events
   - uses html2canvas with `scale: 2`, `useCORS: true`, `backgroundColor: "#ffffff"`, then jsPDF A4 landscape
   - supports one or many elements into one PDF
-- Add capture-safe style fallback for Noir gradient and Meridian radial-gradient backgrounds so PDF output does not lose text/background.
+- Add capture-safe style fallback for Noir gradient, Meridian radial-gradient, Regent navy page, and Deco radial-gradient backgrounds so PDF output does not lose text/background.
 - Validate long names/content before capture and shrink/wrap instead of clipping.
 
 ## Verification
@@ -69,7 +69,7 @@
 - Update `tests/certificate-templates.test.ts` for new field rendering, safe registry lookups, scoped print CSS, and capture-safe CSS.
 - Add tests for certificate defaults/roster parse+serialize, endpoint role shape, i18n keys, and generated certificate id/filename helpers.
 - Run `npm.cmd run test:certificates`, `npm.cmd run test:i18n`, `npm.cmd run test:settings`, `npm.cmd run lint`, and Vite build.
-- Manually verify all four templates, settings preview, roster filtering, generated list, single/batch PDF, and single/batch print.
+- Manually verify all eight templates, settings preview, roster filtering, generated list, single/batch PDF, and single/batch print.
 
 ## Implementation status
 

@@ -2,13 +2,13 @@
 
 > **Status:** Done — supplied A4 template set integrated
 > **Owner:** frontend-spa (`src/features/certificates`), Settings appearance, Certificates page; identity `School.certificateTemplate` + `certificateDefaults`
-> **Source assets:** `docs/SMS Certificcate Templates/` (`certificates.tsx`, `fonts-and-demo.tsx`, `preview.html`, `README.md`)
+> **Source assets:** `docs/SMS Certificcate Templates/` and `docs/SMS Certificcate Templates/certificates/` (`certificates.tsx`, `fonts-and-demo.tsx`, `preview.html`, `README.md`)
 > **Confirmed:** A4 landscape; roles School Admin / Principal / VPI / Registrar; persist `certificateTemplate` on school
 > **Branding:** per-tenant logo, name/text, address line, saved signatory defaults; template colors stay fixed to the supplied designs
 
 ## Goal
 
-Four printable graduation / completion certificate templates that schools pick in Settings and issue for graduating students (preview, print, PDF). The supplied inline CSS/styling is preserved; only data wiring, fonts, page size, and app organization are adapted.
+Eight printable graduation / completion certificate templates that schools pick in Settings and issue for graduating students (preview, print, PDF). The supplied inline CSS/styling is preserved; only data wiring, fonts, page size, and app organization are adapted.
 
 ## Template map
 
@@ -18,6 +18,10 @@ Four printable graduation / completion certificate templates that schools pick i
 | 2 | White, emerald and brass; chamfered double frame | `CERT_GOLD_LAURELS` | `meridian` | Meridian | A4 landscape |
 | 3 | Charcoal with champagne-gold gradient title; corner brackets | `CERT_RED_SEAL` | `noir` | Noir | A4 landscape |
 | 4 | Editorial indigo frame with ruler-tick edges | `CERT_HERITAGE_TAN` | `atlas` | Atlas | A4 landscape |
+| 5 | Ivory, burgundy, gold studs, and laurel divider | `CERT_SOVEREIGN` | `sovereign` | Sovereign | A4 landscape |
+| 6 | Navy page, ivory notched panel, gold lattice | `CERT_REGENT` | `regent` | Regent | A4 landscape |
+| 7 | Emerald-black, stepped gold frame, sunburst fan | `CERT_DECO` | `deco` | Deco | A4 landscape |
+| 8 | Royal purple lace border, gold accents, laurels | `CERT_IMPERIAL` | `imperial` | Imperial | A4 landscape |
 
 Persisted ids stay stable so existing school settings keep working; the supplied lowercase ids are accepted aliases in `resolveCertificateTemplateKey`.
 
@@ -54,8 +58,12 @@ src/features/certificates/
     MeridianCert.tsx
     NoirCert.tsx
     AtlasCert.tsx
+    SovereignCert.tsx
+    RegentCert.tsx
+    DecoCert.tsx
+    ImperialCert.tsx
   styles/
-    fonts.css                # supplied eight Google Fonts
+    fonts.css                # supplied thirteen Google Fonts
   lib/
     exportCertificate.ts     # scoped print + ref-based PDF capture
   index.ts
@@ -76,7 +84,7 @@ src/components/CertificateTemplates.tsx  # thin re-export
 
 ## Acceptance checks
 
-- [x] All four supplied designs render in Settings and print at A4 landscape without clipping.
+- [x] All eight supplied designs render in Settings and print at A4 landscape without clipping.
 - [x] Changing Settings template changes Certificates page output for that school.
 - [x] Student name / school name / signatories come from real data; blanks when missing.
 - [x] School logo, name/text, address, and official signature images feed the supplied slots; supplied colors are unchanged.

@@ -35,11 +35,11 @@ console.log("=========================================");
 console.log(" CERTIFICATE TEMPLATES TESTS");
 console.log("=========================================\n");
 
-assert(CERTIFICATE_TEMPLATES.length === 4, "exactly 4 templates");
+assert(CERTIFICATE_TEMPLATES.length === 8, "exactly 8 templates");
 assert(
   CERTIFICATE_TEMPLATES.map((t) => t.name).join(",") ===
-    "Heritage,Meridian,Noir,Atlas",
-  "supplied template names replace the old four"
+    "Heritage,Meridian,Noir,Atlas,Sovereign,Regent,Deco,Imperial",
+  "supplied template names include the royal collection"
 );
 assert(
   CERTIFICATE_TEMPLATES.every((t) => t.cssPageSize === "a4 landscape"),
@@ -65,6 +65,22 @@ assert(
   getCertificateTemplateDef("CERT_HERITAGE_TAN").name === "Atlas",
   "atlas label"
 );
+assert(
+  getCertificateTemplateDef("CERT_SOVEREIGN").name === "Sovereign",
+  "sovereign label"
+);
+assert(
+  getCertificateTemplateDef("CERT_REGENT").name === "Regent",
+  "regent label"
+);
+assert(
+  getCertificateTemplateDef("CERT_DECO").name === "Deco",
+  "deco label"
+);
+assert(
+  getCertificateTemplateDef("CERT_IMPERIAL").name === "Imperial",
+  "imperial label"
+);
 
 assert(
   resolveCertificateTemplateKey("heritage") === "CERT_CLASSIC_BROWN",
@@ -81,6 +97,22 @@ assert(
 assert(
   resolveCertificateTemplateKey("atlas") === "CERT_HERITAGE_TAN",
   "atlas alias resolves"
+);
+assert(
+  resolveCertificateTemplateKey("sovereign") === "CERT_SOVEREIGN",
+  "sovereign alias resolves"
+);
+assert(
+  resolveCertificateTemplateKey("regent") === "CERT_REGENT",
+  "regent alias resolves"
+);
+assert(
+  resolveCertificateTemplateKey("deco") === "CERT_DECO",
+  "deco alias resolves"
+);
+assert(
+  resolveCertificateTemplateKey("imperial") === "CERT_IMPERIAL",
+  "imperial alias resolves"
 );
 assert(
   resolveCertificateTemplateKey("CERT_GOLD_LAURELS") === "CERT_GOLD_LAURELS",
@@ -204,6 +236,10 @@ const heritage = read("src/features/certificates/components/HeritageCert.tsx");
 const meridian = read("src/features/certificates/components/MeridianCert.tsx");
 const noir = read("src/features/certificates/components/NoirCert.tsx");
 const atlas = read("src/features/certificates/components/AtlasCert.tsx");
+const sovereign = read("src/features/certificates/components/SovereignCert.tsx");
+const regent = read("src/features/certificates/components/RegentCert.tsx");
+const deco = read("src/features/certificates/components/DecoCert.tsx");
+const imperial = read("src/features/certificates/components/ImperialCert.tsx");
 const view = read("src/features/certificates/components/CertificateView.tsx");
 const fonts = read("src/features/certificates/styles/fonts.css");
 const exportHelper = read("src/features/certificates/lib/exportCertificate.ts");
@@ -241,18 +277,47 @@ assert(
     !atlas.includes("data.brandColor"),
   "atlas keeps supplied indigo"
 );
+assert(
+  getCertificatePrimaryColor("CERT_SOVEREIGN") === "#5B1226" &&
+    sovereign.includes("28px solid ${wine}") &&
+    !sovereign.includes("data.brandColor"),
+  "sovereign keeps supplied burgundy"
+);
+assert(
+  getCertificatePrimaryColor("CERT_REGENT") === "#10224A" &&
+    regent.includes("regent-lattice-${uid}") &&
+    !regent.includes("data.brandColor"),
+  "regent keeps supplied navy"
+);
+assert(
+  getCertificatePrimaryColor("CERT_DECO") === "#0A2B25" &&
+    deco.includes("stepped(26, 12)") &&
+    !deco.includes("data.brandColor"),
+  "deco keeps supplied emerald-black"
+);
+assert(
+  getCertificatePrimaryColor("CERT_IMPERIAL") === "#33195F" &&
+    imperial.includes("<Lace") &&
+    !imperial.includes("data.brandColor"),
+  "imperial keeps supplied purple"
+);
 assert(!primitives.includes("--cert-brand"), "no brand color CSS variable");
 assert(!issuePage.includes("brandColor:"), "generation page does not pass brand color");
 assert(
-  fonts.includes("Allura") && fonts.includes("Cormorant") && fonts.includes("DM+Serif") && fonts.includes("DM+Sans") && fonts.includes("Instrument+Serif") && fonts.includes("Manrope") && fonts.includes("Playfair") && fonts.includes("Inter"),
-  "all supplied font families are loaded"
+  fonts.includes("Allura") && fonts.includes("Bodoni+Moda") && fonts.includes("Cinzel") && fonts.includes("Cormorant") && fonts.includes("DM+Serif") && fonts.includes("DM+Sans") && fonts.includes("Instrument+Serif") && fonts.includes("Italiana") && fonts.includes("Josefin+Sans") && fonts.includes("Manrope") && fonts.includes("Marcellus") && fonts.includes("Playfair") && fonts.includes("Inter"),
+  "all thirteen supplied font families are loaded"
 );
 assert(exportHelper.includes("@page { size: A4 landscape; margin: 0; }"), "scoped A4 print rule retained");
 assert(exportHelper.includes("cert-capture"), "PDF capture fallbacks injected");
+assert(
+  exportHelper.includes(".cert-capture .cert-regent-bg") &&
+    exportHelper.includes(".cert-capture .cert-deco-bg"),
+  "PDF capture fallbacks cover new dark templates"
+);
 assert(exportHelper.includes("orientation: \"landscape\"") && exportHelper.includes("format: \"a4\""), "PDF uses A4 landscape");
 assert(
-  ["HeritageCert", "MeridianCert", "NoirCert", "AtlasCert"].every((c) => view.includes(c)),
-  "renderer routes to all four supplied designs"
+  ["HeritageCert", "MeridianCert", "NoirCert", "AtlasCert", "SovereignCert", "RegentCert", "DecoCert", "ImperialCert"].every((c) => view.includes(c)),
+  "renderer routes to all eight supplied designs"
 );
 assert(!view.includes("certificate-print.css"), "global print CSS no longer imported");
 assert(

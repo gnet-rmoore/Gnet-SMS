@@ -4400,7 +4400,7 @@ export const zhHansResources = {
       "transcriptTemplate": "成绩单模板",
       "transcriptTemplateHint": "The current A4 transcript design used by the Transcripts page. More designs can be added later.",
       "certificateTemplate": "毕业证书模板",
-      "certificateTemplateHint": "四份 A4 横向毕业证书。使用学校徽标、名称、地址和模板原始配色。用于证书页面。",
+      "certificateTemplateHint": "八份 A4 横向毕业证书。使用学校徽标、名称、地址和模板原始配色。用于证书页面。",
       "receiptTemplate": "官方收据模板",
       "receiptTemplateHint": "Choose one of two A4 designs for each category — fee payments, payslips, or expenses. School details and transaction data are filled in automatically.",
       "receiptTypeFeePayment": "费用支付收据",

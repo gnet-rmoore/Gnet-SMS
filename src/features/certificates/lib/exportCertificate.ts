@@ -102,6 +102,12 @@ const CAPTURE_CSS = `
   .cert-capture .cert-meridian-bg {
     background: #F4F8F6 !important;
   }
+  .cert-capture .cert-regent-bg {
+    background: #10224A !important;
+  }
+  .cert-capture .cert-deco-bg {
+    background: #0A2B25 !important;
+  }
   .cert-capture .cert-noir-title {
     background: none !important;
     background-image: none !important;

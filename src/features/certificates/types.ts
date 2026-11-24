@@ -2,7 +2,11 @@ export type CertificateTemplateId =
   | "CERT_CLASSIC_BROWN"
   | "CERT_GOLD_LAURELS"
   | "CERT_RED_SEAL"
-  | "CERT_HERITAGE_TAN";
+  | "CERT_HERITAGE_TAN"
+  | "CERT_SOVEREIGN"
+  | "CERT_REGENT"
+  | "CERT_DECO"
+  | "CERT_IMPERIAL";
 
 export type CertificateSignatory = {
   name: string;

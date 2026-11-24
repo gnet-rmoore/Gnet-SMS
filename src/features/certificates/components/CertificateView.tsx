@@ -5,6 +5,10 @@ import { HeritageCert } from "./HeritageCert";
 import { MeridianCert } from "./MeridianCert";
 import { NoirCert } from "./NoirCert";
 import { AtlasCert } from "./AtlasCert";
+import { SovereignCert } from "./SovereignCert";
+import { RegentCert } from "./RegentCert";
+import { DecoCert } from "./DecoCert";
+import { ImperialCert } from "./ImperialCert";
 import "../styles/fonts.css";
 
 export type CertificateViewProps = {
@@ -23,6 +27,18 @@ export function CertificateView({ templateId, data, compact }: CertificateViewPr
   }
   if (key === "CERT_HERITAGE_TAN") {
     return <AtlasCert data={data} compact={compact} />;
+  }
+  if (key === "CERT_SOVEREIGN") {
+    return <SovereignCert data={data} compact={compact} />;
+  }
+  if (key === "CERT_REGENT") {
+    return <RegentCert data={data} compact={compact} />;
+  }
+  if (key === "CERT_DECO") {
+    return <DecoCert data={data} compact={compact} />;
+  }
+  if (key === "CERT_IMPERIAL") {
+    return <ImperialCert data={data} compact={compact} />;
   }
   return <HeritageCert data={data} compact={compact} />;
 }

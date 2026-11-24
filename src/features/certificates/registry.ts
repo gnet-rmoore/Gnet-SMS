@@ -37,6 +37,42 @@ export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
     orientation: "landscape",
     primaryColor: "#1C2766",
   },
+  {
+    id: "CERT_SOVEREIGN",
+    name: "Sovereign",
+    description: "Ivory with a thick burgundy border, gold studs, and a laurel divider. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
+    orientation: "landscape",
+    primaryColor: "#5B1226",
+  },
+  {
+    id: "CERT_REGENT",
+    name: "Regent",
+    description: "Navy page with an ivory notched panel and a subtle gold lattice. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
+    orientation: "landscape",
+    primaryColor: "#10224A",
+  },
+  {
+    id: "CERT_DECO",
+    name: "Deco",
+    description: "Emerald-black with a stepped gold frame and sunburst fan. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
+    orientation: "landscape",
+    primaryColor: "#0A2B25",
+  },
+  {
+    id: "CERT_IMPERIAL",
+    name: "Imperial",
+    description: "Royal purple banknote-style lace border with gold accents and laurels. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
+    orientation: "landscape",
+    primaryColor: "#33195F",
+  },
 ];
 
 const byId = Object.fromEntries(
@@ -48,6 +84,10 @@ const suppliedIdAliases: Record<string, CertificateTemplateId> = {
   meridian: "CERT_GOLD_LAURELS",
   noir: "CERT_RED_SEAL",
   atlas: "CERT_HERITAGE_TAN",
+  sovereign: "CERT_SOVEREIGN",
+  regent: "CERT_REGENT",
+  deco: "CERT_DECO",
+  imperial: "CERT_IMPERIAL",
 };
 
 export function resolveCertificateTemplateKey(
