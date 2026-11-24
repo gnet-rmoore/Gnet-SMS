@@ -1,10 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Download, Trophy } from "lucide-react";
-import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../../components/ui";
 import { UserAvatar } from "../../../components/UserAvatar";
 
 export type ResultsModalProps = {
+  open?: boolean;
   generateReportCard?: (result: any) => void;
   resultsModal?: any;
   setResultsModal?: any;
@@ -12,32 +13,32 @@ export type ResultsModalProps = {
 };
 
 export function ResultsModal({
+  open = false,
   generateReportCard,
   resultsModal,
   setResultsModal,
 }: ResultsModalProps) {
   const { t } = useTranslation(["pages", "common"]);
 
-  if (!resultsModal) return null;
-
   const avg =
-    resultsModal.length > 0
+    resultsModal?.length
       ? resultsModal.reduce((acc: number, r: any) => acc + r.average, 0) / resultsModal.length
       : 0;
   const passRate =
-    resultsModal.length > 0
+    resultsModal?.length
       ? Math.round(
           (resultsModal.filter((r: any) => r.average >= 50).length / resultsModal.length) * 100
         )
       : 0;
 
   return (
-    <FeatureModalShell
+    <DetailDrawerShell
+      open={open && Boolean(resultsModal)}
       title={t("examDetails.resultsModal.title")}
       subtitle={t("examDetails.resultsModal.subtitle")}
       eyebrow={t("examDetails.resultsModal.eyebrow")}
       onClose={() => setResultsModal(null)}
-      maxWidthClass="max-w-4xl"
+      bodyClassName=""
       footer={
         <button
           type="button"
@@ -48,6 +49,7 @@ export function ResultsModal({
         </button>
       }
     >
+      {resultsModal ? (
       <div className="p-6 sm:p-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] space-y-2">
@@ -158,6 +160,7 @@ export function ResultsModal({
           </table>
         </div>
       </div>
-    </FeatureModalShell>
+      ) : null}
+    </DetailDrawerShell>
   );
 }

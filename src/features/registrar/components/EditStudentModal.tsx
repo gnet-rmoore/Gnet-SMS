@@ -1,15 +1,15 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "../../../components/ui";
+import { Button, DetailDrawerShell } from "../../../components/ui";
 import { StudentPhotoEditor } from "../../../components/StudentPhotoEditor";
 import {
-  FeatureModalShell,
   fieldInput,
   fieldLabel,
   fieldSelect,
 } from "../../academics-shared/FeatureModalShell";
 
 export type EditStudentModalProps = {
+  open?: boolean;
   gradeLevels?: unknown;
   gradeLevelsLoading?: boolean;
   handleSaveStudent?: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -20,6 +20,7 @@ export type EditStudentModalProps = {
 };
 
 export function EditStudentModal({
+  open = false,
   gradeLevels,
   gradeLevelsLoading = false,
   handleSaveStudent,
@@ -35,12 +36,12 @@ export function EditStudentModal({
   const close = () => setShowEditStudentModal?.(false);
 
   return (
-    <FeatureModalShell
+    <DetailDrawerShell
+      open={open}
       title={t("admissions.editStudent.title")}
       subtitle={t("admissions.editStudent.subtitle")}
       eyebrow={t("admissions.eyebrow")}
       onClose={close}
-      wide
       footer={
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" onClick={close} disabled={submitting}>
@@ -66,7 +67,7 @@ export function EditStudentModal({
       <form
         id="edit-registrar-student-form"
         onSubmit={handleSaveStudent}
-        className="space-y-6 p-4 sm:p-6 md:p-8"
+        className="space-y-6"
       >
         <section aria-labelledby="edit-student-identity" className="space-y-4">
           <h3
@@ -261,6 +262,6 @@ export function EditStudentModal({
           </div>
         </section>
       </form>
-    </FeatureModalShell>
+    </DetailDrawerShell>
   );
 }

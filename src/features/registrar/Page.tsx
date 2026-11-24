@@ -461,18 +461,17 @@ export const Registrar = () => {
         </motion.div>
       )}
 
-      {/* 1. Modal: Edit Student Profile */}
-      {showEditStudentModal && (
-        <EditStudentModal
-          gradeLevels={gradeLevels}
-          gradeLevelsLoading={gradeLevelsLoading}
-          handleSaveStudent={handleSaveStudent}
-          setShowEditStudentModal={setShowEditStudentModal}
-          setStudentFormData={setStudentFormData}
-          studentFormData={studentFormData}
-          submitting={submitting}
-        />
-      )}
+      {/* 1. Drawer: Edit Student Profile */}
+      <EditStudentModal
+        open={showEditStudentModal}
+        gradeLevels={gradeLevels}
+        gradeLevelsLoading={gradeLevelsLoading}
+        handleSaveStudent={handleSaveStudent}
+        setShowEditStudentModal={setShowEditStudentModal}
+        setStudentFormData={setStudentFormData}
+        studentFormData={studentFormData}
+        submitting={submitting}
+      />
       {/* 2. Modal: Review Application details & Checklist */}
       {showAppReviewModal && selectedApp && (
         <ApplicationReviewModal
@@ -533,18 +532,17 @@ export const Registrar = () => {
           }}
         />
       ) : null}
-      {/* 3. Modal: Student Records Dossier & Transcript Management */}
-      {selectedStudent && (
-        <StudentDossierModal
-          dossierTab={dossierTab}
-          gradeLevels={gradeLevels}
-          isPrintTranscriptMode={isPrintTranscriptMode}
-          selectedStudent={selectedStudent}
-          setDossierTab={setDossierTab}
-          setIsPrintTranscriptMode={setIsPrintTranscriptMode}
-          setSelectedStudent={setSelectedStudent}
-        />
-      )}
+      {/* 3. Drawer: Student Records Dossier & Transcript Management */}
+      <StudentDossierModal
+        open={Boolean(selectedStudent)}
+        dossierTab={dossierTab}
+        gradeLevels={gradeLevels}
+        isPrintTranscriptMode={isPrintTranscriptMode}
+        selectedStudent={selectedStudent}
+        setDossierTab={setDossierTab}
+        setIsPrintTranscriptMode={setIsPrintTranscriptMode}
+        setSelectedStudent={setSelectedStudent}
+      />
     </PageShell>
   );
 };

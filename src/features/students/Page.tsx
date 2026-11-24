@@ -718,18 +718,15 @@ export const Students = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showEditModal && (
-          <EditStudentModal
-            editStudent={editStudent}
-            gradeLevels={gradeLevels}
-            handleUpdate={handleUpdate}
-            setEditStudent={setEditStudent}
-            setShowEditModal={setShowEditModal}
-            submitting={submitting}
-          />
-        )}
-      </AnimatePresence>
+      <EditStudentModal
+        open={showEditModal}
+        editStudent={editStudent}
+        gradeLevels={gradeLevels}
+        handleUpdate={handleUpdate}
+        setEditStudent={setEditStudent}
+        setShowEditModal={setShowEditModal}
+        submitting={submitting}
+      />
     </div>
   );
 };

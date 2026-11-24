@@ -932,29 +932,26 @@ export const Attendance = () => {
         </div>
       )}
 
-      <AnimatePresence>
-        {showDetailsModal && selectedRecord && (
-          <RollCallModal
-            selectedRecord={selectedRecord}
-            setShowDetailsModal={setShowDetailsModal}
-            loading={detailLoading}
-            error={detailError}
-            onRetry={() => fetchRecordDetails(detailRecordId, selectedRecord)}
-            canViewStudentHistory={canTake}
-            onViewStudentHistory={(student) => {
-              if (canTake) setHistoryStudent(student);
-            }}
-          />
-        )}
-      </AnimatePresence>
-      {canTake && historyStudent && school?.id && (
-        <AttendanceStudentHistoryModal
-          student={historyStudent}
-          schoolId={school.id}
-          classrooms={hubClassrooms}
-          onClose={() => setHistoryStudent(null)}
-        />
-      )}
+      <RollCallModal
+        open={showDetailsModal && Boolean(selectedRecord)}
+        selectedRecord={selectedRecord}
+        setShowDetailsModal={setShowDetailsModal}
+        loading={detailLoading}
+        error={detailError}
+        onRetry={() => fetchRecordDetails(detailRecordId, selectedRecord)}
+        canViewStudentHistory={canTake}
+        onViewStudentHistory={(student) => {
+          if (canTake) setHistoryStudent(student);
+        }}
+        suspendA11y={Boolean(historyStudent)}
+      />
+      <AttendanceStudentHistoryModal
+        open={canTake && Boolean(historyStudent && school?.id)}
+        student={historyStudent}
+        schoolId={school?.id || ""}
+        classrooms={hubClassrooms}
+        onClose={() => setHistoryStudent(null)}
+      />
     </PageShell>
   );
 };

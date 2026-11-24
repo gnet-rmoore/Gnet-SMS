@@ -2,28 +2,28 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { History, Clock } from "lucide-react";
 import { format } from "date-fns";
-import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../../components/ui";
 import { UserAvatar } from "../../../components/UserAvatar";
 
 export type HistoryModalProps = {
+  open?: boolean;
   historyModal?: any;
   setHistoryModal?: any;
   user?: any;
   [key: string]: any;
 };
 
-export function HistoryModal({ historyModal, setHistoryModal }: HistoryModalProps) {
+export function HistoryModal({ open = false, historyModal, setHistoryModal }: HistoryModalProps) {
   const { t } = useTranslation(["pages", "common"]);
 
-  if (!historyModal) return null;
-
   return (
-    <FeatureModalShell
+    <DetailDrawerShell
+      open={open && Boolean(historyModal)}
       title={t("examDetails.historyModal.title")}
-      subtitle={t("examDetails.historyModal.subtitle", { name: historyModal.student.name })}
+      subtitle={t("examDetails.historyModal.subtitle", { name: historyModal?.student?.name })}
       eyebrow={t("examDetails.historyModal.eyebrow")}
       onClose={() => setHistoryModal(null)}
-      maxWidthClass="max-w-lg"
+      bodyClassName=""
       footer={
         <button
           type="button"
@@ -34,6 +34,7 @@ export function HistoryModal({ historyModal, setHistoryModal }: HistoryModalProp
         </button>
       }
     >
+      {historyModal ? (
       <div className="p-6 sm:p-8 space-y-6">
         {historyModal.history.length > 0 ? (
           historyModal.history.map((entry: any) => (
@@ -101,6 +102,7 @@ export function HistoryModal({ historyModal, setHistoryModal }: HistoryModalProp
           </div>
         )}
       </div>
-    </FeatureModalShell>
+      ) : null}
+    </DetailDrawerShell>
   );
 }

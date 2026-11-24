@@ -21,8 +21,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { format, parseISO } from "date-fns";
 import { UserAvatar } from "../../components/UserAvatar";
-import { PageShell, PageHeader, Button, DataTable, dataTableClass } from "../../components/ui";
-import { FeatureModalShell, fieldInput, fieldLabel } from "../../features/academics-shared/FeatureModalShell";
+import { PageShell, PageHeader, Button, DataTable, dataTableClass, DetailDrawerShell } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
 import {
   TRANSCRIPT_TEMPLATE_OPTIONS,
@@ -149,6 +148,17 @@ export const Transcripts = () => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [school?.id]);
+
+  useEffect(() => {
+    if (!reviewMode) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setReviewMode(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [reviewMode]);
 
   const latest = useMemo(() => latestByStudent(records), [records]);
   const gradeNameById = useMemo(() => {
@@ -358,7 +368,7 @@ export const Transcripts = () => {
             initial={{ opacity: 0, y: -16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -16, scale: 0.97 }}
-            className={`fixed top-6 right-6 z-[60] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-bold border ${
+            className={`fixed top-6 right-6 z-[130] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl text-sm font-bold border ${
               toast.type === "success"
                 ? "bg-emerald-50 text-emerald-800 border-emerald-100"
                 : "bg-rose-50 text-rose-800 border-rose-100"
@@ -654,7 +664,7 @@ export const Transcripts = () => {
 
       <AnimatePresence>
         {prepareFor && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -769,48 +779,28 @@ export const Transcripts = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {detail && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden"
-            >
-              <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900">{detail.studentName}</h2>
-                    <p className="text-xs font-semibold text-slate-500 mt-1">
-                      {tr("academicYearLabel")}: {detail.academicYear || "—"} · {tr("templateLabel")}:{" "}
-                      {tr(
-                        TRANSCRIPT_TEMPLATE_OPTIONS.find((option) => option.key === detail.templateKey)?.nameKey ||
-                          "tplClassic"
-                      )}
-                    </p>
-                    <div className="mt-2">
-                      <StatusBadge status={detail.status} />
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDetail(null);
-                    setReviewMode(null);
-                    setReviewComment("");
-                  }}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+      <DetailDrawerShell
+        open={Boolean(detail)}
+        suspendA11y={Boolean(reviewMode)}
+        onClose={() => {
+          setDetail(null);
+          setReviewMode(null);
+          setReviewComment("");
+        }}
+        eyebrow={tr("openTranscript")}
+        title={detail?.studentName || ""}
+        subtitle={`${tr("academicYearLabel")}: ${detail?.academicYear || "—"} · ${tr("templateLabel")}: ${tr(
+          TRANSCRIPT_TEMPLATE_OPTIONS.find((option) => option.key === detail?.templateKey)?.nameKey || "tplClassic"
+        )}`}
+        badge={detail ? <StatusBadge status={detail.status} /> : null}
+        headerLead={
+          <div className="w-11 h-11 rounded-xl bg-white/10 text-indigo-200 flex items-center justify-center">
+            <Award className="w-5 h-5" />
+          </div>
+        }
+      >
+        {detail ? (
+        <div className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     { label: tr("detailGpa"), value: Number(detail.gpa || 0).toFixed(2) },
@@ -927,7 +917,6 @@ export const Transcripts = () => {
                     )}
                   </div>
                 </div>
-              </div>
 
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -1012,14 +1001,13 @@ export const Transcripts = () => {
                   )}
                 </div>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </div>
+        ) : null}
+      </DetailDrawerShell>
 
       <AnimatePresence>
         {reviewMode && detail && (
-          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1040,6 +1028,7 @@ export const Transcripts = () => {
                     {reviewMode === "APPROVE" ? tr("commentOptional") : tr("commentRequiredLabel")}
                   </span>
                   <textarea
+                    autoFocus
                     value={reviewComment}
                     onChange={(event) => setReviewComment(event.target.value)}
                     rows={4}
@@ -1080,7 +1069,7 @@ export const Transcripts = () => {
 
       <AnimatePresence>
         {showPreviewDemo && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}

@@ -1,15 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  FeatureModalShell,
-  fieldInput,
-  fieldLabel,
-  cardShell,
-} from "../../academics-shared/FeatureModalShell";
+import { fieldInput } from "../../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../../components/ui";
 import { StudentPhotoEditor } from "../../../components/StudentPhotoEditor";
-import { CheckCircle2, Clock } from "lucide-react";
 
 export type EditStudentModalProps = {
+  open?: boolean;
   editStudent?: any;
   gradeLevels?: any[];
   handleUpdate?: (e: React.FormEvent) => void;
@@ -19,6 +15,7 @@ export type EditStudentModalProps = {
 };
 
 export function EditStudentModal({
+  open = false,
   editStudent,
   gradeLevels = [],
   handleUpdate,
@@ -37,18 +34,29 @@ export function EditStudentModal({
   const studentIsActive = editStudent?.isActive;
 
   return (
-    <FeatureModalShell
-      eyebrow={t("pages:students.title")}
+    <DetailDrawerShell
+      open={open}
+      onClose={() => setShowEditModal?.(false)}
+      eyebrow={t("pages:students.directory")}
       title={t("pages:students.editTitle")}
       subtitle={t("pages:students.editSubtitle")}
-      onClose={() => setShowEditModal?.(false)}
-      wide
+      badge={
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+            studentIsActive
+              ? "bg-emerald-400/15 text-emerald-200"
+              : "bg-amber-400/15 text-amber-200"
+          }`}
+        >
+          {studentIsActive ? t("common:active") : t("common:inactive")}
+        </span>
+      }
       footer={
-        <div className="flex gap-3">
+        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => setShowEditModal?.(false)}
-            className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
+            className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
           >
             {t("common:cancel")}
           </button>
@@ -56,7 +64,7 @@ export function EditStudentModal({
             type="submit"
             form="edit-student-form"
             disabled={submitting}
-            className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
           >
             {submitting ? t("common:saving") : t("common:saveChanges")}
           </button>
@@ -230,6 +238,6 @@ export function EditStudentModal({
           </div>
         </div>
       </form>
-    </FeatureModalShell>
+    </DetailDrawerShell>
   );
 }

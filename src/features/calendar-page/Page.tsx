@@ -69,8 +69,6 @@ export const CalendarPage = () => {
     handleDeleteEvent,
     editingEventId: activeEditingId,
     monthLabel,
-    getPriorityBadgeClass,
-    getCategoryLightBg,
   } = usePageActions({
     user,
     fetchedEvents,
@@ -165,18 +163,13 @@ export const CalendarPage = () => {
         />
       )}
 
-      <AnimatePresence>
-        {selectedEvent && (
-          <EventDetailsModal
-            getCategoryLightBg={getCategoryLightBg}
-            getPriorityBadgeClass={getPriorityBadgeClass}
-            handleDeleteEvent={handleDeleteEvent}
-            onEditEvent={isEligibleToCreateEvents ? handleEditEvent : undefined}
-            selectedEvent={selectedEvent}
-            setSelectedEvent={setSelectedEvent}
-          />
-        )}
-      </AnimatePresence>
+      <EventDetailsModal
+        handleDeleteEvent={handleDeleteEvent}
+        onEditEvent={isEligibleToCreateEvents ? handleEditEvent : undefined}
+        open={Boolean(selectedEvent)}
+        selectedEvent={selectedEvent}
+        setSelectedEvent={setSelectedEvent}
+      />
 
       <AnimatePresence>
         {isAddingEvent && (

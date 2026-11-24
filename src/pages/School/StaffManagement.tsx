@@ -21,7 +21,7 @@ import { confirmAction } from "../../lib/swal";
 import { UserAvatar } from "../../components/UserAvatar";
 import { canAdminResetPassword } from "../../lib/passwordResetPolicy";
 import { translateApiError } from "../../i18n/apiErrors";
-import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button } from "../../components/ui";
+import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button, DetailDrawerShell } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../../features/list-filters";
 
 export const StaffManagement = () => {
@@ -811,24 +811,38 @@ export const StaffManagement = () => {
         />
       </div>
 
-      {showEditModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] overflow-hidden z-10 max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-br from-slate-950 to-slate-900 text-white shrink-0">
-              <div>
-                <h3 className="font-extrabold tracking-tight text-lg">{t("pages:staff.directory.editTitle")}</h3>
-                <p className="text-xs text-slate-300">{t("pages:staff.directory.editSubtitle")}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEditModal(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-4 overflow-y-auto">
+      <DetailDrawerShell
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        eyebrow={t("pages:staff.titleDirectory")}
+        title={t("pages:staff.directory.editTitle")}
+        subtitle={t("pages:staff.directory.editSubtitle")}
+        badge={
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold text-slate-200">
+            {staffRoleLabel(editFormData.role)}
+          </span>
+        }
+        footer={
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowEditModal(false)}
+              className="px-5 py-2.5 text-sm font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              {t("common:cancel")}
+            </button>
+            <button
+              type="submit"
+              form="edit-staff-form"
+              disabled={submitting}
+              className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {submitting ? t("common:saving") : t("common:saveChanges")}
+            </button>
+          </div>
+        }
+      >
+        <form id="edit-staff-form" onSubmit={handleSaveEdit} className="space-y-6">
               <StaffPhotoField
                 name={editFormData.name}
                 photoUrl={editFormData.photoUrl || null}
@@ -1003,26 +1017,8 @@ export const StaffManagement = () => {
                 </p>
               ) : null}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition-all"
-                >
-                  {t("common:cancel")}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
-                  disabled={submitting}
-                >
-                  {submitting ? t("common:saving") : t("common:saveChanges")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+      </DetailDrawerShell>
     </div>
   );
 };

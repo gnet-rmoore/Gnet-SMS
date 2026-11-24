@@ -1,18 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../../components/ui";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { formatAttendanceDate } from "../date";
 
 export type RollCallModalProps = {
-  selectedRecord: any;
+  open?: boolean;
+  selectedRecord?: any;
   setShowDetailsModal: (v: boolean) => void;
   loading: boolean;
   error: string;
   onRetry: () => void;
   canViewStudentHistory: boolean;
   onViewStudentHistory: (student: { id: string; name: string }) => void;
+  suspendA11y?: boolean;
 };
 
 const statusClass = (status: string) => {
@@ -29,6 +31,7 @@ const statusClass = (status: string) => {
 };
 
 export function RollCallModal({
+  open = false,
   selectedRecord,
   setShowDetailsModal,
   loading,
@@ -36,11 +39,12 @@ export function RollCallModal({
   onRetry,
   canViewStudentHistory,
   onViewStudentHistory,
+  suspendA11y,
 }: RollCallModalProps) {
   const { t } = useTranslation(["pages", "common"]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [studentQuery, setStudentQuery] = useState("");
-  const records = Array.isArray(selectedRecord.records) ? selectedRecord.records : [];
+  const records = Array.isArray(selectedRecord?.records) ? selectedRecord.records : [];
   const statusCounts = useMemo(
     () =>
       records.reduce(
@@ -62,19 +66,20 @@ export function RollCallModal({
       return `${name} ${email}`.toLowerCase().includes(query);
     });
   }, [records, statusFilter, studentQuery]);
-  const sessionDate = formatAttendanceDate(selectedRecord.date);
+  const sessionDate = selectedRecord?.date ? formatAttendanceDate(selectedRecord.date) : "";
 
   return (
-    <FeatureModalShell
-      title={selectedRecord.classroom?.name || t("attendance.rollCall")}
+    <DetailDrawerShell
+      open={open && Boolean(selectedRecord)}
+      title={selectedRecord?.classroom?.name || t("attendance.rollCall")}
       subtitle={t("attendance.takenBy", {
-        name: selectedRecord.teacher?.name || t("attendance.staff").toLowerCase(),
+        name: selectedRecord?.teacher?.name || t("attendance.staff").toLowerCase(),
         date: sessionDate,
       })}
       eyebrow={t("attendance.sessionEyebrow")}
       onClose={() => setShowDetailsModal(false)}
-      wide
-      maxWidthClass="max-w-6xl"
+      bodyClassName=""
+      suspendA11y={suspendA11y}
       footer={
         <button
           type="button"
@@ -253,6 +258,6 @@ export function RollCallModal({
         </section>
       </div>
       )}
-    </FeatureModalShell>
+    </DetailDrawerShell>
   );
 }

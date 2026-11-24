@@ -1,67 +1,45 @@
 import React from "react";
-import { X, ExternalLink } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DetailDrawerShell } from "../../../components/ui";
 import { CATEGORY_BADGE } from "../categoryStyles";
 
 export type TransactionDetailsModalProps = {
+  open?: boolean;
   selectedTxnDetails?: any;
   setSelectedTxnDetails?: (v: any) => void;
 };
 
 export function TransactionDetailsModal({
+  open = false,
   selectedTxnDetails,
   setSelectedTxnDetails,
 }: TransactionDetailsModalProps) {
   const { t } = useTranslation(["pages", "common"]);
 
   const txn = selectedTxnDetails;
-  if (!txn) return null;
-
   const badge =
-    CATEGORY_BADGE[txn.category] || "bg-slate-100 text-slate-600";
+    CATEGORY_BADGE[txn?.category] || "bg-slate-100 text-slate-600";
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-end p-0 sm:p-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="absolute inset-0 bg-slate-900/40"
+    <DetailDrawerShell
+      open={open && Boolean(txn)}
+      onClose={() => setSelectedTxnDetails?.(null)}
+      eyebrow={t("expenses.transactions.modalEyebrow")}
+      title={txn?.particulars || ""}
+      subtitle={txn?.refCode}
+      footer={
+        <button
+          type="button"
           onClick={() => setSelectedTxnDetails?.(null)}
-        />
-        <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 24 }}
-          transition={{ duration: 0.2 }}
-          className="relative bg-white w-full max-w-md h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[32px] border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.08)] flex flex-col overflow-hidden"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors"
         >
-          <div className="bg-gradient-to-br from-slate-950 to-slate-900 px-6 py-5 text-white flex items-start justify-between gap-3 shrink-0">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {t("expenses.transactions.modalEyebrow")}
-              </p>
-              <h2 className="text-lg font-extrabold tracking-tight mt-0.5">
-                {txn.particulars}
-              </h2>
-              <p className="text-xs text-slate-300 font-mono mt-1">
-                {txn.refCode}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedTxnDetails?.(null)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label={t("common:close")}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {t("common:close")}
+        </button>
+      }
+    >
+      {txn ? (
+      <div className="space-y-5">
             <div className="flex flex-wrap gap-2">
               <span
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${badge}`}
@@ -146,19 +124,8 @@ export function TransactionDetailsModal({
                 {t("expenses.transactions.openReceipt")}
               </a>
             ) : null}
-          </div>
-
-          <div className="p-6 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setSelectedTxnDetails?.(null)}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors"
-            >
-              {t("common:close")}
-            </button>
-          </div>
-        </motion.div>
       </div>
-    </AnimatePresence>
+      ) : null}
+    </DetailDrawerShell>
   );
 }

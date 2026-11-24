@@ -5,6 +5,7 @@ export { Surface } from "./Surface";
 export { StatTile } from "./StatTile";
 export { Button } from "./Button";
 export type { ButtonVariant, ButtonSize } from "./Button";
+export { DetailDrawerShell } from "./DetailDrawerShell";
 export { Field, TextField, SelectField, TextAreaField } from "./Field";
 export type { FieldDensity } from "./Field";
 export { TableScroll } from "./TableScroll";

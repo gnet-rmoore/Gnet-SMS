@@ -10,7 +10,8 @@ import { hasRichContent } from "./richText";
 import { QuestionBankEditorModal } from "./QuestionBankEditorModal";
 import { QuestionBankImportModal } from "./QuestionBankImportModal";
 import { downloadQuestionTemplate } from "./parseQuestionSheet";
-import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { fieldInput, fieldSelect } from "../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../components/ui";
 import { workspaceApi } from "../classroom-workspace/api";
 import { buildTeachingScope } from "../curriculum/teacherTeachingScope";
 
@@ -355,11 +356,13 @@ export default function QuestionBankPage() {
         />
       ) : null}
 
-      {preview && (
-        <FeatureModalShell
+      <DetailDrawerShell
+          open={Boolean(preview)}
           title={t("onlineExams.questionBank.previewTitle")}
+          eyebrow={preview ? t(TYPE_LABEL_KEY[preview.type] || preview.type) : ""}
+          badge={preview ? <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold text-slate-200">{preview.points} {t("onlineExams.questionBank.points")}</span> : null}
           onClose={() => setPreview(null)}
-          wide
+          bodyClassName=""
           footer={
             <div className="flex justify-end">
               <button
@@ -372,6 +375,7 @@ export default function QuestionBankPage() {
             </div>
           }
         >
+          {preview ? (
           <div className="p-6 sm:p-8 space-y-4">
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="rounded-full bg-slate-900 text-white px-2 py-0.5 font-bold">
@@ -410,8 +414,8 @@ export default function QuestionBankPage() {
               </p>
             )}
           </div>
-        </FeatureModalShell>
-      )}
+          ) : null}
+        </DetailDrawerShell>
     </div>
   );
 }

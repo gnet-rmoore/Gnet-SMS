@@ -337,14 +337,11 @@ export const Expenses = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {selectedTxnDetails && (
-          <TransactionDetailsModal
-            selectedTxnDetails={selectedTxnDetails}
-            setSelectedTxnDetails={setSelectedTxnDetails}
-          />
-        )}
-      </AnimatePresence>
+      <TransactionDetailsModal
+        open={Boolean(selectedTxnDetails)}
+        selectedTxnDetails={selectedTxnDetails}
+        setSelectedTxnDetails={setSelectedTxnDetails}
+      />
     </div>
   );
 };

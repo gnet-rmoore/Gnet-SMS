@@ -10,7 +10,7 @@ import {
   CalendarDays,
   Pencil,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { DetailDrawerShell } from "../../../components/ui";
 import {
   parseSyllabusJsonField,
   periodLabelById,
@@ -18,6 +18,7 @@ import {
 } from "../../academics-shared/syllabusCalendar";
 
 export type SyllabusViewModalProps = {
+  open?: boolean;
   canManage?: boolean;
   calendar?: ActiveCalendar | null;
   handleUpdateSyllabusStatus?: any;
@@ -33,6 +34,7 @@ export type SyllabusViewModalProps = {
 
 /** Presentational extract from Page.tsx lines 1770-2044. */
 export function SyllabusViewModal({
+  open = false,
   canManage,
   calendar = null,
   handleUpdateSyllabusStatus,
@@ -59,29 +61,55 @@ export function SyllabusViewModal({
     (selectedSyllabus?.status === "REJECTED" || selectedSyllabus?.status === "DRAFT") &&
     (user?.id === selectedSyllabus?.teacherId || canManage) &&
     Boolean(onEditSyllabus);
+  const footer = selectedSyllabus ? (
+    <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+      {canEdit ? (
+        <button
+          type="button"
+          onClick={() => onEditSyllabus?.(selectedSyllabus)}
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all text-xs"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          {t("curriculum.syllabusView.editResubmit")}
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => setShowSyllabusViewModal(false)}
+        className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-xs"
+      >
+        {t("common:close")}
+      </button>
+    </div>
+  ) : null;
 
   return (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-                <div className="absolute inset-0 bg-slate-900/40" onClick={() => setShowSyllabusViewModal(false)} />
-                <motion.div 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 15 }}
-                  transition={{ duration: 0.2 }}
-                  className="relative w-full max-w-4xl bg-slate-50 rounded-[32px] border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.08)] overflow-hidden my-8"
-                >
-                  {/* Header block */}
-                  <div className="p-6 md:p-8 bg-gradient-to-br from-slate-950 to-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-12 h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold tracking-wider text-slate-500 uppercase block mb-0.5">Syllabus plan</span>
-                        <h2 className="text-xl font-extrabold tracking-tight text-white truncate">{selectedSyllabus.title}</h2>
-                      </div>
-                    </div>
-                    
+    <DetailDrawerShell
+      open={open && Boolean(selectedSyllabus)}
+      onClose={() => setShowSyllabusViewModal(false)}
+      eyebrow="Syllabus plan"
+      title={selectedSyllabus?.title || ""}
+      badge={
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider border ${
+          selectedSyllabus?.status === "APPROVED" ? "bg-emerald-400/15 text-emerald-200 border-emerald-400/30" :
+          selectedSyllabus?.status === "PENDING" ? "bg-amber-400/15 text-amber-200 border-amber-400/30" :
+          "bg-rose-400/15 text-rose-200 border-rose-400/30"
+        }`}>
+          {selectedSyllabus?.status}
+        </span>
+      }
+      headerLead={
+        <div className="w-12 h-12 bg-white/10 text-indigo-200 rounded-2xl flex items-center justify-center shrink-0">
+          <FileText className="w-6 h-6" />
+        </div>
+      }
+      bodyClassName="bg-slate-50 p-5 sm:p-7"
+      footer={footer}
+    >
+      {selectedSyllabus ? (
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+
                     <div className="flex items-center gap-3 shrink-0">
                       <button 
                         onClick={() => {
@@ -126,28 +154,20 @@ export function SyllabusViewModal({
                             }
                           }
                         }} 
-                        className="p-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs border border-white/10"
+                        className="p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs"
                         title={t("curriculum.syllabusView.printExport")}
                       >
                         <Download className="w-4 h-4" />
                         <span>Print Plan</span>
                       </button>
 
-                      <span className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider border ${
-                        selectedSyllabus.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                        selectedSyllabus.status === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                        "bg-rose-50 text-rose-700 border-rose-100"
-                      }`}>
-                        {selectedSyllabus.status}
-                      </span>
-                      
-                      <button onClick={() => setShowSyllabusViewModal(false)} className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all">
+                      <button onClick={() => setShowSyllabusViewModal(false)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-all" aria-label={t("common:close")}>
                         <Plus className="w-6 h-6 rotate-45" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-6 md:p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  <div className="space-y-8">
                     {/* 1. Page Body Document style card */}
                     <div id="printable-syllabus-area" className="bg-white p-6 md:p-10 rounded-[32px] shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] border border-slate-100 space-y-8 print-border">
                       {/* Subject Details Header Grid */}
@@ -344,25 +364,8 @@ export function SyllabusViewModal({
                     </div>
                   </div>
 
-                  <div className="p-6 md:p-8 bg-white border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-3">
-                    {canEdit ? (
-                      <button
-                        type="button"
-                        onClick={() => onEditSyllabus?.(selectedSyllabus)}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all text-xs"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        {t("curriculum.syllabusView.editResubmit")}
-                      </button>
-                    ) : null}
-                    <button 
-                      onClick={() => setShowSyllabusViewModal(false)}
-                      className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-xs"
-                    >
-                      {t("common:close")}
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
+       </div>
+      ) : null}
+    </DetailDrawerShell>
   );
 }

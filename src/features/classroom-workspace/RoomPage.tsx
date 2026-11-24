@@ -23,6 +23,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../academics-shared/FeatureModalShell";
+import { DetailDrawerShell } from "../../components/ui";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { uploadClassroomFile, workspaceApi } from "./api";
 import { FileDropzone } from "./FileDropzone";
@@ -1498,13 +1499,12 @@ export function ClassroomRoomPage() {
         </FeatureModalShell>
       )}
 
-      {activePostId && (
-        <FeatureModalShell
+      <DetailDrawerShell
+          open={Boolean(activePostId)}
           title={postDetail?.title || (postDetail?.type === "MATERIAL" ? t("classroomWorkspace.materialFallback") : t("classroomWorkspace.assignmentFallback"))}
           subtitle={
             postDetail
               ? [
-                  postDetail.type,
                   formatDue(postDetail.dueAt) ? t("classroomWorkspace.stream.due", { date: formatDue(postDetail.dueAt) }) : null,
                   postDetail.maxPoints != null ? t("classroomWorkspace.stream.points", { count: postDetail.maxPoints }) : null,
                 ]
@@ -1512,8 +1512,9 @@ export function ClassroomRoomPage() {
                   .join(" · ")
               : t("classroomWorkspace.postDetail.loading")
           }
+          eyebrow={postDetail ? t(postDetail.type === "MATERIAL" ? "classroomWorkspace.materialFallback" : "classroomWorkspace.assignmentFallback") : ""}
           onClose={closePost}
-          wide
+          bodyClassName=""
         >
           <div className="p-6 sm:p-8 space-y-6">
             {detailLoading || !postDetail ? (
@@ -1780,8 +1781,7 @@ export function ClassroomRoomPage() {
               </>
             )}
           </div>
-        </FeatureModalShell>
-      )}
+      </DetailDrawerShell>
     </div>
   );
 }

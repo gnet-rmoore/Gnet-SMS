@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FeatureModalShell } from "../../academics-shared/FeatureModalShell";
-import { Button } from "../../../components/ui";
+import { Button, DetailDrawerShell } from "../../../components/ui";
 import { attendanceApi } from "../api";
 import { useTranslation } from "react-i18next";
 import { formatAttendanceDate } from "../date";
@@ -17,12 +16,14 @@ type ClassroomOption = { id: string; name: string };
 const PAGE_SIZE = 50;
 
 export function AttendanceStudentHistoryModal({
+  open = false,
   student,
   schoolId,
   classrooms,
   onClose,
 }: {
-  student: { id: string; name: string };
+  open?: boolean;
+  student?: { id: string; name: string } | null;
   schoolId: string;
   classrooms: ClassroomOption[];
   onClose: () => void;
@@ -41,6 +42,7 @@ export function AttendanceStudentHistoryModal({
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    if (!student?.id || !schoolId) return;
     let active = true;
     setLoading(true);
     setError("");
@@ -83,7 +85,7 @@ export function AttendanceStudentHistoryModal({
     return () => {
       active = false;
     };
-  }, [schoolId, student.id, classroomId, status, from, to, retry, t]);
+  }, [schoolId, student?.id, classroomId, status, from, to, retry, t]);
 
   const records = useMemo(
     () => sessions.flatMap((session) => session.records || []),
@@ -109,6 +111,7 @@ export function AttendanceStudentHistoryModal({
     : 0;
 
   const loadMore = async () => {
+    if (!student?.id) return;
     const nextPage = page + 1;
     setLoadingMore(true);
     setError("");
@@ -144,15 +147,16 @@ export function AttendanceStudentHistoryModal({
   };
 
   return (
-    <FeatureModalShell
+    <DetailDrawerShell
+      open={open && Boolean(student?.id)}
       title={t("attendance.history.title", {
         defaultValue: "Student attendance history",
       })}
-      subtitle={student.name}
+      subtitle={student?.name}
       eyebrow={t("attendance.history.eyebrow", { defaultValue: "History" })}
       onClose={onClose}
-      wide
-      maxWidthClass="max-w-6xl"
+      bodyClassName=""
+      layerClass="z-[110]"
       footer={
         <Button type="button" variant="secondary" className="w-full" onClick={onClose}>
           {t("common:close")}
@@ -315,6 +319,6 @@ export function AttendanceStudentHistoryModal({
           </Button>
         )}
       </div>
-    </FeatureModalShell>
+    </DetailDrawerShell>
   );
 }

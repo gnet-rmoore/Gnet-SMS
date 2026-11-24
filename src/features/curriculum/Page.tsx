@@ -593,22 +593,19 @@ submitting={submitting}
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showSyllabusViewModal && selectedSyllabus && (
-          <SyllabusViewModal
-            canManage={canManage}
-            calendar={calendar}
-            handleUpdateSyllabusStatus={handleUpdateSyllabusStatus}
-            onEditSyllabus={openEditSyllabusModal}
-            selectedSyllabus={selectedSyllabus}
-            setShowSyllabusViewModal={setShowSyllabusViewModal}
-            setSyllabusFeedback={setSyllabusFeedback}
-            submitting={submitting}
-            syllabusFeedback={syllabusFeedback}
-            user={user}
-          />
-        )}
-      </AnimatePresence>
+      <SyllabusViewModal
+        open={showSyllabusViewModal && Boolean(selectedSyllabus)}
+        canManage={canManage}
+        calendar={calendar}
+        handleUpdateSyllabusStatus={handleUpdateSyllabusStatus}
+        onEditSyllabus={openEditSyllabusModal}
+        selectedSyllabus={selectedSyllabus}
+        setShowSyllabusViewModal={setShowSyllabusViewModal}
+        setSyllabusFeedback={setSyllabusFeedback}
+        submitting={submitting}
+        syllabusFeedback={syllabusFeedback}
+        user={user}
+      />
 
       <CurriculumSetupWizard
         open={showSetupWizard}

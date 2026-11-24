@@ -823,22 +823,20 @@ export const ExamDetails = () => {
         </div>
       )}
 
-      {historyModal && (
-        <HistoryModal
-          historyModal={historyModal}
-          setHistoryModal={setHistoryModal}
-          user={user}
-        />
-      )}
+      <HistoryModal
+        open={Boolean(historyModal)}
+        historyModal={historyModal}
+        setHistoryModal={setHistoryModal}
+        user={user}
+      />
 
       <AnimatePresence>
-        {resultsModal && (
-          <ResultsModal
-            generateReportCard={generateReportCard}
-            resultsModal={resultsModal}
-            setResultsModal={setResultsModal}
-          />
-        )}
+        <ResultsModal
+          open={Boolean(resultsModal)}
+          generateReportCard={generateReportCard}
+          resultsModal={resultsModal}
+          setResultsModal={setResultsModal}
+        />
         {showSchedule && exam && (
           <ExamScheduleModal
             examId={exam.id}
