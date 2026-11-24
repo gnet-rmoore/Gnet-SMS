@@ -1,135 +1,86 @@
 # Graduation certificate templates plan
 
-> **Status:** Done (2026-08-03) — Phase 4 tenant branding  
-> **Owner:** frontend-spa (`src/features/certificates`), Settings appearance, Certificates page; identity `School.certificateTemplate` + `certificateDefaults`  
-> **Source assets:** four diploma PNGs in Cursor assets (brown classic, gold laurels, red seal, beige heritage)  
-> **Confirmed:** Landscape Letter; roles School Admin / Principal / VPI / Registrar; persist `certificateTemplate` on school  
-> **Phase 4:** Per-tenant logo, brand color accents, address line, saved signatory defaults — **done**
+> **Status:** Done — supplied A4 template set integrated
+> **Owner:** frontend-spa (`src/features/certificates`), Settings appearance, Certificates page; identity `School.certificateTemplate` + `certificateDefaults`
+> **Source assets:** `docs/SMS Certificcate Templates/` (`certificates.tsx`, `fonts-and-demo.tsx`, `preview.html`, `README.md`)
+> **Confirmed:** A4 landscape; roles School Admin / Principal / VPI / Registrar; persist `certificateTemplate` on school
+> **Branding:** per-tenant logo, brand color accents, address line, saved signatory defaults
 
 ## Goal
 
-Add **four printable graduation / completion certificate templates** that schools can pick in Settings and issue for graduating students (preview, print, PDF). Designs follow the attached samples; content uses real school / student / signatory fields — no fake seals-as-logos beyond decorative SVG chrome.
+Four printable graduation / completion certificate templates that schools pick in Settings and issue for graduating students (preview, print, PDF). The supplied inline CSS/styling is preserved; only data wiring, fonts, page size, and app organization are adapted.
 
 ## Template map
 
-| # | Design (from asset) | Template id | Settings label | Page size |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Brown double frame + beige scroll + scalloped seal | `CERT_CLASSIC_BROWN` | Classic brown frame | Landscape Letter `11×8.5 in` |
-| 2 | Gold vertical side rules + faint laurel watermark + gold seal | `CERT_GOLD_LAURELS` | Gold laurels | Landscape Letter |
-| 3 | Dark grey top/bottom bands + red scalloped seal with wreath | `CERT_RED_SEAL` | Red seal diploma | Landscape Letter |
-| 4 | Tan border + art-deco corner fans + medal seal | `CERT_HERITAGE_TAN` | Heritage diploma | Landscape Letter |
+| # | Supplied design | Persisted template id | Supplied id alias | Settings label | Page size |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Ivory, navy and gold; triple frame, flourished corners | `CERT_CLASSIC_BROWN` | `heritage` | Heritage | A4 landscape |
+| 2 | White, emerald and brass; chamfered double frame | `CERT_GOLD_LAURELS` | `meridian` | Meridian | A4 landscape |
+| 3 | Charcoal with champagne-gold gradient title; corner brackets | `CERT_RED_SEAL` | `noir` | Noir | A4 landscape |
+| 4 | Editorial indigo frame with ruler-tick edges | `CERT_HERITAGE_TAN` | `atlas` | Atlas | A4 landscape |
 
-All four are **landscape** completion/diploma layouts (not grade matrices).
+Persisted ids stay stable so existing school settings keep working; the supplied lowercase ids are accepted aliases in `resolveCertificateTemplateKey`.
 
 ## Shared certificate data
 
 ```ts
 type CertificateData = {
-  school: { name: string; logoUrl?: string | null };
-  title: string;                 // e.g. "CERTIFICATE OF COMPLETION" / "HIGH SCHOOL GRADUATION DIPLOMA"
-  leadIn: string;                // e.g. "THIS CERTIFIES THAT"
+  school: { name: string; logoUrl?: string | null; address?: string | null };
+  brandColor: string | null;
+  title: string;
+  leadIn: string;
   studentName: string;
-  body: string;                  // completion sentence (school name interpolated)
+  body: string;
+  certificateId?: string | null;
   issueDate: string;
   academicYear: string;
-  signatories: [
-    { name: string; title: string },
-    { name: string; title: string },
-  ];
+  signatories: [CertificateSignatory, CertificateSignatory];
 };
 ```
 
-Assembler fills from school settings + selected student + optional overrides (custom title/body). Missing signatory names stay as blank lines (honest empty — do not invent). **Official signature images** come from Settings document-signatory slots / certificate staff pickers (`docs/DOCUMENT_SIGNATURES_PLAN.md`).
+Assembler fills from school settings + selected student + optional overrides. Tenant logo comes from `school.logoUrl`, official signature images from `signatureUrl`, and brand color overrides the template's primary palette. Missing signatory names stay as blank lines.
 
 ## Architecture
 
 ```
 src/features/certificates/
   types.ts
-  registry.ts              # id → label, description, pageSize, component
+  registry.ts              # id → label, description, page size, fallback brand
   assembleCertificate.ts   # school + student → CertificateData
   sampleData.ts            # Settings preview sample
   components/
-    CertificateView.tsx    # registry router
-    ClassicBrownCert.tsx
-    GoldLaurelsCert.tsx
-    RedSealCert.tsx
-    HeritageTanCert.tsx
+    CertificateView.tsx        # registry router + shared print/font CSS imports
+    CertificatePrimitives.tsx  # supplied Canvas/Texture/seal/signature building blocks
+    HeritageCert.tsx
+    MeridianCert.tsx
+    NoirCert.tsx
+    AtlasCert.tsx
   styles/
-    classic-brown.css
-    gold-laurels.css
-    red-seal.css
-    heritage-tan.css
+    fonts.css                # supplied eight Google Fonts
+  lib/
+    exportCertificate.ts     # scoped print + ref-based PDF capture
   index.ts
-src/pages/School/Certificates.tsx   # pick student(s) → preview / print / PDF
+src/pages/School/Certificates.tsx   # roster → generate → preview / print / PDF
 src/components/CertificateTemplates.tsx  # thin re-export
 ```
 
-- Print: scoped CSS + `@page { size: letter landscape }` (same Path 1 as gradesheets; browser print / html2canvas+jsPDF).
-- Decorative seals/borders: inline SVG (no dependency on the PNG assets at runtime; PNGs are design reference only).
-- Fonts: Google Fonts serif + sans via CSS `@import` (Playfair / Cormorant + Source Sans or similar), matching each design’s contrast.
+- Print: scoped `@page { size: A4 landscape; margin: 0; }` injected only while printing certificates.
+- PDF: html2canvas captures per-certificate refs; jsPDF emits A4 landscape `297 × 210 mm`.
+- Design: original inline styles, SVG seals, grain, guilloche, gradients, frames, and font variables are kept from the supplied React components.
 
 ## Product wiring
 
-1. **Settings → Appearance** — new “Graduation certificate template” picker (same pattern as grade sheet / report card), with modal preview using `sampleData`.
-2. **School field** — `certificateTemplate` on Identity `School` (default `CERT_CLASSIC_BROWN`); patch via existing school settings save; expose on auth `school` object.
-3. **Page** — `/{slug}/certificates` for School Admin / Principal / VPI (and TEACHER if already allowed similar academic docs). Select graduating student → render school’s chosen template → Print / Download PDF.
-4. **Nav** — under Academics next to transcripts / gradebook (role-gated).
-
-## Out of scope (this pass)
-
-- Bulk cohort ZIP / mail-merge
-- Digital signature / blockchain verification / QR authenticity
-- Server Puppeteer PDF
-- Changing graduation eligibility rules (page does not auto-decide who graduated; staff pick the student)
-
-## Phases
-
-### Phase 0 — Confirm (this doc)
-
-- [x] Confirm landscape **Letter** for all four (vs A4 landscape)
-- [x] Confirm roles for Certificates page: School Admin, Principal, VPI, Registrar
-- [x] Confirm persist `certificateTemplate` on school
-
-### Phase 1 — Feature module + four ports
-
-1. [x] Types, registry, sample data, assembler.
-2. [x] Four React + scoped CSS ports matching the reference designs.
-3. [x] `CertificateView` router + thin re-export.
-
-### Phase 2 — Settings + school field
-
-1. [x] Identity schema + API accept `certificateTemplate`.
-2. [x] Appearance picker + preview modal.
-3. [x] i18n keys (EN + leaf locales).
-
-### Phase 3 — Issue page + nav
-
-1. [x] `Certificates` page: student search/select, live preview, print/PDF.
-2. [x] Route in `App.tsx` + `navByRole`.
-3. [x] Unit test: registry resolve + assembler mapping.
-4. [x] Rebuild `frontend-spa` (+ `identity` if schema/API changed).
-
-### Phase 4 — Per-tenant branding & defaults
-
-1. [x] Extend `CertificateData` with `address`, `brandColor`; render **logo** on all four templates.
-2. [x] Drive accents via CSS `--cert-brand` from school `brandColor` (design fallbacks when unset).
-3. [x] Identity `certificateDefaults` JSON; Settings Appearance editors; Certificates page pre-fills.
-4. [x] Settings preview uses live school name / logo / brand / address when available.
-5. [x] Tests + rebuild identity + frontend-spa; update this plan + IMPLEMENTATION_STATUS.
+1. **Settings → Appearance** — “Graduation certificate template” picker and modal preview use the new registry labels/descriptions.
+2. **School field** — `certificateTemplate` remains the persisted field; default still resolves to Heritage.
+3. **Page** — `/{slug}/certificates` renders the active supplied design with real school/student/signatory data.
+4. **Nav** — unchanged (role-gated under Academics).
 
 ## Acceptance checks
 
-- [x] All four designs preview in Settings and print at landscape Letter without clipping.
+- [x] All four supplied designs render in Settings and print at A4 landscape without clipping.
 - [x] Changing Settings template changes Certificates page output for that school.
-- [x] Student name / school name / signatories from real data; blanks when missing.
-- [x] PDF download works for the active template.
-- [x] Docs: this plan status + `IMPLEMENTATION_STATUS.md` companion note.
-- [x] Logo + brand color + address appear from the logged-in school’s Settings.
-- [x] Signatory defaults persist per school and pre-fill the Certificates page.
-
-## Doc updates
-
-- This plan → Done when shipped.
-- `IMPLEMENTATION_STATUS.md` Honest gaps: graduation certificates entry linking here.
-- `FRONTEND_GUIDELINES.md` only if a new shared print pattern needs a one-liner (optional).
+- [x] Student name / school name / signatories come from real data; blanks when missing.
+- [x] School logo, brand color, and official signature images feed the supplied slots.
+- [x] PDF download uses the A4 landscape canvas.
+- [x] Old four template components and scoped CSS files are removed.
+- [x] Fonts and print CSS mirror the supplied setup without `next/font`.

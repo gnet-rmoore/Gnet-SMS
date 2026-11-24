@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { CertificateDefaults } from "../features/certificates/types";
 
 export interface AuthUser {
   id: string;
@@ -33,14 +34,7 @@ interface School {
   reportCardTemplate?: string;
   transcriptTemplate?: string;
   certificateTemplate?: string;
-  certificateDefaults?: {
-    sig1Name?: string;
-    sig1Title?: string;
-    sig2Name?: string;
-    sig2Title?: string;
-    sig1UserId?: string;
-    sig2UserId?: string;
-  } | null;
+  certificateDefaults?: CertificateDefaults | null;
   documentSignatories?: Record<string, { userId?: string } | string> | string | null;
   brandColor?: string;
   /** Set when School Admin marks setup complete (Identity). */

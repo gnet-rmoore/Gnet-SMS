@@ -99,7 +99,7 @@ export const ROUTE_ROLES: Record<string, string[]> = {
   fees: ["SCHOOL_ADMIN", "ACCOUNTANT", "STUDENT", "PARENT"],
   expenses: ["SCHOOL_ADMIN", "ACCOUNTANT"],
   payroll: ["SCHOOL_ADMIN", "ACCOUNTANT"],
-  settings: ["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT"],
+  settings: ["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "VPI"],
   roles: ["SCHOOL_ADMIN", "IT_ADMIN"],
   admissions: ["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL"],
   onboarding: ["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL"],
@@ -292,6 +292,9 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
           { to: `/${slug}/staff-tasks`, icon: ClipboardList, labelKey: "items.staffTasks" },
+        ]),
+        section("account", "Account", [
+          { to: `/${slug}/settings?tab=CERTIFICATES`, icon: Settings, labelKey: "items.certificates" },
         ]),
       ];
 

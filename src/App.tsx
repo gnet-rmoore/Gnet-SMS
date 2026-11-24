@@ -1004,7 +1004,7 @@ export default function App() {
                   <Route 
                     path="settings" 
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "VPI"]}>
                         <SchoolSettings />
                       </ProtectedRoute>
                     } 

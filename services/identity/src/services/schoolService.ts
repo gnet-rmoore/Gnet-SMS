@@ -22,6 +22,8 @@ import {
 import {
   parseCertificateDefaults,
   serializeCertificateDefaults,
+  type CertificateDefaults,
+  type CertificateRoster,
 } from "../lib/certificateDefaults";
 import {
   parseDocumentSignatories,
@@ -371,6 +373,59 @@ export const schoolService = {
       certificateDefaults: parseCertificateDefaults(updated.certificateDefaults),
       documentSignatories: parseDocumentSignatories(updated.documentSignatories),
     };
+  },
+
+  async updateCertificateSettings(
+    schoolId: string,
+    data: {
+      certificateTemplate?: string;
+      certificateDefaults?: Partial<CertificateDefaults> | string | null;
+      certificateRoster?: CertificateRoster | null;
+    }
+  ) {
+    const existing = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { certificateDefaults: true },
+    });
+    if (!existing) {
+      throw Object.assign(new Error("School not found"), { status: 404 });
+    }
+
+    const base = parseCertificateDefaults(existing.certificateDefaults);
+    let patchSource: unknown = data?.certificateDefaults;
+    if (typeof patchSource === "string") {
+      try {
+        patchSource = JSON.parse(patchSource);
+      } catch {
+        patchSource = {};
+      }
+    }
+    const patch: Record<string, unknown> = {};
+    if (patchSource && typeof patchSource === "object" && !Array.isArray(patchSource)) {
+      const source = patchSource as Record<string, unknown>;
+      for (const key of Object.keys(base)) {
+        if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
+          patch[key] = source[key];
+        }
+      }
+    }
+
+    const merged: Record<string, unknown> = { ...base, ...patch };
+    if (data?.certificateRoster !== undefined && data.certificateRoster !== null) {
+      merged.certificateRoster = data.certificateRoster;
+    }
+    const defaults = parseCertificateDefaults(merged);
+
+    await prisma.school.update({
+      where: { id: schoolId },
+      data: {
+        ...(data?.certificateTemplate != null
+          ? { certificateTemplate: String(data.certificateTemplate) }
+          : {}),
+        certificateDefaults: serializeCertificateDefaults(defaults),
+      },
+    });
+    return this.getSchoolById(schoolId);
   },
 
   async updateAdmissionPolicy(schoolId: string, patch: Record<string, unknown>) {

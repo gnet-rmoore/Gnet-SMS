@@ -3,39 +3,39 @@ import type { CertificateTemplateDef, CertificateTemplateId } from "./types";
 export const CERTIFICATE_TEMPLATES: CertificateTemplateDef[] = [
   {
     id: "CERT_CLASSIC_BROWN",
-    name: "Classic brown frame",
-    description: "Double brown border with scalloped seal. Landscape Letter.",
-    cssPageSize: "letter landscape",
-    pdfFormat: "letter",
+    name: "Heritage",
+    description: "Ivory, navy and gold. Triple frame with flourished corners. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#5c4033",
+    fallbackBrand: "#14264A",
   },
   {
     id: "CERT_GOLD_LAURELS",
-    name: "Gold laurels",
-    description: "Gold side rules, laurel watermark, gold seal. Landscape Letter.",
-    cssPageSize: "letter landscape",
-    pdfFormat: "letter",
+    name: "Meridian",
+    description: "White, deep emerald and brass. Chamfered double frame. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#c9a227",
+    fallbackBrand: "#0E3B36",
   },
   {
     id: "CERT_RED_SEAL",
-    name: "Red seal diploma",
-    description: "Grey band frame with red wreath seal. Landscape Letter.",
-    cssPageSize: "letter landscape",
-    pdfFormat: "letter",
+    name: "Noir",
+    description: "Charcoal with champagne-gold gradient title. Corner brackets. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#b91c1c",
+    fallbackBrand: "#14161A",
   },
   {
     id: "CERT_HERITAGE_TAN",
-    name: "Heritage diploma",
-    description: "Tan border, art-deco corners, medal seal. Landscape Letter.",
-    cssPageSize: "letter landscape",
-    pdfFormat: "letter",
+    name: "Atlas",
+    description: "Left-aligned editorial layout. Heavy indigo frame with ruler-tick edges. A4 landscape.",
+    cssPageSize: "a4 landscape",
+    pdfFormat: "a4",
     orientation: "landscape",
-    fallbackBrand: "#c4a574",
+    fallbackBrand: "#1C2766",
   },
 ];
 
@@ -43,16 +43,23 @@ const byId = Object.fromEntries(
   CERTIFICATE_TEMPLATES.map((t) => [t.id, t])
 ) as Record<CertificateTemplateId, CertificateTemplateDef>;
 
+const suppliedIdAliases: Record<string, CertificateTemplateId> = {
+  heritage: "CERT_CLASSIC_BROWN",
+  meridian: "CERT_GOLD_LAURELS",
+  noir: "CERT_RED_SEAL",
+  atlas: "CERT_HERITAGE_TAN",
+};
+
 export function resolveCertificateTemplateKey(
   raw: string | null | undefined
 ): CertificateTemplateId {
-  if (
-    raw === "CERT_CLASSIC_BROWN" ||
-    raw === "CERT_GOLD_LAURELS" ||
-    raw === "CERT_RED_SEAL" ||
-    raw === "CERT_HERITAGE_TAN"
-  ) {
-    return raw;
+  const value = (raw || "").trim();
+  if (Object.prototype.hasOwnProperty.call(byId, value)) {
+    return value as CertificateTemplateId;
+  }
+  const alias = value.toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(suppliedIdAliases, alias)) {
+    return suppliedIdAliases[alias];
   }
   return "CERT_CLASSIC_BROWN";
 }
@@ -60,7 +67,7 @@ export function resolveCertificateTemplateKey(
 export function getCertificateTemplateDef(
   raw: string | null | undefined
 ): CertificateTemplateDef {
-  return byId[resolveCertificateTemplateKey(raw)];
+  return byId[resolveCertificateTemplateKey(raw)] ?? CERTIFICATE_TEMPLATES[0];
 }
 
 /** Resolve accent color: school brand when valid hex, else template fallback. */

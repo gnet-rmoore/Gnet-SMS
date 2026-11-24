@@ -91,7 +91,7 @@ export function TemplatePreviewModal({
   const widePrint =
     a4Report || gradeDef != null || transcriptDef != null || certDef != null || receiptDef != null;
   const maxWidthClass = certDef
-    ? "max-w-[min(98vw,calc(11in+3rem))]"
+    ? "max-w-[min(98vw,calc(297mm+3rem))]"
     : gradeDef?.pageSize === "legal"
       ? "max-w-[min(98vw,calc(8.5in+3rem))]"
       : biFoldReport
@@ -121,7 +121,7 @@ export function TemplatePreviewModal({
     transcriptDef != null
       ? `${t(`pages:transcripts.${transcriptDef.nameKey}`)} · A4 portrait`
       : certDef != null
-        ? `${certDef.name} · Letter landscape 11×8.5 in`
+        ? `${certDef.name} · A4 landscape 297×210 mm`
         : gradeDef != null
           ? `${gradeDef.name} · ${
               gradeDef.pageSize === "legal" ? "Legal 8.5×14 in" : "A4 portrait"

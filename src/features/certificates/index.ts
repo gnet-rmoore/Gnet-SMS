@@ -1,6 +1,7 @@
 export type {
   CertificateData,
   CertificateDefaults,
+  CertificateRoster,
   CertificateSignatory,
   CertificateTemplateDef,
   CertificateTemplateId,
@@ -15,9 +16,14 @@ export {
 export {
   assembleCertificateData,
   parseCertificateDefaults,
+  parseCertificateRoster,
   serializeCertificateDefaults,
   type AssembleCertificateInput,
 } from "./assembleCertificate";
 export { sampleCertificateData } from "./sampleData";
+export {
+  exportCertificatesPdf,
+  printCertificates,
+} from "./lib/exportCertificate";
 export { CertificateView } from "./components/CertificateView";
 export type { CertificateViewProps } from "./components/CertificateView";

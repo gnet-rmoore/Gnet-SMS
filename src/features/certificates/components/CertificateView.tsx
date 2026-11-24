@@ -1,10 +1,11 @@
 import React from "react";
 import type { CertificateData } from "../types";
 import { resolveCertificateTemplateKey } from "../registry";
-import { ClassicBrownCert } from "./ClassicBrownCert";
-import { GoldLaurelsCert } from "./GoldLaurelsCert";
-import { RedSealCert } from "./RedSealCert";
-import { HeritageTanCert } from "./HeritageTanCert";
+import { HeritageCert } from "./HeritageCert";
+import { MeridianCert } from "./MeridianCert";
+import { NoirCert } from "./NoirCert";
+import { AtlasCert } from "./AtlasCert";
+import "../styles/fonts.css";
 
 export type CertificateViewProps = {
   templateId: string;
@@ -15,13 +16,13 @@ export type CertificateViewProps = {
 export function CertificateView({ templateId, data, compact }: CertificateViewProps) {
   const key = resolveCertificateTemplateKey(templateId);
   if (key === "CERT_GOLD_LAURELS") {
-    return <GoldLaurelsCert data={data} compact={compact} />;
+    return <MeridianCert data={data} compact={compact} />;
   }
   if (key === "CERT_RED_SEAL") {
-    return <RedSealCert data={data} compact={compact} />;
+    return <NoirCert data={data} compact={compact} />;
   }
   if (key === "CERT_HERITAGE_TAN") {
-    return <HeritageTanCert data={data} compact={compact} />;
+    return <AtlasCert data={data} compact={compact} />;
   }
-  return <ClassicBrownCert data={data} compact={compact} />;
+  return <HeritageCert data={data} compact={compact} />;
 }

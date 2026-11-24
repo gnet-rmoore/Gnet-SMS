@@ -21,6 +21,7 @@ import { settingsApi } from "./api";
 import { GradeLegendModal } from "./components/GradeLegendModal";
 import { TemplatePreviewModal } from "./components/TemplatePreviewModal";
 import { AppearanceSettingsTab } from "./components/AppearanceSettingsTab";
+import { CertificateSettingsTab } from "./components/CertificateSettingsTab";
 import {
   GradingSettingsTab,
   type GradeLegend,
@@ -106,6 +107,7 @@ const DEFAULT_SECURITY: SecurityPolicyForm = {
 const TAB_IDS = [
   "GENERAL",
   "APPEARANCE",
+  "CERTIFICATES",
   "GRADING",
   "SECURITY",
   "API_KEYS",
@@ -115,9 +117,14 @@ const TAB_IDS = [
 
 type TabId = (typeof TAB_IDS)[number];
 
-function parseTab(raw: string | null, receiptTemplateOnly = false): TabId {
+function parseTab(
+  raw: string | null,
+  receiptTemplateOnly = false,
+  certificateOnly = false
+): TabId {
   const u = (raw || "").toUpperCase();
   if ((TAB_IDS as readonly string[]).includes(u)) return u as TabId;
+  if (certificateOnly) return "CERTIFICATES";
   return receiptTemplateOnly ? "APPEARANCE" : "GENERAL";
 }
 
@@ -149,9 +156,18 @@ export const Settings = () => {
   const canManageReceiptTemplate = ["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT"].includes(
     user?.role || ""
   );
+  const canManageCertificates = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"].includes(
+    user?.role || ""
+  );
   const receiptTemplateOnly = canManageReceiptTemplate && !canManageFullSettings;
+  const certificateOnly =
+    canManageCertificates && !canManageFullSettings && !canManageReceiptTemplate;
 
-  const activeTab = parseTab(searchParams.get("tab"), receiptTemplateOnly);
+  const activeTab = parseTab(
+    searchParams.get("tab"),
+    receiptTemplateOnly,
+    certificateOnly
+  );
   const setActiveTab = (id: TabId) => {
     const next = new URLSearchParams(searchParams);
     if (id === "GENERAL") next.delete("tab");
@@ -430,6 +446,7 @@ export const Settings = () => {
   const allTabs = [
     { id: "GENERAL", label: t("settings.tabs.general"), icon: SchoolIcon },
     { id: "APPEARANCE", label: t("settings.tabs.appearance"), icon: Palette },
+    { id: "CERTIFICATES", label: t("pages:settings.certificateSettingsTab"), icon: Award },
     { id: "GRADING", label: t("settings.tabs.grading"), icon: Award },
     { id: "SECURITY", label: t("settings.tabs.security"), icon: Shield },
     { id: "API_KEYS", label: t("settings.tabs.apiKeys"), icon: Key },
@@ -439,15 +456,23 @@ export const Settings = () => {
 
   const tabs = isItAdmin
     ? allTabs.filter((tab) => ["SECURITY", "API_KEYS"].includes(tab.id))
-    : receiptTemplateOnly
-      ? allTabs.filter((tab) => tab.id === "APPEARANCE")
-      : [...allTabs];
+    : certificateOnly
+      ? allTabs.filter((tab) => tab.id === "CERTIFICATES")
+      : receiptTemplateOnly
+        ? allTabs.filter((tab) =>
+            canManageCertificates
+              ? ["APPEARANCE", "CERTIFICATES"].includes(tab.id)
+              : tab.id === "APPEARANCE"
+          )
+        : canManageCertificates
+          ? [...allTabs]
+          : allTabs.filter((tab) => tab.id !== "CERTIFICATES");
 
   React.useEffect(() => {
-    if (receiptTemplateOnly && activeTab !== "APPEARANCE") {
-      setActiveTab("APPEARANCE");
+    if ((receiptTemplateOnly || certificateOnly) && !tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id || "GENERAL");
     }
-  }, [receiptTemplateOnly, activeTab]);
+  }, [receiptTemplateOnly, certificateOnly, tabs, activeTab]);
 
   React.useEffect(() => {
     if (!isItAdmin) return;
@@ -599,6 +624,25 @@ export const Settings = () => {
         guideRequired: latestSchool.guideRequired ?? guideRequired,
       });
       syncFromSchool(latestSchool);
+      refetchSettings();
+      showToast(t("common:successSaved"));
+    } catch (err: any) {
+      showToast(err.message || t("settings.toast.saveFailed"), "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCertificates = async () => {
+    if (!school?.id) return;
+    setSaving(true);
+    try {
+      const updatedSchool = await settingsApi.updateCertificateSettings(school.id, {
+        certificateTemplate,
+        certificateDefaults,
+      });
+      setSchool(updatedSchool);
+      syncFromSchool(updatedSchool);
       refetchSettings();
       showToast(t("common:successSaved"));
     } catch (err: any) {
@@ -947,6 +991,20 @@ export const Settings = () => {
             />
           )}
 
+          {activeTab === "CERTIFICATES" && canManageCertificates && (
+            <CertificateSettingsTab
+              schoolId={school?.id}
+              accessToken={accessToken}
+              certificateTemplate={certificateTemplate}
+              certificateDefaults={certificateDefaults}
+              staff={staffForSignatures}
+              saving={saving}
+              setCertificateTemplate={setCertificateTemplate}
+              setCertificateDefaults={setCertificateDefaults}
+              onSave={() => void handleSaveCertificates()}
+            />
+          )}
+
           {activeTab === "GRADING" && (
             <GradingSettingsTab
               gradingSubTab={gradingSubTab}
@@ -1055,6 +1113,7 @@ export const Settings = () => {
               staff: staffForSignatures,
               logoUrl: logoPreview,
               brandColor,
+              certificateDefaults,
             }}
             setGradeSheetTemplate={setGradeSheetTemplate}
             setPreviewTemplate={setPreviewTemplate}

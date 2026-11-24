@@ -24,6 +24,7 @@ import {
   getCertificateTemplateDef,
   resolveCertificateTemplateKey,
   sampleCertificateData,
+  type CertificateDefaults,
 } from "../../certificates";
 import {
   resolveDocumentSignatory,
@@ -71,6 +72,7 @@ export type TemplatePreviewOptions = {
   staff?: StaffSignatureRef[] | null;
   logoUrl?: string | null;
   brandColor?: string | null;
+  certificateDefaults?: CertificateDefaults | null;
 };
 
 export type TemplatePreviewProps = {
@@ -360,10 +362,11 @@ export function renderTemplatePreview({
     const def = getCertificateTemplateDef(key);
     return (
       <div className="bg-slate-300/70 p-4 rounded-2xl inline-flex flex-col items-center min-w-min mx-auto">
-        {previewHeader(`Letter landscape · 11 × 8.5 in · ${def.name}`)}
+        {previewHeader(`A4 landscape · 297 × 210 mm · ${def.name}`)}
         <CertificateView
           templateId={key}
           data={sampleCertificateData(school.name, {
+            ...opts?.certificateDefaults,
             address: school.address,
             logoUrl: school.logoUrl,
             brandColor: school.brandColor,

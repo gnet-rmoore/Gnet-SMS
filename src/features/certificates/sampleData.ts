@@ -1,35 +1,45 @@
-import type { CertificateData } from "./types";
+import { assembleCertificateData } from "./assembleCertificate";
+import type { CertificateData, CertificateDefaults } from "./types";
 
-/** Sample payload for Settings preview — uses live school branding when provided. */
 export function sampleCertificateData(
-  schoolName = "Greendale Academy",
-  opts?: {
-    address?: string | null;
+  schoolName = "Sample School",
+  opts?: Partial<CertificateDefaults> & {
     logoUrl?: string | null;
     brandColor?: string | null;
+    address?: string | null;
   }
 ): CertificateData {
-  const name = schoolName.trim() || "Greendale Academy";
-  return {
-    school: {
-      name,
-      logoUrl: opts?.logoUrl ?? null,
-      address: (opts?.address || "").trim() || "14 Independence Avenue",
-    },
-    brandColor: opts?.brandColor ?? null,
-    title: "CERTIFICATE OF COMPLETION",
-    leadIn: "THIS CERTIFIES THAT",
-    studentName: "SAMPLE STUDENT",
-    body: `has completed the prescribed course of study at ${name}.`,
-    issueDate: new Date().toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }),
-    academicYear: "2025 — 2026",
+  const name = schoolName.trim() || "School";
+  const year = new Date().getFullYear();
+  return assembleCertificateData({
+    schoolName: name,
+    studentName: "Sample Student",
+    academicYear: opts?.academicYearDefault || `${year} — ${year + 1}`,
+    issueDate:
+      opts?.issueDateDefault ||
+      new Date().toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    title: opts?.title,
+    leadIn: opts?.leadIn,
+    body: opts?.body,
+    certificateId: opts?.certificateIdPrefix
+      ? `${opts.certificateIdPrefix}-SAMPLE`
+      : null,
+    logoUrl: opts?.logoUrl,
+    address: opts?.address,
+    brandColor: opts?.brandColor,
     signatories: [
-      { name: "School Principal", title: "School Principal" },
-      { name: "Education Chair", title: "Education Chairman" },
+      {
+        name: opts?.sig1Name || "School Principal",
+        title: opts?.sig1Title || "School Principal",
+      },
+      {
+        name: opts?.sig2Name || "Education Chair",
+        title: opts?.sig2Title || "Education Chairman",
+      },
     ],
-  };
+  });
 }

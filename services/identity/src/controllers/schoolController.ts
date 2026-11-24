@@ -49,6 +49,8 @@ export const schoolController = {
         receiptTemplate: school.receiptTemplate,
         receiptTemplates: school.receiptTemplates,
         receiptTemplatesByRole: school.receiptTemplatesByRole,
+        certificateTemplate: school.certificateTemplate,
+        certificateDefaults: school.certificateDefaults,
         documentSignatories: school.documentSignatories,
         country: school.country,
         region: school.region,
@@ -146,6 +148,24 @@ export const schoolController = {
       res.json(updatedSchool);
     } catch (error) {
       res.status(500).json({ error: "Failed to update school" });
+    }
+  },
+
+  async updateCertificateSettings(req: Request, res: Response) {
+    const { schoolId } = req.params;
+    const user = (req as any).user;
+
+    if (user?.role !== "SUPER_ADMIN" && user?.schoolId !== schoolId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const updatedSchool = await schoolService.updateCertificateSettings(schoolId, req.body || {});
+      res.json(updatedSchool);
+    } catch (err: any) {
+      res
+        .status(err.status || 500)
+        .json({ error: err.message || "Failed to update certificate settings" });
     }
   },
 

@@ -573,20 +573,20 @@ export function AppearanceSettingsTab({
     }
     setDocumentSignatories(next);
 
-    if (slot === "principal" && userId) {
-      const u = staff.find((s) => s.id === userId);
+    if (slot === "principal") {
+      const u = userId ? staff.find((s) => s.id === userId) : undefined;
       setCertificateDefaults({
         ...certificateDefaults,
         sig1UserId: userId,
-        sig1Name: certificateDefaults.sig1Name || u?.name || "",
+        sig1Name: userId ? certificateDefaults.sig1Name || u?.name || "" : "",
       });
     }
-    if (slot === "secondary" && userId) {
-      const u = staff.find((s) => s.id === userId);
+    if (slot === "secondary") {
+      const u = userId ? staff.find((s) => s.id === userId) : undefined;
       setCertificateDefaults({
         ...certificateDefaults,
         sig2UserId: userId,
-        sig2Name: certificateDefaults.sig2Name || u?.name || "",
+        sig2Name: userId ? certificateDefaults.sig2Name || u?.name || "" : "",
       });
     }
   };

@@ -2,7 +2,11 @@ import express from "express";
 import { authenticate, requireTenant, requireRoles, authenticateInternal } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { schoolController } from "../controllers/schoolController";
-import { schoolUpdateSchema, receiptTemplateUpdateSchema } from "../validation/schemas";
+import {
+  schoolUpdateSchema,
+  receiptTemplateUpdateSchema,
+  certificateSettingsUpdateSchema,
+} from "../validation/schemas";
 
 /** Same paths as monolith src/server/routes/schoolRoutes.ts. */
 const router = express.Router();
@@ -74,6 +78,15 @@ router.patch(
   requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "IT_ADMIN"]),
   validateBody(receiptTemplateUpdateSchema),
   schoolController.updateReceiptTemplate
+);
+
+router.patch(
+  "/api/schools/:schoolId/certificate-settings",
+  authenticate,
+  requireTenant,
+  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPI"]),
+  validateBody(certificateSettingsUpdateSchema),
+  schoolController.updateCertificateSettings
 );
 
 router.get(

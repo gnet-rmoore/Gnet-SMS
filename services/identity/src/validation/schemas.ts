@@ -104,6 +104,35 @@ export const receiptTemplateUpdateSchema = z
     message: "receiptTemplates or receiptTemplate is required",
   });
 
+const certificateRosterSchema = z.object({
+  enabled: z.boolean(),
+  studentIds: z.array(z.string()),
+});
+
+const certificateDefaultsSchema = z
+  .object({
+    sig1Name: z.string().optional(),
+    sig1Title: z.string().optional(),
+    sig2Name: z.string().optional(),
+    sig2Title: z.string().optional(),
+    sig1UserId: z.string().optional(),
+    sig2UserId: z.string().optional(),
+    title: z.string().optional(),
+    leadIn: z.string().optional(),
+    body: z.string().optional(),
+    certificateIdPrefix: z.string().optional(),
+    issueDateDefault: z.string().optional(),
+    academicYearDefault: z.string().optional(),
+    certificateRoster: certificateRosterSchema.optional(),
+  })
+  .passthrough();
+
+export const certificateSettingsUpdateSchema = z.object({
+  certificateTemplate: z.string().optional(),
+  certificateDefaults: certificateDefaultsSchema.or(z.string()).optional(),
+  certificateRoster: certificateRosterSchema.optional(),
+});
+
 export const schoolUpdateSchema = z
   .object({
     name: z.string().min(1),
@@ -132,17 +161,7 @@ export const schoolUpdateSchema = z
     receiptTemplate: z.string().optional(),
     receiptTemplates: receiptTemplatesMapSchema.optional(),
     certificateTemplate: z.string(),
-    certificateDefaults: z
-      .object({
-        sig1Name: z.string().optional(),
-        sig1Title: z.string().optional(),
-        sig2Name: z.string().optional(),
-        sig2Title: z.string().optional(),
-        sig1UserId: z.string().optional(),
-        sig2UserId: z.string().optional(),
-      })
-      .passthrough()
-      .or(z.string()),
+    certificateDefaults: certificateDefaultsSchema.or(z.string()),
     documentSignatories: z
       .record(
         z.string(),

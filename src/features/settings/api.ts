@@ -19,6 +19,8 @@ export const settingsApi = {
     schoolId: string,
     payload: { receiptTemplates: Partial<Record<string, string>> }
   ) => api.patch(`/api/schools/${schoolId}/receipt-template`, payload),
+  updateCertificateSettings: (schoolId: string, data: unknown) =>
+    api.patch(`/api/schools/${schoolId}/certificate-settings`, data),
   fetchNotificationPrefs: (schoolId: string) =>
     api.get(`/api/schools/${schoolId}/notification-prefs`),
   updateNotificationPrefs: (
