@@ -921,7 +921,7 @@ export const arResources = {
     },
     "students": {
       "title": "الطلاب",
-      "subtitle": "سجّل الطلاب في {{school}} وأدرهم.",
+      "subtitle": "اعرض سجلات الطلاب في {{school}} وأدرها.",
       "enroll": "تسجيل طالب جديد",
       "enrollSubtitle": "أنشئ حساباً في الدليل بكلمة مرور مؤقتة لمرة واحدة.",
       "enrollAction": "تسجيل الطالب",
@@ -4206,7 +4206,7 @@ export const arResources = {
         "title": "How placement works",
         "step1": "Pick a class group on the right, then a student on the left (or check several).",
         "step2": "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-        "step3Prefix": "New student accounts are created on",
+        "step3Prefix": "New student accounts are created through",
         "step3Suffix": ", not here.",
       },
       "toast": {

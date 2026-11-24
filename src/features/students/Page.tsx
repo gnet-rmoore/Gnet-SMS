@@ -5,7 +5,6 @@ import {
   Plus,
   CheckCircle2,
   Clock,
-  UserPlus,
   Edit,
   Trash2,
   Users,
@@ -16,7 +15,6 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { useStudentsQuery } from "./hooks/useStudentsQuery";
 import { studentsApi } from "./api";
-import { EnrollStudentModal } from "./components/EnrollStudentModal";
 import { EditStudentModal } from "./components/EditStudentModal";
 import { ImportRosterModal } from "../bulk-import/ImportRosterModal";
 import { bulkImportApi } from "../bulk-import/api";
@@ -45,24 +43,6 @@ const emptyStudent = {
   classroomId: "",
   feeCohort: "NEW",
 };
-
-const studentDraftFields = [
-  "name",
-  "email",
-  "dob",
-  "gender",
-  "parentName",
-  "parentPhone",
-  "parentEmail",
-  "gradeLevelId",
-  "classroomId",
-  "feeCohort",
-] as const;
-
-function hasStudentDraftContent(value: typeof emptyStudent) {
-  return ["name", "email", "dob", "parentName", "parentPhone", "parentEmail", "gradeLevelId", "classroomId"]
-    .some((key) => String(value[key as keyof typeof emptyStudent] || "").trim());
-}
 
 export const Students = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -126,18 +106,11 @@ export const Students = () => {
     [baseFilterFields, gradeLevels]
   );
 
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [showImportModal, setShowImportModal] = React.useState(false);
   const [showAssignModal, setShowAssignModal] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
-  const [selectedStudent, setSelectedStudent] = React.useState<any | null>(
-    null
-  );
-  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc" | "none">(
-    "none"
-  );
-  const [newStudent, setNewStudent] = React.useState({ ...emptyStudent });
-  const [draftRestored, setDraftRestored] = React.useState(false);
+  const [selectedStudent, setSelectedStudent] = React.useState<any | null>(null);
+  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc" | "none">("none");
   const [editStudent, setEditStudent] = React.useState<any>({
     ...emptyStudent,
     isActive: true,
@@ -146,107 +119,9 @@ export const Students = () => {
     classroomId: "",
     role: "STUDENT",
   });
-
-  const [isEnrolling, setIsEnrolling] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
-  const [enrollError, setEnrollError] = React.useState("");
-  const [credentials, setCredentials] = React.useState<{
-    email: string;
-    temporaryPassword: string;
-    name: string;
-    parentEmail?: string | null;
-    parentTemporaryPassword?: string;
-    parentLinkFailed?: boolean;
-  } | null>(null);
-  const enrollmentDraftKey =
-    school?.id && user?.id
-      ? `enroll-student-draft:${user.id}:${school.id}`
-      : null;
 
-  const clearEnrollmentDraft = () => {
-    try {
-      if (enrollmentDraftKey) window.sessionStorage.removeItem(enrollmentDraftKey);
-    } catch {
-      // Session storage may be unavailable in restricted browser contexts.
-    }
-  };
-
-  const openEnrollModal = () => {
-    setCredentials(null);
-    setEnrollError("");
-    let restored: typeof emptyStudent | null = null;
-    try {
-      const saved = enrollmentDraftKey
-        ? window.sessionStorage.getItem(enrollmentDraftKey)
-        : null;
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === "object") {
-          restored = Object.fromEntries(
-            studentDraftFields.map((key) => [
-              key,
-              typeof parsed[key] === "string" ? parsed[key] : emptyStudent[key],
-            ])
-          ) as typeof emptyStudent;
-          if (!hasStudentDraftContent(restored)) restored = null;
-        }
-      }
-    } catch {
-      restored = null;
-    }
-    setNewStudent(restored || { ...emptyStudent });
-    setDraftRestored(Boolean(restored));
-    setIsModalOpen(true);
-  };
-
-  const discardEnrollmentDraft = async () => {
-    const confirmed = await confirmAction({
-      title: t("pages:students.discardDraftTitle"),
-      text: t("pages:students.discardDraftText"),
-      confirmText: t("pages:students.discardDraft"),
-      danger: true,
-    });
-    if (!confirmed) return;
-    clearEnrollmentDraft();
-    setNewStudent({ ...emptyStudent });
-    setDraftRestored(false);
-    showToast(t("pages:students.draftDiscarded"), "info");
-  };
-
-  const closeEnrollModal = () => {
-    if (credentials) {
-      clearEnrollmentDraft();
-      setCredentials(null);
-      setDraftRestored(false);
-      setNewStudent({ ...emptyStudent });
-    } else if (enrollmentDraftKey && hasStudentDraftContent(newStudent)) {
-      try {
-        window.sessionStorage.setItem(enrollmentDraftKey, JSON.stringify(newStudent));
-      } catch {
-        // Keep the in-memory draft if session storage is unavailable.
-      }
-    }
-    setIsModalOpen(false);
-    setEnrollError("");
-  };
-
-  React.useEffect(() => {
-    if (!isModalOpen || credentials || !enrollmentDraftKey) return;
-    const timeout = window.setTimeout(() => {
-      try {
-        if (hasStudentDraftContent(newStudent)) {
-          window.sessionStorage.setItem(enrollmentDraftKey, JSON.stringify(newStudent));
-        } else {
-          window.sessionStorage.removeItem(enrollmentDraftKey);
-        }
-      } catch {
-        // Session storage may be unavailable in restricted browser contexts.
-      }
-    }, 300);
-    return () => window.clearTimeout(timeout);
-  }, [isModalOpen, credentials, enrollmentDraftKey, newStudent]);
-
-  const canEnroll = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
+  const canImport = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     user?.role || ""
   );
   const canEdit = ["PRINCIPAL", "SCHOOL_ADMIN", "SUPER_ADMIN", "REGISTRAR"].includes(
@@ -258,47 +133,6 @@ export const Students = () => {
 
   const gradeName = (id?: string) =>
     gradeLevels.find((g: any) => g.id === id)?.name || "—";
-
-  const handleEnroll = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!school?.id) return;
-    setIsEnrolling(true);
-    setEnrollError("");
-    try {
-      const { classroomId, ...payload } = newStudent;
-      const data = await studentsApi.createStudent(school.id, payload);
-      if (classroomId) {
-        try {
-          await studentsApi.addClassroomMember(classroomId, {
-            userId: data.id,
-            role: "STUDENT",
-          });
-        } catch {
-          showToast(
-            "Student created, but classroom assign failed — use Assign later.",
-            "info"
-          );
-        }
-      }
-      setCredentials({
-        email: data.email,
-        temporaryPassword: data.temporaryPassword,
-        name: data.name,
-        parentEmail: data.parentEmail,
-        parentTemporaryPassword: data.parentTemporaryPassword,
-        parentLinkFailed: data.parentLinkFailed,
-      });
-      clearEnrollmentDraft();
-      setNewStudent({ ...emptyStudent });
-      setDraftRestored(false);
-      refetchStudents();
-      showToast(t("pages:students.enrolled"), "success");
-    } catch (err: any) {
-      setEnrollError(translateApiError(err) || err?.message || t("common:errorGeneric"));
-    } finally {
-      setIsEnrolling(false);
-    }
-  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,30 +242,16 @@ export const Students = () => {
             {t("pages:students.subtitle", { school: school?.name || "" })}
           </p>
         </div>
-        {canEnroll ? (
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              onClick={() => setShowImportModal(true)}
-              className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-bold px-6 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              <Upload className="w-5 h-5" />
-              {t("pages:students.import")}
-            </button>
-            <button
-              type="button"
-              onClick={openEnrollModal}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              <UserPlus className="w-5 h-5" />
-              {t("pages:students.enroll")}
-            </button>
-          </div>
-        ) : (
-          <div className="text-slate-500 text-xs font-semibold bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-            {t("pages:students.onlyRegistrars")}
-          </div>
-        )}
+        {canImport && school?.id ? (
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-bold px-6 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <Upload className="w-5 h-5" />
+            {t("pages:students.import")}
+          </button>
+        ) : null}
       </div>
 
       <AnimatePresence>
@@ -494,11 +314,11 @@ export const Students = () => {
                 ? t("pages:listFilters.noMatches")
                 : t("common:empty")}
             </h3>
-            <p className="text-slate-500 font-medium mt-2 max-w-sm mx-auto">
-              {filters.hasActiveFilters
-                ? t("pages:listFilters.noMatchesHint")
-                : t("pages:students.enroll")}
-            </p>
+            {filters.hasActiveFilters ? (
+              <p className="text-slate-500 font-medium mt-2 max-w-sm mx-auto">
+                {t("pages:listFilters.noMatchesHint")}
+              </p>
+            ) : null}
             {filters.hasActiveFilters ? (
               <Button type="button" variant="secondary" size="compact" className="mt-4" onClick={filters.clear}>
                 {t("pages:listFilters.clearAll")}
@@ -619,27 +439,6 @@ export const Students = () => {
           </>
         )}
       </div>
-
-      <AnimatePresence>
-        {isModalOpen && (
-          <EnrollStudentModal
-            enrollError={enrollError}
-            gradeLevels={gradeLevels}
-            classrooms={classrooms}
-            handleEnroll={handleEnroll}
-            isEnrolling={isEnrolling}
-            gradeLevelsLoading={loading}
-            newStudent={newStudent}
-            setIsModalOpen={setIsModalOpen}
-            setNewStudent={setNewStudent}
-            credentials={credentials}
-            onDone={closeEnrollModal}
-            onClose={closeEnrollModal}
-            onDiscardDraft={discardEnrollmentDraft}
-            draftRestored={draftRestored}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {showAssignModal && (

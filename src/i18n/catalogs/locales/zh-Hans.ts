@@ -921,7 +921,7 @@ export const zhHansResources = {
     },
     "students": {
       "title": "学生",
-      "subtitle": "在 {{school}} 注册并管理学生。",
+      "subtitle": "查看并管理 {{school}} 的学生档案。",
       "enroll": "注册新生",
       "enrollSubtitle": "创建一个带有一次性临时密码的名录账户。",
       "enrollAction": "注册学生",
@@ -4206,7 +4206,7 @@ export const zhHansResources = {
         "title": "How placement works",
         "step1": "Pick a class group on the right, then a student on the left (or check several).",
         "step2": "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-        "step3Prefix": "New student accounts are created on",
+        "step3Prefix": "New student accounts are created through",
         "step3Suffix": ", not here.",
       },
       "toast": {

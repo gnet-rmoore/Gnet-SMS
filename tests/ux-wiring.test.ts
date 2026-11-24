@@ -3,7 +3,7 @@
  * These guard the client-to-server paths that are hard to mount without a browser test runner.
  * Run: npx tsx tests/ux-wiring.test.ts
  */
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import path from "path";
 import {
   emptyAdmissionApplicationForm,
@@ -40,6 +40,9 @@ const manualAdmissionTab = read("src/features/registrar/components/ManualAdmissi
 const newEnrollmentDrawer = read("src/features/registrar/components/NewEnrollmentDrawer.tsx");
 const adminWizard = read("src/features/admission-form/AdmissionFormWizard.tsx");
 const manualAdmissionForm = read("src/features/registrar/lib/manualAdmissionForm.ts");
+const studentsPage = read("src/features/students/Page.tsx");
+const studentRecordsPage = read("src/features/student-records/Page.tsx");
+const dashboardRegistry = read("src/features/dashboard/registry.ts");
 
 console.log("=========================================");
 console.log(" UX WIRING REGRESSION TESTS");
@@ -127,6 +130,31 @@ assert(
     adminWizard.includes("applicantType"),
   "admission wizard supports changed-field markers, photo slot, and applicant source"
 );
+assert(
+  !existsSync(path.join(root, "src/features/students/components/EnrollStudentModal.tsx")) &&
+    !existsSync(path.join(root, "src/features/student-records/components/AddRecordModal.tsx")),
+  "duplicate enrollment modal files are removed"
+);
+assert(
+  !studentsPage.includes("EnrollStudentModal") &&
+    !studentsPage.includes("createStudent") &&
+    !studentsPage.includes("pages:students.enroll"),
+  "student directory page has no direct enrollment flow"
+);
+assert(
+  !studentRecordsPage.includes("AddRecordModal") &&
+    !studentRecordsPage.includes("createStudent") &&
+    !studentRecordsPage.includes("/api/schools/${school?.id}/students"),
+  "student records page does not create students"
+);
+assert(
+  !dashboardRegistry.includes("dashboard.actions.enrollStudent") &&
+    enrollmentPage.includes("admissions?tab=new_admission") &&
+    !enrollmentPage.includes('to={`/${slug}/students`}') &&
+    enrollmentPage.includes('t("admissions.tabs.directAdmission")'),
+  "enrollment entry points route to direct admission"
+);
+
 assert(
   isAdmissionFormEmpty({
     ...emptyAdmissionApplicationForm(),

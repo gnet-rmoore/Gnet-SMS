@@ -85,7 +85,6 @@ Classrooms are **not** paged by the classroom service (`services/classroom/src/c
 
 - `src/features/enrollment/Page.tsx`
 - `src/features/enrollment/api.ts`
-- `src/features/students/components/EnrollStudentModal.tsx`
 - `src/features/students/Page.tsx`
 - `src/features/students/hooks/useStudentsQuery.ts`
 - `src/components/ui/ListFilterBar.tsx` (layout only, if the full-width filter variant is shared)
@@ -174,25 +173,11 @@ Classrooms are **not** paged by the classroom service (`services/classroom/src/c
 
 **Acceptance:** Placement is understandable in one pass, works on 375px width, and no action depends on hidden state.
 
-### 2.5 “Enroll new student” modal redesign
+### 2.5 Student creation entry point
 
-**File:** `src/features/students/components/EnrollStudentModal.tsx`
+Student creation is handled only by Admission > Direct Admission via `ManualAdmissionTab` and `NewEnrollmentDrawer`. The former `EnrollStudentModal` on the Students page and `AddRecordModal` on Student Records were removed so those pages remain records-only.
 
-**Fixes:**
-
-- Use `FeatureModalShell` or match its chrome for header/body/footer and mobile height (`max-h-[90dvh]`).
-- Add sections: Student details, Grade/Class placement, Guardian contact, Account credentials.
-- Make grade select load from normalized grade-level data and show a loading state instead of an empty `<select>`.
-- Show inline validation, not only toast errors.
-- Add explicit draft persistence:
-  - `newStudent` currently survives close/reopen only because parent state is not reset on the X/cancel path (`students/Page.tsx:188-193` resets only via `closeEnrollModal`, used after success). That behavior is accidental and has no restore/discard UX.
-  - Save form to `sessionStorage` keyed by `user.id + school.id + "enroll-student-draft"` with a debounce.
-  - Restore on reopen and show a small “Draft restored” notice with “Start blank.”
-  - Clear after successful enrollment or explicit discard.
-- Add a “Discard draft” action with confirmation.
-- Ensure the one-time password panel is readable, copyable, and does not disappear on accidental close before the user confirms they have saved the credentials.
-
-**Acceptance:** Closing/reopening or refreshing preserves entered data deliberately; grade options are populated; success clears the draft.
+**Acceptance:** Students and Student Records display and manage existing records; all enrollment starts from Admission > Direct Admission.
 
 ---
 

@@ -319,7 +319,7 @@ const fr: any = {
   pages: {
     students: {
       title: "Élèves",
-      subtitle: "Inscrivez et gérez les élèves de {{school}}.",
+      subtitle: "Consultez et gérez les dossiers des élèves de {{school}}.",
       enroll: "Inscrire un nouvel élève",
       import: "Importer CSV / Excel",
       searchPlaceholder: "Rechercher par nom ou e-mail…",
@@ -1813,7 +1813,7 @@ const ar: any = {
   pages: {
     students: {
       title: "الطلاب",
-      subtitle: "سجّل وأدر الطلاب في {{school}}.",
+      subtitle: "اعرض سجلات الطلاب في {{school}} وأدرها.",
       enroll: "تسجيل طالب جديد",
       import: "استيراد CSV / Excel",
       searchPlaceholder: "ابحث بالاسم أو البريد الإلكتروني…",
@@ -2254,7 +2254,7 @@ const es: any = {
   pages: {
     students: {
       title: "Estudiantes",
-      subtitle: "Matricule y gestione estudiantes en {{school}}.",
+      subtitle: "Consulta y gestiona los expedientes de los estudiantes de {{school}}.",
       enroll: "Matricular nuevo estudiante",
       import: "Importar CSV / Excel",
       searchPlaceholder: "Buscar por nombre o correo…",
@@ -2697,7 +2697,7 @@ const de: any = {
   pages: {
     students: {
       title: "Schüler",
-      subtitle: "Schüler an {{school}} einschreiben und verwalten.",
+      subtitle: "Schülerakten von {{school}} ansehen und verwalten.",
       enroll: "Neuen Schüler einschreiben",
       import: "CSV / Excel importieren",
       searchPlaceholder: "Nach Name oder E-Mail suchen…",
@@ -3130,7 +3130,7 @@ const zhHans: any = {
   pages: {
     students: {
       title: "学生",
-      subtitle: "在 {{school}} 注册并管理学生。",
+      subtitle: "查看并管理 {{school}} 的学生档案。",
       enroll: "注册新生",
       import: "导入 CSV / Excel",
       searchPlaceholder: "按姓名或电子邮件搜索…",
@@ -3562,7 +3562,7 @@ const hi: any = {
   pages: {
     students: {
       title: "छात्र",
-      subtitle: "{{school}} में छात्रों का नामांकन और प्रबंधन करें।",
+      subtitle: "{{school}} के छात्र रिकॉर्ड देखें और प्रबंधित करें।",
       enroll: "नया छात्र नामांकित करें",
       import: "CSV / Excel आयात करें",
       searchPlaceholder: "नाम या ईमेल से खोजें…",

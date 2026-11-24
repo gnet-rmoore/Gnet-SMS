@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, 
-  Plus, 
   Search, 
   Filter, 
   MoreVertical, 
@@ -38,7 +37,6 @@ import { format } from "date-fns";
 import { useStudentRecordsQuery } from "./hooks/useStudentRecordsQuery";
 import { studentRecordsApi } from "./api";
 import { StudentDetailPanel } from "./components/StudentDetailPanel";
-import { AddRecordModal } from "./components/AddRecordModal";
 import { DataTable, dataTableClass } from "../../components/ui";
 import { confirmAction } from "../../lib/swal";
 
@@ -57,8 +55,6 @@ export const StudentRecords = () => {
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [addStep, setAddStep] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   
   // Edit Form state
@@ -74,22 +70,6 @@ export const StudentRecords = () => {
     bloodType: "",
     allergies: "",
     notes: ""
-  });
-
-  // Add Form state
-  const [addForm, setAddForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    parentName: "",
-    parentPhone: "",
-    parentEmail: "",
-    standing: "In Good Standing",
-    bloodType: "O+",
-    allergies: "",
-    notes: "",
-    gradeLevelId: ""
   });
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
@@ -176,51 +156,6 @@ export const StudentRecords = () => {
     } catch (error) {
       console.error("Failed to delete:", error);
       showToast(t("studentRecords.toast.deleteError"), "error");
-    }
-  };
-
-  const handleAddStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`/api/schools/${school?.id}/students`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          name: addForm.name,
-          email: addForm.email,
-          gradeLevelId: addForm.gradeLevelId || undefined
-        })
-      });
-
-      if (response.ok) {
-        await response.json();
-        await refetchStudentRecords();
-        setIsAddOpen(false);
-        setAddStep(1);
-        setAddForm({
-          name: "",
-          email: "",
-          phone: "",
-          address: "",
-          parentName: "",
-          parentPhone: "",
-          parentEmail: "",
-          standing: "In Good Standing",
-          bloodType: "O+",
-          allergies: "",
-          notes: "",
-          gradeLevelId: ""
-        });
-        showToast(t("studentRecords.toast.registered"));
-      } else {
-        showToast(t("studentRecords.toast.registerFailed"), "error");
-      }
-    } catch (error) {
-      console.error("Add student error:", error);
-      showToast(t("studentRecords.toast.registerError"), "error");
     }
   };
 
@@ -326,16 +261,6 @@ export const StudentRecords = () => {
           >
             <Download className="w-4 h-4 text-slate-400" />
             {t("studentRecords.exportDatabase")}
-          </button>
-          <button 
-            onClick={() => {
-              setAddStep(1);
-              setIsAddOpen(true);
-            }}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-5 h-5" />
-            {t("studentRecords.addStudentRecord")}
           </button>
         </div>
       </div>
@@ -638,20 +563,6 @@ export const StudentRecords = () => {
         )}
       </AnimatePresence>
 
-      {/* Add Record Modal Dialog */}
-      <AnimatePresence>
-        {isAddOpen && (
-          <AddRecordModal
-            addForm={addForm}
-            addStep={addStep}
-            handleAddStudent={handleAddStudent}
-            school={school}
-            setAddForm={setAddForm}
-            setAddStep={setAddStep}
-            setIsAddOpen={setIsAddOpen}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

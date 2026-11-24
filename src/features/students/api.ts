@@ -19,8 +19,6 @@ export const studentsApi = {
     fetchAllItems<{ id: string; name: string }>((page, pageSize) =>
       api.get(`/api/schools/${schoolId}/grade-levels?page=${page}&pageSize=${pageSize}`)
     ),
-  createStudent: (schoolId: string, data: unknown) =>
-    api.post(`/api/schools/${schoolId}/students`, data),
   updateUser: (id: string, data: unknown) => api.patch(`/api/users/${id}`, data),
   deleteUser: (id: string) => api.delete(`/api/users/${id}`),
   addClassroomMember: (classroomId: string, data: unknown) =>

@@ -921,7 +921,7 @@ export const esResources = {
     },
     "students": {
       "title": "Estudiantes",
-      "subtitle": "Matricula y gestiona a los estudiantes de {{school}}.",
+      "subtitle": "Consulta y gestiona los expedientes de los estudiantes de {{school}}.",
       "enroll": "Matricular nuevo estudiante",
       "enrollSubtitle": "Crea una cuenta de directorio con una contraseña temporal de un solo uso.",
       "enrollAction": "Matricular estudiante",
@@ -4206,7 +4206,7 @@ export const esResources = {
         "title": "How placement works",
         "step1": "Pick a class group on the right, then a student on the left (or check several).",
         "step2": "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-        "step3Prefix": "New student accounts are created on",
+        "step3Prefix": "New student accounts are created through",
         "step3Suffix": ", not here.",
       },
       "toast": {

@@ -1315,7 +1315,7 @@ export const enPages = {
   },
   students: {
     title: "Students",
-    subtitle: "Enroll and manage students at {{school}}.",
+    subtitle: "View and manage student records at {{school}}.",
     enroll: "Enroll new student",
     enrollSubtitle: "Create a directory account with a one-time temporary password.",
     enrollAction: "Enroll student",
@@ -4230,7 +4230,7 @@ export const enPages = {
       step1: "Pick a class group on the right, then a student on the left (or check several).",
       step2:
         "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-      step3Prefix: "New student accounts are created on",
+      step3Prefix: "New student accounts are created through",
       step3Suffix: ", not here.",
     },
     toast: {

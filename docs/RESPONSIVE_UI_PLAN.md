@@ -738,7 +738,7 @@ Mark each file when the owning feature route wave is done. Skip `bannerUtils.tsx
 | # | File | Status |
 | :--- | :--- | :--- |
 | F176 | `src/features/student-records/Page.tsx` | ok |
-| F177 | `src/features/student-records/components/AddRecordModal.tsx` | ok |
+| F177 | `src/features/student-records/components/AddRecordModal.tsx` | removed |
 | F178 | `src/features/student-records/components/StudentDetailPanel.tsx` | ok |
 
 #### `students/` (Phase 2)
@@ -747,7 +747,7 @@ Mark each file when the owning feature route wave is done. Skip `bannerUtils.tsx
 | :--- | :--- | :--- |
 | F179 | `src/features/students/Page.tsx` | ok |
 | F180 | `src/features/students/components/EditStudentModal.tsx` | ok |
-| F181 | `src/features/students/components/EnrollStudentModal.tsx` | ok |
+| F181 | `src/features/students/components/EnrollStudentModal.tsx` | removed |
 
 #### `work-orders/` (Phase 2)
 

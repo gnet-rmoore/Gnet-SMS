@@ -143,7 +143,6 @@ export const ROLE_DASHBOARD_REGISTRY: Record<string, RoleDashboardDef> = {
     leadershipKpis: "registrar",
     quickActions: [
       { labelKey: "dashboard.actions.newAdmission", path: "admissions?tab=new_admission", icon: Users },
-      { labelKey: "dashboard.actions.enrollStudent", path: "students", icon: UserCheck },
       { labelKey: "dashboard.actions.issueTranscript", path: "transcripts", icon: FileText },
       { labelKey: "dashboard.actions.certificates", path: "certificates", icon: Award },
       { labelKey: "dashboard.actions.enrollment", path: "enrollment", icon: Layers },

@@ -477,7 +477,7 @@ export function EnrollmentPage() {
 
         <div className="flex flex-wrap gap-3">
           <Link
-            to={`/${slug}/students`}
+            to={`/${slug}/admissions?tab=new_admission`}
             className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors text-sm"
           >
             {t("enrollment.enrollStudent")}
@@ -652,7 +652,7 @@ export function EnrollmentPage() {
                 </p>
                 {students.length === 0 && (
                   <Link
-                    to={`/${slug}/students`}
+                    to={`/${slug}/admissions?tab=new_admission`}
                     className="text-sm font-bold text-indigo-600 hover:underline inline-block"
                   >
                     {t("enrollment.enrollFirst")}
@@ -976,8 +976,8 @@ export function EnrollmentPage() {
             <p>{t("enrollment.help.step2")}</p>
             <p>
               {t("enrollment.help.step3Prefix")}{" "}
-              <Link to={`/${slug}/students`} className="text-indigo-600 font-bold hover:underline">
-                {t("nav:students")}
+              <Link to={`/${slug}/admissions?tab=new_admission`} className="text-indigo-600 font-bold hover:underline">
+                {t("admissions.tabs.directAdmission")}
               </Link>
               {t("enrollment.help.step3Suffix")}
             </p>

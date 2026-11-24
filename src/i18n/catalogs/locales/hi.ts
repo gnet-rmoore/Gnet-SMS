@@ -921,7 +921,7 @@ export const hiResources = {
     },
     "students": {
       "title": "छात्र",
-      "subtitle": "{{school}} में छात्रों को नामांकित करें और प्रबंधित करें।",
+      "subtitle": "{{school}} के छात्र रिकॉर्ड देखें और प्रबंधित करें।",
       "enroll": "नया छात्र नामांकित करें",
       "enrollSubtitle": "एक बार उपयोग होने वाले अस्थायी पासवर्ड के साथ एक निर्देशिका खाता बनाएं।",
       "enrollAction": "छात्र नामांकित करें",
@@ -4206,7 +4206,7 @@ export const hiResources = {
         "title": "How placement works",
         "step1": "Pick a class group on the right, then a student on the left (or check several).",
         "step2": "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-        "step3Prefix": "New student accounts are created on",
+        "step3Prefix": "New student accounts are created through",
         "step3Suffix": ", not here.",
       },
       "toast": {

@@ -921,7 +921,7 @@ export const deResources = {
     },
     "students": {
       "title": "Schüler",
-      "subtitle": "Schüler von {{school}} einschreiben und verwalten.",
+      "subtitle": "Schülerakten von {{school}} ansehen und verwalten.",
       "enroll": "Neuen Schüler einschreiben",
       "enrollSubtitle": "Erstellen Sie ein Verzeichniskonto mit einem einmaligen, vorläufigen Passwort.",
       "enrollAction": "Schüler einschreiben",
@@ -4206,7 +4206,7 @@ export const deResources = {
         "title": "How placement works",
         "step1": "Pick a class group on the right, then a student on the left (or check several).",
         "step2": "Assigning to a class group automatically enrolls the student in all linked subject classrooms.",
-        "step3Prefix": "New student accounts are created on",
+        "step3Prefix": "New student accounts are created through",
         "step3Suffix": ", not here.",
       },
       "toast": {
