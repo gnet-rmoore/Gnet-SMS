@@ -63,7 +63,7 @@ src/features/certificates/
     DecoCert.tsx
     ImperialCert.tsx
   styles/
-    fonts.css                # supplied thirteen Google Fonts
+    fonts.css                # supplied thirteen Google Fonts + matching --font-* CSS variables
   lib/
     exportCertificate.ts     # scoped print + ref-based PDF capture
   index.ts
@@ -72,7 +72,7 @@ src/components/CertificateTemplates.tsx  # thin re-export
 ```
 
 - Print: scoped `@page { size: A4 landscape; margin: 0; }` injected only while printing certificates.
-- PDF: html2canvas captures per-certificate refs; jsPDF emits A4 landscape `297 × 210 mm`.
+- PDF: html2canvas captures a full-size clone of each rendered certificate; jsPDF emits A4 landscape `297 × 210 mm` with a white page.
 - Design: original inline styles, SVG seals, grain, guilloche, gradients, frames, and font variables are kept from the supplied React components.
 
 ## Product wiring

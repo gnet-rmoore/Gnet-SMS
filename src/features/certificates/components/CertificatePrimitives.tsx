@@ -13,6 +13,7 @@ export const SANS_DM = f("--font-dm-sans", "'DM Sans', system-ui, sans-serif");
 export const SERIF_PLAY = f("--font-playfair", "'Playfair Display', Georgia, serif");
 export const SANS_MANROPE = f("--font-manrope", "Manrope, system-ui, sans-serif");
 export const SERIF_INSTR = f("--font-instrument", "'Instrument Serif', Georgia, serif");
+export const SCRIPT = f("--font-signature", "Allura, 'Brush Script MT', cursive");
 export const SERIF_CINZEL = f("--font-cinzel", "Cinzel, 'Trajan Pro', Georgia, serif");
 export const SERIF_BODONI = f("--font-bodoni", "'Bodoni Moda', 'Didot', Georgia, serif");
 export const SERIF_ITALIANA = f("--font-italiana", "Italiana, Georgia, serif");

@@ -307,12 +307,63 @@ assert(
   fonts.includes("Allura") && fonts.includes("Bodoni+Moda") && fonts.includes("Cinzel") && fonts.includes("Cormorant") && fonts.includes("DM+Serif") && fonts.includes("DM+Sans") && fonts.includes("Instrument+Serif") && fonts.includes("Italiana") && fonts.includes("Josefin+Sans") && fonts.includes("Manrope") && fonts.includes("Marcellus") && fonts.includes("Playfair") && fonts.includes("Inter"),
   "all thirteen supplied font families are loaded"
 );
+assert(
+  ["--font-cormorant", "--font-inter", "--font-dm-serif", "--font-dm-sans", "--font-playfair", "--font-manrope", "--font-instrument", "--font-signature", "--font-cinzel", "--font-bodoni", "--font-italiana", "--font-josefin", "--font-marcellus"].every((v) => fonts.includes(v)),
+  "all thirteen supplied CSS font variables are defined"
+);
+assert(
+  primitives.includes("SCRIPT = f(\"--font-signature\""),
+  "supplied Allura script font is available"
+);
+assert(
+  heritage.includes("SERIF_CORM") && heritage.includes("SANS_INTER") &&
+    meridian.includes("SERIF_DM") && meridian.includes("SANS_DM") &&
+    noir.includes("SERIF_PLAY") && noir.includes("SANS_MANROPE") &&
+    atlas.includes("SERIF_INSTR") && atlas.includes("SANS_MANROPE") &&
+    sovereign.includes("SERIF_CINZEL") && sovereign.includes("SERIF_CORM") && sovereign.includes("SANS_INTER") &&
+    regent.includes("SERIF_BODONI") && regent.includes("SANS_DM") &&
+    deco.includes("SERIF_ITALIANA") && deco.includes("SANS_JOSEFIN") &&
+    imperial.includes("SERIF_MARCELLUS") && imperial.includes("SANS_MANROPE"),
+  "each template keeps its supplied font pair"
+);
 assert(exportHelper.includes("@page { size: A4 landscape; margin: 0; }"), "scoped A4 print rule retained");
 assert(exportHelper.includes("cert-capture"), "PDF capture fallbacks injected");
 assert(
   exportHelper.includes(".cert-capture .cert-regent-bg") &&
     exportHelper.includes(".cert-capture .cert-deco-bg"),
   "PDF capture fallbacks cover new dark templates"
+);
+assert(
+  exportHelper.includes("CERT_W = 1123") &&
+    exportHelper.includes("CERT_H = 794") &&
+    exportHelper.includes("createCaptureSheet") &&
+    exportHelper.includes("data-cert-pdf-capture"),
+  "PDF capture uses a dedicated full-size certificate clone"
+);
+assert(
+  exportHelper.includes("transform: none !important") &&
+    exportHelper.includes("position: relative !important") &&
+    !exportHelper.includes("position: static !important"),
+  "PDF capture preserves absolute certificate positioning"
+);
+assert(
+  exportHelper.includes("background: #ffffff !important") &&
+    exportHelper.includes("backgroundColor: \"#ffffff\"") &&
+    exportHelper.includes("pdf.setFillColor(255, 255, 255)") &&
+    exportHelper.includes("pdf.rect(0, 0, PDF_W_MM, PDF_H_MM, \"F\")"),
+  "PDF page background is white"
+);
+assert(
+  exportHelper.includes("radial-gradient(ellipse at 50% 40%, #3A3B3F 0%, #14161A 75%)") &&
+    exportHelper.includes("radial-gradient(ellipse at 50% 35%, #3B5551 0%, #0A2B25 80%)") &&
+    exportHelper.includes(".cert-capture .cert-meridian-bg") &&
+    exportHelper.includes("background: #ffffff !important"),
+  "PDF capture keeps supplied certificate colors"
+);
+assert(
+  exportHelper.includes("canvas.toDataURL(\"image/png\")") &&
+    exportHelper.includes("\"PNG\", 0, 0, PDF_W_MM, PDF_H_MM"),
+  "PDF embeds the full certificate losslessly"
 );
 assert(exportHelper.includes("orientation: \"landscape\"") && exportHelper.includes("format: \"a4\""), "PDF uses A4 landscape");
 assert(

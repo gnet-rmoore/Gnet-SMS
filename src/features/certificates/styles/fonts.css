@@ -1,1 +1,17 @@
-@import url("https://fonts.googleapis.com/css2?family=Allura&family=Bodoni+Moda:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;600;700&family=DM+Serif+Display&family=Inter:wght@400;600&family=Instrument+Serif&family=Italiana&family=Josefin+Sans:wght@300;400;600&family=Manrope:wght@400;600;700&family=Marcellus&family=Playfair+Display:ital,wght@0,400;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Allura&family=Bodoni+Moda:ital,wght@0,400;1,400&family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=Instrument+Serif&family=Italiana&family=Josefin+Sans:wght@300;400;600&family=Manrope:wght@400;500;600;700&family=Marcellus&family=Playfair+Display:ital,wght@0,400;1,400&display=swap");
+
+:root {
+  --font-cormorant: "Cormorant Garamond", Georgia, serif;
+  --font-inter: Inter, system-ui, sans-serif;
+  --font-dm-serif: "DM Serif Display", Georgia, serif;
+  --font-dm-sans: "DM Sans", system-ui, sans-serif;
+  --font-playfair: "Playfair Display", Georgia, serif;
+  --font-manrope: Manrope, system-ui, sans-serif;
+  --font-instrument: "Instrument Serif", Georgia, serif;
+  --font-signature: Allura, "Brush Script MT", cursive;
+  --font-cinzel: Cinzel, "Trajan Pro", Georgia, serif;
+  --font-bodoni: "Bodoni Moda", Didot, Georgia, serif;
+  --font-italiana: Italiana, Georgia, serif;
+  --font-josefin: "Josefin Sans", system-ui, sans-serif;
+  --font-marcellus: Marcellus, Georgia, serif;
+}

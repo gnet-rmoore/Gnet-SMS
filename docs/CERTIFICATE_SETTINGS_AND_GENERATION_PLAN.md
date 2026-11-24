@@ -59,7 +59,9 @@
   - `printCertificates()` injects a unique `<style>` with `@page { size: A4 landscape; margin: 0 }` and scoped visibility rules only for a temporary certificate print root, then removes the style/root after printing
   - neutralizes compact `.sheet` transforms and page breaks between certificates
   - `exportCertificatesPdf()` resolves refs, awaits `document.fonts.ready` and all `<img>` load events
-  - uses html2canvas with `scale: 2`, `useCORS: true`, `backgroundColor: "#ffffff"`, then jsPDF A4 landscape
+  - clones each rendered React certificate into a dedicated full-size `1123 × 794` A4-landscape capture root so compact preview transforms never crop content
+  - forces the PDF page and capture root white while each certificate keeps its supplied background colors
+  - uses html2canvas with `scale: 2`, `useCORS: true`, `backgroundColor: "#ffffff"`, then embeds a lossless PNG into jsPDF A4 landscape
   - supports one or many elements into one PDF
 - Add capture-safe style fallback for Noir gradient, Meridian radial-gradient, Regent navy page, and Deco radial-gradient backgrounds so PDF output does not lose text/background.
 - Validate long names/content before capture and shrink/wrap instead of clipping.

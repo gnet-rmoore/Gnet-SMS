@@ -3,6 +3,11 @@ import { jsPDF } from "jspdf";
 
 const PRINT_ROOT_ID = "certificate-print-root";
 const PRINT_STYLE_ID = "certificate-scoped-print-style";
+const PDF_CAPTURE_HOLDER_ID = "certificate-pdf-capture-holder";
+const CERT_W = 1123;
+const CERT_H = 794;
+const PDF_W_MM = 297;
+const PDF_H_MM = 210;
 
 function sheetFrom(container: HTMLElement): HTMLElement | null {
   return container.querySelector<HTMLElement>("[data-cert-canvas]");
@@ -87,26 +92,37 @@ async function waitForCertificateAssets(root: HTMLElement) {
 }
 
 const CAPTURE_CSS = `
-  .cert-capture .cert-sheet,
-  .cert-capture [data-cert-canvas] {
+  html, body { background: #ffffff !important; }
+  .cert-capture,
+  .cert-capture .cert-sheet {
     width: 1123px !important;
     height: 794px !important;
-    transform: none !important;
+    max-width: none !important;
     margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    transform-origin: top left !important;
     box-shadow: none !important;
-    position: static !important;
+    overflow: hidden !important;
   }
-  .cert-capture .cert-noir-bg {
-    background: #14161A !important;
+  .cert-capture {
+    position: relative !important;
+    background: #ffffff !important;
+  }
+  .cert-capture .cert-sheet {
+    position: relative !important;
   }
   .cert-capture .cert-meridian-bg {
-    background: #F4F8F6 !important;
+    background: #ffffff !important;
+  }
+  .cert-capture .cert-noir-bg {
+    background: radial-gradient(ellipse at 50% 40%, #3A3B3F 0%, #14161A 75%) !important;
   }
   .cert-capture .cert-regent-bg {
     background: #10224A !important;
   }
   .cert-capture .cert-deco-bg {
-    background: #0A2B25 !important;
+    background: radial-gradient(ellipse at 50% 35%, #3B5551 0%, #0A2B25 80%) !important;
   }
   .cert-capture .cert-noir-title {
     background: none !important;
@@ -116,14 +132,50 @@ const CAPTURE_CSS = `
   }
 `;
 
+function createCaptureSheet(sheet: HTMLElement) {
+  document.getElementById(PDF_CAPTURE_HOLDER_ID)?.remove();
+
+  const clone = sheet.cloneNode(true) as HTMLElement;
+  clone.classList.add("cert-capture");
+  clone.setAttribute("data-cert-pdf-capture", "true");
+  clone.style.setProperty("position", "relative", "important");
+  clone.style.setProperty("width", `${CERT_W}px`, "important");
+  clone.style.setProperty("height", `${CERT_H}px`, "important");
+  clone.style.setProperty("max-width", "none", "important");
+  clone.style.setProperty("margin", "0", "important");
+  clone.style.setProperty("padding", "0", "important");
+  clone.style.setProperty("overflow", "hidden", "important");
+  clone.style.setProperty("background", "#ffffff", "important");
+  clone.style.setProperty("transform", "none", "important");
+  clone.style.setProperty("transform-origin", "top left", "important");
+
+  const inner = clone.querySelector<HTMLElement>(".cert-sheet");
+  if (inner) {
+    inner.style.setProperty("position", "relative", "important");
+    inner.style.setProperty("width", `${CERT_W}px`, "important");
+    inner.style.setProperty("height", `${CERT_H}px`, "important");
+    inner.style.setProperty("margin", "0", "important");
+    inner.style.setProperty("padding", "0", "important");
+    inner.style.setProperty("overflow", "hidden", "important");
+    inner.style.setProperty("transform", "none", "important");
+    inner.style.setProperty("transform-origin", "top left", "important");
+    inner.style.setProperty("box-shadow", "none", "important");
+  }
+
+  const holder = document.createElement("div");
+  holder.id = PDF_CAPTURE_HOLDER_ID;
+  holder.style.cssText = `position:fixed;left:0;top:0;width:${CERT_W}px;height:${CERT_H}px;background:#ffffff;overflow:hidden;pointer-events:none;z-index:-1;`;
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
+  return { clone, holder };
+}
+
 export async function exportCertificatesPdf(
   containers: HTMLElement[],
   fileName: string
 ): Promise<boolean> {
   const sheets = sheetsFrom(containers);
   if (!sheets.length) return false;
-
-  await waitForCertificateAssets(sheets[0].ownerDocument.body);
 
   const pdf = new jsPDF({
     orientation: "landscape",
@@ -133,27 +185,34 @@ export async function exportCertificatesPdf(
   });
 
   for (let index = 0; index < sheets.length; index += 1) {
-    const sheet = sheets[index];
     if (index > 0) pdf.addPage("a4", "landscape");
-    const canvas = await html2canvas(sheet, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      allowTaint: false,
-      width: 1123,
-      height: 794,
-      windowWidth: 1123,
-      windowHeight: 794,
-      scrollX: 0,
-      scrollY: 0,
-      onclone: (doc) => {
-        doc.body.classList.add("cert-capture");
-        const injected = doc.createElement("style");
-        injected.textContent = CAPTURE_CSS;
-        doc.head.appendChild(injected);
-      },
-    });
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, 297, 210);
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, PDF_W_MM, PDF_H_MM, "F");
+
+    const { clone, holder } = createCaptureSheet(sheets[index]);
+    try {
+      await waitForCertificateAssets(clone);
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        width: CERT_W,
+        height: CERT_H,
+        windowWidth: CERT_W,
+        windowHeight: CERT_H,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (doc) => {
+          const injected = doc.createElement("style");
+          injected.textContent = CAPTURE_CSS;
+          doc.head.appendChild(injected);
+        },
+      });
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, PDF_W_MM, PDF_H_MM);
+    } finally {
+      holder.remove();
+    }
   }
 
   pdf.save(fileName || "certificates.pdf");
