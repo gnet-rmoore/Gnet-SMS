@@ -131,6 +131,9 @@ const Registrar = lazy(() => import("./pages/School/Registrar").then((m) => ({ d
 const StudentRecords = lazy(() => import("./pages/School/StudentRecords").then((m) => ({ default: m.StudentRecords })));
 const Transcripts = lazy(() => import("./pages/School/Transcripts").then((m) => ({ default: m.Transcripts })));
 const Enrollment = lazy(() => import("./pages/School/Enrollment").then((m) => ({ default: m.Enrollment })));
+const ClassCapacity = lazy(() =>
+  import("./pages/School/ClassCapacity").then((m) => ({ default: m.ClassCapacityPage }))
+);
 const YearTransition = lazy(() =>
   import("./features/year-transition/Page").then((m) => ({ default: m.YearTransitionPage }))
 );
@@ -847,6 +850,14 @@ export default function App() {
                         <Enrollment />
                       </ProtectedRoute>
                     } 
+                  />
+                  <Route
+                    path="class-capacity"
+                    element={
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "REGISTRAR"]}>
+                        <ClassCapacity />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route
                     path="year-transition"

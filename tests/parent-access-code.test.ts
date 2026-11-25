@@ -114,6 +114,7 @@ assert.match(loginSource, /placeholder="000-000"/);
 const enCatalog = readFileSync(new URL("../src/i18n/catalogs/en.ts", import.meta.url), "utf8");
 assert.match(enCatalog, /subtitle: "Use the 6-digit code issued by the school"/);
 assert.match(enCatalog, /parentAccess: "Parents"/);
+assert.match(enCatalog, /revealCode: "Reveal code"/);
 
 const parentAccessRoutes = readFileSync(
   new URL("../services/identity/src/routes/parentAccessRoutes.ts", import.meta.url),
@@ -149,6 +150,10 @@ assert.match(parentAccessController, /parent_access_code_revealed/);
 assert.match(parentAccessPage, /parent-access-code\/reveal/);
 assert.match(parentAccessPage, /codeEmailed/);
 assert.match(parentAccessPage, /codeRevealUnavailable/);
+assert.match(parentAccessPage, /roleAccessApi\.refreshSession\(\)/);
+assert.match(parentAccessPage, /load\(\{ clearError: false \}\)/);
+assert.match(parentAccessPage, /revealCode/);
+assert.match(parentAccessPage, /setSelectedParentId\(userId\)/);
 
 const parentAccessService = readFileSync(
   new URL("../services/identity/src/services/parentAccessService.ts", import.meta.url),
@@ -156,6 +161,7 @@ const parentAccessService = readFileSync(
 );
 assert.match(parentAccessService, /encryptCredentialSecret\(code\)/);
 assert.match(parentAccessService, /revealParentAccessCode\(/);
+assert.match(parentAccessService, /decryptCredentialSecret\(row\.codeEncrypted\)/);
 assert.match(parentAccessService, /parentAccessCode/);
 assert.match(parentAccessService, /sendParentAccessCodeEmail\(user, code, schoolId\)/);
 assert.match(parentAccessService, /where: \{ id: schoolId \}/);

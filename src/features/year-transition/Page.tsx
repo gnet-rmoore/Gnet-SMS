@@ -25,6 +25,21 @@ function nextYearKey(from: string) {
   return `${y + 1}-${y + 2}`;
 }
 
+function classroomIsFull(classroom: {
+  capacity?: number | null;
+  allowOverfill?: boolean;
+  studentCount?: number;
+  seatsLeft?: number | null;
+}) {
+  if (classroom.allowOverfill) return false;
+  if (typeof classroom.seatsLeft === "number") return classroom.seatsLeft <= 0;
+  return (
+    typeof classroom.capacity === "number" &&
+    typeof classroom.studentCount === "number" &&
+    classroom.studentCount >= classroom.capacity
+  );
+}
+
 export function YearTransitionPage() {
   const { t } = useTranslation("pages");
   const { school } = useAuthStore();
@@ -42,7 +57,16 @@ export function YearTransitionPage() {
     {}
   );
   const [classrooms, setClassrooms] = React.useState<
-    { id: string; name: string; subjectId?: string | null; gradeLevelId?: string | null }[]
+    {
+      id: string;
+      name: string;
+      subjectId?: string | null;
+      gradeLevelId?: string | null;
+      capacity?: number | null;
+      allowOverfill?: boolean;
+      studentCount?: number;
+      seatsLeft?: number | null;
+    }[]
   >([]);
   const [gradeLevels, setGradeLevels] = React.useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = React.useState(false);
@@ -478,11 +502,21 @@ export function YearTransitionPage() {
                         }
                       >
                         <option value="">—</option>
-                        {classrooms.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
+                        {classrooms.map((c) => {
+                          const full = classroomIsFull(c);
+                          return (
+                            <option
+                              key={c.id}
+                              value={c.id}
+                              disabled={full && d.toClassroomId !== c.id}
+                            >
+                              {c.name}
+                              {full
+                                ? ` (${t("pages:classCapacity.full", { defaultValue: "Full" })})`
+                                : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     </td>
                     <td className={dataTableClass.td}>

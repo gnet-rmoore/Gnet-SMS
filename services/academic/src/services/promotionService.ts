@@ -431,6 +431,17 @@ export const promotionService = {
     const gradeName = new Map(grades.map((g) => [g.id, g.name]));
     const studentName = new Map(students.map((s) => [s.id, s.name || s.id]));
     const roomName = new Map(classrooms.map((c) => [c.id, c.name]));
+    const capacityByKey = new Map<
+      string,
+      { capacity: number | null; allowOverfill: boolean }
+    >();
+    for (const room of classrooms as any[]) {
+      if (room.subjectId) continue;
+      capacityByKey.set(`${room.gradeLevelId || "_"}|${room.name}`, {
+        capacity: room.capacity ?? null,
+        allowOverfill: Boolean(room.allowOverfill),
+      });
+    }
 
     const sectionsByGrade = new Map<string, Set<string>>();
     for (const row of census.rows) {
@@ -462,13 +473,26 @@ export const promotionService = {
       byGrade.set(p.gradeLevelId, list);
     }
 
-    const groups: Array<{ gradeLevelId: string; name: string }> = [];
+    const groups: Array<{
+      gradeLevelId: string;
+      name: string;
+      capacity?: number | null;
+      allowOverfill?: boolean;
+    }> = [];
     const sectionNamesByGrade = new Map<string, string[]>();
     for (const gid of byGrade.keys()) {
       const cloned = [...(sectionsByGrade.get(gid) || [])].sort();
       const names = cloned.length ? cloned : [`${gradeName.get(gid) || "Grade"} A`];
       sectionNamesByGrade.set(gid, names);
-      for (const name of names) groups.push({ gradeLevelId: gid, name });
+      for (const name of names) {
+        const capacity = capacityByKey.get(`${gid}|${name}`);
+        groups.push({
+          gradeLevelId: gid,
+          name,
+          capacity: capacity?.capacity ?? null,
+          allowOverfill: capacity?.allowOverfill ?? false,
+        });
+      }
     }
 
     const ensured = groups.length
@@ -480,12 +504,19 @@ export const promotionService = {
       allRooms.map((r) => [`${r.gradeLevelId || "_"}|${r.name}`, r.id])
     );
 
-    const buckets = groups.map((g) => ({
-      gradeLevelId: g.gradeLevelId,
-      name: g.name,
-      classroomId: roomByKey.get(`${g.gradeLevelId}|${g.name}`) || null,
-      count: 0,
-    }));
+    const buckets = groups.map((g) => {
+      const room = allRooms.find(
+        (r) => `${r.gradeLevelId || "_"}|${r.name}` === `${g.gradeLevelId}|${g.name}`
+      ) as any;
+      return {
+        gradeLevelId: g.gradeLevelId,
+        name: g.name,
+        classroomId: roomByKey.get(`${g.gradeLevelId}|${g.name}`) || null,
+        capacity: room?.capacity ?? null,
+        allowOverfill: Boolean(room?.allowOverfill),
+        count: 0,
+      };
+    });
     const assignments: Array<{ classroomId: string; studentUserId: string; role?: string }> = [];
     const decisionUpdates: Array<{ studentUserId: string; classroomId: string }> = [];
     const unassignedStudentIds: string[] = [];
@@ -502,7 +533,14 @@ export const promotionService = {
         )
       );
       for (const p of sorted) {
-        const target = gradeBuckets.reduce((min, b) => (b.count < min.count ? b : min), gradeBuckets[0]);
+        const openBuckets = gradeBuckets.filter(
+          (b) => b.allowOverfill || b.capacity == null || b.count < b.capacity
+        );
+        if (!openBuckets.length) {
+          unassignedStudentIds.push(p.studentUserId);
+          continue;
+        }
+        const target = openBuckets.reduce((min, b) => (b.count < min.count ? b : min), openBuckets[0]);
         target.count += 1;
         assignments.push({ classroomId: target.classroomId!, studentUserId: p.studentUserId });
         decisionUpdates.push({
@@ -513,7 +551,17 @@ export const promotionService = {
     }
 
     if (assignments.length) {
-      await bulkAssignStudents(schoolId, assignments);
+      const assignmentResults = await bulkAssignStudents(schoolId, assignments);
+      const failedAssignments = assignmentResults.filter((result: any) => !result.ok);
+      if (failedAssignments.length) {
+        const sample = failedAssignments[0] as any;
+        throw httpError(
+          `Class capacity blocked ${failedAssignments.length} placement(s): ${
+            sample?.error || "Class is full"
+          }`,
+          409
+        );
+      }
       const runId = run.id;
       await prisma.$transaction(
         decisionUpdates.map((u) =>

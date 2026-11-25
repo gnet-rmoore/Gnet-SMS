@@ -1450,7 +1450,13 @@ export const classroomService = {
   async ensureYearGroups(
     schoolId: string,
     schoolYearId: string,
-    groups: Array<{ gradeLevelId: string | null; name: string; organizationType?: string | null }>
+    groups: Array<{
+      gradeLevelId: string | null;
+      name: string;
+      organizationType?: string | null;
+      capacity?: number | null;
+      allowOverfill?: boolean;
+    }>
   ) {
     if (!schoolId) throw new Error("schoolId required");
     if (!schoolYearId) throw new Error("schoolYearId required");
@@ -1482,6 +1488,8 @@ export const classroomService = {
           subjectId: null,
           gradeLevelId: group.gradeLevelId || null,
           ownerTeacherId: null,
+          capacity: normalizeCapacity(group.capacity),
+          allowOverfill: Boolean(group.allowOverfill),
           organizationType: normalizeOrganizationType(
             group.organizationType,
             "SELF_CONTAINED"
@@ -1498,7 +1506,13 @@ export const classroomService = {
     schoolId: string,
     assignments: Array<{ classroomId: string; studentUserId: string; role?: string }>
   ) {
-    const results: Array<{ classroomId: string; studentUserId: string; ok: boolean; error?: string }> = [];
+    const results: Array<{
+      classroomId: string;
+      studentUserId: string;
+      ok: boolean;
+      error?: string;
+      code?: string;
+    }> = [];
     for (const a of assignments) {
       try {
         const room = await prisma.classroom.findFirst({
@@ -1506,15 +1520,19 @@ export const classroomService = {
           select: { id: true },
         });
         if (!room) throw new Error("Homeroom not found in school");
+        const role = a.role || "STUDENT";
+        if (role === "STUDENT") {
+          await this.claimStudentSeat(a.classroomId, a.studentUserId);
+        }
         await prisma.classroomMember.upsert({
           where: {
             classroomId_userId: { classroomId: a.classroomId, userId: a.studentUserId },
           },
-          update: { role: a.role || "STUDENT" },
+          update: { role },
           create: {
             classroomId: a.classroomId,
             userId: a.studentUserId,
-            role: a.role || "STUDENT",
+            role,
           },
         });
         results.push({ classroomId: a.classroomId, studentUserId: a.studentUserId, ok: true });
@@ -1524,6 +1542,7 @@ export const classroomService = {
           studentUserId: a.studentUserId,
           ok: false,
           error: err?.message || "Failed to assign",
+          code: err?.code,
         });
       }
     }

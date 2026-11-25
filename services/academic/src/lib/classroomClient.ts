@@ -135,7 +135,13 @@ export async function removeClassroomMember(classroomId: string, userId: string)
 export async function ensureYearClassGroups(
   schoolId: string,
   schoolYearId: string,
-  groups: Array<{ gradeLevelId: string | null; name: string; organizationType?: string | null }>
+  groups: Array<{
+    gradeLevelId: string | null;
+    name: string;
+    organizationType?: string | null;
+    capacity?: number | null;
+    allowOverfill?: boolean;
+  }>
 ): Promise<{ created: ClassroomRef[]; existing: ClassroomRef[] }> {
   const res = await fetch(
     `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms/ensure-year-groups`,
@@ -154,7 +160,9 @@ export async function ensureYearClassGroups(
 export async function bulkAssignStudents(
   schoolId: string,
   assignments: Array<{ classroomId: string; studentUserId: string; role?: string }>
-): Promise<Array<{ classroomId: string; studentUserId: string; ok: boolean; error?: string }>> {
+): Promise<
+  Array<{ classroomId: string; studentUserId: string; ok: boolean; error?: string; code?: string }>
+> {
   const res = await fetch(
     `${CLASSROOM_URL}/api/internal/schools/${encodeURIComponent(schoolId)}/classrooms/bulk-assign`,
     {

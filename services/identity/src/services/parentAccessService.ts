@@ -386,7 +386,12 @@ export const parentAccessService = {
       where: { userId_schoolId: { userId, schoolId } },
     });
     if (!row || row.revokedAt) return null;
-    const accessCode = decryptCredentialSecret(row.codeEncrypted);
+    let accessCode: string | null = null;
+    try {
+      accessCode = decryptCredentialSecret(row.codeEncrypted);
+    } catch {
+      accessCode = null;
+    }
     if (!accessCode) return null;
     return {
       accessCode,

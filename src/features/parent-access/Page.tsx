@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { Button, DetailDrawerShell } from "../../components/ui";
+import { roleAccessApi } from "../role-access/api";
 import { canResetParentPassword } from "../../lib/passwordResetPolicy";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
@@ -41,6 +42,7 @@ export function ParentAccessPage() {
   const p = (key: string, opts?: Record<string, unknown>) => t(`parentAccess.${key}`, opts);
   const school = useAuthStore((state) => state.school);
   const user = useAuthStore((state) => state.user);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const [requests, setRequests] = React.useState<Row[]>([]);
   const [parents, setParents] = React.useState<Row[]>([]);
@@ -59,9 +61,9 @@ export function ParentAccessPage() {
   const [copied, setCopied] = React.useState(false);
   const [drawerBusy, setDrawerBusy] = React.useState(false);
 
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (options?: { clearError?: boolean }) => {
     if (!school?.id) return;
-    setError(null);
+    if (options?.clearError !== false) setError(null);
     try {
       const [requestRows, parentRows] = await Promise.all([
         api.get(`/api/schools/${school.id}/parent-phone-login-requests`),
@@ -78,17 +80,52 @@ export function ParentAccessPage() {
     void load();
   }, [load]);
 
+  const refreshSession = React.useCallback(async () => {
+    try {
+      const session = await roleAccessApi.refreshSession();
+      setAuth(
+        {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+          role: session.user.role,
+          photoUrl: session.user.photoUrl ?? null,
+          mustChangePassword: Boolean(session.user.mustChangePassword),
+        },
+        session.accessToken,
+        session.school as any,
+        session.capabilities,
+        session.entitlements ?? null,
+        session.quotas ?? null
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }, [setAuth]);
+
+  const withFreshSession = React.useCallback(async <T,>(request: () => Promise<T>): Promise<T> => {
+    try {
+      return await request();
+    } catch (err: any) {
+      if (err?.status !== 403 || !(await refreshSession())) throw err;
+      return request();
+    }
+  }, [refreshSession]);
+
   const runAction = async (url: string, method: "POST" | "PATCH", body: Row = {}) => {
     setBusy(true);
     setError(null);
     try {
-      return method === "PATCH" ? await api.patch(url, body) : await api.post(url, body);
+      return await withFreshSession(() =>
+        method === "PATCH" ? api.patch(url, body) : api.post(url, body)
+      );
     } catch (err: any) {
       setError(err?.message || t("common:errorGeneric"));
       return null;
     } finally {
       setBusy(false);
-      await load();
+      await load({ clearError: false });
     }
   };
 
@@ -102,7 +139,9 @@ export function ParentAccessPage() {
   const revealParentCode = async (userId: string) => {
     setDrawerBusy(true);
     try {
-      const result = await api.post(`/api/users/${userId}/parent-access-code/reveal`);
+      const result = await withFreshSession(() =>
+        api.post(`/api/users/${userId}/parent-access-code/reveal`)
+      );
       const accessCode = result?.accessCode ? String(result.accessCode) : null;
       setRevealedCode(accessCode);
       setCodeRevealUnavailable(!accessCode);
@@ -124,6 +163,7 @@ export function ParentAccessPage() {
       setRevealedCode(code);
       setCodeRevealUnavailable(false);
       setCodeCopied(false);
+      setSelectedParentId(userId);
     }
   };
 
@@ -493,6 +533,16 @@ export function ParentAccessPage() {
                   onClick={() => void load()}
                 >
                   {t("common:refresh")}
+                </Button>
+                <Button
+                  type="button"
+                  size="compact"
+                  variant="secondary"
+                  disabled={busy || drawerBusy}
+                  onClick={() => void revealParentCode(String(selectedParent.id))}
+                >
+                  <Eye className="h-4 w-4" aria-hidden />
+                  {p("revealCode")}
                 </Button>
                 <Button
                   type="button"

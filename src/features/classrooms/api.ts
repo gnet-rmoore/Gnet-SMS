@@ -16,6 +16,8 @@ export const classroomsApi = {
     ),
   createClassroom: (schoolId: string, data: unknown) => api.post(`/api/schools/${schoolId}/classrooms`, data),
   updateClassroom: (id: string, data: unknown) => api.patch(`/api/classrooms/${id}`, data),
+  updateCapacity: (id: string, data: unknown) =>
+    api.patch(`/api/classrooms/${id}/capacity`, data),
   deleteClassroom: (id: string) => api.delete(`/api/classrooms/${id}`),
   propagateRoster: (id: string) => api.post(`/api/classrooms/${id}/propagate-roster`, {}),
 };

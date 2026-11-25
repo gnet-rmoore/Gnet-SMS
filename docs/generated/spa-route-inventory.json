@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-25T14:14:54.730Z",
+  "generatedAt": "2026-11-25T21:09:16.182Z",
   "roles": 21,
-  "protectedRouteCount": 80,
-  "navEntryCount": 240,
+  "protectedRouteCount": 81,
+  "navEntryCount": 241,
   "protectedRoles": [
     "SUPER_ADMIN",
     "SCHOOL_ADMIN",
@@ -195,8 +195,7 @@
         "PRINCIPAL",
         "VPI",
         "TEACHER",
-        "STUDENT",
-        "PARENT"
+        "STUDENT"
       ]
     },
     {
@@ -207,8 +206,7 @@
         "PRINCIPAL",
         "VPI",
         "TEACHER",
-        "STUDENT",
-        "PARENT"
+        "STUDENT"
       ]
     },
     {
@@ -451,7 +449,6 @@
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "ACCOUNTANT",
-        "STUDENT",
         "PARENT"
       ]
     },
@@ -687,6 +684,14 @@
     {
       "segment": "enrollment",
       "pathPattern": "enrollment",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR"
+      ]
+    },
+    {
+      "segment": "class-capacity",
+      "pathPattern": "class-capacity",
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "REGISTRAR"
@@ -1090,6 +1095,11 @@
       "role": "SCHOOL_ADMIN",
       "segment": "enrollment",
       "to": "/demo-school/enrollment"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "class-capacity",
+      "to": "/demo-school/class-capacity"
     },
     {
       "role": "SCHOOL_ADMIN",
@@ -1558,6 +1568,11 @@
     },
     {
       "role": "REGISTRAR",
+      "segment": "class-capacity",
+      "to": "/demo-school/class-capacity"
+    },
+    {
+      "role": "REGISTRAR",
       "segment": "staff-portal",
       "to": "/demo-school/staff-portal"
     },
@@ -1685,11 +1700,6 @@
       "role": "STUDENT",
       "segment": "attendance",
       "to": "/demo-school/attendance"
-    },
-    {
-      "role": "STUDENT",
-      "segment": "fees",
-      "to": "/demo-school/fees"
     },
     {
       "role": "STUDENT",

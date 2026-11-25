@@ -833,5 +833,6 @@ export function navCapabilityKey(routeKey: string): string {
   const cleaned = routeKey.replace(/^\/+|\/+$/g, "");
   if (!cleaned) return "nav.dashboard";
   if (cleaned === "parents") return "nav.parent-access";
+  if (cleaned === "class-capacity") return "nav.settings";
   return `nav.${cleaned}`;
 }
