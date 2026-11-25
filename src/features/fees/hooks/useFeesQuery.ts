@@ -5,7 +5,7 @@ import { enrichStudentsWithClassrooms, feesApi } from "../api";
 export function useFeesQuery() {
   const schoolId = useAuthStore((s) => s.school?.id);
   const role = useAuthStore((s) => s.user?.role);
-  const isPortalViewer = role === "STUDENT" || role === "PARENT";
+  const isPortalViewer = role === "PARENT";
   const queryClient = useQueryClient();
 
   const query = useQuery({

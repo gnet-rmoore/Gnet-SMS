@@ -115,6 +115,27 @@ export const SMOKE_POLICIES: Policy[] = [
     expect: [200, 403],
   },
   {
+    id: "student-fees-denied",
+    method: "GET",
+    path: "/api/schools/:schoolId/fees",
+    asRole: "student",
+    expect: [401, 403],
+  },
+  {
+    id: "student-my-fees-denied",
+    method: "GET",
+    path: "/api/my-fees",
+    asRole: "student",
+    expect: [401, 403],
+  },
+  {
+    id: "student-receipts-denied",
+    method: "GET",
+    path: "/api/schools/:schoolId/receipts",
+    asRole: "student",
+    expect: [401, 403],
+  },
+  {
     id: "internal-classrooms-no-jwt",
     method: "GET",
     path: "/api/internal/classrooms/count",

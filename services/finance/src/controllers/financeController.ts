@@ -11,7 +11,7 @@ export const financeController = {
       let scopedStudentId = studentId as string | undefined;
       let scopedStudentIds: string[] | undefined;
       if (user?.role === "STUDENT") {
-        scopedStudentId = user.id;
+        return res.status(403).json({ error: "Students cannot access fees" });
       } else if (user?.role === "PARENT") {
         const { getParentChildrenIds } = await import("../lib/identityClient");
         scopedStudentIds = await getParentChildrenIds(user.id);
@@ -47,8 +47,8 @@ export const financeController = {
         user.schoolId
       );
       res.json(fees);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch your fees" });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to fetch your fees" });
     }
   },
 

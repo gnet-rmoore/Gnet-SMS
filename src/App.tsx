@@ -649,7 +649,7 @@ export default function App() {
                   <Route 
                     path="fees" 
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "ACCOUNTANT", "STUDENT", "PARENT"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT"]}>
                         <Fees />
                       </ProtectedRoute>
                     } 

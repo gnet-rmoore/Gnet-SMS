@@ -463,7 +463,7 @@ export const arResources = {
         },
         "student": {
           "title": "Student guide",
-          "subtitle": "Find your schedule, classes, grades, exams, attendance, and fees.",
+          "subtitle": "Find your schedule, classes, grades, exams, and attendance.",
         },
         "parent": {
           "title": "Parent guide",
@@ -555,8 +555,8 @@ export const arResources = {
         },
         "student_intro": {
           "title": "Welcome to your student account",
-          "body": "Everything here is about your classes, grades, exams, and fees — nothing school-admin related.",
-          "howTo": ["Your sidebar is limited to student tools — no admin screens.","If something looks empty, it may not be published yet (grades, exams, fees)."],
+          "body": "Everything here is about your classes, grades, exams, and attendance — nothing school-admin related.",
+          "howTo": ["Your sidebar is limited to student tools — no admin screens.","If something looks empty, it may not be published yet (grades, exams, attendance)."],
         },
         "student_schedule": {
           "title": "Calendar & schedule",
@@ -582,11 +582,6 @@ export const arResources = {
           "title": "My Attendance",
           "body": "Review your attendance record for instructional days.",
           "howTo": ["Open My Attendance to review Present / Absent / Late by date.","Ask a parent or teacher if a day looks wrong."],
-        },
-        "student_fees": {
-          "title": "الرسوم",
-          "body": "View invoices and pay outstanding balances when your school collects fees online.",
-          "howTo": ["Open Fees to see invoices.","Pay online when your school enables checkout; keep QR receipts for verification."],
         },
         "student_done": {
           "title": "You're set",
@@ -4867,7 +4862,7 @@ export const arResources = {
         "vpa": "Staff, facilities, procurement, and security.",
         "registrar": "Admissions, enrollment, transcripts, and certificates.",
         "teacher": "Your classes, attendance, gradebook, and lesson plans.",
-        "student": "Your classes, grades, exams, fees, and schedule.",
+        "student": "Your classes, grades, exams, and schedule.",
         "parent": "Your children at a glance.",
         "accountant": "Fees, expenses, and payroll.",
         "specialty": "Your workspace tools for this role.",

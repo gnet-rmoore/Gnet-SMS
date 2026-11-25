@@ -5010,7 +5010,7 @@ export const enPages = {
       vpa: "Staff, facilities, procurement, and security.",
       registrar: "Admissions, enrollment, transcripts, and certificates.",
       teacher: "Your classes, attendance, gradebook, and lesson plans.",
-      student: "Your classes, grades, exams, fees, and schedule.",
+      student: "Your classes, grades, exams, and schedule.",
       parent: "Your children at a glance.",
       accountant: "Fees, expenses, and payroll.",
       specialty: "Your workspace tools for this role.",

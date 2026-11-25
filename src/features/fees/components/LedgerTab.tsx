@@ -42,7 +42,7 @@ export type LedgerTabProps = {
   handleToggleSelectAll: () => void;
   handleToggleSelectOne: (id: string) => void;
   isAdminOrAccountant: boolean;
-  isStudent: boolean;
+  isPortalViewer: boolean;
   school: any;
   searchQuery: string;
   selectedInvoices: string[];
@@ -79,7 +79,7 @@ export function LedgerTab({
   handleToggleSelectAll,
   handleToggleSelectOne,
   isAdminOrAccountant,
-  isStudent,
+  isPortalViewer,
   school,
   searchQuery,
   selectedInvoices,
@@ -109,7 +109,7 @@ export function LedgerTab({
       { value: "PARTIAL", label: t("fees.status.partial") },
       { value: "PENDING", label: t("fees.status.pending") },
       { value: "OVERDUE", label: t("fees.status.overdue") },
-      ...(!isStudent
+      ...(!isPortalViewer
         ? [
             { value: "VOIDED", label: t("fees.status.voided") },
             { value: "WRITTEN_OFF", label: t("fees.status.writtenOff") },
@@ -137,7 +137,7 @@ export function LedgerTab({
         })),
       },
     ];
-    if (!isStudent) {
+    if (!isPortalViewer) {
       fields.push({
         key: "classroomId",
         label: t("fees.ledger.allClasses"),
@@ -149,7 +149,7 @@ export function LedgerTab({
     }
     return fields;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t, isStudent, classrooms]);
+  }, [t, isPortalViewer, classrooms]);
 
   const filterValues = {
     status: filterStatus === "ALL" ? "" : filterStatus,
@@ -195,7 +195,7 @@ export function LedgerTab({
       transition={{ duration: 0.2 }}
       className="space-y-6"
     >
-      {isStudent && (
+      {isPortalViewer && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${cardShell} p-6 flex items-center gap-4`}>
             <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -252,7 +252,7 @@ export function LedgerTab({
           onValueChange={onFilterValueChange}
           onClear={clearFilters}
           searchPlaceholder={
-            isStudent ? t("fees.ledger.searchSelf") : t("fees.ledger.searchStudent")
+            isPortalViewer ? t("fees.ledger.searchSelf") : t("fees.ledger.searchStudent")
           }
           shownCount={filteredRecords.length}
           totalCount={ledgerTotal ?? feeRecords.length}
@@ -269,7 +269,7 @@ export function LedgerTab({
           }
         />
 
-        {!isStudent && selectedInvoices.length > 0 && (
+        {!isPortalViewer && selectedInvoices.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-indigo-50 border border-indigo-100 p-3 rounded-2xl text-sm text-indigo-700 font-bold">
             <span>
               {t("fees.ledger.selected", { count: selectedInvoices.length })}
@@ -309,7 +309,7 @@ export function LedgerTab({
             <table className={dataTableClass.table}>
               <thead className={dataTableClass.thead}>
                 <tr>
-                  {!isStudent && (
+                  {!isPortalViewer && (
                     <th className={`${dataTableClass.th} w-10`}>
                       <input
                         type="checkbox"
@@ -329,7 +329,7 @@ export function LedgerTab({
                       onClick={() => setSortBy("student")}
                       className="hover:text-slate-800 transition-colors font-bold"
                     >
-                      {isStudent ? t("fees.ledger.school") : t("fees.ledger.student")}
+                      {isPortalViewer ? t("fees.ledger.school") : t("fees.ledger.student")}
                     </button>
                   </th>
                   <th className={dataTableClass.th}>
@@ -374,7 +374,7 @@ export function LedgerTab({
                           : record.status === "PARTIAL"
                             ? "PARTIAL"
                             : "PENDING";
-                  const name = isStudent
+                  const name = isPortalViewer
                     ? school?.name || t("fees.ledger.school")
                     : record.student?.name || t("common:student");
                   const bal = feeBalance(record);
@@ -387,7 +387,7 @@ export function LedgerTab({
                       }`}
                       onClick={() => openFee(record)}
                     >
-                      {!isStudent && (
+                      {!isPortalViewer && (
                         <td
                           className={dataTableClass.td}
                           onClick={(e) => e.stopPropagation()}
@@ -407,9 +407,9 @@ export function LedgerTab({
                       <td className={dataTableClass.td}>
                         <div className="flex items-center gap-3 min-w-0">
                           <UserAvatar
-                            userId={isStudent ? undefined : record.studentId}
+                            userId={isPortalViewer ? undefined : record.studentId}
                             name={name}
-                            photoUrl={isStudent ? null : record.student?.photoUrl}
+                            photoUrl={isPortalViewer ? null : record.student?.photoUrl}
                             size="sm"
                           />
                           <div className="min-w-0">
@@ -417,7 +417,7 @@ export function LedgerTab({
                               {name}
                             </p>
                             <p className="text-xs text-slate-500 mt-0.5 truncate">
-                              {isStudent
+                              {isPortalViewer
                                 ? record.student?.name || t("fees.ledger.yourInvoice")
                                 : record.student?.classroomMembers?.[0]
                                     ?.classroom?.name || t("fees.ledger.noClass")}
@@ -510,7 +510,7 @@ export function LedgerTab({
                                 )}
                               </>
                             )}
-                          {open && isStudent && (
+                          {open && isPortalViewer && (
                             <button
                               type="button"
                               onClick={() => openFee(record)}
@@ -568,7 +568,7 @@ export function LedgerTab({
             {t("fees.ledger.noInvoicesTitle")}
           </h3>
           <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm font-medium">
-            {isStudent
+            {isPortalViewer
               ? t("fees.ledger.noInvoicesHintStudent")
               : t("fees.ledger.noInvoicesHintAdmin")}
           </p>

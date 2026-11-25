@@ -38,8 +38,8 @@ for (const role of SCHOOL_ROLES) {
   }
   if (def.body === "student") {
     assert(
-      def.quickActions.every((a) => !["curriculum", "reports", "settings"].includes(a.path)),
-      "student actions exclude admin curriculum/reports/settings"
+      def.quickActions.every((a) => !["curriculum", "reports", "settings", "fees"].includes(a.path)),
+      "student actions exclude admin curriculum/reports/settings and fees"
     );
   }
   if (def.body === "teacher") {

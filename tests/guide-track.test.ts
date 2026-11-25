@@ -64,6 +64,7 @@ assert(
 const studentFull = GUIDE_TRACKS.student.steps;
 const studentShort = filterStepsForStudentAge("student", studentFull, true);
 assert(studentShort.length < studentFull.length, "under-13 student track is shorter");
+assert(studentFull.every((s) => !s.id.includes("fees")), "student track omits all fee steps");
 assert(studentShort.every((s) => !s.id.includes("fees")), "under-13 omits fees step");
 assert(filterStepsForStudentAge("student", studentFull, false).length === studentFull.length, "13+ full track");
 

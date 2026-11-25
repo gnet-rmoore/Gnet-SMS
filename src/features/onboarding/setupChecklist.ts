@@ -83,7 +83,7 @@ export const SETUP_STEPS: readonly SetupStepDef[] = [
     id: "fees",
     label: "Add at least one fee template",
     path: "fees",
-    openRoles: ["SCHOOL_ADMIN", "ACCOUNTANT", "STUDENT", "PARENT"],
+    openRoles: ["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT"],
     required: true,
   },
   {

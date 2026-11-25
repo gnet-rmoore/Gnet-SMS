@@ -32,10 +32,9 @@ export type FeeDetailDrawerProps = {
   handleVoidFee: (id: string) => void;
   handleWriteOffFee?: (id: string) => void;
   handleDownloadReceipt: (record: FeePayment, receiptId?: string | null) => void | Promise<void>;
-  handleStudentSelfPay: (id: string, amount?: number) => void;
+  handlePortalPay: (id: string, amount?: number) => void;
   isAdminOrAccountant: boolean;
-  isStudent: boolean;
-  isParent?: boolean;
+  isPortalViewer: boolean;
   payingFeeId: string | null;
   selectedFee: FeePayment;
   setIsDrawerOpen: (open: boolean) => void;
@@ -47,10 +46,9 @@ export function FeeDetailDrawer({
   handleVoidFee,
   handleWriteOffFee,
   handleDownloadReceipt,
-  handleStudentSelfPay,
+  handlePortalPay,
   isAdminOrAccountant,
-  isStudent,
-  isParent,
+  isPortalViewer,
   payingFeeId,
   selectedFee,
   setIsDrawerOpen,
@@ -107,7 +105,7 @@ export function FeeDetailDrawer({
   const portalPay = () => {
     const amount = Number(payAmount);
     if (!Number.isFinite(amount) || amount <= 0) return;
-    handleStudentSelfPay(selectedFee.id, amount);
+    handlePortalPay(selectedFee.id, amount);
   };
 
   const timelineStatusTitle = () => {
@@ -396,7 +394,7 @@ export function FeeDetailDrawer({
             </div>
           )}
 
-          {(isStudent || isParent) && open && (
+          {isPortalViewer && open && (
             <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white p-5 rounded-[24px] space-y-4">
               <div className="flex justify-between items-start gap-3">
                 <div>

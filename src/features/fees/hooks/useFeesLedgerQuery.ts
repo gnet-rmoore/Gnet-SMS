@@ -21,7 +21,7 @@ export type FeesLedgerParams = {
 export function useFeesLedgerQuery(params: FeesLedgerParams) {
   const schoolId = useAuthStore((s) => s.school?.id);
   const role = useAuthStore((s) => s.user?.role);
-  const isPortalViewer = role === "STUDENT" || role === "PARENT";
+  const isPortalViewer = role === "PARENT";
   const enabled =
     params.enabled !== false && Boolean(schoolId) && !isPortalViewer;
 

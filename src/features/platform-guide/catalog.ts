@@ -214,12 +214,6 @@ export const GUIDE_TRACKS: Record<string, GuideTrackDef> = {
         navCapability: "nav.attendance",
         visitPaths: ["attendance"],
       }),
-      step("student_fees", "nav_spotlight", {
-        route: "fees",
-        anchorId: "nav-fees",
-        navCapability: "nav.fees",
-        visitPaths: ["fees"],
-      }),
       step("student_done", "completion"),
     ],
   },

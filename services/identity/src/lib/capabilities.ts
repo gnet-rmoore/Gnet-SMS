@@ -658,7 +658,6 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.classroom",
     "nav.dashboard",
     "nav.exams",
-    "nav.fees",
     "nav.grades",
     "nav.my-schedule",
     "nav.notifications",
@@ -817,6 +816,7 @@ export function mergeCapabilities(
   if (role === "SCHOOL_ADMIN") {
     for (const k of LOCKED_KEYS_FOR_SCHOOL_ADMIN) set.add(k);
   }
+  if (role === "STUDENT") set.delete("nav.fees");
   return [...set].sort();
 }
 

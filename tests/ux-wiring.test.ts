@@ -208,6 +208,34 @@ assert(
   "fees exposes a defined template-edit action"
 );
 
+const appRoutes = read("src/App.tsx");
+const feeRoutes = read("services/finance/src/routes/financeRoutes.ts");
+const feeNavRoles = read("src/constants/navByRole.ts");
+const studentDashboard = read("src/features/dashboard/components/StudentDashboard.tsx");
+const studentFeesQuery = read("src/features/fees/hooks/useFeesQuery.ts");
+const studentFeesLedgerQuery = read("src/features/fees/hooks/useFeesLedgerQuery.ts");
+
+const feeRouteRoles = appRoutes.match(/path="fees"[\s\S]*?allowedRoles=\{([^}]*)\}/)?.[1] || "";
+assert(
+  feeRouteRoles.includes("PARENT") && !feeRouteRoles.includes("STUDENT"),
+  "/fees page is restricted to staff and parents"
+);
+const feeNavEntry = /fees:\s*\[([^\]]*)\]/.exec(feeNavRoles)?.[1] || "";
+assert(
+  feeNavEntry.includes("PARENT") && !feeNavEntry.includes("STUDENT"),
+  "fee nav is shown to parents but not students"
+);
+assert(!feeRoutes.includes('"STUDENT"'), "finance service routes never grant STUDENT access");
+assert(
+  !studentDashboard.includes("/api/my-fees") && !studentDashboard.includes("myFees"),
+  "student dashboard has no fee KPIs or fee actions"
+);
+assert(
+  !studentFeesQuery.includes('role === "STUDENT"') &&
+    !studentFeesLedgerQuery.includes('role === "STUDENT"'),
+  "fee queries do not fetch student-owned views"
+);
+
 console.log("");
 if (failed) {
   console.error(`${failed} assertion(s) failed`);

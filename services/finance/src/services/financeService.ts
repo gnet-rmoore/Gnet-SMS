@@ -270,6 +270,9 @@ export const financeService = {
   },
 
   async getMyFees(userId: string, role: string, schoolId?: string) {
+    if (role === "STUDENT") {
+      throw Object.assign(new Error("Students cannot access fees"), { status: 403 });
+    }
     const where: any = {};
     if (schoolId) where.schoolId = schoolId;
 
@@ -278,7 +281,7 @@ export const financeService = {
       if (childIds.length === 0) return [];
       where.studentId = { in: childIds };
     } else {
-      where.studentId = userId;
+      return [];
     }
 
     const rows = await prisma.feePayment.findMany({
@@ -923,22 +926,10 @@ export const financeService = {
     }
 
     if (result.fee.studentId && !String(result.fee.studentId).startsWith("application:")) {
-      const { notifyInApp, notifyInAppMany } = await import("../lib/notifyInApp");
+      const { notifyInAppMany } = await import("../lib/notifyInApp");
       const remaining = invoiceBalance(result.fee.amount, result.fee.amountPaid);
       const settled = result.fee.status === "PAID";
       const title = settled ? "Fee fully paid" : "Fee payment recorded";
-      const body = settled
-        ? `Payment of $${payAmount.toFixed(2)} settled ${result.fee.type || "fees"} in full.`
-        : `Payment of $${payAmount.toFixed(2)} recorded for ${result.fee.type || "fees"}. Balance owing: $${remaining.toFixed(2)}.`;
-      await notifyInApp({
-        schoolId: result.fee.schoolId,
-        userId: result.fee.studentId,
-        eventKey: settled ? "FEE_PAID" : "FEE_PAYMENT",
-        title,
-        body,
-        href: "/fees",
-        meta: { feeId: result.fee.id, txnId: result.txn.id, amount: payAmount, balance: remaining },
-      });
       const parentIds = await getStudentParentIds(result.fee.studentId);
       if (parentIds.length) {
         await notifyInAppMany(
@@ -1148,6 +1139,9 @@ export const financeService = {
   },
 
   async listMyPaymentTxns(userId: string, role: string, schoolId?: string) {
+    if (role === "STUDENT") {
+      throw Object.assign(new Error("Students cannot access fee payments"), { status: 403 });
+    }
     const where: any = { kind: "PAYMENT" };
     if (schoolId) where.schoolId = schoolId;
     if (role === "PARENT") {
@@ -1155,7 +1149,7 @@ export const financeService = {
       if (!childIds.length) return [];
       where.studentId = { in: childIds };
     } else {
-      where.studentId = userId;
+      return [];
     }
     const txns = await prisma.feePaymentTxn.findMany({
       where,
@@ -1183,13 +1177,12 @@ export const financeService = {
       throw Object.assign(new Error("Fee not found"), { status: 404 });
     }
     const isAdmin = ["SCHOOL_ADMIN", "ACCOUNTANT"].includes(role);
-    const isOwner = fee.studentId === userId;
     let isLinkedParent = false;
     if (role === "PARENT") {
       const childIds = await getParentChildrenIds(userId);
       isLinkedParent = childIds.includes(fee.studentId);
     }
-    if (!isAdmin && !isOwner && !isLinkedParent) {
+    if (!isAdmin && !isLinkedParent) {
       throw Object.assign(new Error("Unauthorized to pay this fee"), { status: 403 });
     }
     if (fee.status === "VOIDED") {
@@ -1335,16 +1328,7 @@ export const financeService = {
     );
 
     if (fee.studentId && !String(fee.studentId).startsWith("application:")) {
-      const { notifyInApp, notifyInAppMany } = await import("../lib/notifyInApp");
-      await notifyInApp({
-        schoolId: fee.schoolId,
-        userId: fee.studentId,
-        eventKey: "FEE_DUE",
-        title: "Fee reminder",
-        body: `Reminder: ${fee.type || "Fee"} of ${fee.amount} is still pending.`,
-        href: "/fees",
-        meta: { feeId: fee.id },
-      });
+      const { notifyInAppMany } = await import("../lib/notifyInApp");
       const parentIds = await getStudentParentIds(fee.studentId);
       if (parentIds.length) {
         await notifyInAppMany(

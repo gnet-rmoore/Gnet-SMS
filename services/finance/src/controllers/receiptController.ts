@@ -22,9 +22,6 @@ async function receiptScopeSourceIds(
   user: any
 ): Promise<string[] | undefined> {
   if (!user || FULL_RECEIPT_ACCESS.has(user.role)) return undefined;
-  if (user.role === "STUDENT") {
-    return receiptService.getFeeReceiptSourceIds(schoolId, [user.id], user.id);
-  }
   if (user.role === "PARENT") {
     const { getParentChildrenIds } = await import("../lib/identityClient");
     const children = await getParentChildrenIds(user.id);

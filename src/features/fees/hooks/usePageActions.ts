@@ -42,7 +42,6 @@ export type PageActionsDeps = {
   setIsDrawerOpen: (v: boolean) => void;
   setSelectedFee: React.Dispatch<React.SetStateAction<FeePayment | null>>;
   selectedFee: FeePayment | null;
-  isStudent: boolean;
   isAdminOrAccountant: boolean;
   showToast: (message: string, type?: "success" | "error" | "info") => void;
 };
@@ -824,7 +823,7 @@ export function usePageActions(deps: PageActionsDeps) {
     }
   };
 
-  const handleStudentSelfPay = async (feeId: string, amount?: number) => {
+  const handlePortalPay = async (feeId: string, amount?: number) => {
     setPayingFeeId(feeId);
     try {
       const returnPath = window.location.pathname;
@@ -998,7 +997,7 @@ const handleExportLedgerPDF = () => {
     handleRunBatchBilling,
     handleApplyTemplateToBatch,
     handleApplyTemplateToSingle,
-    handleStudentSelfPay,
+    handlePortalPay,
     handleDownloadReceipt,
     handleExportLedgerPDF,
     payingFeeId,

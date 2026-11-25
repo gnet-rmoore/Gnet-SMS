@@ -41,7 +41,7 @@ export const enGuide = {
     },
     student: {
       title: "Student guide",
-      subtitle: "Find your schedule, classes, grades, exams, attendance, and fees.",
+      subtitle: "Find your schedule, classes, grades, exams, and attendance.",
     },
     parent: {
       title: "Parent guide",
@@ -171,10 +171,10 @@ export const enGuide = {
     },
     student_intro: {
       title: "Welcome to your student account",
-      body: "Everything here is about your classes, grades, exams, and fees — nothing school-admin related.",
+      body: "Everything here is about your classes, grades, exams, and attendance — nothing school-admin related.",
       howTo: [
       "Your sidebar is limited to student tools — no admin screens.",
-      "If something looks empty, it may not be published yet (grades, exams, fees).",
+      "If something looks empty, it may not be published yet (grades, exams, attendance).",
       ],
     },
     student_schedule: {
@@ -215,14 +215,6 @@ export const enGuide = {
       howTo: [
       "Open My Attendance to review Present / Absent / Late by date.",
       "Ask a parent or teacher if a day looks wrong.",
-      ],
-    },
-    student_fees: {
-      title: "Fees",
-      body: "View invoices and pay outstanding balances when your school collects fees online.",
-      howTo: [
-      "Open Fees to see invoices.",
-      "Pay online when your school enables checkout; keep QR receipts for verification.",
       ],
     },
     student_done: {

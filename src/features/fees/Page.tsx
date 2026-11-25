@@ -122,8 +122,7 @@ export const Fees = () => {
 
   const { toast, showToast } = usePageToast();
 
-  const isPortalViewer = user?.role === "STUDENT" || user?.role === "PARENT";
-  const isStudent = isPortalViewer;
+  const isPortalViewer = user?.role === "PARENT";
   const isAdminOrAccountant = ["SCHOOL_ADMIN", "ACCOUNTANT"].includes(
     user?.role || ""
   );
@@ -140,7 +139,7 @@ export const Fees = () => {
     pageSize: ledgerPageSize,
     sort: sortBy === "student" ? "dueDate" : sortBy,
     order: sortOrder,
-    enabled: !isStudent && activeTab === "ledger",
+    enabled: !isPortalViewer && activeTab === "ledger",
   });
 
   const ledgerFilteredRecords = useMemo(() => {
@@ -189,7 +188,7 @@ export const Fees = () => {
     handleRunBatchBilling,
     handleApplyTemplateToBatch,
     handleApplyTemplateToSingle,
-    handleStudentSelfPay,
+    handlePortalPay,
     handleDownloadReceipt,
     handleExportLedgerPDF,
     payingFeeId,
@@ -229,7 +228,6 @@ export const Fees = () => {
     setIsDrawerOpen,
     setSelectedFee,
     selectedFee,
-    isStudent,
     isAdminOrAccountant,
     showToast,
   });
@@ -314,7 +312,7 @@ export const Fees = () => {
         </div>
       )}
 
-      {!isStudent && activeTab === "overview" && (
+      {!isPortalViewer && activeTab === "overview" && (
         <OverviewTab
           analytics={analytics}
           feeRecords={feeRecords}
@@ -322,20 +320,20 @@ export const Fees = () => {
         />
       )}
 
-      {((isStudent && activeTab === "overview") ||
-        (!isStudent && activeTab === "ledger")) && (
+      {((isPortalViewer && activeTab === "overview") ||
+        (!isPortalViewer && activeTab === "ledger")) && (
         <LedgerTab
           classrooms={classrooms}
-          feeRecords={isStudent ? feeRecords : ledgerQuery.fees}
+          feeRecords={isPortalViewer ? feeRecords : ledgerQuery.fees}
           filterStatus={filterStatus}
           filterType={filterType}
-          filteredRecords={isStudent ? filteredRecords : ledgerFilteredRecords}
-          ledgerTotal={isStudent ? undefined : ledgerQuery.total}
-          ledgerPage={isStudent ? undefined : ledgerPage}
-          ledgerPageSize={isStudent ? undefined : ledgerPageSize}
-          onLedgerPageChange={isStudent ? undefined : setLedgerPage}
+          filteredRecords={isPortalViewer ? filteredRecords : ledgerFilteredRecords}
+          ledgerTotal={isPortalViewer ? undefined : ledgerQuery.total}
+          ledgerPage={isPortalViewer ? undefined : ledgerPage}
+          ledgerPageSize={isPortalViewer ? undefined : ledgerPageSize}
+          onLedgerPageChange={isPortalViewer ? undefined : setLedgerPage}
           onLedgerPageSizeChange={
-            isStudent
+            isPortalViewer
               ? undefined
               : (size) => {
                   setLedgerPageSize(size);
@@ -351,7 +349,7 @@ export const Fees = () => {
           handleToggleSelectAll={handleToggleSelectAll}
           handleToggleSelectOne={handleToggleSelectOne}
           isAdminOrAccountant={isAdminOrAccountant}
-          isStudent={isStudent}
+          isPortalViewer={isPortalViewer}
           school={school}
           searchQuery={searchQuery}
           selectedInvoices={selectedInvoices}
@@ -369,7 +367,7 @@ export const Fees = () => {
         />
       )}
 
-      {!isStudent && activeTab === "history" && school?.id && (
+      {!isPortalViewer && activeTab === "history" && school?.id && (
         <HistoryTab
           schoolId={school.id}
           feeRecords={feeRecords}
@@ -379,11 +377,11 @@ export const Fees = () => {
         />
       )}
 
-      {!isStudent && activeTab === "receipts" && school?.id && (
+      {!isPortalViewer && activeTab === "receipts" && school?.id && (
         <ReceiptsTab schoolId={school.id} showToast={showToast} />
       )}
 
-      {!isStudent && activeTab === "templates" && (
+      {!isPortalViewer && activeTab === "templates" && (
         <TemplatesTab
           handleDeleteTemplate={handleDeleteTemplate}
           openEditTemplate={openEditTemplate}
@@ -412,7 +410,7 @@ export const Fees = () => {
         />
       )}
 
-      {!isStudent && activeTab === "batch" && (
+      {!isPortalViewer && activeTab === "batch" && (
         <BatchBillingPanel
           batchForm={batchForm}
           batchProgress={batchProgress}
@@ -463,10 +461,9 @@ export const Fees = () => {
             handleVoidFee={handleVoidFee}
             handleWriteOffFee={handleWriteOffFee}
             handleDownloadReceipt={handleDownloadReceipt}
-            handleStudentSelfPay={handleStudentSelfPay}
+            handlePortalPay={handlePortalPay}
             isAdminOrAccountant={isAdminOrAccountant}
-            isStudent={user?.role === "STUDENT"}
-            isParent={user?.role === "PARENT"}
+            isPortalViewer={isPortalViewer}
             payingFeeId={payingFeeId}
             selectedFee={selectedFee}
             setIsDrawerOpen={setIsDrawerOpen}

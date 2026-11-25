@@ -170,7 +170,6 @@ export const ROLE_DASHBOARD_REGISTRY: Record<string, RoleDashboardDef> = {
       { labelKey: "dashboard.actions.myClasses", path: "classroom", icon: BookOpen },
       { labelKey: "dashboard.actions.myGrades", path: "grades", icon: Award },
       { labelKey: "dashboard.actions.onlineExams", path: "online-exams", icon: MonitorPlay },
-      { labelKey: "dashboard.actions.myFees", path: "fees", icon: CreditCard },
       { labelKey: "dashboard.actions.mySchedule", path: "my-schedule", icon: CalendarClock },
     ],
     body: "student",

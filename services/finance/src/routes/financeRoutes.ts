@@ -13,21 +13,21 @@ router.get(
   "/api/schools/:schoolId/fees",
   authenticate,
   requireTenant,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "STUDENT", "PARENT", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "PARENT", "VPA"]),
   financeController.getFees
 );
 
 router.get(
   "/api/my-fees",
   authenticate,
-  requireRoles(["STUDENT", "PARENT", "SCHOOL_ADMIN", "ACCOUNTANT"]),
+  requireRoles(["PARENT", "SCHOOL_ADMIN", "ACCOUNTANT"]),
   financeController.getMyFees
 );
 
 router.get(
   "/api/my-fee-payment-txns",
   authenticate,
-  requireRoles(["STUDENT", "PARENT", "SCHOOL_ADMIN", "ACCOUNTANT"]),
+  requireRoles(["PARENT", "SCHOOL_ADMIN", "ACCOUNTANT"]),
   financeController.listMyPaymentTxns
 );
 
@@ -102,7 +102,7 @@ router.post(
 router.patch(
   "/api/fees/:id/pay",
   authenticate,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT", "STUDENT"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT"]),
   requireResourceTenant(resourceLoaders.fee),
   financeController.payFee
 );
@@ -110,7 +110,7 @@ router.patch(
 router.post(
   "/api/fees/:id/pay",
   authenticate,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT", "STUDENT"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT"]),
   requireResourceTenant(resourceLoaders.fee),
   financeController.payFee
 );
@@ -136,7 +136,7 @@ router.post(
 router.get(
   "/api/fees/:id/payments",
   authenticate,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "STUDENT", "PARENT", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "PARENT", "VPA"]),
   requireResourceTenant(resourceLoaders.fee),
   financeController.listFeePayments
 );
@@ -262,7 +262,7 @@ router.get(
 router.post(
   "/api/fees/:id/checkout",
   authenticate,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT", "STUDENT", "REGISTRAR"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT", "REGISTRAR"]),
   requireResourceTenant(resourceLoaders.fee),
   financeController.createCheckout
 );
@@ -292,7 +292,7 @@ router.get(
   "/api/schools/:schoolId/receipts",
   authenticate,
   requireTenant,
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "STUDENT", "PARENT", "VPA", "TEACHER"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "PARENT", "VPA", "TEACHER"]),
   receiptController.list
 );
 
@@ -308,7 +308,7 @@ router.get(
   "/api/receipts/:id",
   authenticate,
   requireResourceTenant(resourceLoaders.receipt),
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "STUDENT", "PARENT", "VPA", "TEACHER"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "PARENT", "VPA", "TEACHER"]),
   receiptController.getOne
 );
 
@@ -316,7 +316,7 @@ router.get(
   "/api/receipts/:id/download",
   authenticate,
   requireResourceTenant(resourceLoaders.receipt),
-  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "STUDENT", "PARENT", "VPA", "TEACHER"]),
+  requireRoles(["SCHOOL_ADMIN", "ACCOUNTANT", "PRINCIPAL", "REGISTRAR", "PARENT", "VPA", "TEACHER"]),
   receiptController.download
 );
 

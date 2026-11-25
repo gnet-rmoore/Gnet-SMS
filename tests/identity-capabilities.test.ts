@@ -51,6 +51,16 @@ assert(adminDefaults.includes("action.bulk_import.roster"), "admin can bulk impo
 assert(adminDefaults.includes("action.fees.manage"), "admin can manage fees");
 assert(!adminDefaults.includes("nav.children"), "admin does not get parent-only children nav");
 
+const studentDefaults = DEFAULT_ROLE_CAPABILITIES.STUDENT || [];
+assert(!studentDefaults.includes("nav.fees"), "student has no fee nav");
+assert(
+  !mergeCapabilities("STUDENT", [{ capabilityKey: "nav.fees", allowed: true }]).includes("nav.fees"),
+  "student fee nav cannot be granted by override"
+);
+
+const parentDefaults = DEFAULT_ROLE_CAPABILITIES.PARENT || [];
+assert(parentDefaults.includes("nav.fees"), "parent keeps fee nav");
+
 const registrarDefaults = DEFAULT_ROLE_CAPABILITIES.REGISTRAR || [];
 assert(registrarDefaults.includes("nav.settings"), "registrar can open settings for receipt templates");
 assert(registrarDefaults.includes("action.settings.templates"), "registrar can manage receipt templates");

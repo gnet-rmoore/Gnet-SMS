@@ -96,7 +96,7 @@ export const ROUTE_ROLES: Record<string, string[]> = {
     "TEACHER", "STUDENT", "PARENT", "VPA", "COUNSELOR", "IT_ADMIN",
     "SCHOOL_ADMIN", "PRINCIPAL", "VPI", "REGISTRAR",
   ],
-  fees: ["SCHOOL_ADMIN", "ACCOUNTANT", "STUDENT", "PARENT"],
+  fees: ["SCHOOL_ADMIN", "ACCOUNTANT", "PARENT"],
   expenses: ["SCHOOL_ADMIN", "ACCOUNTANT"],
   payroll: ["SCHOOL_ADMIN", "ACCOUNTANT"],
   settings: ["SCHOOL_ADMIN", "IT_ADMIN", "PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "VPI"],
@@ -363,9 +363,6 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/exams`, icon: ClipboardList, labelKey: "items.exams" },
           { to: `/${slug}/online-exams`, icon: MonitorPlay, labelKey: "items.onlineExams" },
           { to: `/${slug}/attendance`, icon: UserCheck, labelKey: "items.myAttendance" },
-        ]),
-        section("finance", "Finance", [
-          { to: `/${slug}/fees`, icon: CreditCard, labelKey: "items.fees" },
         ]),
         section("campus", "Campus", [
           { to: `/${slug}/my-campus`, icon: Truck, labelKey: "items.myCampus" },
