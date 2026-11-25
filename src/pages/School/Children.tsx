@@ -19,7 +19,7 @@ export const Children = () => {
   const slug = school?.slug || "";
 
   const childHref = (path: string, childId: string) =>
-    `/${slug}/${path}${path === "grades" ? `/${childId}` : `?studentId=${encodeURIComponent(childId)}`}`;
+    `/${slug}/${path}?studentId=${encodeURIComponent(childId)}`;
   const contactHref = school?.contactEmail ? `mailto:${school.contactEmail}` : school?.contactPhone ? `tel:${school.contactPhone}` : null;
 
   return (

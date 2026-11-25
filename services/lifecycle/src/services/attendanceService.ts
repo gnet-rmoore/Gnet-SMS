@@ -173,7 +173,15 @@ export const attendanceService = {
     if (viewerRole === "STUDENT" && viewer) {
       viewerStudentIds = new Set([viewer.id]);
     } else if (viewerRole === "PARENT" && viewer) {
-      viewerStudentIds = new Set(await getParentChildIds(viewer.id));
+      const linkedIds = await getParentChildIds(viewer.id);
+      if (opts?.studentId && !linkedIds.includes(opts.studentId)) {
+        return { items: [], total: 0, page, pageSize };
+      }
+      viewerStudentIds = new Set(
+        opts?.studentId && linkedIds.includes(opts.studentId)
+          ? [opts.studentId]
+          : linkedIds
+      );
     }
     if (viewerStudentIds) {
       where.records = {

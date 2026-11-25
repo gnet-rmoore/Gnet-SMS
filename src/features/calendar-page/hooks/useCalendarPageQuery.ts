@@ -15,14 +15,15 @@ function monthRange(d: Date) {
 export function useCalendarPageQuery(viewDate?: Date) {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const { studentId: selectedStudentId } = useParentChild();
+  const { studentId: selectedStudentId, loading: parentChildLoading } = useParentChild();
+  const isParent = user?.role === "PARENT";
   const studentId = selectedStudentId || undefined;
   const anchor = viewDate || new Date();
   const { from, to } = monthRange(anchor);
 
   const query = useQuery({
     queryKey: ["calendar-page", user?.id, user?.role, from, to, studentId],
-    enabled: Boolean(user?.role),
+    enabled: Boolean(user?.role) && (!isParent || (!parentChildLoading && Boolean(selectedStudentId))),
     queryFn: async () => {
       const events = await calendarPageApi.fetchEvents({ from, to, studentId });
       return {

@@ -19,6 +19,10 @@ const reportCard = read("src/pages/School/ReportCard.tsx");
 const attendance = read("src/features/attendance/Page.tsx");
 const fees = read("src/features/fees/Page.tsx");
 const parentChildContext = read("src/context/ParentChildContext.tsx");
+const childrenPage = read("src/pages/School/Children.tsx");
+const mySchedule = read("src/features/class-schedule/MySchedulePage.tsx");
+const calendarQuery = read("src/features/calendar-page/hooks/useCalendarPageQuery.ts");
+const attendanceService = read("services/lifecycle/src/services/attendanceService.ts");
 
 console.log("=========================================");
 console.log(" PARENT MULTI-STUDENT REGRESSION TESTS");
@@ -70,6 +74,33 @@ assert(
   "classroom no longer approves parents from a heuristic child list"
 );
 
+const gradesHandler = classroomController.slice(
+  classroomController.indexOf("async getGrades"),
+  classroomController.indexOf("async joinClassroom")
+);
+const classroomDetailHandler = classroomController.slice(
+  classroomController.indexOf("async getClassroomById"),
+  classroomController.indexOf("// --- Topics ---")
+);
+const topicsHandler = classroomController.slice(
+  classroomController.indexOf("async listTopics"),
+  classroomController.indexOf("async createTopic")
+);
+assert(
+  gradesHandler.includes("const access = await canViewClassroom(classroomId, req.user, studentId);") &&
+    gradesHandler.includes("if (!access.ok) return res.status(403)"),
+  "classroom grades authorize all roles, not just parents"
+);
+assert(
+  classroomDetailHandler.includes("if (!access.ok) return res.status(403)") &&
+    !classroomDetailHandler.includes('!access.ok && req.user.role === "PARENT"'),
+  "classroom details reject unauthorized non-parent viewers"
+);
+assert(
+  topicsHandler.includes("const access = await canViewClassroom(req.params.id, req.user, studentId);"),
+  "classroom topics authorize all roles"
+);
+
 assert(
   existsSync(path.join(root, "src/context/ParentChildContext.tsx")),
   "shared parent-child context exists"
@@ -109,19 +140,31 @@ for (const file of parentChildPages) {
 assert(
   studentGrades.includes("{!isParent && (") &&
     studentGrades.includes("report-card/${exam.id}${studentId") &&
-    studentGrades.includes("children.some((child) => child.id === paramStudentId)") &&
+    studentGrades.includes("const studentId = isParent ? parentStudentId : paramStudentId || user?.id;") &&
     !studentGrades.includes("paramStudentId ? `/${paramStudentId}`"),
-  "grade document actions use the resolved and validated child and hide Grade Sheet from parents"
+  "grade document actions use the shared context child and hide Grade Sheet from parents"
+);
+assert(
+  childrenPage.includes("?studentId=${encodeURIComponent(childId)}") &&
+    !childrenPage.includes('path === "grades"'),
+  "children card links use the validated query child for every destination"
 );
 assert(
   reportCard.includes("children.some((child) => child.id === paramStudentId)") &&
-    reportCard.includes(": parentStudentId") &&
-    !reportCard.includes('paramStudentId || (user?.role === "PARENT" ? parentStudentId : user?.id)'),
-  "report card validates route child and falls back to the parent's selected child"
+    reportCard.includes("children.find((child) => child.id === studentId)?.name") &&
+    !reportCard.includes("/api/users/${paramStudentId}"),
+  "report card validates route child and names the linked child"
 );
 assert(
-  attendance.includes("studentId: user?.role === \"PARENT\" ? studentId || undefined : undefined"),
-  "parent attendance queries are scoped to the selected child"
+  attendance.includes("studentId: user?.role === \"PARENT\" ? studentId || undefined : undefined") &&
+    attendanceService.includes("if (opts?.studentId && !linkedIds.includes(opts.studentId))") &&
+    attendanceService.includes("? [opts.studentId]"),
+  "parent attendance queries are scoped to the selected linked child"
+);
+assert(
+  mySchedule.includes('if (user?.role === "PARENT" && !studentId)') &&
+    calendarQuery.includes("(!isParent || (!parentChildLoading && Boolean(selectedStudentId)))"),
+  "parent timetable and calendar wait for a validated child before querying"
 );
 assert(
   fees.includes("allFeeRecords.filter((fee) => fee.studentId === studentId)"),

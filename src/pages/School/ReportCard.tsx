@@ -85,8 +85,10 @@ export const ReportCard = () => {
         setGrades(Array.isArray(next) ? next : []);
       }
 
-      if (paramStudentId && paramStudentId !== user?.id) {
-        const userRes = await fetch(`/api/users/${paramStudentId}`, {
+      if (isParent) {
+        setStudentName(children.find((child) => child.id === studentId)?.name || "");
+      } else if (studentId && studentId !== user?.id) {
+        const userRes = await fetch(`/api/users/${studentId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (userRes.ok) {
@@ -116,7 +118,8 @@ export const ReportCard = () => {
     accessToken,
     user?.id,
     user?.name,
-    paramStudentId,
+    children,
+    isParent,
     school?.id,
     useAllGrades,
   ]);

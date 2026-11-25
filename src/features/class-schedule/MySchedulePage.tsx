@@ -45,6 +45,13 @@ export function MySchedulePage() {
         setLoading(false);
         return;
       }
+      if (user?.role === "PARENT" && !studentId) {
+        setBell(null);
+        setAcademicYear("");
+        setEntries([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const bells = asArray<BellScheduleDto>(

@@ -636,14 +636,15 @@ export const classroomController = {
     const { id: classroomId } = req.params;
     const studentId = (req.query.studentId as string) || null;
     try {
+      if (req.user.role === "PARENT" && !studentId) {
+        return res.status(400).json({ error: "studentId is required for parent marks" });
+      }
+      const access = await canViewClassroom(classroomId, req.user, studentId);
+      if (!access.ok) return res.status(403).json({ error: "Unauthorized" });
+
       if (req.user.role === "PARENT") {
-        if (!studentId) {
-          return res.status(400).json({ error: "studentId is required for parent marks" });
-        }
-        const access = await canViewClassroom(classroomId, req.user, studentId);
-        if (!access.ok) return res.status(403).json({ error: "Unauthorized" });
         const grades = await classroomService.getGrades(classroomId, {
-          id: studentId,
+          id: studentId!,
           studentOnly: true,
         });
         if (!grades) return res.status(404).json({ error: "Classroom not found" });
@@ -710,9 +711,7 @@ export const classroomController = {
       const classroom = await classroomService.getClassroomById(id);
       if (!classroom) return res.status(404).json({ error: "Classroom not found" });
       const access = await canViewClassroom(id, req.user, studentId);
-      if (!access.ok && req.user.role === "PARENT") {
-        return res.status(403).json({ error: "Unauthorized" });
-      }
+      if (!access.ok) return res.status(403).json({ error: "Unauthorized" });
       res.json(classroom);
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch classroom" });
@@ -723,10 +722,8 @@ export const classroomController = {
   async listTopics(req: any, res: Response) {
     try {
       const studentId = (req.query.studentId as string) || null;
-      if (req.user.role === "PARENT") {
-        const access = await canViewClassroom(req.params.id, req.user, studentId);
-        if (!access.ok) return res.status(403).json({ error: "Unauthorized" });
-      }
+      const access = await canViewClassroom(req.params.id, req.user, studentId);
+      if (!access.ok) return res.status(403).json({ error: "Unauthorized" });
       const topics = await classroomService.listTopics(req.params.id);
       res.json(topics);
     } catch (err) {

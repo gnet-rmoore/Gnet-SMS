@@ -40,11 +40,7 @@ export const StudentGrades = () => {
   const { children, studentId: parentStudentId, selectChild } = useParentChild();
 
   const isParent = user?.role === "PARENT";
-  const studentId = isParent
-    ? paramStudentId && children.some((child) => child.id === paramStudentId)
-      ? paramStudentId
-      : parentStudentId
-    : paramStudentId || user?.id;
+  const studentId = isParent ? parentStudentId : paramStudentId || user?.id;
 
   const fetchGrades = React.useCallback(async () => {
     if (!studentId) return;
