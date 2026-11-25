@@ -6,34 +6,17 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { ChildSwitcher } from "../../components/ChildSwitcher";
 import { UserAvatar } from "../../components/UserAvatar";
-import { useSelectedChild } from "../../hooks/useSelectedChild";
+import { useParentChild } from "../../context/ParentChildContext";
 import { FamilyApplicationsPanel, useFamilyApplications } from "../../features/parent/FamilyApplicationsPanel";
 
 type Child = { id: string; name: string; email?: string; photoUrl?: string | null };
 
 export const Children = () => {
   const { t } = useTranslation("pages");
-  const { user, accessToken, school } = useAuthStore();
-  const [children, setChildren] = React.useState<Child[]>([]);
+  const { school } = useAuthStore();
   const { applications } = useFamilyApplications();
-  const [loading, setLoading] = React.useState(true);
-  const { studentId, selectChild } = useSelectedChild();
+  const { children, studentId, selectChild, loading } = useParentChild();
   const slug = school?.slug || "";
-
-  React.useEffect(() => {
-    if (!user?.id) return;
-    fetch(`/api/parents/${user.id}/children`, { headers: { Authorization: `Bearer ${accessToken}` } })
-      .then(async (response) => (response.ok ? response.json() : []))
-      .then((rows) => setChildren(Array.isArray(rows) ? rows : []))
-      .catch(() => setChildren([]))
-      .finally(() => setLoading(false));
-  }, [accessToken, user?.id]);
-
-  React.useEffect(() => {
-    if (children.length && !children.some((child) => child.id === studentId)) {
-      selectChild(children[0].id);
-    }
-  }, [children, selectChild, studentId]);
 
   const childHref = (path: string, childId: string) =>
     `/${slug}/${path}${path === "grades" ? `/${childId}` : `?studentId=${encodeURIComponent(childId)}`}`;

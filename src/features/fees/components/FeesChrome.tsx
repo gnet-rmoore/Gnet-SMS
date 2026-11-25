@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
+import type { ReactNode } from "react";
 import { cardShell } from "../../academics-shared/FeatureModalShell";
 
 export type FeesChromeProps = {
+  actions?: ReactNode;
   activeTab?: string;
   handleExportLedgerPDF?: () => void;
   handleRefresh?: () => void;
@@ -28,6 +30,7 @@ export type FeesChromeProps = {
 };
 
 export function FeesChrome({
+  actions,
   activeTab,
   handleExportLedgerPDF,
   handleRefresh,
@@ -74,6 +77,7 @@ export function FeesChrome({
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
+          {actions}
           <button
             type="button"
             onClick={handleRefresh}

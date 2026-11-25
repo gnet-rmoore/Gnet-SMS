@@ -12,7 +12,7 @@ import { PageShell, PageHeader, Surface, Button } from "../../components/ui";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { useAuthStore } from "../../store/authStore";
 import { ChildSwitcher } from "../../components/ChildSwitcher";
-import { useSelectedChild } from "../../hooks/useSelectedChild";
+import { useParentChild } from "../../context/ParentChildContext";
 import { formatDate, formatDateTime } from "../campus-shared/useDirectory";
 import { myCampusApi, type MyCampusSummary } from "./api";
 
@@ -30,30 +30,13 @@ function dispositionLabel(value: string) {
 }
 
 export function MyCampus() {
-  const { school, user, accessToken } = useAuthStore();
+  const { school, user } = useAuthStore();
   const { toast, showToast } = usePageToast();
   const isParent = user?.role === "PARENT";
-  const { studentId, selectChild } = useSelectedChild();
+  const { children, studentId, selectChild } = useParentChild();
 
-  const [children, setChildren] = useState<Child[]>([]);
   const [summary, setSummary] = useState<MyCampusSummary | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isParent || !user?.id) return;
-    fetch(`/api/parents/${user.id}/children`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then(async (r) => (r.ok ? r.json() : []))
-      .then((rows) => setChildren(Array.isArray(rows) ? rows : []))
-      .catch(() => setChildren([]));
-  }, [accessToken, isParent, user?.id]);
-
-  useEffect(() => {
-    if (isParent && children.length && !children.some((c) => c.id === studentId)) {
-      selectChild(children[0].id);
-    }
-  }, [children, isParent, selectChild, studentId]);
 
   const load = useCallback(async () => {
     if (!school?.id) return;

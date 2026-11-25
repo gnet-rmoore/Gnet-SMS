@@ -992,11 +992,21 @@ export const financeService = {
     return result.fee;
   },
 
-  async listPaymentsForFee(feeId: string, schoolId?: string) {
+  async listPaymentsForFee(
+    feeId: string,
+    schoolId?: string,
+    actor?: { id: string; role: string }
+  ) {
     const fee = await prisma.feePayment.findUnique({ where: { id: feeId } });
     if (!fee) throw Object.assign(new Error("Fee not found"), { status: 404 });
     if (schoolId && fee.schoolId !== schoolId) {
       throw Object.assign(new Error("Fee not found"), { status: 404 });
+    }
+    if (actor?.role === "PARENT") {
+      const childIds = await getParentChildrenIds(actor.id);
+      if (!childIds.includes(fee.studentId)) {
+        throw Object.assign(new Error("Unauthorized to view these payments"), { status: 403 });
+      }
     }
     const txns = await prisma.feePaymentTxn.findMany({
       where: { feePaymentId: feeId },
@@ -1207,10 +1217,22 @@ export const financeService = {
 
   async createCheckoutForFee(
     feeId: string,
-    opts: { successUrl?: string; cancelUrl?: string; email?: string; amount?: number | string }
+    opts: {
+      successUrl?: string;
+      cancelUrl?: string;
+      email?: string;
+      amount?: number | string;
+      user?: { id: string; role: string };
+    }
   ) {
     const fee = await prisma.feePayment.findUnique({ where: { id: feeId } });
     if (!fee) throw Object.assign(new Error("Fee not found"), { status: 404 });
+    if (opts.user?.role === "PARENT") {
+      const childIds = await getParentChildrenIds(opts.user.id);
+      if (!childIds.includes(fee.studentId)) {
+        throw Object.assign(new Error("Unauthorized to check out this fee"), { status: 403 });
+      }
+    }
     if (fee.status === "VOIDED") throw Object.assign(new Error("This invoice was voided"), { status: 409 });
     if (fee.status === "PAID") throw Object.assign(new Error("Fee already paid"), { status: 409 });
     const balance = invoiceBalance(fee.amount, effectiveAmountPaid(fee));

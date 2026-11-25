@@ -9,6 +9,7 @@ import { isSchoolLoginAllowed, buildSchoolUnavailableUrl } from "./lib/schoolUna
 import { getPostLoginPath } from "./lib/postLoginPath";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { OfflineGate } from "./components/OfflineGate";
+import { ParentChildProvider } from "./context/ParentChildContext";
 
 const LandingPage = lazy(() => import("./pages/Landing"));
 const PricingPage = lazy(() => import("./pages/Pricing"));
@@ -204,6 +205,7 @@ export default function App() {
 
   return (
     <Router>
+      <ParentChildProvider>
       <ScrollToTop />
       <AppErrorBoundary>
       <OfflineGate>
@@ -434,7 +436,7 @@ export default function App() {
                   <Route
                     path="exams"
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT"]}>
                         <Exams />
                       </ProtectedRoute>
                     }
@@ -442,7 +444,7 @@ export default function App() {
                   <Route
                     path="exams/:examId"
                     element={
-                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"]}>
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT"]}>
                         <ExamDetails />
                       </ProtectedRoute>
                     }
@@ -1054,6 +1056,7 @@ export default function App() {
       </Suspense>
       </OfflineGate>
       </AppErrorBoundary>
+      </ParentChildProvider>
     </Router>
   );
 }

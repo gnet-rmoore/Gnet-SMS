@@ -32,16 +32,17 @@ async function canViewClassroom(
   user: { id: string; role: string },
   studentId?: string | null
 ) {
-  const { membership, isStaff } = await resolveClassroomStaff(classroomId, user);
-  if (isStaff || membership?.members.length) return { ok: true, isStaff, asStudentId: null as string | null };
-
-  if (user.role === "PARENT" && studentId) {
+  if (user.role === "PARENT") {
+    if (!studentId) return { ok: false, isStaff: false, asStudentId: null };
     const linked = await assertParentOfStudent(user.id, studentId);
     if (!linked) return { ok: false, isStaff: false, asStudentId: null };
     const childMember = await classroomService.memberExists(classroomId, studentId);
     if (!childMember) return { ok: false, isStaff: false, asStudentId: null };
     return { ok: true, isStaff: false, asStudentId: studentId };
   }
+
+  const { membership, isStaff } = await resolveClassroomStaff(classroomId, user);
+  if (isStaff || membership?.members.length) return { ok: true, isStaff, asStudentId: null as string | null };
   return { ok: false, isStaff: false, asStudentId: null };
 }
 

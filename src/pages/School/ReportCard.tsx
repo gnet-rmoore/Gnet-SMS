@@ -18,6 +18,7 @@ import {
 } from "../../features/report-cards";
 import { useAcademicCalendarQuery } from "../../features/academic-calendar/hooks/useAcademicCalendarQuery";
 import { academicYearLabel as academicYearLabelFor } from "../../features/academics-shared/calendar/selectors";
+import { useParentChild } from "../../context/ParentChildContext";
 import { useDocumentOfficialSignatures } from "../../hooks/useDocumentOfficialSignatures";
 
 interface GradeEntry {
@@ -42,7 +43,13 @@ export const ReportCard = () => {
   const [downloading, setDownloading] = React.useState(false);
   const [gradeLegends, setGradeLegends] = React.useState<GradeLegendLike[]>([]);
 
-  const studentId = paramStudentId || user?.id;
+  const { children, studentId: parentStudentId } = useParentChild();
+  const isParent = user?.role === "PARENT";
+  const studentId = isParent
+    ? paramStudentId && children.some((child) => child.id === paramStudentId)
+      ? paramStudentId
+      : parentStudentId
+    : paramStudentId || user?.id;
   const rawTemplateId = school?.reportCardTemplate || "TEMPLATE_1";
   const templateId = resolveReportCardTemplateKey(rawTemplateId);
   const templateDef = getReportCardTemplateDef(templateId);

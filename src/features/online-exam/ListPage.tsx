@@ -12,7 +12,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { useSelectedChild } from "../../hooks/useSelectedChild";
+import { useParentChild } from "../../context/ParentChildContext";
 import { ChildSwitcher } from "../../components/ChildSwitcher";
 import { onlineExamApi } from "./api";
 import { alertError } from "../../lib/swal";
@@ -21,36 +21,19 @@ import { useTranslation } from "react-i18next";
 
 export default function OnlineExamsListPage() {
   const { t } = useTranslation(["pages", "common"]);
-  const { user, school, accessToken } = useAuthStore();
+  const { user, school } = useAuthStore();
   const navigate = useNavigate();
   const isParent = user?.role === "PARENT";
   const isStudent = user?.role === "STUDENT";
   const isStaff = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"].includes(
     user?.role || ""
   );
-  const { studentId: selectedChildId, selectChild } = useSelectedChild();
-  const [children, setChildren] = React.useState<Array<{ id: string; name: string }>>([]);
+  const { children, studentId: parentStudentId, selectChild } = useParentChild();
   const [loading, setLoading] = React.useState(true);
   const [rows, setRows] = React.useState<any[]>([]);
   const [history, setHistory] = React.useState<any[]>([]);
 
-  const studentId = isStudent ? user?.id : selectedChildId;
-
-  React.useEffect(() => {
-    if (!isParent || !user?.id) return;
-    fetch(`/api/parents/${user.id}/children`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then(async (response) => (response.ok ? response.json() : []))
-      .then((data) => {
-        const linked = Array.isArray(data)
-          ? data.map((row: any) => ({ id: row.id, name: row.name }))
-          : [];
-        setChildren(linked);
-        if (!selectedChildId && linked[0]?.id) selectChild(linked[0].id);
-      })
-      .catch(() => setChildren([]));
-  }, [accessToken, isParent, selectChild, selectedChildId, user?.id]);
+  const studentId = isStudent ? user?.id : parentStudentId;
 
   React.useEffect(() => {
     if (!school?.id) return;
@@ -116,7 +99,7 @@ export default function OnlineExamsListPage() {
         {isParent && (
           <ChildSwitcher
             children={children}
-            studentId={selectedChildId || ""}
+            studentId={parentStudentId || ""}
             onChange={selectChild}
           />
         )}

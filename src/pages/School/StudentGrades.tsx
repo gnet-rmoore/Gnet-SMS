@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ChildSwitcher } from "../../components/ChildSwitcher";
-import { useSelectedChild } from "../../hooks/useSelectedChild";
+import { useParentChild } from "../../context/ParentChildContext";
 import { PageShell, PageHeader, Button, DataTable, dataTableClass } from "../../components/ui";
 
 interface GradeEntry {
@@ -37,23 +37,14 @@ export const StudentGrades = () => {
   const [grades, setGrades] = React.useState<GradeEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [studentName, setStudentName] = React.useState("");
-  const [children, setChildren] = React.useState<Array<{ id: string; name: string }>>([]);
-  const { studentId: selectedChildId, selectChild } = useSelectedChild();
+  const { children, studentId: parentStudentId, selectChild } = useParentChild();
 
   const isParent = user?.role === "PARENT";
-  const studentId = paramStudentId || (isParent ? selectedChildId : user?.id);
-
-  React.useEffect(() => {
-    if (!isParent || !user?.id) return;
-    fetch(`/api/parents/${user.id}/children`, { headers: { Authorization: `Bearer ${accessToken}` } })
-      .then(async (response) => (response.ok ? response.json() : []))
-      .then((rows) => {
-        const linked = Array.isArray(rows) ? rows.map((row) => ({ id: row.id, name: row.name })) : [];
-        setChildren(linked);
-        if (!selectedChildId && linked[0]?.id) selectChild(linked[0].id);
-      })
-      .catch(() => setChildren([]));
-  }, [accessToken, isParent, selectChild, selectedChildId, user?.id]);
+  const studentId = isParent
+    ? paramStudentId && children.some((child) => child.id === paramStudentId)
+      ? paramStudentId
+      : parentStudentId
+    : paramStudentId || user?.id;
 
   const fetchGrades = React.useCallback(async () => {
     if (!studentId) return;
@@ -195,7 +186,7 @@ export const StudentGrades = () => {
   return (
     <PageShell width="wide" className="pb-20">
       <PageHeader
-        title={paramStudentId ? `${studentName}'s Grade Sheet` : "My Grade Sheet"}
+        title={studentId && studentId !== user?.id ? `${studentName}'s Grade Sheet` : "My Grade Sheet"}
         subtitle="Academic performance and examination results"
         actions={
           <>
@@ -241,20 +232,22 @@ export const StudentGrades = () => {
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => navigate(`${slugPrefix}/gradesheet/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
-                    >
-                      <FileText className="w-4 h-4" />
-                      Grade Sheet
-                    </Button>
+                    {!isParent && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="compact"
+                        onClick={() => navigate(`${slugPrefix}/gradesheet/${exam.id}${studentId ? `/${studentId}` : ""}`)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        Grade Sheet
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="primary"
                       size="compact"
-                      onClick={() => navigate(`${slugPrefix}/report-card/${exam.id}${paramStudentId ? `/${paramStudentId}` : ""}`)}
+                      onClick={() => navigate(`${slugPrefix}/report-card/${exam.id}${studentId ? `/${studentId}` : ""}`)}
                       className="shadow-lg shadow-indigo-100"
                     >
                       <Award className="w-4 h-4" />

@@ -165,6 +165,17 @@ async function seedDemo() {
     select: { id: true },
   });
   if (parent) {
+    const student = await prisma.user.findUnique({
+      where: { email: "student@yoursms.com" },
+      select: { id: true },
+    });
+    if (student) {
+      await prisma.parentStudent.upsert({
+        where: { parentId_studentId: { parentId: parent.id, studentId: student.id } },
+        create: { parentId: parent.id, studentId: student.id },
+        update: {},
+      });
+    }
     const existing = await prisma.parentAccessCode.findUnique({
       where: { userId_schoolId: { userId: parent.id, schoolId: school.id } },
     });

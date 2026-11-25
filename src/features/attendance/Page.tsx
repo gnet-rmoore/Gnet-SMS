@@ -28,6 +28,8 @@ import { AttendanceStudentHistoryModal } from "./components/AttendanceStudentHis
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { useTranslation } from "react-i18next";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
+import { ChildSwitcher } from "../../components/ChildSwitcher";
+import { useParentChild } from "../../context/ParentChildContext";
 
 const CAN_TAKE = new Set([
   "SCHOOL_ADMIN",
@@ -59,6 +61,7 @@ export const Attendance = () => {
     user?.role === "STUDENT" ||
     user?.role === "PARENT" ||
     user?.role === "HOSTEL_WARDEN";
+  const { children, studentId, selectChild } = useParentChild();
 
   const classroomOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -114,6 +117,7 @@ export const Attendance = () => {
     from: filterFrom,
     to: filterTo,
     q: filters.committedQ,
+    studentId: user?.role === "PARENT" ? studentId || undefined : undefined,
   });
   const { toast, showToast } = usePageToast();
 
@@ -563,6 +567,9 @@ export const Attendance = () => {
                 <Plus className="w-4 h-4" />
                 {t("attendance.takeRollCall")}
               </Button>
+            )}
+            {user?.role === "PARENT" && children.length > 0 && (
+              <ChildSwitcher children={children} studentId={studentId || ""} onChange={selectChild} />
             )}
             {user?.role === "PARENT" && (
               <Button type="button" variant="secondary" onClick={exportParentCsv}>

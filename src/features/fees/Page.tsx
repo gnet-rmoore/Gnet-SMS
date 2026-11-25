@@ -19,10 +19,13 @@ import { FeesChrome } from "./components/FeesChrome";
 import { usePageActions } from "./hooks/usePageActions";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { cardShell } from "../academics-shared/FeatureModalShell";
+import { ChildSwitcher } from "../../components/ChildSwitcher";
+import { useParentChild } from "../../context/ParentChildContext";
 
 export const Fees = () => {
   const { t } = useTranslation("pages");
   const { school, user } = useAuthStore();
+  const { children, studentId, selectChild } = useParentChild();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     fees,
@@ -55,7 +58,6 @@ export const Fees = () => {
   const handoffYearKey = searchParams.get("schoolYearKey");
   const handoffPromoted = searchParams.get("promoted");
 
-  const feeRecords = fees as FeePayment[];
   const [templates, setTemplates] = useState<FeeTemplate[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -126,6 +128,11 @@ export const Fees = () => {
   const isAdminOrAccountant = ["SCHOOL_ADMIN", "ACCOUNTANT"].includes(
     user?.role || ""
   );
+  const allFeeRecords = fees as FeePayment[];
+  const feeRecords =
+    isPortalViewer && studentId
+      ? allFeeRecords.filter((fee) => fee.studentId === studentId)
+      : allFeeRecords;
 
   useEffect(() => {
     setLedgerPage(1);
@@ -282,6 +289,11 @@ export const Fees = () => {
       )}
 
       <FeesChrome
+        actions={
+          isPortalViewer && children.length > 0 ? (
+            <ChildSwitcher children={children} studentId={studentId || ""} onChange={selectChild} />
+          ) : null
+        }
         activeTab={activeTab}
         handleExportLedgerPDF={handleExportLedgerPDF}
         handleRefresh={handleRefresh}

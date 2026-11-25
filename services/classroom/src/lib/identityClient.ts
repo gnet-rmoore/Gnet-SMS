@@ -76,6 +76,13 @@ export async function getParentChildIds(parentId: string): Promise<string[]> {
 }
 
 export async function assertParentOfStudent(parentId: string, studentId: string): Promise<boolean> {
-  const ids = await getParentChildIds(parentId);
-  return ids.includes(studentId);
+  try {
+    const res = await fetch(
+      `${IDENTITY_URL}/api/internal/parents/${encodeURIComponent(parentId)}/students/${encodeURIComponent(studentId)}/assert-link`,
+      { headers: internalHeaders() }
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

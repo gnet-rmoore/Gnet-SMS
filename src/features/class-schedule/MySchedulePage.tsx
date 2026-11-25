@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { CalendarClock, FileDown, Loader2 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { ChildSwitcher } from "../../components/ChildSwitcher";
+import { useParentChild } from "../../context/ParentChildContext";
 import { PageShell, PageHeader, Surface, Button, MatrixScrollHint } from "../../components/ui";
 import { useAuthStore } from "../../store/authStore";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
@@ -31,8 +32,7 @@ export function MySchedulePage() {
   const schoolId = school?.id || "";
   const schoolName = school?.name || "";
   const { toast, showToast } = usePageToast();
-  const [searchParams] = useSearchParams();
-  const studentId = searchParams.get("studentId") || undefined;
+  const { children, studentId, selectChild } = useParentChild();
 
   const [loading, setLoading] = useState(true);
   const [bell, setBell] = useState<BellScheduleDto | null>(null);
@@ -138,10 +138,15 @@ export function MySchedulePage() {
           title={t("classSchedule.myScheduleTitle")}
           subtitle={t("classSchedule.myScheduleSubtitle")}
           actions={
-            <Button type="button" variant="secondary" size="compact" onClick={downloadPdf} disabled={entries.length === 0}>
-              <FileDown className="w-4 h-4" />
-              {t("classSchedule.downloadPdf")}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+              {user?.role === "PARENT" && children.length > 0 && (
+                <ChildSwitcher children={children} studentId={studentId || ""} onChange={selectChild} />
+              )}
+              <Button type="button" variant="secondary" size="compact" onClick={downloadPdf} disabled={entries.length === 0}>
+                <FileDown className="w-4 h-4" />
+                {t("classSchedule.downloadPdf")}
+              </Button>
+            </div>
           }
         />
       </motion.div>

@@ -69,7 +69,7 @@ export function flattenNavSections(sections: NavSection[]): NavItem[] {
 export const ROUTE_ROLES: Record<string, string[]> = {
   classroom: ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA", "TEACHER", "STUDENT", "PARENT", "REGISTRAR"],
   classrooms: ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"],
-  exams: ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"],
+  exams: ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT"],
   "online-exams": ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER", "STUDENT", "PARENT"],
   "question-bank": ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "TEACHER"],
   "exam-paper-review": ["SCHOOL_ADMIN", "PRINCIPAL", "VPI"],

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { BookOpen } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { enrichClassrooms } from "../academics-shared/enrichClassrooms";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
-import { fieldInput, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { ChildSwitcher } from "../../components/ChildSwitcher";
+import { useParentChild } from "../../context/ParentChildContext";
 import { classScheduleApi } from "../class-schedule/api";
 import { workspaceApi } from "./api";
 import { unwrapItems } from "../../lib/apiEnvelope";
@@ -16,35 +17,16 @@ import { useTranslation } from "react-i18next";
 export function ClassroomWorkspaceList() {
   const { t } = useTranslation(["pages", "nav"]);
   const { slug } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { school, user } = useAuthStore();
   const { toast, showToast } = usePageToast();
   const [classrooms, setClassrooms] = useState<ClassroomSummary[]>([]);
   const [durationMap, setDurationMap] = useState<Map<string, ClassDurationInfo>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [children, setChildren] = useState<Array<{ id: string; name: string }>>([]);
+  const { children, studentId, selectChild } = useParentChild();
 
   const isStudent = user?.role === "STUDENT";
   const isTeacher = user?.role === "TEACHER";
   const isParent = user?.role === "PARENT";
-  const studentId = searchParams.get("studentId");
-
-  useEffect(() => {
-    if (!isParent || !user?.id) return;
-    workspaceApi
-      .fetchChildren(user.id)
-      .then((rows) => {
-        const list = (Array.isArray(rows) ? rows : []).map((c: any) => ({
-          id: c.id || c.studentId,
-          name: c.name || "Student",
-        }));
-        setChildren(list);
-        if (!studentId && list[0]?.id) {
-          setSearchParams({ studentId: list[0].id }, { replace: true });
-        }
-      })
-      .catch(() => setChildren([]));
-  }, [isParent, user?.id, studentId, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,20 +145,7 @@ export function ClassroomWorkspaceList() {
           </p>
         </div>
         {isParent && children.length > 0 && (
-          <div className="min-w-[220px]">
-            <label className={fieldLabel}>Child</label>
-            <select
-              className={`${fieldInput} mt-1.5`}
-              value={studentId || ""}
-              onChange={(e) => setSearchParams({ studentId: e.target.value })}
-            >
-              {children.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ChildSwitcher children={children} studentId={studentId || ""} onChange={selectChild} />
         )}
       </motion.div>
 

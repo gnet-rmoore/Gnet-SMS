@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
+import { useParentChild } from "../../../context/ParentChildContext";
 import { calendarPageApi } from "../api";
 
 function monthRange(d: Date) {
@@ -15,8 +15,8 @@ function monthRange(d: Date) {
 export function useCalendarPageQuery(viewDate?: Date) {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
-  const studentId = searchParams.get("studentId") || undefined;
+  const { studentId: selectedStudentId } = useParentChild();
+  const studentId = selectedStudentId || undefined;
   const anchor = viewDate || new Date();
   const { from, to } = monthRange(anchor);
 

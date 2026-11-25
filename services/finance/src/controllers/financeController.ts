@@ -130,8 +130,9 @@ export const financeController = {
 
   async listFeePayments(req: Request, res: Response) {
     try {
-      const schoolId = (req as any).user?.schoolId || req.params.schoolId;
-      const rows = await financeService.listPaymentsForFee(req.params.id, schoolId);
+      const actor = (req as any).user;
+      const schoolId = actor?.schoolId || req.params.schoolId;
+      const rows = await financeService.listPaymentsForFee(req.params.id, schoolId, actor);
       res.json(rows);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to list payments" });
@@ -305,6 +306,7 @@ export const financeController = {
         cancelUrl: req.body?.cancelUrl,
         email: req.body?.email,
         amount: req.body?.amount,
+        user: (req as any).user,
       });
       res.json(session);
     } catch (err: any) {

@@ -841,36 +841,7 @@ export const userService = {
       },
     });
 
-    let linkedStudents: any[] = joinRelations.map((r) => ({ ...r.student }));
-
-    if (linkedStudents.length === 0) {
-      const parentUser = await prisma.user.findUnique({ where: { id: parentId } });
-      if (parentUser) {
-        const matchedStudents = await prisma.user.findMany({
-          where: {
-            role: "STUDENT",
-            schoolId: parentUser.schoolId,
-            OR: [
-              { parentPhone: parentUser.phone || undefined },
-              { email: { startsWith: "student_of_" + parentUser.id } },
-            ].filter(Boolean) as any,
-          },
-        });
-
-        linkedStudents = matchedStudents.map((s) => ({
-          id: s.id,
-          name: s.name,
-          email: s.email,
-          phone: s.phone,
-          dob: s.dob,
-          gender: s.gender,
-          isActive: s.isActive,
-          photoUrl: s.photoUrl,
-        }));
-      }
-    }
-
-    return linkedStudents;
+    return joinRelations.map((r) => ({ ...r.student }));
   },
 
   /** Internal authorization primitive. Deliberately uses explicit links only. */
