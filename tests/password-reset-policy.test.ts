@@ -87,21 +87,27 @@ assert.throws(
 
 assert.equal(canResetParentPassword(schoolAdminA, parentA), true);
 assert.equal(canResetParentPassword(itAdminA, parentA), true);
-assert.equal(canResetParentPassword(principalA, parentA), true);
-assert.equal(canResetParentPassword(registrarA, parentA), true);
-assert.equal(canResetParentPassword(registrarA, parentB), false);
+assert.equal(canResetParentPassword(principalA, parentA), false);
+assert.equal(canResetParentPassword(registrarA, parentA), false);
+assert.equal(canResetParentPassword(superAdmin, parentA), false);
+assert.equal(canResetParentPassword(schoolAdminA, parentB), false);
 assert.equal(canResetParentPassword(teacherA, parentA), false);
 assert.equal(canResetParentPassword(schoolAdminA, teacherA), false);
 
-assert.doesNotThrow(() => assertCanResetParentPassword(principalA, parentA));
-assert.doesNotThrow(() => assertCanResetParentPassword(registrarA, parentA));
+assert.doesNotThrow(() => assertCanResetParentPassword(schoolAdminA, parentA));
+assert.doesNotThrow(() => assertCanResetParentPassword(itAdminA, parentA));
+assert.throws(
+  () => assertCanResetParentPassword(principalA, parentA),
+  (err: unknown) =>
+    err instanceof PasswordResetDeniedError && err.code === "PARENT_PASSWORD_RESET_FORBIDDEN"
+);
 assert.throws(
   () => assertCanResetParentPassword(teacherA, parentA),
   (err: unknown) =>
     err instanceof PasswordResetDeniedError && err.code === "PARENT_PASSWORD_RESET_FORBIDDEN"
 );
 assert.throws(
-  () => assertCanResetParentPassword(registrarA, parentB),
+  () => assertCanResetParentPassword(schoolAdminA, parentB),
   (err: unknown) =>
     err instanceof PasswordResetDeniedError && err.code === "PASSWORD_RESET_CROSS_TENANT"
 );

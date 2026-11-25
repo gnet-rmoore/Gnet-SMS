@@ -11,6 +11,7 @@ import {
   normalizePhone,
   verifyParentAccessCode,
 } from "../services/identity/src/domain/parentAccess";
+import { decryptCredentialSecret, encryptCredentialSecret } from "../services/identity/src/lib/credentialCrypto";
 import { accessCodeLoginSchema } from "../services/identity/src/validation/schemas";
 import { classifyLoginError } from "../src/lib/loginError";
 import { formatParentAccessCodeInput } from "../src/lib/parentAccessCode";
@@ -141,7 +142,33 @@ const clientPasswordPolicy = readFileSync(
   "utf8"
 );
 assert.match(clientPasswordPolicy, /export function canResetParentPassword\(/);
-assert.match(clientPasswordPolicy, /"PRINCIPAL"/);
-assert.match(clientPasswordPolicy, /"REGISTRAR"/);
+assert.match(clientPasswordPolicy, /const PARENT_RESET_ROLES = new Set\(\["SCHOOL_ADMIN", "IT_ADMIN"\]\)/);
+
+assert.match(parentAccessRoutes, /\/api\/users\/:userId\/parent-access-code\/reveal/);
+assert.match(parentAccessController, /parent_access_code_revealed/);
+assert.match(parentAccessPage, /parent-access-code\/reveal/);
+assert.match(parentAccessPage, /codeEmailed/);
+assert.match(parentAccessPage, /codeRevealUnavailable/);
+
+const parentAccessService = readFileSync(
+  new URL("../services/identity/src/services/parentAccessService.ts", import.meta.url),
+  "utf8"
+);
+assert.match(parentAccessService, /encryptCredentialSecret\(code\)/);
+assert.match(parentAccessService, /revealParentAccessCode\(/);
+assert.match(parentAccessService, /parentAccessCode/);
+assert.match(parentAccessService, /sendParentAccessCodeEmail\(user, code, schoolId\)/);
+assert.match(parentAccessService, /where: \{ id: schoolId \}/);
+assert.match(parentAccessService, /sensitive: true/);
+
+const encryptedCode = encryptCredentialSecret("123456");
+assert.notEqual(encryptedCode, "123456");
+assert.equal(decryptCredentialSecret(encryptedCode), "123456");
+
+const emailCatalog = readFileSync(
+  new URL("../services/identity/src/i18n/emailCatalogs.ts", import.meta.url),
+  "utf8"
+);
+assert.match(emailCatalog, /parentAccessCode:/);
 
 console.log("parent access unit tests passed");

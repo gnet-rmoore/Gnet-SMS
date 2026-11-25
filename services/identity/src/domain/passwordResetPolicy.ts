@@ -21,12 +21,7 @@ export type PasswordTarget = {
 };
 
 export const PASSWORD_RESET_ROLES = ["SCHOOL_ADMIN", "IT_ADMIN"] as const;
-export const PARENT_PASSWORD_RESET_ROLES = [
-  "SCHOOL_ADMIN",
-  "IT_ADMIN",
-  "PRINCIPAL",
-  "REGISTRAR",
-] as const;
+export const PARENT_PASSWORD_RESET_ROLES = ["SCHOOL_ADMIN", "IT_ADMIN"] as const;
 
 export type PasswordResetDenialCode =
   | "PASSWORD_RESET_FORBIDDEN"
@@ -102,7 +97,6 @@ export function assertCanSetUserPassword(
 export function canResetParentPassword(actor: PasswordActor, target: PasswordTarget): boolean {
   if (!actor?.id || !target?.id) return false;
   if (target.role !== "PARENT") return false;
-  if (actor.role === "SUPER_ADMIN") return true;
   if (!(PARENT_PASSWORD_RESET_ROLES as readonly string[]).includes(actor.role)) return false;
   if (!actor.schoolId || !target.schoolId || actor.schoolId !== target.schoolId) return false;
   return true;
@@ -121,9 +115,9 @@ export function assertCanResetParentPassword(
   if (target.role !== "PARENT") {
     throw new PasswordResetDeniedError("Password reset target is not a parent", "PARENT_PASSWORD_RESET_FORBIDDEN");
   }
-  if (actor.role !== "SUPER_ADMIN" && !(PARENT_PASSWORD_RESET_ROLES as readonly string[]).includes(actor.role)) {
+  if (!(PARENT_PASSWORD_RESET_ROLES as readonly string[]).includes(actor.role)) {
     throw new PasswordResetDeniedError(
-      "Only school administrators with parent access can reset a parent password",
+      "Only School Admin or IT Admin can reset a parent password",
       "PARENT_PASSWORD_RESET_FORBIDDEN"
     );
   }

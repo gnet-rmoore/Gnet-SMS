@@ -42,6 +42,28 @@ assert(
 const enVerify = tEmail("en", "emailVerify", { name: "Sam", verifyUrl: "http://v" });
 assert(enVerify.text.includes("http://v"), "tEmail emailVerify interpolates verifyUrl");
 
+const enAccessCode = tEmail("en", "parentAccessCode", {
+  schoolName: "Demo School",
+  name: "Sam",
+  code: "123456",
+  loginUrl: "http://login",
+});
+assert(
+  enAccessCode.text.includes("123456") && enAccessCode.text.includes("http://login"),
+  "tEmail parentAccessCode interpolates code and loginUrl"
+);
+
+const frAccessCode = tEmail("fr", "parentAccessCode", {
+  schoolName: "École",
+  name: "Sam",
+  code: "654321",
+  loginUrl: "http://login",
+});
+assert(
+  frAccessCode.subject.includes("code d’accès"),
+  "tEmail('fr','parentAccessCode') subject is French"
+);
+
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`);
   process.exit(1);

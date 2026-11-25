@@ -11,6 +11,7 @@ export type EmailMessageKey =
   | "accountReady"
   | "guideWelcome"
   | "emailVerify"
+  | "parentAccessCode"
   | "passwordReset"
   | "applicationReceived"
   | "entranceScheduled";
@@ -104,6 +105,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
     emailVerify: {
       subject: "Verify your email — Gnet SMS",
       text: "Hello {{name}},\n\nConfirm your email address:\n{{verifyUrl}}\n\nThis link expires in 24 hours.",
+    },
+    parentAccessCode: {
+      subject: "Your parent access code — {{schoolName}}",
+      text: [
+        "Hello {{name}},",
+        "",
+        "Your school {{schoolName}} issued a new 6-digit access code.",
+        "",
+        "Access code: {{code}}",
+        "",
+        "Sign in: {{loginUrl}}",
+        "",
+        "If you did not expect this code, contact the school.",
+      ].join("\n"),
     },
     passwordReset: {
       subject: "Reset your password — Gnet SMS",
@@ -201,6 +216,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
       subject: "Vérifiez votre e-mail — Gnet SMS",
       text: "Bonjour {{name}},\n\nConfirmez votre adresse e-mail :\n{{verifyUrl}}\n\nCe lien expire dans 24 heures.",
     },
+    parentAccessCode: {
+      subject: "Votre code d’accès parent — {{schoolName}}",
+      text: [
+        "Bonjour {{name}},",
+        "",
+        "Votre école {{schoolName}} a émis un nouveau code d’accès à 6 chiffres.",
+        "",
+        "Code d’accès : {{code}}",
+        "",
+        "Connexion : {{loginUrl}}",
+        "",
+        "Si vous n’attendiez pas ce code, contactez l’école.",
+      ].join("\n"),
+    },
     passwordReset: {
       subject: "Réinitialisez votre mot de passe — Gnet SMS",
       text: "Bonjour {{name}},\n\nRéinitialisez votre mot de passe :\n{{resetUrl}}\n\nCe lien expire dans 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
@@ -296,6 +325,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
     emailVerify: {
       subject: "تحقق من بريدك الإلكتروني — Gnet SMS",
       text: "مرحبًا {{name}},\n\nأكد عنوان بريدك الإلكتروني:\n{{verifyUrl}}\n\nينتهي هذا الرابط خلال 24 ساعة.",
+    },
+    parentAccessCode: {
+      subject: "رمز دخول ولي الأمر — {{schoolName}}",
+      text: [
+        "مرحبًا {{name}},",
+        "",
+        "أصدرت مدرستك {{schoolName}} رمز دخول جديدًا من 6 أرقام.",
+        "",
+        "رمز الدخول: {{code}}",
+        "",
+        "تسجيل الدخول: {{loginUrl}}",
+        "",
+        "إذا لم تكن تتوقع هذا الرمز، فتواصل مع المدرسة.",
+      ].join("\n"),
     },
     passwordReset: {
       subject: "إعادة تعيين كلمة المرور — Gnet SMS",
@@ -393,6 +436,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
       subject: "Verifica tu correo — Gnet SMS",
       text: "Hola {{name}},\n\nConfirma tu dirección de correo:\n{{verifyUrl}}\n\nEste enlace caduca en 24 horas.",
     },
+    parentAccessCode: {
+      subject: "Tu código de acceso de padre o madre — {{schoolName}}",
+      text: [
+        "Hola {{name}},",
+        "",
+        "Tu escuela {{schoolName}} ha emitido un nuevo código de acceso de 6 dígitos.",
+        "",
+        "Código de acceso: {{code}}",
+        "",
+        "Iniciar sesión: {{loginUrl}}",
+        "",
+        "Si no esperabas este código, contacta con la escuela.",
+      ].join("\n"),
+    },
     passwordReset: {
       subject: "Restablece tu contraseña — Gnet SMS",
       text: "Hola {{name}},\n\nRestablece tu contraseña:\n{{resetUrl}}\n\nEste enlace caduca en 1 hora. Si no lo solicitaste, ignora este correo.",
@@ -488,6 +545,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
     emailVerify: {
       subject: "E-Mail bestätigen — Gnet SMS",
       text: "Hallo {{name}},\n\nBestätigen Sie Ihre E-Mail-Adresse:\n{{verifyUrl}}\n\nDieser Link läuft in 24 Stunden ab.",
+    },
+    parentAccessCode: {
+      subject: "Ihr Eltern-Zugangscode — {{schoolName}}",
+      text: [
+        "Hallo {{name}},",
+        "",
+        "Ihre Schule {{schoolName}} hat einen neuen 6-stelligen Zugangscode ausgegeben.",
+        "",
+        "Zugangscode: {{code}}",
+        "",
+        "Anmelden: {{loginUrl}}",
+        "",
+        "Wenn Sie diesen Code nicht erwartet haben, wenden Sie sich an die Schule.",
+      ].join("\n"),
     },
     passwordReset: {
       subject: "Passwort zurücksetzen — Gnet SMS",
@@ -585,6 +656,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
       subject: "验证您的邮箱 — Gnet SMS",
       text: "您好 {{name}}，\n\n请确认您的邮箱地址：\n{{verifyUrl}}\n\n此链接 24 小时内有效。",
     },
+    parentAccessCode: {
+      subject: "您的家长访问码 — {{schoolName}}",
+      text: [
+        "您好 {{name}}，",
+        "",
+        "您的学校 {{schoolName}} 已生成新的 6 位访问码。",
+        "",
+        "访问码：{{code}}",
+        "",
+        "登录：{{loginUrl}}",
+        "",
+        "如果这不是您预期的访问码，请联系学校。",
+      ].join("\n"),
+    },
     passwordReset: {
       subject: "重置密码 — Gnet SMS",
       text: "您好 {{name}}，\n\n重置密码：\n{{resetUrl}}\n\n此链接 1 小时内有效。如非本人操作，请忽略此邮件。",
@@ -680,6 +765,20 @@ const EMAIL_CATALOGS: Record<AppLocale, EmailCatalog> = {
     emailVerify: {
       subject: "अपना ईमेल सत्यापित करें — Gnet SMS",
       text: "नमस्ते {{name}},\n\nअपना ईमेल पता पुष्टि करें:\n{{verifyUrl}}\n\nयह लिंक 24 घंटे में समाप्त हो जाता है।",
+    },
+    parentAccessCode: {
+      subject: "आपका अभिभावक पहुँच कोड — {{schoolName}}",
+      text: [
+        "नमस्ते {{name}},",
+        "",
+        "आपके स्कूल {{schoolName}} ने एक नया 6 अंकों का पहुँच कोड जारी किया है।",
+        "",
+        "पहुँच कोड: {{code}}",
+        "",
+        "लॉगिन: {{loginUrl}}",
+        "",
+        "यदि आपने इस कोड की उम्मीद नहीं की थी, तो स्कूल से संपर्क करें।",
+      ].join("\n"),
     },
     passwordReset: {
       subject: "अपना पासवर्ड रीसेट करें — Gnet SMS",

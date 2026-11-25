@@ -313,6 +313,7 @@ model ParentAccessCode {
   codeHash         String
   codeLookupHash   String    @unique
   globalLookupHash String?   @unique
+  codeEncrypted    String?
   codeHint         String
   secretVersion    Int       @default(1)
   issuedAt         DateTime  @default(now())

@@ -88,7 +88,9 @@ router.post(
 router.patch(
   "/api/users/:userId/parent-login",
   authenticate,
-  requireResourceTenant((req) => parentAccessService.getUserSchoolId(String(req.params.userId || ""))),
+  requireResourceTenant((req) =>
+    parentAccessService.getUserSchoolId(String(req.params.userId || ""), String(req.user?.schoolId || ""))
+  ),
   requireRoles(ADMIN_ROLES),
   requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
   validateBody(parentPhoneEnabledSchema),
@@ -97,15 +99,29 @@ router.patch(
 router.post(
   "/api/users/:userId/parent-access-code/regenerate",
   authenticate,
-  requireResourceTenant((req) => parentAccessService.getUserSchoolId(String(req.params.userId || ""))),
+  requireResourceTenant((req) =>
+    parentAccessService.getUserSchoolId(String(req.params.userId || ""), String(req.user?.schoolId || ""))
+  ),
   requireRoles(ADMIN_ROLES),
   requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
   parentAccessController.regenerateCode
 );
 router.post(
+  "/api/users/:userId/parent-access-code/reveal",
+  authenticate,
+  requireResourceTenant((req) =>
+    parentAccessService.getUserSchoolId(String(req.params.userId || ""), String(req.user?.schoolId || ""))
+  ),
+  requireRoles(ADMIN_ROLES),
+  requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
+  parentAccessController.revealCode
+);
+router.post(
   "/api/users/:userId/parent-password/reset",
   authenticate,
-  requireResourceTenant((req) => parentAccessService.getUserSchoolId(String(req.params.userId || ""))),
+  requireResourceTenant((req) =>
+    parentAccessService.getUserSchoolId(String(req.params.userId || ""), String(req.user?.schoolId || ""))
+  ),
   requireRoles(ADMIN_ROLES),
   requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
   validateBody(parentPasswordResetSchema),
@@ -114,7 +130,9 @@ router.post(
 router.post(
   "/api/users/:userId/parent-login/reset-lockout",
   authenticate,
-  requireResourceTenant((req) => parentAccessService.getUserSchoolId(String(req.params.userId || ""))),
+  requireResourceTenant((req) =>
+    parentAccessService.getUserSchoolId(String(req.params.userId || ""), String(req.user?.schoolId || ""))
+  ),
   requireRoles(ADMIN_ROLES),
   requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
   parentAccessController.resetLockout

@@ -46,6 +46,10 @@ export function ParentAccessPage() {
   const [parents, setParents] = React.useState<Row[]>([]);
   const [search, setSearch] = React.useState("");
   const [newCode, setNewCode] = React.useState<string | null>(null);
+  const [codeEmailed, setCodeEmailed] = React.useState(false);
+  const [revealedCode, setRevealedCode] = React.useState<string | null>(null);
+  const [codeRevealUnavailable, setCodeRevealUnavailable] = React.useState(false);
+  const [codeCopied, setCodeCopied] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [selectedParentId, setSelectedParentId] = React.useState<string | null>(null);
@@ -95,6 +99,45 @@ export function ParentAccessPage() {
     return status;
   };
 
+  const revealParentCode = async (userId: string) => {
+    setDrawerBusy(true);
+    try {
+      const result = await api.post(`/api/users/${userId}/parent-access-code/reveal`);
+      const accessCode = result?.accessCode ? String(result.accessCode) : null;
+      setRevealedCode(accessCode);
+      setCodeRevealUnavailable(!accessCode);
+    } catch (err: any) {
+      setRevealedCode(null);
+      setCodeRevealUnavailable(false);
+      setError(err?.message || t("common:errorGeneric"));
+    } finally {
+      setDrawerBusy(false);
+    }
+  };
+
+  const regenerateAccessCode = async (userId: string) => {
+    const result = await runAction(`/api/users/${userId}/parent-access-code/regenerate`, "POST");
+    if (result?.accessCode) {
+      const code = String(result.accessCode);
+      setNewCode(code);
+      setCodeEmailed(Boolean(result.emailSent));
+      setRevealedCode(code);
+      setCodeRevealUnavailable(false);
+      setCodeCopied(false);
+    }
+  };
+
+  const copyAccessCode = async () => {
+    if (!revealedCode) return;
+    try {
+      await navigator.clipboard.writeText(revealedCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      setError(p("copyFailed"));
+    }
+  };
+
   const selectedParent = parents.find((parent) => String(parent.id) === selectedParentId) ?? null;
   const canResetSelectedPassword = canResetParentPassword(user, {
     id: String(selectedParent?.id || ""),
@@ -108,12 +151,19 @@ export function ParentAccessPage() {
     setMustChangePassword(true);
     setTemporaryPassword(null);
     setCopied(false);
+    setRevealedCode(null);
+    setCodeRevealUnavailable(false);
+    setCodeCopied(false);
     setError(null);
+    void revealParentCode(String(parent.id));
   };
 
   const closeParent = () => {
     setSelectedParentId(null);
     setTemporaryPassword(null);
+    setRevealedCode(null);
+    setCodeRevealUnavailable(false);
+    setCodeCopied(false);
     setError(null);
   };
 
@@ -165,7 +215,8 @@ export function ParentAccessPage() {
       )}
       {newCode && (
         <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
-          {p("newCode", { code: newCode })}
+          <p>{p("newCode", { code: newCode })}</p>
+          {codeEmailed && <p className="mt-1 text-xs font-medium text-emerald-800">{p("codeEmailed")}</p>}
         </div>
       )}
 
@@ -306,7 +357,9 @@ export function ParentAccessPage() {
                       <p className="text-xs text-slate-500">{parent.email}</p>
                     </td>
                     <td className="py-3 font-mono text-xs text-slate-600">
-                      {parent.accessCode?.codeHint || "—"}
+                      {String(parent.id) === selectedParentId && revealedCode
+                        ? revealedCode
+                        : parent.accessCode?.codeHint || "—"}
                     </td>
                     <td className="py-3">
                       <p className="text-xs font-semibold text-slate-700">
@@ -329,13 +382,7 @@ export function ParentAccessPage() {
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={async () => {
-                            const result = await runAction(
-                              `/api/users/${parent.id}/parent-access-code/regenerate`,
-                              "POST"
-                            );
-                            if (result?.accessCode) setNewCode(String(result.accessCode));
-                          }}
+                          onClick={() => void regenerateAccessCode(String(parent.id))}
                           className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
                         >
                           <KeyRound className="h-3.5 w-3.5" aria-hidden />
@@ -398,7 +445,22 @@ export function ParentAccessPage() {
               <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                 <DetailItem label={t("common:name")} value={selectedParent.name} />
                 <DetailItem label={t("common:email")} value={selectedParent.email} />
-                <DetailItem label={p("accessCode")} value={selectedParent.accessCode?.codeHint || "—"} />
+                <DetailItem
+                  label={p("accessCode")}
+                  value={
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono">
+                        {revealedCode || selectedParent.accessCode?.codeHint || "—"}
+                      </span>
+                      {revealedCode && (
+                        <Button type="button" size="compact" variant="secondary" onClick={() => void copyAccessCode()}>
+                          {codeCopied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                          {codeCopied ? t("common:copied") : t("common:copy")}
+                        </Button>
+                      )}
+                    </span>
+                  }
+                />
                 <DetailItem label={p("issuedAt")} value={formatDate(selectedParent.accessCode?.issuedAt)} />
                 <DetailItem label={p("lockedUntil")} value={formatDate(selectedParent.accessCode?.lockedUntil)} />
                 <DetailItem label={p("phoneLogin")} value={selectedParent.phoneLogin?.phoneHint || "—"} />
@@ -414,6 +476,9 @@ export function ParentAccessPage() {
                   }
                 />
               </dl>
+              {!revealedCode && codeRevealUnavailable && (
+                <p className="mt-3 text-xs text-slate-500">{p("codeRevealUnavailable")}</p>
+              )}
             </section>
 
             <section className="rounded-2xl border border-slate-200 p-4">
@@ -434,13 +499,7 @@ export function ParentAccessPage() {
                   size="compact"
                   variant="secondary"
                   disabled={busy || drawerBusy}
-                  onClick={async () => {
-                    const result = await runAction(
-                      `/api/users/${selectedParent.id}/parent-access-code/regenerate`,
-                      "POST"
-                    );
-                    if (result?.accessCode) setNewCode(String(result.accessCode));
-                  }}
+                  onClick={() => void regenerateAccessCode(String(selectedParent.id))}
                 >
                   <KeyRound className="h-4 w-4" aria-hidden />
                   {p("regenerate")}

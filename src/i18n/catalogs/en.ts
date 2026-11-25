@@ -1332,6 +1332,9 @@ export const enPages = {
     resetLockout: "Reset lockout",
     save: "Save",
     newCode: "New access code: {{code}}",
+    codeEmailed: "The new code was also emailed to the parent.",
+    codeRevealUnavailable:
+      "This code was issued before viewable codes were enabled. Regenerate it to see and copy the full code.",
     phoneEnable: "Enable phone login",
     phoneDisable: "Disable phone login",
     status: "Status",
@@ -1349,7 +1352,7 @@ export const enPages = {
     resetPasswordHint: "Temporary passwords are shown once after the reset.",
     mustChangePassword: "Require password change at next login",
     temporaryPasswordHint: "Copy this temporary password now — it will not be shown again.",
-    passwordResetForbidden: "Your role cannot reset passwords from this page.",
+    passwordResetForbidden: "Only School Admin and IT Admin can reset parent passwords from this page.",
     copyFailed: "Could not copy to clipboard.",
     selfTitle: "Parent sign-in",
     selfSubtitle: "Manage the alternate sign-in methods linked to your account",

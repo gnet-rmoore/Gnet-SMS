@@ -13,9 +13,12 @@ export async function sendMail(msg: MailMessage): Promise<{ provider: string; ok
   const { provider, config } = await resolveMailProviderWithConfig();
   const result = await provider.send(msg, config);
   if (result.ok) {
+    if (msg.sensitive && provider.name === "console") {
+      return { provider: result.provider, ok: false };
+    }
     return { provider: result.provider, ok: true };
   }
-  if (provider.name === "console") {
+  if (provider.name === "console" || msg.sensitive) {
     return { provider: result.provider, ok: false };
   }
   console.warn(`[mailer] ${provider.name} failed — falling back to console`, result.error);

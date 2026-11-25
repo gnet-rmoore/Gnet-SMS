@@ -3,6 +3,7 @@ export type MailMessage = {
   subject: string;
   text: string;
   html?: string;
+  sensitive?: boolean;
 };
 
 export type MailSendResult = {

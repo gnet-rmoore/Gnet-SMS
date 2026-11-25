@@ -10,7 +10,7 @@ export const consoleProvider: MailProvider = {
         event: "mail.console",
         to: msg.to,
         subject: msg.subject,
-        text: msg.text,
+        text: msg.sensitive ? "[redacted sensitive email]" : msg.text,
       })
     );
     return { provider: "console", ok: true };

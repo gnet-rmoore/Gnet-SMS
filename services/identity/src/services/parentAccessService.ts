@@ -24,7 +24,9 @@ import {
   verifyScopedSmsChallengeById,
 } from "./mfaService";
 import { sendSmsOtpViaComms } from "../lib/smsOtpClient";
-import { generateTempPassword } from "../lib/mailer";
+import { appBaseUrl, generateTempPassword, sendMail } from "../lib/mailer";
+import { decryptCredentialSecret, encryptCredentialSecret } from "../lib/credentialCrypto";
+import { resolveEmailLocale, tEmail } from "../i18n/emailCatalogs";
 import {
   DEFAULT_SECURITY_POLICY,
   parseSecurityPolicy,
@@ -44,6 +46,43 @@ function invalidCredentials() {
     code: "INVALID_CREDENTIALS",
     status: 401,
   });
+}
+
+type ParentCodeEmailRecipient = {
+  email: string;
+  name: string;
+  preferredLocale?: string | null;
+};
+
+async function sendParentAccessCodeEmail(
+  recipient: ParentCodeEmailRecipient,
+  code: string,
+  schoolId: string
+) {
+  if (!recipient.email) return false;
+  try {
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { name: true, defaultLocale: true },
+    });
+    const locale = resolveEmailLocale(recipient.preferredLocale, school?.defaultLocale);
+    const mail = tEmail(locale, "parentAccessCode", {
+      schoolName: school?.name || "",
+      name: recipient.name,
+      code,
+      loginUrl: `${appBaseUrl()}/login`,
+    });
+    const result = await sendMail({
+      to: recipient.email,
+      subject: mail.subject,
+      text: mail.text,
+      sensitive: true,
+    });
+    return result.ok;
+  } catch (err: any) {
+    console.warn("[parent-access] failed to email access code", err?.message || err);
+    return false;
+  }
 }
 
 async function assertPasswordForSchool(schoolId: string | null | undefined, password: string) {
@@ -239,6 +278,7 @@ export const parentAccessService = {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
             globalLookupHash,
+            codeEncrypted: encryptCredentialSecret(code),
             codeHint: maskParentAccessCode(code),
             secretVersion,
             failedCount: 0,
@@ -250,6 +290,7 @@ export const parentAccessService = {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
             globalLookupHash,
+            codeEncrypted: encryptCredentialSecret(code),
             codeHint: maskParentAccessCode(code),
             secretVersion,
             issuedAt: new Date(),
@@ -268,7 +309,15 @@ export const parentAccessService = {
   },
 
   async regenerateParentAccessCode(userId: string, schoolId: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        role: true,
+        email: true,
+        name: true,
+        preferredLocale: true,
+      },
+    });
     if (!user || user.role !== "PARENT") throw badRequest("User is not a parent");
     if (!(await parentSchoolIds(userId)).includes(schoolId)) {
       throw badRequest("Parent is not linked to this school");
@@ -288,6 +337,7 @@ export const parentAccessService = {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
             globalLookupHash,
+            codeEncrypted: encryptCredentialSecret(code),
             codeHint: maskParentAccessCode(code),
             secretVersion,
           },
@@ -295,6 +345,7 @@ export const parentAccessService = {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
             globalLookupHash,
+            codeEncrypted: encryptCredentialSecret(code),
             codeHint: maskParentAccessCode(code),
             secretVersion,
             issuedAt: new Date(),
@@ -304,8 +355,16 @@ export const parentAccessService = {
             revokedAt: null,
           },
         });
+        const emailSent = await sendParentAccessCodeEmail(user, code, schoolId);
+        if (emailSent) {
+          await prisma.parentAccessCode.update({
+            where: { userId_schoolId: { userId, schoolId } },
+            data: { deliveredAt: new Date() },
+          });
+        }
         return {
           accessCode: code,
+          emailSent,
           schoolId,
           userId,
           metadata: parentAccessMetadata(
@@ -319,6 +378,22 @@ export const parentAccessService = {
       }
     }
     throw new Error("Unable to regenerate a unique parent access code");
+  },
+
+  async revealParentAccessCode(userId: string, schoolId: string) {
+    await parentAccessService.assertParentInSchool(userId, schoolId);
+    const row = await prisma.parentAccessCode.findUnique({
+      where: { userId_schoolId: { userId, schoolId } },
+    });
+    if (!row || row.revokedAt) return null;
+    const accessCode = decryptCredentialSecret(row.codeEncrypted);
+    if (!accessCode) return null;
+    return {
+      accessCode,
+      schoolId,
+      userId,
+      metadata: parentAccessMetadata(row),
+    };
   },
 
   async ensureForStudent(studentId: string) {
@@ -857,11 +932,20 @@ export const parentAccessService = {
     };
   },
 
-  async getUserSchoolId(id: string) {
+  async getUserSchoolId(id: string, preferredSchoolId?: string) {
     const row = await prisma.user.findUnique({
       where: { id },
-      select: { schoolId: true },
+      select: {
+        schoolId: true,
+        children: { select: { student: { select: { schoolId: true } } } },
+      },
     });
-    return row?.schoolId ?? null;
+    if (!row) return null;
+    if (row.schoolId && (!preferredSchoolId || row.schoolId === preferredSchoolId)) return row.schoolId;
+    const linkedSchoolIds = row.children
+      .map((link) => link.student.schoolId)
+      .filter((schoolId): schoolId is string => Boolean(schoolId));
+    if (preferredSchoolId && linkedSchoolIds.includes(preferredSchoolId)) return preferredSchoolId;
+    return row.schoolId || linkedSchoolIds[0] || null;
   },
 };

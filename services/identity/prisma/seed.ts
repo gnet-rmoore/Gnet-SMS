@@ -21,6 +21,7 @@ import {
   makeParentAccessLookupHash,
   maskParentAccessCode,
 } from "../src/domain/parentAccess";
+import { encryptCredentialSecret } from "../src/lib/credentialCrypto";
 
 const prisma = new PrismaClient();
 
@@ -177,6 +178,7 @@ async function seedDemo() {
           codeHash: hashParentAccessCode(code),
           codeLookupHash: makeParentAccessLookupHash(school.id, code, secretVersion),
           globalLookupHash: makeParentAccessGlobalLookupHash(code, secretVersion),
+          codeEncrypted: encryptCredentialSecret(code),
           codeHint: maskParentAccessCode(code),
           secretVersion,
         },

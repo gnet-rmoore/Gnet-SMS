@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-25T13:10:50.058Z",
-  "total": 628,
-  "publicOrSchool": 561,
+  "generatedAt": "2026-11-25T14:14:50.417Z",
+  "total": 629,
+  "publicOrSchool": 562,
   "internal": 67,
   "byService": {
     "academic": 198,
@@ -9,7 +9,7 @@
     "classroom": 50,
     "comms": 33,
     "finance": 49,
-    "identity": 178,
+    "identity": 179,
     "lifecycle": 39,
     "ops": 22,
     "staff": 26
@@ -3749,6 +3749,13 @@
     {
       "method": "POST",
       "path": "/api/users/:userId/parent-access-code/regenerate",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/:userId/parent-access-code/reveal",
       "service": "identity",
       "file": "services/identity/src/routes/parentAccessRoutes.ts",
       "internal": false
