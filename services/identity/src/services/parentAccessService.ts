@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import bcrypt from "bcryptjs";
 import {
   generateParentAccessCode,
   getParentPacSecretVersion,
@@ -23,7 +24,12 @@ import {
   verifyScopedSmsChallengeById,
 } from "./mfaService";
 import { sendSmsOtpViaComms } from "../lib/smsOtpClient";
-import { parseSecurityPolicy } from "../lib/securityPolicy";
+import { generateTempPassword } from "../lib/mailer";
+import {
+  DEFAULT_SECURITY_POLICY,
+  parseSecurityPolicy,
+  validatePasswordAgainstPolicy,
+} from "../lib/securityPolicy";
 
 function badRequest(message: string, code = "BAD_REQUEST", status = 400) {
   return Object.assign(new Error(message), { code, status });
@@ -38,6 +44,19 @@ function invalidCredentials() {
     code: "INVALID_CREDENTIALS",
     status: 401,
   });
+}
+
+async function assertPasswordForSchool(schoolId: string | null | undefined, password: string) {
+  let policy = DEFAULT_SECURITY_POLICY;
+  if (schoolId) {
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { securityPolicy: true },
+    });
+    policy = parseSecurityPolicy(school?.securityPolicy);
+  }
+  const error = validatePasswordAgainstPolicy(password, policy);
+  if (error) throw badRequest(error, "PASSWORD_POLICY");
 }
 
 type ParentAccessLookupContext = {
@@ -795,6 +814,47 @@ export const parentAccessService = {
       select: { schoolId: true },
     });
     return row?.schoolId ?? null;
+  },
+
+  async getParentSummary(id: string) {
+    const parent = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, email: true, role: true, schoolId: true },
+    });
+    if (!parent || parent.role !== "PARENT") {
+      throw badRequest("Parent not found", "NOT_FOUND", 404);
+    }
+    return parent;
+  },
+
+  async resetParentPassword(
+    userId: string,
+    schoolId: string,
+    body: { password?: string; mustChangePassword?: boolean }
+  ) {
+    await parentAccessService.assertParentInSchool(userId, schoolId);
+    const parent = await parentAccessService.getParentSummary(userId);
+    const password =
+      typeof body.password === "string" && body.password.trim()
+        ? body.password.trim()
+        : generateTempPassword();
+    await assertPasswordForSchool(schoolId, password);
+    const mustChangePassword =
+      body.mustChangePassword === undefined ? true : Boolean(body.mustChangePassword);
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: bcrypt.hashSync(password, 10),
+        mustChangePassword,
+      },
+    });
+    return {
+      id: parent.id,
+      name: parent.name,
+      email: parent.email,
+      tempPassword: password,
+      mustChangePassword,
+    };
   },
 
   async getUserSchoolId(id: string) {

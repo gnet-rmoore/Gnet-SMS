@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-10-18T17:30:51.672Z",
-  "total": 577,
-  "publicOrSchool": 514,
-  "internal": 63,
+  "generatedAt": "2026-11-25T13:10:50.058Z",
+  "total": 628,
+  "publicOrSchool": 561,
+  "internal": 67,
   "byService": {
-    "academic": 195,
+    "academic": 198,
     "campus": 33,
-    "classroom": 47,
-    "comms": 32,
-    "finance": 48,
-    "identity": 150,
-    "lifecycle": 33,
-    "ops": 20,
-    "staff": 19
+    "classroom": 50,
+    "comms": 33,
+    "finance": 49,
+    "identity": 178,
+    "lifecycle": 39,
+    "ops": 22,
+    "staff": 26
   },
   "endpoints": [
     {
@@ -282,6 +282,13 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/exams/:id/demo-link",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/exams/:id/grades",
       "service": "academic",
@@ -510,6 +517,20 @@
       "path": "/api/exams/:id/teacher-classrooms",
       "service": "academic",
       "file": "services/academic/src/routes/examRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exams/demo/:token",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exams/demo/:token/score",
+      "service": "academic",
+      "file": "services/academic/src/routes/onlineExamRoutes.ts",
       "internal": false
     },
     {
@@ -1647,6 +1668,13 @@
       "internal": false
     },
     {
+      "method": "PATCH",
+      "path": "/api/classrooms/:id/capacity",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/classrooms/:id/grades",
       "service": "classroom",
@@ -1670,6 +1698,13 @@
     {
       "method": "DELETE",
       "path": "/api/classrooms/:id/members/:userId",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/classrooms/:id/members/bulk",
       "service": "classroom",
       "file": "services/classroom/src/routes/classroomRoutes.ts",
       "internal": false
@@ -1754,6 +1789,13 @@
     {
       "method": "DELETE",
       "path": "/api/internal/classrooms/:id/members/:userId",
+      "service": "classroom",
+      "file": "services/classroom/src/routes/classroomRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/classrooms/:id/members/claim",
       "service": "classroom",
       "file": "services/classroom/src/routes/classroomRoutes.ts",
       "internal": true
@@ -2152,6 +2194,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/schools/:schoolId/pta/parents",
+      "service": "comms",
+      "file": "services/comms/src/routes/ptaRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/schools/:schoolId/pta/volunteers",
       "service": "comms",
       "file": "services/comms/src/routes/ptaRoutes.ts",
@@ -2209,6 +2258,13 @@
     {
       "method": "GET",
       "path": "/api/internal/audit/events",
+      "service": "finance",
+      "file": "services/finance/src/routes/financeRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/entrance-fees/resolve",
       "service": "finance",
       "file": "services/finance/src/routes/financeRoutes.ts",
       "internal": true
@@ -2586,6 +2642,27 @@
     },
     {
       "method": "POST",
+      "path": "/api/auth/parent/access-code/login",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/parent/phone/login",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/parent/phone/send-code",
+      "service": "identity",
+      "file": "services/identity/src/routes/authRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
       "path": "/api/auth/resend-verification",
       "service": "identity",
       "file": "services/identity/src/routes/authRoutes.ts",
@@ -2677,6 +2754,20 @@
     },
     {
       "method": "GET",
+      "path": "/api/internal/schools/:schoolId/parents",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/schools/:schoolId/parents/:parentId",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": true
+    },
+    {
+      "method": "GET",
       "path": "/api/internal/schools/:schoolId/quotas",
       "service": "identity",
       "file": "services/identity/src/routes/schoolRoutes.ts",
@@ -2746,10 +2837,52 @@
       "internal": true
     },
     {
+      "method": "POST",
+      "path": "/api/parent-phone-login-requests/:id/approve",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/parent-phone-login-requests/:id/reject",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/parents/:parentId/children",
       "service": "identity",
       "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/parents/me/phone-login-request",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/parents/me/phone-login-request",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/parents/me/phone-login-request/:id/send-code",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/parents/me/phone-login-request/:id/verify",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
       "internal": false
     },
     {
@@ -2768,7 +2901,28 @@
     },
     {
       "method": "GET",
+      "path": "/api/public/parent-login-config",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/public/plans",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/platform-branding",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/platform-branding/logo",
       "service": "identity",
       "file": "services/identity/src/routes/publicRoutes.ts",
       "internal": false
@@ -2810,6 +2964,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/public/schools/:slug/admission-background",
+      "service": "identity",
+      "file": "services/identity/src/routes/publicRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
       "path": "/api/public/schools/:slug/grade-levels",
       "service": "identity",
       "file": "services/identity/src/routes/publicRoutes.ts",
@@ -2839,6 +3000,13 @@
     {
       "method": "POST",
       "path": "/api/schools/:schoolId/admission-background/presign",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/admission-background/upload",
       "service": "identity",
       "file": "services/identity/src/routes/schoolRoutes.ts",
       "internal": false
@@ -2879,6 +3047,13 @@
       "internal": false
     },
     {
+      "method": "PATCH",
+      "path": "/api/schools/:schoolId/certificate-settings",
+      "service": "identity",
+      "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/schools/:schoolId/entitlements",
       "service": "identity",
@@ -2897,6 +3072,20 @@
       "path": "/api/schools/:schoolId/onboarding/complete",
       "service": "identity",
       "file": "services/identity/src/routes/schoolRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/parent-access",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/parent-phone-login-requests",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
       "internal": false
     },
     {
@@ -3349,6 +3538,13 @@
     },
     {
       "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/background-image",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
       "path": "/api/super-admin/schools/:id/billing",
       "service": "identity",
       "file": "services/identity/src/routes/superAdminRoutes.ts",
@@ -3411,6 +3607,27 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/parents/:userId/parent-access-code/regenerate",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/schools/:id/parents/:userId/parent-login",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/:id/parents/:userId/parent-login/reset-lockout",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "PATCH",
       "path": "/api/super-admin/schools/:id/plan",
       "service": "identity",
@@ -3455,6 +3672,13 @@
     {
       "method": "GET",
       "path": "/api/super-admin/schools/export.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/superAdminRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/schools/seed-demo",
       "service": "identity",
       "file": "services/identity/src/routes/superAdminRoutes.ts",
       "internal": false
@@ -3520,6 +3744,34 @@
       "path": "/api/users/:userId",
       "service": "identity",
       "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/:userId/parent-access-code/regenerate",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/:userId/parent-login",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/:userId/parent-login/reset-lockout",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/:userId/parent-password/reset",
+      "service": "identity",
+      "file": "services/identity/src/routes/parentAccessRoutes.ts",
       "internal": false
     },
     {
@@ -3614,6 +3866,13 @@
       "internal": false
     },
     {
+      "method": "POST",
+      "path": "/api/applications/:id/entrance-complete",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
       "method": "GET",
       "path": "/api/applications/:id/next-action",
       "service": "lifecycle",
@@ -3700,6 +3959,41 @@
     {
       "method": "POST",
       "path": "/api/public/applications/verify-returning",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/entrance/:token",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/entrance/:token/book",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/entrance/:token/cancel",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/entrance/:token/reschedule",
+      "service": "lifecycle",
+      "file": "services/lifecycle/src/routes/admissionRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/schools/:slug/classrooms",
       "service": "lifecycle",
       "file": "services/lifecycle/src/routes/admissionRoutes.ts",
       "internal": false
@@ -3798,6 +4092,20 @@
     {
       "method": "PATCH",
       "path": "/api/inventory/:id",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/:id/movements",
+      "service": "ops",
+      "file": "services/ops/src/routes/logisticsRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/inventory/:id/movements",
       "service": "ops",
       "file": "services/ops/src/routes/logisticsRoutes.ts",
       "internal": false
@@ -3944,6 +4252,34 @@
     },
     {
       "method": "DELETE",
+      "path": "/api/payroll-templates/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/payroll-templates/:id",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/payroll-templates/:id/preview",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/payroll-templates/:id/run",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "DELETE",
       "path": "/api/payrolls/:id",
       "service": "staff",
       "file": "services/staff/src/routes/payrollRoutes.ts",
@@ -3989,6 +4325,27 @@
       "path": "/api/schools/:schoolId/leave-requests",
       "service": "staff",
       "file": "services/staff/src/routes/staffRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/payroll-templates",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/payroll-templates",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/schools/:schoolId/payroll-templates/from-payrolls",
+      "service": "staff",
+      "file": "services/staff/src/routes/payrollRoutes.ts",
       "internal": false
     },
     {

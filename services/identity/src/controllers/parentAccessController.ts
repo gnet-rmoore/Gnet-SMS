@@ -6,6 +6,7 @@ import {
   normalizeSaPlatformRole,
 } from "../domain/saCapabilities";
 import { canManageParentAccess } from "../domain/parentAccess";
+import { assertCanResetParentPassword } from "../domain/passwordResetPolicy";
 
 function errorStatus(err: any): number {
   if (typeof err?.status === "number" && err.status >= 400 && err.status < 600) return err.status;
@@ -215,6 +216,46 @@ export const parentAccessController = {
         schoolId,
         dataSensitivity: "SECRET",
         tags: ["parent", "access_code"],
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return sendError(res, err);
+    }
+  },
+
+  async resetParentPassword(req: any, res: Response) {
+    try {
+      const userId = String(req.params.userId || "");
+      const target = await parentAccessService.getParentSummary(userId);
+      assertCanResetParentPassword(
+        {
+          id: String(req.user?.id || ""),
+          role: String(req.user?.role || ""),
+          schoolId: req.user?.schoolId ?? null,
+        },
+        target
+      );
+      const schoolId = await assertTargetParent(req, userId);
+      const result = await parentAccessService.resetParentPassword(userId, schoolId, {
+        password: typeof req.body?.password === "string" ? req.body.password : undefined,
+        mustChangePassword: req.body?.mustChangePassword,
+      });
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      await audit(req, "parent_password_reset", "Parent password reset", "WARNING", {
+        category: "AUTH",
+        userId: req.user.id,
+        userEmail: req.user.email,
+        entityType: "User",
+        entityId: userId,
+        targetUserId: userId,
+        targetUserEmail: target.email,
+        targetUserName: target.name,
+        targetUserRole: target.role,
+        outcome: "SUCCESS",
+        schoolId,
+        dataSensitivity: "SECRET",
+        after: { mustChangePassword: result.mustChangePassword, reason: reason || null },
+        tags: ["parent", "password", "reset"],
       });
       return res.json(result);
     } catch (err: any) {

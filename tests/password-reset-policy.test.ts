@@ -3,8 +3,10 @@
  */
 import assert from "node:assert/strict";
 import {
+  assertCanResetParentPassword,
   assertCanSetUserPassword,
   canAdminResetPassword,
+  canResetParentPassword,
   PasswordResetDeniedError,
 } from "../services/identity/src/domain/passwordResetPolicy";
 
@@ -17,6 +19,9 @@ const itAdminA = { id: "it1", role: "IT_ADMIN", schoolId: schoolA };
 const itAdminA2 = { id: "it2", role: "IT_ADMIN", schoolId: schoolA };
 const teacherA = { id: "t1", role: "TEACHER", schoolId: schoolA };
 const principalA = { id: "p1", role: "PRINCIPAL", schoolId: schoolA };
+const registrarA = { id: "r1", role: "REGISTRAR", schoolId: schoolA };
+const parentA = { id: "pa1", role: "PARENT", schoolId: schoolA };
+const parentB = { id: "pb1", role: "PARENT", schoolId: schoolB };
 const teacherB = { id: "t2", role: "TEACHER", schoolId: schoolB };
 const superAdmin = { id: "su1", role: "SUPER_ADMIN", schoolId: null };
 
@@ -78,6 +83,27 @@ assert.throws(
   () => assertCanSetUserPassword(undefined, teacherA, { isSelfChange: false }),
   (err: unknown) =>
     err instanceof PasswordResetDeniedError && err.code === "PASSWORD_RESET_FORBIDDEN"
+);
+
+assert.equal(canResetParentPassword(schoolAdminA, parentA), true);
+assert.equal(canResetParentPassword(itAdminA, parentA), true);
+assert.equal(canResetParentPassword(principalA, parentA), true);
+assert.equal(canResetParentPassword(registrarA, parentA), true);
+assert.equal(canResetParentPassword(registrarA, parentB), false);
+assert.equal(canResetParentPassword(teacherA, parentA), false);
+assert.equal(canResetParentPassword(schoolAdminA, teacherA), false);
+
+assert.doesNotThrow(() => assertCanResetParentPassword(principalA, parentA));
+assert.doesNotThrow(() => assertCanResetParentPassword(registrarA, parentA));
+assert.throws(
+  () => assertCanResetParentPassword(teacherA, parentA),
+  (err: unknown) =>
+    err instanceof PasswordResetDeniedError && err.code === "PARENT_PASSWORD_RESET_FORBIDDEN"
+);
+assert.throws(
+  () => assertCanResetParentPassword(registrarA, parentB),
+  (err: unknown) =>
+    err instanceof PasswordResetDeniedError && err.code === "PASSWORD_RESET_CROSS_TENANT"
 );
 
 console.log("password-reset-policy.test.ts: ok");

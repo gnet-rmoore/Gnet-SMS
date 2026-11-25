@@ -91,6 +91,12 @@ export const parentPhoneEnabledSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const parentPasswordResetSchema = z.object({
+  password: z.string().max(256).optional(),
+  mustChangePassword: z.boolean().optional(),
+  reason: z.string().max(1000).optional(),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });

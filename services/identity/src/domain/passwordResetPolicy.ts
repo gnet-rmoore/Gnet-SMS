@@ -21,11 +21,18 @@ export type PasswordTarget = {
 };
 
 export const PASSWORD_RESET_ROLES = ["SCHOOL_ADMIN", "IT_ADMIN"] as const;
+export const PARENT_PASSWORD_RESET_ROLES = [
+  "SCHOOL_ADMIN",
+  "IT_ADMIN",
+  "PRINCIPAL",
+  "REGISTRAR",
+] as const;
 
 export type PasswordResetDenialCode =
   | "PASSWORD_RESET_FORBIDDEN"
   | "PASSWORD_RESET_CROSS_TENANT"
-  | "SCHOOL_ADMIN_PASSWORD_PROTECTED";
+  | "SCHOOL_ADMIN_PASSWORD_PROTECTED"
+  | "PARENT_PASSWORD_RESET_FORBIDDEN";
 
 export class PasswordResetDeniedError extends Error {
   status = 403;
@@ -88,6 +95,42 @@ export function assertCanSetUserPassword(
     throw new PasswordResetDeniedError(
       "School Admin passwords can only be changed by that School Admin or a Super Admin",
       "SCHOOL_ADMIN_PASSWORD_PROTECTED"
+    );
+  }
+}
+
+export function canResetParentPassword(actor: PasswordActor, target: PasswordTarget): boolean {
+  if (!actor?.id || !target?.id) return false;
+  if (target.role !== "PARENT") return false;
+  if (actor.role === "SUPER_ADMIN") return true;
+  if (!(PARENT_PASSWORD_RESET_ROLES as readonly string[]).includes(actor.role)) return false;
+  if (!actor.schoolId || !target.schoolId || actor.schoolId !== target.schoolId) return false;
+  return true;
+}
+
+export function assertCanResetParentPassword(
+  actor: PasswordActor | undefined,
+  target: PasswordTarget
+): void {
+  if (!actor?.id) {
+    throw new PasswordResetDeniedError(
+      "Password reset requires an authenticated actor",
+      "PASSWORD_RESET_FORBIDDEN"
+    );
+  }
+  if (target.role !== "PARENT") {
+    throw new PasswordResetDeniedError("Password reset target is not a parent", "PARENT_PASSWORD_RESET_FORBIDDEN");
+  }
+  if (actor.role !== "SUPER_ADMIN" && !(PARENT_PASSWORD_RESET_ROLES as readonly string[]).includes(actor.role)) {
+    throw new PasswordResetDeniedError(
+      "Only school administrators with parent access can reset a parent password",
+      "PARENT_PASSWORD_RESET_FORBIDDEN"
+    );
+  }
+  if (!actor.schoolId || !target.schoolId || actor.schoolId !== target.schoolId) {
+    throw new PasswordResetDeniedError(
+      "Cannot reset passwords for users outside your school",
+      "PASSWORD_RESET_CROSS_TENANT"
     );
   }
 }

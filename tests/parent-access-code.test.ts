@@ -112,5 +112,36 @@ assert.match(loginSource, /placeholder="000-000"/);
 
 const enCatalog = readFileSync(new URL("../src/i18n/catalogs/en.ts", import.meta.url), "utf8");
 assert.match(enCatalog, /subtitle: "Use the 6-digit code issued by the school"/);
+assert.match(enCatalog, /parentAccess: "Parents"/);
+
+const parentAccessRoutes = readFileSync(
+  new URL("../services/identity/src/routes/parentAccessRoutes.ts", import.meta.url),
+  "utf8"
+);
+assert.match(parentAccessRoutes, /\/api\/users\/:userId\/parent-password\/reset/);
+assert.match(parentAccessRoutes, /requireCapability\(ADMIN_CAPABILITY, ADMIN_ROLES\)/);
+
+const parentAccessController = readFileSync(
+  new URL("../services/identity/src/controllers/parentAccessController.ts", import.meta.url),
+  "utf8"
+);
+assert.match(parentAccessController, /assertCanResetParentPassword\(/);
+assert.match(parentAccessController, /parent_password_reset/);
+
+const parentAccessPage = readFileSync(
+  new URL("../src/features/parent-access/Page.tsx", import.meta.url),
+  "utf8"
+);
+assert.match(parentAccessPage, /DetailDrawerShell/);
+assert.match(parentAccessPage, /parent-password\/reset/);
+assert.match(parentAccessPage, /canResetParentPassword\(/);
+
+const clientPasswordPolicy = readFileSync(
+  new URL("../src/lib/passwordResetPolicy.ts", import.meta.url),
+  "utf8"
+);
+assert.match(clientPasswordPolicy, /export function canResetParentPassword\(/);
+assert.match(clientPasswordPolicy, /"PRINCIPAL"/);
+assert.match(clientPasswordPolicy, /"REGISTRAR"/);
 
 console.log("parent access unit tests passed");

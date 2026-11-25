@@ -13,6 +13,7 @@ import { validateBody } from "../middleware/validate";
 import { parentAccessService } from "../services/parentAccessService";
 import {
   parentAccessReviewSchema,
+  parentPasswordResetSchema,
   parentPhoneCodeSchema,
   parentPhoneEnabledSchema,
   parentPhoneRequestSchema,
@@ -100,6 +101,15 @@ router.post(
   requireRoles(ADMIN_ROLES),
   requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
   parentAccessController.regenerateCode
+);
+router.post(
+  "/api/users/:userId/parent-password/reset",
+  authenticate,
+  requireResourceTenant((req) => parentAccessService.getUserSchoolId(String(req.params.userId || ""))),
+  requireRoles(ADMIN_ROLES),
+  requireCapability(ADMIN_CAPABILITY, ADMIN_ROLES),
+  validateBody(parentPasswordResetSchema),
+  parentAccessController.resetParentPassword
 );
 router.post(
   "/api/users/:userId/parent-login/reset-lockout",

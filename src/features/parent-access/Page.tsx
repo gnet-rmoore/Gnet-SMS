@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Check,
+  Copy,
+  Eye,
   KeyRound,
   Phone,
   RefreshCw,
@@ -11,6 +13,8 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { Button, DetailDrawerShell } from "../../components/ui";
+import { canResetParentPassword } from "../../lib/passwordResetPolicy";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
 
@@ -23,10 +27,20 @@ function formatDate(value: unknown) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+      <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">{value}</dd>
+    </div>
+  );
+}
+
 export function ParentAccessPage() {
   const { t } = useTranslation(["pages", "common"]);
   const p = (key: string, opts?: Record<string, unknown>) => t(`parentAccess.${key}`, opts);
   const school = useAuthStore((state) => state.school);
+  const user = useAuthStore((state) => state.user);
 
   const [requests, setRequests] = React.useState<Row[]>([]);
   const [parents, setParents] = React.useState<Row[]>([]);
@@ -34,6 +48,12 @@ export function ParentAccessPage() {
   const [newCode, setNewCode] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [selectedParentId, setSelectedParentId] = React.useState<string | null>(null);
+  const [resetInput, setResetInput] = React.useState("");
+  const [mustChangePassword, setMustChangePassword] = React.useState(true);
+  const [temporaryPassword, setTemporaryPassword] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
+  const [drawerBusy, setDrawerBusy] = React.useState(false);
 
   const load = React.useCallback(async () => {
     if (!school?.id) return;
@@ -73,6 +93,61 @@ export function ParentAccessPage() {
     if (status === "APPROVED") return t("common:approved");
     if (status === "REJECTED") return t("common:rejected");
     return status;
+  };
+
+  const selectedParent = parents.find((parent) => String(parent.id) === selectedParentId) ?? null;
+  const canResetSelectedPassword = canResetParentPassword(user, {
+    id: String(selectedParent?.id || ""),
+    role: "PARENT",
+    schoolId: school?.id,
+  });
+
+  const openParent = (parent: Row) => {
+    setSelectedParentId(String(parent.id));
+    setResetInput("");
+    setMustChangePassword(true);
+    setTemporaryPassword(null);
+    setCopied(false);
+    setError(null);
+  };
+
+  const closeParent = () => {
+    setSelectedParentId(null);
+    setTemporaryPassword(null);
+    setError(null);
+  };
+
+  const copyTemporaryPassword = async () => {
+    if (!temporaryPassword) return;
+    try {
+      await navigator.clipboard.writeText(temporaryPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError(p("copyFailed"));
+    }
+  };
+
+  const submitPasswordReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedParent || !school?.id) return;
+    setDrawerBusy(true);
+    setError(null);
+    try {
+      const password = resetInput.trim();
+      const result = await api.post(`/api/users/${selectedParent.id}/parent-password/reset`, {
+        ...(password ? { password } : {}),
+        mustChangePassword,
+      });
+      setTemporaryPassword(String(result?.tempPassword || password || ""));
+      setResetInput("");
+      setCopied(false);
+    } catch (err: any) {
+      setError(err?.message || t("common:errorGeneric"));
+    } finally {
+      setDrawerBusy(false);
+      await load();
+    }
   };
 
   return (
@@ -245,6 +320,14 @@ export function ParentAccessPage() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
+                          onClick={() => openParent(parent)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+                        >
+                          <Eye className="h-3.5 w-3.5" aria-hidden />
+                          {p("viewDetails")}
+                        </button>
+                        <button
+                          type="button"
                           disabled={busy}
                           onClick={async () => {
                             const result = await runAction(
@@ -293,6 +376,170 @@ export function ParentAccessPage() {
           </div>
         )}
       </section>
+
+      <DetailDrawerShell
+        open={Boolean(selectedParent)}
+        onClose={closeParent}
+        eyebrow={p("detailsEyebrow")}
+        title={selectedParent?.name || ""}
+        subtitle={selectedParent?.email || undefined}
+        badge={
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-indigo-100">
+            {p("parent")}
+          </span>
+        }
+      >
+        {selectedParent ? (
+          <div className="space-y-7">
+            <section>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                {p("detailsTitle")}
+              </h3>
+              <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                <DetailItem label={t("common:name")} value={selectedParent.name} />
+                <DetailItem label={t("common:email")} value={selectedParent.email} />
+                <DetailItem label={p("accessCode")} value={selectedParent.accessCode?.codeHint || "—"} />
+                <DetailItem label={p("issuedAt")} value={formatDate(selectedParent.accessCode?.issuedAt)} />
+                <DetailItem label={p("lockedUntil")} value={formatDate(selectedParent.accessCode?.lockedUntil)} />
+                <DetailItem label={p("phoneLogin")} value={selectedParent.phoneLogin?.phoneHint || "—"} />
+                <DetailItem label={p("verifiedAt")} value={formatDate(selectedParent.phoneLogin?.verifiedAt)} />
+                <DetailItem
+                  label={p("status")}
+                  value={
+                    selectedParent.phoneLogin
+                      ? selectedParent.phoneLogin.enabled
+                        ? p("enabled")
+                        : p("disabled")
+                      : "—"
+                  }
+                />
+              </dl>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                {p("accessActionsTitle")}
+              </h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="compact"
+                  disabled={busy || drawerBusy}
+                  onClick={() => void load()}
+                >
+                  {t("common:refresh")}
+                </Button>
+                <Button
+                  type="button"
+                  size="compact"
+                  variant="secondary"
+                  disabled={busy || drawerBusy}
+                  onClick={async () => {
+                    const result = await runAction(
+                      `/api/users/${selectedParent.id}/parent-access-code/regenerate`,
+                      "POST"
+                    );
+                    if (result?.accessCode) setNewCode(String(result.accessCode));
+                  }}
+                >
+                  <KeyRound className="h-4 w-4" aria-hidden />
+                  {p("regenerate")}
+                </Button>
+                <Button
+                  type="button"
+                  size="compact"
+                  variant="secondary"
+                  disabled={busy || drawerBusy}
+                  onClick={() =>
+                    void runAction(
+                      `/api/users/${selectedParent.id}/parent-login/reset-lockout`,
+                      "POST"
+                    )
+                  }
+                >
+                  <ShieldOff className="h-4 w-4" aria-hidden />
+                  {p("resetLockout")}
+                </Button>
+                <Button
+                  type="button"
+                  size="compact"
+                  variant="secondary"
+                  disabled={busy || drawerBusy || !selectedParent.phoneLogin}
+                  onClick={() =>
+                    void runAction(`/api/users/${selectedParent.id}/parent-login`, "PATCH", {
+                      enabled: !selectedParent.phoneLogin?.enabled,
+                    })
+                  }
+                >
+                  {selectedParent.phoneLogin?.enabled ? p("phoneDisable") : p("phoneEnable")}
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                {p("resetPassword")}
+              </h3>
+              {!canResetSelectedPassword ? (
+                <p className="mt-3 text-sm text-slate-500">{p("passwordResetForbidden")}</p>
+              ) : temporaryPassword ? (
+                <div role="status" className="mt-3 space-y-3">
+                  <p className="text-sm font-medium text-slate-600">{p("temporaryPasswordHint")}</p>
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                    <code className="min-w-0 flex-1 break-all font-mono text-sm font-bold text-emerald-950">
+                      {temporaryPassword}
+                    </code>
+                    <Button type="button" size="compact" variant="secondary" onClick={copyTemporaryPassword}>
+                      {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+                      {copied ? t("common:copied") : t("common:copy")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="compact"
+                      onClick={() => {
+                        setTemporaryPassword(null);
+                        setError(null);
+                      }}
+                    >
+                      {t("common:done")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <form id="parent-password-reset-form" onSubmit={submitPasswordReset} className="mt-3 space-y-4">
+                  <div>
+                    <label htmlFor="parent-password-reset-input" className="block text-sm font-bold text-slate-700">
+                      {t("common:temporaryPassword")}
+                    </label>
+                    <input
+                      id="parent-password-reset-input"
+                      type="text"
+                      value={resetInput}
+                      onChange={(event) => setResetInput(event.target.value)}
+                      placeholder={p("resetPasswordPlaceholder")}
+                      autoComplete="new-password"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">{p("resetPasswordHint")}</p>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={mustChangePassword}
+                      onChange={(event) => setMustChangePassword(event.target.checked)}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    {p("mustChangePassword")}
+                  </label>
+                  <Button type="submit" loading={drawerBusy} disabled={busy}>
+                    {p("resetPassword")}
+                  </Button>
+                </form>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </DetailDrawerShell>
     </div>
   );
 }

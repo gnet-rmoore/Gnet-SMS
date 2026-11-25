@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-17T12:48:45.444Z",
+  "generatedAt": "2026-11-25T13:13:39.617Z",
   "roles": 21,
-  "protectedRouteCount": 76,
-  "navEntryCount": 231,
+  "protectedRouteCount": 80,
+  "navEntryCount": 240,
   "protectedRoles": [
     "SUPER_ADMIN",
     "SCHOOL_ADMIN",
@@ -217,13 +217,22 @@
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "PRINCIPAL",
-        "VPI",
-        "TEACHER"
+        "VPI"
       ]
     },
     {
       "segment": "exams",
       "pathPattern": "exams/:examId/paper",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "exam-paper-preview",
+      "pathPattern": "exam-paper-preview",
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "PRINCIPAL",
@@ -300,6 +309,13 @@
     },
     {
       "segment": "online-exams",
+      "pathPattern": "online-exams/demo/:demoToken",
+      "allowedRoles": [
+        "STUDENT"
+      ]
+    },
+    {
+      "segment": "online-exams",
       "pathPattern": "online-exams/:examId/preview",
       "allowedRoles": [
         "SCHOOL_ADMIN",
@@ -321,6 +337,16 @@
     {
       "segment": "online-exams",
       "pathPattern": "online-exams/:examId/proctor/:attemptId",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "PRINCIPAL",
+        "VPI",
+        "TEACHER"
+      ]
+    },
+    {
+      "segment": "online-exams",
+      "pathPattern": "online-exams/:examId/proctor/:attemptId/script",
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "PRINCIPAL",
@@ -463,6 +489,16 @@
       "pathPattern": "roles",
       "allowedRoles": [
         "SCHOOL_ADMIN",
+        "IT_ADMIN"
+      ]
+    },
+    {
+      "segment": "parents",
+      "pathPattern": "parents",
+      "allowedRoles": [
+        "SCHOOL_ADMIN",
+        "REGISTRAR",
+        "PRINCIPAL",
         "IT_ADMIN"
       ]
     },
@@ -633,7 +669,9 @@
       "allowedRoles": [
         "SCHOOL_ADMIN",
         "REGISTRAR",
-        "PRINCIPAL"
+        "PRINCIPAL",
+        "VPI",
+        "VPA"
       ]
     },
     {
@@ -872,7 +910,8 @@
         "IT_ADMIN",
         "PRINCIPAL",
         "REGISTRAR",
-        "ACCOUNTANT"
+        "ACCOUNTANT",
+        "VPI"
       ]
     }
   ],
@@ -1024,6 +1063,11 @@
     },
     {
       "role": "SCHOOL_ADMIN",
+      "segment": "transcripts",
+      "to": "/demo-school/transcripts"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
       "segment": "staff",
       "to": "/demo-school/staff"
     },
@@ -1031,6 +1075,11 @@
       "role": "SCHOOL_ADMIN",
       "segment": "roles",
       "to": "/demo-school/roles"
+    },
+    {
+      "role": "SCHOOL_ADMIN",
+      "segment": "parents",
+      "to": "/demo-school/parents"
     },
     {
       "role": "SCHOOL_ADMIN",
@@ -1204,8 +1253,18 @@
     },
     {
       "role": "PRINCIPAL",
+      "segment": "transcripts",
+      "to": "/demo-school/transcripts"
+    },
+    {
+      "role": "PRINCIPAL",
       "segment": "staff",
       "to": "/demo-school/staff"
+    },
+    {
+      "role": "PRINCIPAL",
+      "segment": "parents",
+      "to": "/demo-school/parents"
     },
     {
       "role": "PRINCIPAL",
@@ -1359,6 +1418,11 @@
     },
     {
       "role": "VPI",
+      "segment": "transcripts",
+      "to": "/demo-school/transcripts"
+    },
+    {
+      "role": "VPI",
       "segment": "staff-portal",
       "to": "/demo-school/staff-portal"
     },
@@ -1366,6 +1430,11 @@
       "role": "VPI",
       "segment": "staff-tasks",
       "to": "/demo-school/staff-tasks"
+    },
+    {
+      "role": "VPI",
+      "segment": "settings?tab=CERTIFICATES",
+      "to": "/demo-school/settings?tab=CERTIFICATES"
     },
     {
       "role": "VPA",
@@ -1381,6 +1450,11 @@
       "role": "VPA",
       "segment": "my-schedule",
       "to": "/demo-school/my-schedule"
+    },
+    {
+      "role": "VPA",
+      "segment": "transcripts",
+      "to": "/demo-school/transcripts"
     },
     {
       "role": "VPA",
@@ -1461,6 +1535,11 @@
       "role": "REGISTRAR",
       "segment": "students",
       "to": "/demo-school/students"
+    },
+    {
+      "role": "REGISTRAR",
+      "segment": "parents",
+      "to": "/demo-school/parents"
     },
     {
       "role": "REGISTRAR",
@@ -1906,6 +1985,11 @@
       "role": "IT_ADMIN",
       "segment": "staff",
       "to": "/demo-school/staff"
+    },
+    {
+      "role": "IT_ADMIN",
+      "segment": "parents",
+      "to": "/demo-school/parents"
     },
     {
       "role": "IT_ADMIN",
