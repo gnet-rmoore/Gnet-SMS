@@ -60,7 +60,6 @@ export const loginSchema = z.object({
 });
 
 export const accessCodeLoginSchema = z.object({
-  schoolSlug: z.string().min(1),
   code: z.string().regex(/^\d{6}$/),
 });
 

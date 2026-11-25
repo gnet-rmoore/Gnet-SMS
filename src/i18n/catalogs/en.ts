@@ -374,7 +374,7 @@ export const enAuth = {
   },
   parent: {
     title: "Parent sign-in",
-    subtitle: "Use the 6-digit code issued by your school",
+    subtitle: "Use the 6-digit code issued by the school",
     schoolSlug: "School code",
     schoolSlugPlaceholder: "school-slug",
     accessCode: "Parent access code",

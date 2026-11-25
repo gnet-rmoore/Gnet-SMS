@@ -21,6 +21,7 @@ import { changeAppLocale, getStoredLocale, normalizeLocale, resolveEffectiveLoca
 import { LanguageSelect } from "../i18n/LanguageSelect";
 import type { AppLocale } from "../i18n/locales";
 import { cn } from "../lib/cn";
+import { formatParentAccessCode, formatParentAccessCodeInput } from "../lib/parentAccessCode";
 import { LoginBackground } from "./LoginBackground";
 import { LoginErrorAlert } from "./LoginErrorAlert";
 import { PageToast, usePageToast } from "../features/academics-shared/PageToast";
@@ -245,7 +246,7 @@ export const Login = () => {
     try {
       const { response, data } = await postJson(
         "/api/auth/parent/access-code/login",
-        { schoolSlug: parentSchoolSlug.trim(), code: parentAccessCode },
+        { code: parentAccessCode },
         "parent-code"
       );
       if (!response.ok) {
@@ -609,24 +610,6 @@ export const Login = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="parent-school" className="block text-sm font-semibold text-slate-700">
-                  {t("auth:parent.schoolSlug")}
-                </label>
-                <input
-                  id="parent-school"
-                  value={parentSchoolSlug}
-                  onChange={(e) => {
-                    setParentSchoolSlug(e.target.value);
-                    setLoginError(null);
-                  }}
-                  className={fieldClass}
-                  placeholder={t("auth:parent.schoolSlugPlaceholder")}
-                  autoComplete="off"
-                  required
-                />
-              </div>
-
               {parentPhoneLoginEnabled && (
                 <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
                   <button
@@ -668,19 +651,27 @@ export const Login = () => {
                     id="parent-code"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    value={parentAccessCode}
+                    value={formatParentAccessCode(parentAccessCode)}
                     onChange={(e) => {
-                      setParentAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      const input = e.currentTarget;
+                      const caret = input.selectionStart ?? input.value.length;
+                      const { digits, formatted, caret: nextCaret } = formatParentAccessCodeInput(
+                        input.value,
+                        caret
+                      );
+                      input.value = formatted;
+                      input.setSelectionRange(nextCaret, nextCaret);
+                      setParentAccessCode(digits);
                       setLoginError(null);
                     }}
                     className={cn(fieldClass, "text-center font-mono tracking-widest")}
-                    placeholder={t("auth:parent.accessCodePlaceholder")}
+                    placeholder="000-000"
                     required
-                    pattern="[0-9]{6}"
+                    pattern="[0-9]{3}-[0-9]{3}"
                   />
                   <button
                     type="submit"
-                    disabled={loading || parentAccessCode.length !== 6 || !parentSchoolSlug.trim()}
+                    disabled={loading || parentAccessCode.length !== 6}
                     className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition-colors hover:bg-blue-700 disabled:opacity-60"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
@@ -689,6 +680,23 @@ export const Login = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="parent-school" className="block text-sm font-semibold text-slate-700">
+                      {t("auth:parent.schoolSlug")}
+                    </label>
+                    <input
+                      id="parent-school"
+                      value={parentSchoolSlug}
+                      onChange={(e) => {
+                        setParentSchoolSlug(e.target.value);
+                        setLoginError(null);
+                      }}
+                      className={fieldClass}
+                      placeholder={t("auth:parent.schoolSlugPlaceholder")}
+                      autoComplete="off"
+                      required
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label htmlFor="parent-phone" className="block text-sm font-semibold text-slate-700">
                       {t("auth:parent.phoneNumber")}

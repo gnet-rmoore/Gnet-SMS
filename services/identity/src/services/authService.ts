@@ -10,11 +10,7 @@ import { emailAuthService } from "./emailAuthService";
 import { getSchoolCommercialContext } from "../lib/quotaEnforcement";
 import { mfaService } from "./mfaService";
 import { parentAccessService } from "./parentAccessService";
-import {
-  isParentPhoneLoginEnabled,
-  makeParentAccessLookupHash,
-  normalizePhone,
-} from "../domain/parentAccess";
+import { isParentPhoneLoginEnabled, normalizePhone } from "../domain/parentAccess";
 
 function invalidCredentialsError(message = "Invalid credentials") {
   return Object.assign(new Error(message), {
@@ -303,32 +299,26 @@ export const authService = {
     };
   },
 
-  async parentAccessCodeLogin(schoolSlug: string, code: string) {
-    const school = await parentAccessService.resolveSchoolBySlug(schoolSlug);
-    if (!school) throw invalidCredentialsError();
-    const codeLookupHash = makeParentAccessLookupHash(school.id, code);
-    const row = await prisma.parentAccessCode.findUnique({
-      where: { codeLookupHash },
-      include: { user: true },
-    });
-    if (
-      !row ||
-      row.schoolId !== school.id ||
-      row.revokedAt ||
-      !row.user ||
-      row.user.role !== "PARENT"
-    ) {
+  async parentAccessCodeLogin(code: string) {
+    const rows = await parentAccessService.findByAccessCode(code);
+    if (rows.length !== 1) throw invalidCredentialsError();
+    const row = rows[0];
+    if (!row.user || row.user.role !== "PARENT" || !row.school) {
       throw invalidCredentialsError();
     }
-    await parentAccessService.assertParentInSchool(row.userId, school.id);
-    await parentAccessService.verifyAccessCode(row.userId, school.id, code);
-    await assertSchoolLoginGates(row.user, school);
+    await parentAccessService.assertParentInSchool(row.userId, row.schoolId);
+    await parentAccessService.verifyAccessCode(row.userId, row.schoolId, code);
+    await assertSchoolLoginGates(row.user, row.school);
     const mfaChallenge = await mfaService.checkLoginMfa(
-      { id: row.user.id, role: row.user.role, school },
-      { authMethod: "ACCESS_CODE", schoolId: school.id, schoolSlug: school.slug }
+      { id: row.user.id, role: row.user.role, school: row.school },
+      { authMethod: "ACCESS_CODE", schoolId: row.schoolId, schoolSlug: row.school.slug }
     );
     if (mfaChallenge) return mfaChallenge;
-    return this.completeSchoolLogin({ user: row.user, school, authMethod: "ACCESS_CODE" });
+    return this.completeSchoolLogin({
+      user: row.user,
+      school: row.school,
+      authMethod: "ACCESS_CODE",
+    });
   },
 
   async parentPhoneSendCode(schoolSlug: string, phone: string) {

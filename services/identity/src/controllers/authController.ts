@@ -144,12 +144,8 @@ export const authController = {
 
   async parentAccessCodeLogin(req: Request, res: Response) {
     const started = Date.now();
-    const schoolSlug = String(req.body?.schoolSlug || "");
     try {
-      const result = await authService.parentAccessCodeLogin(
-        schoolSlug,
-        String(req.body?.code || "")
-      );
+      const result = await authService.parentAccessCodeLogin(String(req.body?.code || ""));
       if ((result as any).mfaRequired) {
         await auditAuth(req, "parent_access_code_mfa_pending", "Parent access code MFA challenge issued", "INFO", {
           outcome: "PENDING",

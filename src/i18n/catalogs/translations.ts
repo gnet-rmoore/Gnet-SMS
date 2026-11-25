@@ -244,7 +244,7 @@ const fr: any = {
     },
     parent: {
       title: "Connexion des parents",
-      subtitle: "Utilisez le code à 6 chiffres délivré par votre école",
+      subtitle: "Utilisez le code à 6 chiffres délivré par l’école",
       schoolSlug: "Code de l’école",
       schoolSlugPlaceholder: "code-ecole",
       accessCode: "Code d’accès parent",
@@ -1820,7 +1820,7 @@ const ar: any = {
     },
     parent: {
       title: "تسجيل دخول أولياء الأمور",
-      subtitle: "استخدم الرمز المكوّن من 6 أرقام الذي تصدره مدرستك",
+      subtitle: "استخدم الرمز المكوّن من 6 أرقام الذي تصدره المدرسة",
       schoolSlug: "رمز المدرسة",
       schoolSlugPlaceholder: "رمز-المدرسة",
       accessCode: "رمز دخول ولي الأمر",
@@ -2326,7 +2326,7 @@ const es: any = {
     },
     parent: {
       title: "Inicio de sesión de padres",
-      subtitle: "Usa el código de 6 dígitos emitido por tu escuela",
+      subtitle: "Usa el código de 6 dígitos emitido por la escuela",
       schoolSlug: "Código de la escuela",
       schoolSlugPlaceholder: "codigo-escuela",
       accessCode: "Código de acceso de padres",
@@ -2843,7 +2843,7 @@ const de: any = {
     },
     parent: {
       title: "Anmeldung für Eltern",
-      subtitle: "Verwenden Sie den 6-stelligen Code, den Ihre Schule ausgestellt hat",
+      subtitle: "Verwenden Sie den 6-stelligen Code, den die Schule ausgestellt hat",
       schoolSlug: "Schulcode",
       schoolSlugPlaceholder: "schulcode",
       accessCode: "Eltern-Zugangscode",
@@ -3855,7 +3855,7 @@ const hi: any = {
     },
     parent: {
       title: "अभिभावक साइन-इन",
-      subtitle: "अपने विद्यालय द्वारा जारी 6-अंकीय कोड का उपयोग करें",
+      subtitle: "विद्यालय द्वारा जारी 6-अंकीय कोड का उपयोग करें",
       schoolSlug: "विद्यालय कोड",
       schoolSlugPlaceholder: "विद्यालय-कोड",
       accessCode: "अभिभावक पहुँच कोड",

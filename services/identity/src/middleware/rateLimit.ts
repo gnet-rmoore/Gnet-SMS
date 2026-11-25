@@ -155,7 +155,7 @@ function requestPart(req: Request, key: string): string {
 export const parentAccessCodeRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  keyFn: (req) => `parent-access-code:${parentRateHash(req.ip || "unknown", requestPart(req, "schoolSlug"))}`,
+  keyFn: (req) => `parent-access-code:${parentRateHash(req.ip || "unknown")}`,
   message: "Too many parent code attempts. Please wait and try again.",
 });
 

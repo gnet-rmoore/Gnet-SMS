@@ -4,6 +4,7 @@ import {
   getParentPacSecretVersion,
   hashParentAccessCode,
   isParentLocked,
+  makeParentAccessGlobalLookupHash,
   makeParentAccessLookupHash,
   maskParentAccessCode,
   maskPhone,
@@ -37,6 +38,49 @@ function invalidCredentials() {
     code: "INVALID_CREDENTIALS",
     status: 401,
   });
+}
+
+type ParentAccessLookupContext = {
+  schoolId: string;
+  secretVersion: number;
+};
+
+async function parentAccessLookupContexts(): Promise<ParentAccessLookupContext[]> {
+  return prisma.parentAccessCode.findMany({
+    select: { schoolId: true, secretVersion: true },
+    distinct: ["schoolId", "secretVersion"],
+  });
+}
+
+function uniqueSecretVersions(contexts: ParentAccessLookupContext[]): number[] {
+  return [...new Set(contexts.map((context) => context.secretVersion))];
+}
+
+async function isParentAccessCodeAvailable(code: string): Promise<boolean> {
+  const contexts = await parentAccessLookupContexts();
+  if (!contexts.length) return true;
+  const existing = await prisma.parentAccessCode.findFirst({
+    where: {
+      OR: [
+        {
+          globalLookupHash: {
+            in: uniqueSecretVersions(contexts).map((version) =>
+              makeParentAccessGlobalLookupHash(code, version)
+            ),
+          },
+        },
+        {
+          codeLookupHash: {
+            in: contexts.map((context) =>
+              makeParentAccessLookupHash(context.schoolId, code, context.secretVersion)
+            ),
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  });
+  return !existing;
 }
 
 async function parentSchoolIds(parentId: string): Promise<string[]> {
@@ -121,6 +165,33 @@ export const parentAccessService = {
     return prisma.school.findUnique({ where: { slug } });
   },
 
+  async findByAccessCode(code: string) {
+    const contexts = await parentAccessLookupContexts();
+    if (!contexts.length) return [];
+    return prisma.parentAccessCode.findMany({
+      where: {
+        OR: [
+          {
+            globalLookupHash: {
+              in: uniqueSecretVersions(contexts).map((version) =>
+                makeParentAccessGlobalLookupHash(code, version)
+              ),
+            },
+          },
+          {
+            codeLookupHash: {
+              in: contexts.map((context) =>
+                makeParentAccessLookupHash(context.schoolId, code, context.secretVersion)
+              ),
+            },
+          },
+        ],
+        revokedAt: null,
+      },
+      include: { user: true, school: true },
+    });
+  },
+
   async assertParentInSchool(parentId: string, schoolId: string) {
     const ids = await parentSchoolIds(parentId);
     if (!ids.includes(schoolId)) throw invalidCredentials();
@@ -134,9 +205,12 @@ export const parentAccessService = {
     });
     if (existing && !existing.revokedAt) return null;
 
+    const secretVersion = getParentPacSecretVersion();
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const code = generateParentAccessCode();
-      const codeLookupHash = makeParentAccessLookupHash(schoolId, code);
+      if (!(await isParentAccessCodeAvailable(code))) continue;
+      const codeLookupHash = makeParentAccessLookupHash(schoolId, code, secretVersion);
+      const globalLookupHash = makeParentAccessGlobalLookupHash(code, secretVersion);
       try {
         await prisma.parentAccessCode.upsert({
           where: { userId_schoolId: { userId, schoolId } },
@@ -145,8 +219,9 @@ export const parentAccessService = {
             schoolId,
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
+            globalLookupHash,
             codeHint: maskParentAccessCode(code),
-            secretVersion: getParentPacSecretVersion(),
+            secretVersion,
             failedCount: 0,
             lockedUntil: null,
             deliveredAt: null,
@@ -155,8 +230,9 @@ export const parentAccessService = {
           update: {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
+            globalLookupHash,
             codeHint: maskParentAccessCode(code),
-            secretVersion: getParentPacSecretVersion(),
+            secretVersion,
             issuedAt: new Date(),
             deliveredAt: null,
             failedCount: 0,
@@ -178,9 +254,12 @@ export const parentAccessService = {
     if (!(await parentSchoolIds(userId)).includes(schoolId)) {
       throw badRequest("Parent is not linked to this school");
     }
+    const secretVersion = getParentPacSecretVersion();
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const code = generateParentAccessCode();
-      const codeLookupHash = makeParentAccessLookupHash(schoolId, code);
+      if (!(await isParentAccessCodeAvailable(code))) continue;
+      const codeLookupHash = makeParentAccessLookupHash(schoolId, code, secretVersion);
+      const globalLookupHash = makeParentAccessGlobalLookupHash(code, secretVersion);
       try {
         await prisma.parentAccessCode.upsert({
           where: { userId_schoolId: { userId, schoolId } },
@@ -189,14 +268,16 @@ export const parentAccessService = {
             schoolId,
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
+            globalLookupHash,
             codeHint: maskParentAccessCode(code),
-            secretVersion: getParentPacSecretVersion(),
+            secretVersion,
           },
           update: {
             codeHash: hashParentAccessCode(code),
             codeLookupHash,
+            globalLookupHash,
             codeHint: maskParentAccessCode(code),
-            secretVersion: getParentPacSecretVersion(),
+            secretVersion,
             issuedAt: new Date(),
             deliveredAt: null,
             failedCount: 0,

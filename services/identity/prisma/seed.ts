@@ -17,6 +17,7 @@ import {
   generateParentAccessCode,
   getParentPacSecretVersion,
   hashParentAccessCode,
+  makeParentAccessGlobalLookupHash,
   makeParentAccessLookupHash,
   maskParentAccessCode,
 } from "../src/domain/parentAccess";
@@ -168,14 +169,16 @@ async function seedDemo() {
     });
     if (!existing) {
       const code = generateParentAccessCode();
+      const secretVersion = getParentPacSecretVersion();
       await prisma.parentAccessCode.create({
         data: {
           userId: parent.id,
           schoolId: school.id,
           codeHash: hashParentAccessCode(code),
-          codeLookupHash: makeParentAccessLookupHash(school.id, code),
+          codeLookupHash: makeParentAccessLookupHash(school.id, code, secretVersion),
+          globalLookupHash: makeParentAccessGlobalLookupHash(code, secretVersion),
           codeHint: maskParentAccessCode(code),
-          secretVersion: getParentPacSecretVersion(),
+          secretVersion,
         },
       });
     }

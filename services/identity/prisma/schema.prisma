@@ -307,18 +307,19 @@ model ParentStudent {
 }
 
 model ParentAccessCode {
-  id             String    @id @default(uuid())
-  userId         String
-  schoolId       String
-  codeHash       String
-  codeLookupHash String    @unique
-  codeHint       String
-  secretVersion  Int       @default(1)
-  issuedAt       DateTime  @default(now())
-  deliveredAt    DateTime?
-  failedCount    Int       @default(0)
-  lockedUntil    DateTime?
-  revokedAt      DateTime?
+  id               String    @id @default(uuid())
+  userId           String
+  schoolId         String
+  codeHash         String
+  codeLookupHash   String    @unique
+  globalLookupHash String?   @unique
+  codeHint         String
+  secretVersion    Int       @default(1)
+  issuedAt         DateTime  @default(now())
+  deliveredAt      DateTime?
+  failedCount      Int       @default(0)
+  lockedUntil      DateTime?
+  revokedAt        DateTime?
 
   user   User   @relation("ParentAccessCodes", fields: [userId], references: [id], onDelete: Cascade)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)

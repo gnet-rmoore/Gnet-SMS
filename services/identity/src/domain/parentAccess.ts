@@ -75,6 +75,16 @@ export function makeParentAccessLookupHash(
     .digest("hex");
 }
 
+export function makeParentAccessGlobalLookupHash(
+  code: string,
+  secretVersion = getParentPacSecretVersion()
+): string {
+  return crypto
+    .createHmac("sha256", getParentPacSecret())
+    .update(`global:${secretVersion}:${code}`)
+    .digest("hex");
+}
+
 export function hashParentAccessCode(code: string): string {
   return bcrypt.hashSync(code, 10);
 }

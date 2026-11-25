@@ -97,10 +97,11 @@ Phone number alone is never a credential. The mobile sub-mode always requires sc
 2. PACs are created by `findOrCreateUser`, seed, and an idempotent backfill job.
 3. Store only:
    - `codeHash` — bcrypt for verification.
-   - `codeLookupHash` — HMAC-SHA256 for indexed lookup.
+   - `codeLookupHash` — HMAC-SHA256 for legacy school-scoped lookup.
+   - `globalLookupHash` — unique HMAC-SHA256 for code-only lookup.
 4. The plaintext code is returned once and optionally emailed/SMSed.
 5. Admin can regenerate a PAC. Regeneration invalidates the old code immediately and clears counters/locks.
-6. PAC login requires `schoolSlug`; the lookup hash is unique globally and the resolved row's school is verified against the slug.
+6. PAC login requires only `code`; the unique `globalLookupHash` resolves the parent and school. Existing school-scoped hashes remain as a legacy fallback; ambiguous legacy duplicates must be regenerated (`npm run parent-access:backfill -- --regenerate-all`) before code-only sign-in is enabled for those parents.
 7. PAC replaces the password factor only. If school MFA policy requires/challenges PARENT, the existing MFA step still runs after PAC.
 
 ### 3.2 Phone sign-in
@@ -128,6 +129,7 @@ model ParentAccessCode {
   schoolId           String
   codeHash           String
   codeLookupHash     String    @unique
+  globalLookupHash   String?   @unique
   codeHint           String
   secretVersion      Int       @default(1)
   issuedAt           DateTime  @default(now())
@@ -152,7 +154,8 @@ Back-relations:
 
 Rules:
 
-- `codeLookupHash = HMAC-SHA256(PARENT_PAC_SECRET, secretVersion + ":" + schoolId + ":" + code)`.
+- `codeLookupHash = HMAC-SHA256(PARENT_PAC_SECRET, secretVersion + ":" + schoolId + ":" + code)` (legacy indexed lookup).
+- `globalLookupHash = HMAC-SHA256(PARENT_PAC_SECRET, "global:" + secretVersion + ":" + code)`; unique, and resolves the parent/school without a client-supplied slug.
 - `codeHash = bcrypt(code, 10)`.
 - `codeHint` is at most `••••42`.
 - Retry generation on the rare unique-hash collision.
@@ -260,7 +263,8 @@ Create `services/identity/src/domain/parentAccess.ts`.
 Functions:
 
 - `generateParentAccessCode()` — `crypto.randomInt(0, 1_000_000)`, zero-padded.
-- `makeParentAccessLookupHash(schoolId, code, secretVersion)` — HMAC-SHA256.
+- `makeParentAccessLookupHash(schoolId, code, secretVersion)` — legacy school-scoped HMAC-SHA256.
+- `makeParentAccessGlobalLookupHash(code, secretVersion)` — unique code-only HMAC-SHA256.
 - `hashParentAccessCode(code)` / `verifyParentAccessCode(code, hash)` — bcrypt cost 10.
 - `maskParentAccessCode(code)`.
 - `normalizePhone(input, defaultCountryCode?)` — E.164.
@@ -317,7 +321,7 @@ Files: `services/identity/src/routes/authRoutes.ts:16-56`, `services/identity/sr
 Schemas:
 
 ```ts
-accessCodeLoginSchema   // { schoolSlug, code /^\d{6}$/ }
+accessCodeLoginSchema   // { code /^\d{6}$/ }
 phoneCodeSendSchema     // { schoolSlug, phone }
 phoneLoginSchema        // { schoolSlug, phone, code /^\d{6}$/ }
 ```
@@ -334,8 +338,8 @@ Routes:
 Rules:
 
 - Check global `PARENT_PHONE_LOGIN_ENABLED` in send-code and login.
-- Resolve `schoolId` from `schoolSlug` first; never trust a client-supplied school ID.
-- PAC lookup: HMAC index → verify bcrypt → verify row school matches slug → verify `user.role === "PARENT"` → check active/school gates.
+- Access-code login accepts only `code`; it must resolve exactly one non-revoked code row and derive both user and school from that row.
+- PAC lookup: unique `globalLookupHash` → legacy school-scoped HMAC fallback for older rows → verify bcrypt → verify `user.role === "PARENT"` → check active/school gates.
 - Phone lookup: `(schoolId, phoneE164)` → `enabled && verifiedAt` → verify challenge with `scopeKey = schoolId` → gates.
 - Generic failure before credential verification: `INVALID_CREDENTIALS`.
 - After valid credential/code, explicit `CODE_EXPIRED` / `TOO_MANY_ATTEMPTS` are acceptable.
@@ -346,7 +350,7 @@ Gateway: `/api/auth/*` already routes to Identity and bypasses API-key auth (`se
 ### 6.3 Rate limits and lockout
 
 - Account-level counters in `ParentAccessCode` / `ParentPhoneLogin` are authoritative: 5 failed attempts / 15m, then 15m lock.
-- PAC IP limiter: HMAC(`ip|schoolSlug`), because code rotation would weaken a code-based key.
+- PAC IP limiter: HMAC(`ip`) only; an attacker-controlled code must not select the rate-limit bucket.
 - Phone send limiter: HMAC(`ip|schoolSlug|phoneHash`), 3 codes / 10m with 60s cooldown.
 - Phone login limiter: HMAC(`ip|schoolSlug|phoneHash`), 5 / 15m.
 - `keyFn` stays synchronous and pure; its result is logged on 429 (`services/identity/src/middleware/rateLimit.ts:53,78,116`), so never include raw code/phone.
@@ -477,10 +481,8 @@ Layout:
 
 **Tab 2 — Parent code**
 
-- School field in both sub-modes:
-  - Prefill from `hostSchool` (`Login.tsx:51-73`) or `?school=` query param.
-  - Editable because parents may use a generic domain.
-  - Store `schoolSlug`, submit as `schoolSlug`.
+- `6-digit code` sub-mode needs only the access code; the school is resolved from the unique code.
+- `Mobile number` sub-mode keeps the school field (prefilled from `hostSchool`) because phone login is school-scoped.
 - Sub-selector: `6-digit code` / `Mobile number`.
 - `6-digit code` form:
   - Label: “Parent access code”.
@@ -596,7 +598,7 @@ Required events:
 - `parent_phone_login_success` / `_failed`
 - `parent_login_lockout_reset`
 
-Never log raw code/OTP. Extend logger redaction (`services/identity/src/utils/logger.ts:48-52`) for `code`, `accessCode`, `parentAccessCode`, `codeLookupHash`, `phoneE164`. Use `SECRET`/`PII` sensitivity correctly (`services/identity/src/domain/auditCategories.ts:47-48`).
+Never log raw code/OTP. Extend logger redaction (`services/identity/src/utils/logger.ts:48-52`) for `code`, `accessCode`, `parentAccessCode`, `codeLookupHash`, `globalLookupHash`, `phoneE164`. Use `SECRET`/`PII` sensitivity correctly (`services/identity/src/domain/auditCategories.ts:47-48`).
 
 ---
 
