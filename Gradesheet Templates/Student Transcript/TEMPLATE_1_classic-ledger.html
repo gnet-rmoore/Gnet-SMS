@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classic Ledger – Learner Academic Record</title>
+<style>
+@page{size:A4;margin:0}
+:root{--ink:#16223b;--mute:#5d667a;--rule:#c3c9d6;--tint:#f1f3f8;--gold:#8a6a1f}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#dfe2e9;font-family:'Source Serif 4','Iowan Old Style','Palatino Linotype',Georgia,serif;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{width:210mm;height:297mm;margin:8mm auto;background:#fff;padding:9mm;box-shadow:0 2px 18px rgba(20,30,60,.18);overflow:hidden}
+.frame{height:100%;border:1.6pt double var(--ink);padding:8mm 9mm 7mm;display:flex;flex-direction:column}
+.head{text-align:center;padding-bottom:4mm;border-bottom:.8pt solid var(--ink);position:relative}
+.logo{width:17mm;height:17mm;border-radius:50%;margin:0 auto 2.5mm;display:grid;place-items:center;border:1pt solid var(--gold);color:var(--gold);font-size:15pt;font-weight:700;overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:cover}
+.school{font-size:20pt;font-weight:700;letter-spacing:.2pt;margin:0}
+.addr{font-size:8.5pt;color:var(--mute);margin-top:1mm}
+.motto{font-style:italic;font-size:8.5pt;color:var(--gold);margin-top:1mm}
+.title{text-align:center;margin:4.5mm 0 4mm}
+.title h2{margin:0;font-size:13.5pt;font-weight:600;font-style:italic}
+.title p{margin:.8mm 0 0;font-size:9pt;color:var(--mute)}
+.meta{display:grid;grid-template-columns:1fr 1fr;column-gap:10mm;row-gap:2mm;margin-bottom:5mm}
+.meta div{display:flex;align-items:baseline;gap:2mm;border-bottom:.5pt dotted #8d95a8;padding-bottom:.7mm;font-size:9.5pt}
+.meta span{color:var(--mute);font-size:8.5pt;white-space:nowrap}
+.meta b{font-weight:600;margin-left:auto;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:9.4pt}
+thead th{padding:1.8mm 1mm;border-top:1.2pt solid var(--ink);border-bottom:1.2pt solid var(--ink);font-weight:700;text-align:center;background:var(--tint);line-height:1.15}
+thead th small{display:block;font-weight:400;font-size:7pt;color:var(--mute)}
+thead th:first-child,tbody td:first-child{text-align:left;padding-left:2mm}
+tbody td{padding:1.5mm 1mm;border-bottom:.5pt solid var(--rule);text-align:center;font-variant-numeric:tabular-nums}
+tbody td.rm{text-align:left;font-style:italic;color:var(--mute);font-size:8.8pt}
+tbody td.sub{font-weight:600}
+tbody td.sub small{display:block;font-weight:400;font-size:7.2pt;color:var(--mute)}
+td.tot,td.gr{font-weight:700}
+tfoot td{padding:2mm 1mm;border-top:1.2pt solid var(--ink);border-bottom:1.2pt solid var(--ink);font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+tfoot td:first-child{text-align:left;padding-left:2mm}
+.empty td{padding:6mm;text-align:center;color:var(--mute);font-style:italic}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);margin:5mm 0 4mm;border:.8pt solid var(--ink)}
+.summary div{padding:2.2mm 3mm;border-right:.5pt solid var(--rule)}
+.summary div:last-child{border-right:0}
+.summary span{display:block;font-size:7.8pt;color:var(--mute)}
+.summary b{font-size:13pt;font-variant-numeric:tabular-nums}
+.key{font-size:7.8pt;color:var(--mute);margin-bottom:4mm;line-height:1.5}
+.key b{color:var(--ink);font-weight:600}
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.note{border:.6pt solid var(--rule);padding:2.4mm 3mm;min-height:20mm;font-size:8.8pt}
+.note h4{margin:0 0 1mm;font-size:8.5pt;color:var(--gold);font-weight:700}
+.note p{margin:0;line-height:1.4}
+.foot{margin-top:auto;padding-top:4mm}
+.sigs{display:flex;gap:8mm;align-items:flex-end}
+.sig{flex:1;text-align:center;font-size:8.3pt}
+.sig .ln{height:11mm;border-bottom:.7pt solid var(--ink);display:flex;align-items:flex-end;justify-content:center}
+.sig .ln img{max-height:10mm}
+.sig small{color:var(--mute)}
+.stamp{width:24mm;height:24mm;border:.6pt dashed var(--rule);border-radius:50%;display:grid;place-items:center;font-size:7pt;color:var(--rule)}
+.issued{text-align:center;font-size:7.5pt;color:var(--mute);margin-top:3mm}
+.compact .logo{width:13mm;height:13mm;margin-bottom:1.5mm;font-size:12pt}.compact .head{padding-bottom:2.5mm}.compact .title{margin:3mm 0 2.5mm}.compact .meta{margin-bottom:3mm}
+.compact tbody td{padding:.9mm 1mm}.compact .summary{margin:3mm 0 2.5mm}.compact .key{margin-bottom:2.5mm}.compact .note{min-height:13mm}.compact .foot{padding-top:2mm}.compact .sig .ln{height:8mm}.compact .stamp{width:18mm;height:18mm}
+.tight tbody td{padding:.85mm 1mm;font-size:9pt}.tight tbody td.sub small{display:none}.tight .note{min-height:10mm}.tight .school{font-size:17pt}
+@media print{body{background:#fff}.sheet{margin:0;box-shadow:none}}
+</style>
+</head>
+<body>
+<div id="sheet-root"></div>
+<script>
+/* ---- Data contract: see GradeSheetData.ts. Any missing field renders as "—" (nothing is invented). ---- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=x=>x==null||x===''?'—':esc(x);
+const n=(x,d=1)=>x==null||isNaN(x)?'—':String(+Number(x).toFixed(d));
+const total=(s,cols)=>{if(s.total!=null)return s.total;let w=0,t=0;for(const c of cols){const x=s.scores&&s.scores[c.code];if(x!=null){t+=x*c.weightPct;w+=c.weightPct}}return w?t/w:null};
+const band=(p,lg)=>p==null?null:(lg||[]).find(b=>Math.round(p)>=b.min&&Math.round(p)<=b.max);
+
+function renderGradeSheet(d,root=document.getElementById('sheet-root')){
+  const sc=d.school||{},tm=d.term||{},st=d.student||{},cols=d.columns||[],lg=d.legend||[],subs=d.subjects||[],sm=d.summary||{},at=d.attendance,rm=d.remarks||{};
+  const rows=subs.map(s=>({s,t:total(s,cols)}));
+  const avg=sm.average!=null?sm.average:(()=>{const a=rows.filter(r=>r.t!=null);return a.length?a.reduce((x,r)=>x+r.t,0)/a.length:null})();
+  const hasPos=subs.some(s=>s.position!=null);
+  const initials=(sc.name||'').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'—';
+  const colHead=cols.map(c=>`<th title="${esc(c.name)}">${esc(c.code)}<small>${n(c.weightPct,0)}%</small></th>`).join('');
+  const body=rows.length?rows.map(({s,t})=>{
+    const b=band(t,lg),letter=s.letter??(b&&b.letter),remark=s.remark??(b&&b.remark);
+    return `<tr><td class="sub">${esc(s.name)}${s.code?`<small>${esc(s.code)}</small>`:''}</td>
+      ${cols.map(c=>`<td>${n(s.scores&&s.scores[c.code])}</td>`).join('')}
+      <td class="tot">${n(t)}</td><td class="gr">${v(letter)}</td>${hasPos?`<td>${v(s.position)}</td>`:''}<td class="rm">${v(remark)}</td></tr>`}).join('')
+    :`<tr class="empty"><td colspan="${cols.length+4+(hasPos?1:0)}">No released grades for this period yet.</td></tr>`;
+  const att=at&&(at.present!=null||at.total!=null)?`${n(at.present,0)} / ${n(at.total,0)} days`:'—';
+  const key=lg.length?lg.map(b=>`<b>${esc(b.letter)}</b> ${b.min}–${b.max}`).join(' &nbsp;·&nbsp; '):'';
+  const sigs=(d.signatures&&d.signatures.length?d.signatures:[{role:'Class educator'},{role:'Principal'}])
+    .map(g=>`<div class="sig"><div class="ln">${g.imageUrl?`<img src="${esc(g.imageUrl)}" alt="">`:''}</div>${g.name?esc(g.name)+'<br>':''}<small>${esc(g.role)}</small></div>`).join('');
+  root.innerHTML=`<section class="sheet"><div class="frame">
+  <header class="head"><div class="logo">${sc.logoUrl?`<img src="${esc(sc.logoUrl)}" alt="">`:esc(initials)}</div>
+    <h1 class="school">${v(sc.name)}</h1><div class="addr">${[sc.address,sc.phone,sc.email].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')||'—'}</div>
+    ${sc.motto?`<div class="motto">${esc(sc.motto)}</div>`:''}</header>
+  <div class="title"><h2>Learner Academic Record</h2><p>${v(tm.periodLabel)} &nbsp;–&nbsp; ${v(tm.schoolYear)}</p></div>
+  <div class="meta"><div><span>Learner</span><b>${v(st.name)}</b></div><div><span>Learner ID</span><b>${v(st.id)}</b></div>
+    <div><span>Class</span><b>${v(st.className)}</b></div><div><span>Grade level</span><b>${v(st.gradeLevel)}</b></div></div>
+  <table><thead><tr><th>Subject</th>${colHead}<th>Total<small>%</small></th><th>Grade</th>${hasPos?'<th>Pos.</th>':''}<th style="text-align:left">Remark</th></tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><td colspan="${cols.length+1}">Overall average</td><td>${n(avg)}</td><td>${v((band(avg,lg)||{}).letter)}</td>${hasPos?'<td></td>':''}<td></td></tr></tfoot></table>
+  <div class="summary"><div><span>Position in class</span><b>${sm.rank!=null?`${esc(sm.rank)}${sm.classSize?` of ${esc(sm.classSize)}`:''}`:'—'}</b></div>
+    <div><span>GPA</span><b>${n(sm.gpa,2)}</b></div><div><span>Attendance</span><b style="font-size:11pt">${att}</b></div>
+    <div><span>Promotion</span><b style="font-size:11pt">${v(sm.promotionStatus)}</b></div></div>
+  ${key?`<div class="key">Grading key: ${key}</div>`:''}
+  <div class="notes"><div class="note"><h4>Class educator's remarks</h4><p>${v(rm.educator)}</p></div><div class="note"><h4>Principal's remarks</h4><p>${v(rm.principal)}</p></div></div>
+  <footer class="foot"><div class="sigs">${sigs}<div class="stamp">School stamp</div></div><div class="issued">Issued ${v(d.issuedOn)}</div></footer>
+  </div></section>`;
+}
+function fit(root){const sh=root.querySelector('.sheet'),f=sh.querySelector('.frame'),ft=f.querySelector('.foot');sh.classList.remove('compact','tight');
+  const ok=()=>{ft.style.marginTop='0';const r=ft.getBoundingClientRect().bottom<=f.getBoundingClientRect().bottom-parseFloat(getComputedStyle(f).paddingBottom)-4;ft.style.marginTop='';return r};
+  for(const c of ['compact','tight']){if(ok())break;sh.classList.add(c)}}
+const _render=renderGradeSheet;
+renderGradeSheet=function(d,root=document.getElementById('sheet-root')){_render(d,root);fit(root)};
+window.renderGradeSheet=renderGradeSheet;
+
+/* ---- Sample data (fictional) – replaced when the host app sets window.__GRADESHEET_DATA__ ---- */
+const SAMPLE={school:{name:'Greenfield Academy',address:'12 Tubman Boulevard, Monrovia, Liberia',phone:'+231 77 000 0000',email:'office@greenfield.example',motto:'Knowledge with integrity'},
+term:{periodLabel:'First Term',schoolYear:'2026/2027'},student:{name:'Grace K. Johnson',id:'GA-2026-0142',className:'Grade 9 – A',gradeLevel:'Grade 9'},
+columns:[{code:'HW',name:'Homework',weightPct:20},{code:'QZ',name:'Quiz',weightPct:20},{code:'CW',name:'Classwork',weightPct:10},{code:'MID',name:'Midterm',weightPct:20},{code:'FIN',name:'Final',weightPct:30}],
+legend:[{min:90,max:100,letter:'A',remark:'Excellent'},{min:80,max:89,letter:'B',remark:'Very good'},{min:70,max:79,letter:'C',remark:'Good'},{min:60,max:69,letter:'D',remark:'Satisfactory'},{min:0,max:59,letter:'F',remark:'Needs improvement'}],
+subjects:[['Mathematics','MTH',[92,88,95,84,90]],['English Language','ENG',[85,90,88,78,82]],['General Science','SCI',[78,82,80,74,77]],['Social Studies','SOC',[88,84,90,81,86]],['Civics','CIV',[95,92,94,89,91]],['French','FRN',[70,66,72,64,68]],['Computer Studies','ICT',[96,94,98,90,93]],['Physical Education','PE',[98,95,100,92,96]]]
+ .map(([name,code,x])=>({name,code,scores:{HW:x[0],QZ:x[1],CW:x[2],MID:x[3],FIN:x[4]}})),
+summary:{rank:4,classSize:38,gpa:3.4,promotionStatus:null},attendance:{present:58,total:62},
+remarks:{educator:'Grace works consistently and contributes thoughtfully in class. Extra practice in French vocabulary will lift her next result.',principal:null},
+signatures:[{role:'Class educator'},{role:'Principal'}],issuedOn:'16 November 2026'};
+renderGradeSheet(window.__GRADESHEET_DATA__||SAMPLE);
+</script>
+</body>
+</html>

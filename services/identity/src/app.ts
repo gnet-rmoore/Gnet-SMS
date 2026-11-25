@@ -8,6 +8,7 @@ import schoolRoutes from "./routes/schoolRoutes";
 import superAdminRoutes from "./routes/superAdminRoutes";
 import apiKeyRoutes from "./routes/apiKeyRoutes";
 import publicRoutes from "./routes/publicRoutes";
+import parentAccessRoutes from "./routes/parentAccessRoutes";
 import prisma from "./lib/prisma";
 
 const app = express();
@@ -33,6 +34,7 @@ app.get("/health/ready", async (_req, res) => {
 app.use(publicRoutes);
 app.use(authRoutes);
 app.use(userRoutes);
+app.use(parentAccessRoutes);
 app.use(apiKeyRoutes);
 app.use(schoolRoutes);
 app.use(superAdminRoutes);

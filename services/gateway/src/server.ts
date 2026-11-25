@@ -63,6 +63,8 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   users: "identity",
   "role-audit": "identity",
   "role-capabilities": "identity",
+  "parent-phone-login-requests": "identity",
+  "parent-access": "identity",
   "admission-policy": "identity",
   "admission-background": "identity",
   setup: "identity",
@@ -188,7 +190,15 @@ export function resolveUpstream(method: string, path: string): string | null {
   if (path === "/api/webhooks/platform-stripe" || hasPrefix(path, "/api/webhooks/platform-stripe")) {
     return urlFor("identity");
   }
-  if (hasAnyPrefix(path, ["/api/public", "/api/users", "/api/parents", "/api/super-admin"])) {
+  if (
+    hasAnyPrefix(path, [
+      "/api/public",
+      "/api/users",
+      "/api/parents",
+      "/api/parent-phone-login-requests",
+      "/api/super-admin",
+    ])
+  ) {
     return urlFor("identity");
   }
 

@@ -1,7 +1,15 @@
 import { api } from "../../services/api";
 
+export type PtaParentOption = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export const ptaApi = {
   getHome: (schoolId: string) => api.get(`/api/schools/${schoolId}/pta`),
+  listParentOptions: (schoolId: string) =>
+    api.get(`/api/schools/${schoolId}/pta/parents`) as Promise<PtaParentOption[]>,
   upsert: (
     schoolId: string,
     data: { name?: string; description?: string | null; enabled?: boolean }

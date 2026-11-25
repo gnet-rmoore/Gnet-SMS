@@ -56,6 +56,15 @@ assert(mapKeys.has("fees"), "map includes fees → finance");
 assert(mapKeys.has("fee-payment-txns"), "map includes fee-payment-txns → finance");
 assert(mapKeys.has("fee-billing-settings"), "map includes fee-billing-settings → finance");
 assert(mapKeys.has("receipt-template"), "map includes receipt-template → identity");
+assert(mapKeys.has("parent-access"), "map includes parent-access → identity");
+assert(
+  mapKeys.has("parent-phone-login-requests"),
+  "map includes parent-phone-login-requests → identity"
+);
+assert(
+  gatewaySrc.includes('"/api/parent-phone-login-requests"'),
+  "gateway routes parent review endpoints to identity"
+);
 
 const missing: string[] = [];
 for (const s of fromRoutes) {

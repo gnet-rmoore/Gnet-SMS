@@ -29,6 +29,14 @@ router.put(
   ptaController.upsertPta
 );
 
+router.get(
+  "/api/schools/:schoolId/pta/parents",
+  authenticate,
+  requireTenant,
+  requireRoles(PTA_ADMIN),
+  ptaController.listParentOptions
+);
+
 router.post(
   "/api/schools/:schoolId/pta/officers",
   authenticate,

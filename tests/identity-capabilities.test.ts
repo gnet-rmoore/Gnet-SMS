@@ -61,5 +61,15 @@ assert(accountantDefaults.includes("action.settings.templates"), "accountant can
 
 assert(isKnownCapability("action.schedules.manage"), "schedules.manage is known");
 assert(isKnownCapability("nav.student-records"), "student-records is known");
+assert(isKnownCapability("action.parent_access.manage"), "parent_access.manage is known");
+assert(isKnownCapability("nav.parent-access"), "nav.parent-access is known");
+for (const role of ["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "IT_ADMIN"]) {
+  const defaults = DEFAULT_ROLE_CAPABILITIES[role] || [];
+  assert(
+    defaults.includes("action.parent_access.manage"),
+    `${role} can manage parent access`
+  );
+  assert(defaults.includes("nav.parent-access"), `${role} has parent access nav`);
+}
 
 summary("identity-capabilities");

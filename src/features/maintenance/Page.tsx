@@ -6,8 +6,13 @@ import { useAuthStore } from "../../store/authStore";
 import { confirmAction } from "../../lib/swal";
 import { useMaintenanceQuery } from "./hooks/useMaintenanceQuery";
 import { maintenanceApi } from "./api";
-import { WorkOrderModal } from "./components/WorkOrderModal";
-import { InventoryModal } from "./components/InventoryModal";
+import { WorkOrderModal, type WorkOrderForm } from "./components/WorkOrderModal";
+import { InventoryModal, type InventoryForm } from "./components/InventoryModal";
+import {
+  InventoryActionModal,
+  type InventoryMovementRecord,
+  type InventoryRecord,
+} from "./components/InventoryActionModal";
 import { DashboardTab } from "./components/DashboardTab";
 import { WorkOrdersTab } from "./components/WorkOrdersTab";
 import { InventoryTab } from "./components/InventoryTab";
@@ -30,19 +35,44 @@ const TAB_TO_QUERY: Record<HubTab, string> = {
   INVENTORY: "inventory",
 };
 
-const emptyWoForm = () => ({
+const emptyWoForm = (): WorkOrderForm => ({
   title: "",
   description: "",
+  requestType: "REPAIR",
   priority: "MEDIUM",
+  impact: "MEDIUM",
   location: "",
+  building: "",
+  room: "",
+  dueAt: "",
+  safetyRelated: false,
+  safetyNotes: "",
+  accessNotes: "",
+  estimatedCost: "",
+  inventoryItemId: "",
+  assignedTo: "",
 });
 
-const emptyInvForm = () => ({
+const emptyInvForm = (): InventoryForm => ({
+  itemType: "CONSUMABLE",
   name: "",
+  sku: "",
+  description: "",
   category: "HVAC",
   quantity: "",
   unit: "pcs",
-  minQuantity: "",
+  minQuantity: "5",
+  location: "",
+  supplier: "",
+  unitCost: "",
+  manufacturer: "",
+  model: "",
+  serialNumber: "",
+  assetTag: "",
+  condition: "GOOD",
+  purchaseDate: "",
+  warrantyExpiresAt: "",
+  notes: "",
 });
 
 export const Maintenance = () => {
@@ -76,6 +106,11 @@ export const Maintenance = () => {
   const [showWorkOrderModal, setShowWorkOrderModal] = useState(false);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedInventoryItem, setSelectedInventoryItem] =
+    useState<InventoryRecord | null>(null);
+  const [inventoryHistory, setInventoryHistory] = useState<InventoryMovementRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -86,6 +121,7 @@ export const Maintenance = () => {
   const [woStatusFilter, setWoStatusFilter] = useState("ALL");
   const [woPriorityFilter, setWoPriorityFilter] = useState("ALL");
   const [invCategoryFilter, setInvCategoryFilter] = useState("ALL");
+  const [invTypeFilter, setInvTypeFilter] = useState("ALL");
   const [invSearch, setInvSearch] = useState("");
 
   useEffect(() => {
@@ -95,13 +131,16 @@ export const Maintenance = () => {
     else setSelectedOrder(null);
   }, [workOrders]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const canManage = [
+  const canManageWorkOrders = [
     "SCHOOL_ADMIN",
     "PRINCIPAL",
     "VPA",
     "MAINTENANCE",
-    "SUPER_ADMIN",
   ].includes(user?.role || "");
+
+  const canCreateInventory = ["SCHOOL_ADMIN", "PROCUREMENT", "IT_ADMIN"].includes(
+    user?.role || ""
+  );
 
   const technicians = staff.filter(
     (s) =>
@@ -131,8 +170,21 @@ export const Maintenance = () => {
       await maintenanceApi.createWorkOrder(school.id, {
         title: workOrderForm.title.trim(),
         description: workOrderForm.description.trim(),
+        requestType: workOrderForm.requestType,
         priority: workOrderForm.priority,
+        impact: workOrderForm.impact,
         location: workOrderForm.location.trim(),
+        building: workOrderForm.building.trim(),
+        room: workOrderForm.room.trim(),
+        dueAt: workOrderForm.dueAt
+          ? new Date(workOrderForm.dueAt).toISOString()
+          : null,
+        safetyRelated: workOrderForm.safetyRelated,
+        safetyNotes: workOrderForm.safetyNotes.trim(),
+        accessNotes: workOrderForm.accessNotes.trim(),
+        estimatedCost: workOrderForm.estimatedCost || null,
+        inventoryItemId: workOrderForm.inventoryItemId || null,
+        assignedTo: workOrderForm.assignedTo || null,
       });
       setShowWorkOrderModal(false);
       setWorkOrderForm(emptyWoForm());
@@ -212,11 +264,25 @@ export const Maintenance = () => {
     setSubmitting(true);
     try {
       await maintenanceApi.createInventory(school.id, {
+        itemType: inventoryForm.itemType,
         name: inventoryForm.name.trim(),
+        sku: inventoryForm.sku.trim(),
+        description: inventoryForm.description.trim(),
         category: inventoryForm.category,
-        quantity: inventoryForm.quantity,
+        quantity: inventoryForm.itemType === "ASSET" ? 1 : inventoryForm.quantity,
         unit: inventoryForm.unit || "pcs",
-        minQuantity: inventoryForm.minQuantity || "0",
+        minQuantity: inventoryForm.itemType === "ASSET" ? 0 : inventoryForm.minQuantity,
+        location: inventoryForm.location.trim(),
+        supplier: inventoryForm.supplier.trim(),
+        unitCost: inventoryForm.unitCost || null,
+        manufacturer: inventoryForm.manufacturer.trim(),
+        model: inventoryForm.model.trim(),
+        serialNumber: inventoryForm.serialNumber.trim(),
+        assetTag: inventoryForm.assetTag.trim(),
+        condition: inventoryForm.condition,
+        purchaseDate: inventoryForm.purchaseDate || null,
+        warrantyExpiresAt: inventoryForm.warrantyExpiresAt || null,
+        notes: inventoryForm.notes.trim(),
       });
       setShowInventoryModal(false);
       setInventoryForm(emptyInvForm());
@@ -230,14 +296,76 @@ export const Maintenance = () => {
     }
   };
 
-  const handleRestockInventory = async (item: any, amount: number) => {
-    const newQty = Math.max(0, Number(item.quantity) + amount);
+  const loadInventoryHistory = async (itemId: string) => {
+    setHistoryLoading(true);
+    setHistoryError(null);
     try {
-      await maintenanceApi.updateInventory(item.id, { quantity: newQty });
-      showToast(t("facilities.toast.inventoryUpdated", { name: item.name }), "success");
-      refetch();
+      const history = await maintenanceApi.fetchInventoryMovements(itemId);
+      if (!Array.isArray(history)) throw new Error("Invalid inventory history response");
+      setInventoryHistory(history);
     } catch (err: any) {
-      showToast(err?.message || t("facilities.toast.inventoryUpdateFailed"), "error");
+      setInventoryHistory([]);
+      setHistoryError(err?.message || "Failed to load inventory history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleOpenInventoryItem = (item: InventoryRecord) => {
+    setSelectedInventoryItem(item);
+    setInventoryHistory([]);
+    void loadInventoryHistory(item.id);
+  };
+
+  const handleMoveInventoryStock = async (
+    item: InventoryRecord,
+    data: {
+      movementType: string;
+      quantity?: string;
+      quantityDelta?: number;
+      reason: string;
+      reference: string;
+      unitCost: string;
+    }
+  ) => {
+    setSubmitting(true);
+    try {
+      const result = await maintenanceApi.createInventoryMovement(item.id, {
+        ...data,
+        quantity: data.quantity ? Number(data.quantity) : undefined,
+        unitCost: data.unitCost || null,
+      });
+      if (result?.item) setSelectedInventoryItem(result.item);
+      showToast(`Stock movement recorded for ${item.name}`, "success");
+      await refetch();
+      await loadInventoryHistory(item.id);
+    } catch (err: any) {
+      showToast(err?.message || "Failed to record stock movement", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateInventoryAsset = async (
+    item: InventoryRecord,
+    data: {
+      assignedTo: string | null;
+      assetStatus: string;
+      condition: string;
+      reason: string;
+    }
+  ) => {
+    setSubmitting(true);
+    try {
+      const updatedItem = await maintenanceApi.updateInventory(item.id, data);
+      if (updatedItem?.id) setSelectedInventoryItem(updatedItem);
+      showToast(`Asset record updated for ${item.name}`, "success");
+      await refetch();
+      await loadInventoryHistory(item.id);
+    } catch (err: any) {
+      showToast(err?.message || "Failed to update asset", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -260,10 +388,15 @@ export const Maintenance = () => {
     const matchSearch =
       !q ||
       item.name.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q);
+      item.category.toLowerCase().includes(q) ||
+      String(item.sku || "").toLowerCase().includes(q) ||
+      String(item.assetTag || "").toLowerCase().includes(q) ||
+      String(item.serialNumber || "").toLowerCase().includes(q) ||
+      String(item.location || "").toLowerCase().includes(q);
     const matchCategory =
       invCategoryFilter === "ALL" || item.category === invCategoryFilter;
-    return matchSearch && matchCategory;
+    const matchType = invTypeFilter === "ALL" || item.itemType === invTypeFilter;
+    return matchSearch && matchCategory && matchType;
   });
 
   const openWOs = workOrders.filter((o) => o.status === "OPEN").length;
@@ -287,13 +420,19 @@ export const Maintenance = () => {
     { id: "WORK_ORDERS" as const, label: t("facilities.tabs.workOrders"), icon: Wrench },
     { id: "INVENTORY" as const, label: t("facilities.tabs.inventory"), icon: Package },
   ];
+  const workOrderAssets = inventory.filter(
+    (item) =>
+      item.itemType === "ASSET" &&
+      !["RETIRED", "LOST"].includes(item.assetStatus || "")
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
       <PageToast toast={toast} />
 
       <MaintenanceChrome
-        canManage={canManage}
+        canCreateInventory={canCreateInventory}
+        canManageWorkOrders={canManageWorkOrders}
         loading={loading}
         onAddInventory={() => {
           setInventoryForm(emptyInvForm());
@@ -349,7 +488,7 @@ export const Maintenance = () => {
 
       {activeTab === "WORK_ORDERS" && (
         <WorkOrdersTab
-          canManage={canManage}
+          canManage={canManageWorkOrders}
           filteredWorkOrders={filteredWorkOrders}
           handleAssignTechnician={handleAssignTechnician}
           handleUpdateStatus={handleUpdateStatus}
@@ -368,14 +507,16 @@ export const Maintenance = () => {
 
       {activeTab === "INVENTORY" && (
         <InventoryTab
-          canManage={canManage}
+          canCreate={canCreateInventory}
           filteredInventory={filteredInventory}
-          handleRestockInventory={handleRestockInventory}
           invCategoryFilter={invCategoryFilter}
           invSearch={invSearch}
+          invTypeFilter={invTypeFilter}
           loading={loading}
+          onManageItem={handleOpenInventoryItem}
           setInvCategoryFilter={setInvCategoryFilter}
           setInvSearch={setInvSearch}
+          setInvTypeFilter={setInvTypeFilter}
           setShowInventoryModal={(open) => {
             if (open) setInventoryForm(emptyInvForm());
             setShowInventoryModal(open);
@@ -386,10 +527,12 @@ export const Maintenance = () => {
       <AnimatePresence>
         {showWorkOrderModal && (
           <WorkOrderModal
+            assets={workOrderAssets}
             handleCreateWorkOrder={handleCreateWorkOrder}
             setShowWorkOrderModal={setShowWorkOrderModal}
             setWorkOrderForm={setWorkOrderForm}
             submitting={submitting}
+            technicians={technicians}
             workOrderForm={workOrderForm}
           />
         )}
@@ -408,9 +551,25 @@ export const Maintenance = () => {
       </AnimatePresence>
 
       <AnimatePresence>
+        {selectedInventoryItem && (
+          <InventoryActionModal
+            history={inventoryHistory}
+            historyError={historyError}
+            historyLoading={historyLoading}
+            item={selectedInventoryItem}
+            onClose={() => setSelectedInventoryItem(null)}
+            onMoveStock={handleMoveInventoryStock}
+            onUpdateAsset={handleUpdateInventoryAsset}
+            staff={staff.filter((member) => member.isActive !== false)}
+            submitting={submitting}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {selectedOrder && (
           <HubWorkOrderDrawer
-            canManage={canManage}
+            canManage={canManageWorkOrders}
             handleAssignTechnician={handleAssignTechnician}
             handleUpdateStatus={handleUpdateStatus}
             selectedOrder={selectedOrder}

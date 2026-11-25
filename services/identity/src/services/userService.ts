@@ -19,6 +19,7 @@ import {
 } from "../domain/guideProgress";
 import { emailAuthService } from "./emailAuthService";
 import { assertStudentQuota, assertStaffQuota } from "../lib/quotaEnforcement";
+import { parentAccessService } from "./parentAccessService";
 
 function withParentEmail<T extends { parents?: Array<{ parent: { email: string } }> }>(row: T) {
   const { parents, ...rest } = row;
@@ -478,9 +479,15 @@ export const userService = {
   },
 
   /** Internal — users in a school filtered by role list (announcement fan-out, etc.). */
-  async getUsersByRoles(schoolId: string, roles: string[]) {
+  async getUsersByRoles(
+    schoolId: string,
+    roles: string[],
+    paging?: { limit: number; offset: number }
+  ) {
     const cleaned = [...new Set(roles.map((r) => String(r || "").trim()).filter(Boolean))];
     if (cleaned.length === 0) return [];
+    const limit = paging ? Math.min(Math.max(Math.floor(paging.limit), 1), 500) : 2000;
+    const offset = paging ? Math.max(Math.floor(paging.offset), 0) : 0;
     return prisma.user.findMany({
       where: {
         schoolId,
@@ -488,7 +495,54 @@ export const userService = {
         role: { in: cleaned },
       },
       select: { id: true, name: true, email: true, role: true, schoolId: true },
-      take: 2000,
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      ...(paging ? { skip: offset } : {}),
+      take: limit,
+    });
+  },
+
+  /** Internal — active parents assigned to, or linked to students in, a school. */
+  async getParentsForSchool(
+    schoolId: string,
+    paging?: { limit: number; offset: number }
+  ) {
+    const limit = paging ? Math.min(Math.max(Math.floor(paging.limit), 1), 500) : 2000;
+    const offset = paging ? Math.max(Math.floor(paging.offset), 0) : 0;
+    return prisma.user.findMany({
+      where: {
+        role: "PARENT",
+        isActive: true,
+        OR: [
+          { schoolId },
+          {
+            schoolId: null,
+            children: { some: { student: { schoolId, role: "STUDENT" } } },
+          },
+        ],
+      },
+      select: { id: true, name: true, email: true, role: true, schoolId: true, isActive: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      ...(paging ? { skip: offset } : {}),
+      take: limit,
+    });
+  },
+
+  /** Internal — resolve an active parent only when they belong to the requested school. */
+  async getParentForSchool(schoolId: string, parentId: string) {
+    return prisma.user.findFirst({
+      where: {
+        id: parentId,
+        role: "PARENT",
+        isActive: true,
+        OR: [
+          { schoolId },
+          {
+            schoolId: null,
+            children: { some: { student: { schoolId, role: "STUDENT" } } },
+          },
+        ],
+      },
+      select: { id: true, name: true, email: true, role: true, schoolId: true, isActive: true },
     });
   },
 
@@ -863,6 +917,10 @@ export const userService = {
   }) {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) {
+      const parentAccess =
+        existing.role === "PARENT" && data.schoolId
+          ? await parentAccessService.ensureParentAccessCode(existing.id, data.schoolId)
+          : null;
       if (
         existing.role === "STUDENT" &&
         data.feeCohort &&
@@ -886,7 +944,11 @@ export const userService = {
               ...(studentIdNumber ? { studentIdNumber } : {}),
             },
           });
-          return { ...updated, created: false };
+          return {
+            ...updated,
+            created: false,
+            parentAccessCode: parentAccess?.code ?? null,
+          };
         }
       }
       if (existing.role === "STUDENT" && existing.schoolId && !existing.studentIdNumber) {
@@ -897,7 +959,11 @@ export const userService = {
         });
         return { ...updated, created: false };
       }
-      return { ...existing, created: false };
+      return {
+        ...existing,
+        created: false,
+        parentAccessCode: parentAccess?.code ?? null,
+      };
     }
 
     if (data.role === "STUDENT") {
@@ -971,15 +1037,29 @@ export const userService = {
       }
     }
 
-    return { ...user, created: true };
+    const parentAccess =
+      data.role === "PARENT" && data.schoolId
+        ? await parentAccessService.ensureParentAccessCode(user.id, data.schoolId)
+        : null;
+
+    return {
+      ...user,
+      created: true,
+      parentAccessCode: parentAccess?.code ?? null,
+    };
   },
 
   async createParentLink(parentId: string, studentId: string) {
     const existingLink = await prisma.parentStudent.findUnique({
       where: { parentId_studentId: { parentId, studentId } },
     });
-    if (existingLink) return existingLink;
-    return prisma.parentStudent.create({ data: { parentId, studentId } });
+    if (existingLink) {
+      await parentAccessService.ensureForStudent(studentId);
+      return existingLink;
+    }
+    const link = await prisma.parentStudent.create({ data: { parentId, studentId } });
+    await parentAccessService.ensureForStudent(studentId);
+    return link;
   },
 
   /**

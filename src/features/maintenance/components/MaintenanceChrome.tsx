@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import { Button } from "../../../components/ui";
 
 export type MaintenanceChromeProps = {
-  canManage: boolean;
+  canCreateInventory: boolean;
+  canManageWorkOrders: boolean;
   loading?: boolean;
   onAddInventory: () => void;
   onNewWorkOrder: () => void;
@@ -18,7 +19,8 @@ export type MaintenanceChromeProps = {
 };
 
 export function MaintenanceChrome({
-  canManage,
+  canCreateInventory,
+  canManageWorkOrders,
   loading,
   onAddInventory,
   onNewWorkOrder,
@@ -69,8 +71,7 @@ export function MaintenanceChrome({
           <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
         </button>
 
-        {canManage && (
-          <>
+        {canCreateInventory && (
             <button
               type="button"
               onClick={onAddInventory}
@@ -79,11 +80,12 @@ export function MaintenanceChrome({
               <Package className="w-4 h-4" />
               {t("facilities.addInventory")}
             </button>
+        )}
+        {canManageWorkOrders && (
             <Button onClick={onNewWorkOrder}>
               <Plus className="w-4 h-4" />
               {t("facilities.newWorkOrder")}
             </Button>
-          </>
         )}
       </div>
     </motion.section>

@@ -13,6 +13,13 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import {
+  generateParentAccessCode,
+  getParentPacSecretVersion,
+  hashParentAccessCode,
+  makeParentAccessLookupHash,
+  maskParentAccessCode,
+} from "../src/domain/parentAccess";
 
 const prisma = new PrismaClient();
 
@@ -149,6 +156,29 @@ async function seedDemo() {
           u.role === "TEACHER" ? `https://i.pravatar.cc/150?u=${u.email}` : null,
       },
     });
+  }
+
+  const parent = await prisma.user.findUnique({
+    where: { email: "parent@yoursms.com" },
+    select: { id: true },
+  });
+  if (parent) {
+    const existing = await prisma.parentAccessCode.findUnique({
+      where: { userId_schoolId: { userId: parent.id, schoolId: school.id } },
+    });
+    if (!existing) {
+      const code = generateParentAccessCode();
+      await prisma.parentAccessCode.create({
+        data: {
+          userId: parent.id,
+          schoolId: school.id,
+          codeHash: hashParentAccessCode(code),
+          codeLookupHash: makeParentAccessLookupHash(school.id, code),
+          codeHint: maskParentAccessCode(code),
+          secretVersion: getParentPacSecretVersion(),
+        },
+      });
+    }
   }
 
   console.log(

@@ -9,12 +9,57 @@ import { getMaintenanceGate } from "./platformOpsService";
 import { emailAuthService } from "./emailAuthService";
 import { getSchoolCommercialContext } from "../lib/quotaEnforcement";
 import { mfaService } from "./mfaService";
+import { parentAccessService } from "./parentAccessService";
+import {
+  isParentPhoneLoginEnabled,
+  makeParentAccessLookupHash,
+  normalizePhone,
+} from "../domain/parentAccess";
 
 function invalidCredentialsError(message = "Invalid credentials") {
   return Object.assign(new Error(message), {
     code: "INVALID_CREDENTIALS",
     status: 401,
   });
+}
+
+async function assertSchoolLoginGates(user: any, school: any) {
+  if (!user.isActive) {
+    throw Object.assign(new Error("Account is inactive"), {
+      code: "ACCOUNT_INACTIVE",
+      status: 403,
+    });
+  }
+  if (!(await emailAuthService.isEmailVerified(user))) {
+    throw Object.assign(
+      new Error("Email not verified. Check your inbox or request a new verification link."),
+      { code: "EMAIL_NOT_VERIFIED", status: 403 }
+    );
+  }
+  const maintenance = await getMaintenanceGate();
+  if (maintenance.maintenanceMode) {
+    throw Object.assign(
+      new Error(maintenance.maintenanceMessage || "Platform is in maintenance mode. Try again later."),
+      { code: "MAINTENANCE_MODE", status: 503 }
+    );
+  }
+  if (school && !isSchoolLoginAllowed(school.status, school.trialEndsAt)) {
+    const trialExpired = isTrialExpired(school.status, school.trialEndsAt);
+    throw Object.assign(
+      new Error(
+        trialExpired
+          ? "Your school's trial has ended. Contact support to upgrade or extend access."
+          : `School access is ${String(school.status).toLowerCase()}. Contact support.`
+      ),
+      {
+        code: trialExpired ? "TRIAL_EXPIRED" : "SCHOOL_SUSPENDED",
+        status: 403,
+        schoolStatus: trialExpired ? "TRIAL_EXPIRED" : school.status,
+        schoolName: school.name,
+        schoolSlug: school.slug,
+      }
+    );
+  }
 }
 
 export const authService = {
@@ -213,6 +258,128 @@ export const authService = {
       entitlements: commercial?.entitlements ?? null,
       quotas: commercial?.quotas ?? null,
     };
+  },
+
+  async completeSchoolLogin(input: {
+    user: any;
+    school: any;
+    authMethod?: string;
+    schoolIdOverride?: string | null;
+  }) {
+    const { user, school } = input;
+    const resolvedSchoolId = input.schoolIdOverride ?? school?.id ?? user.schoolId ?? null;
+    const capabilities = await capabilityService.resolveEffective(resolvedSchoolId, user.role);
+    const commercial = resolvedSchoolId ? await getSchoolCommercialContext(resolvedSchoolId) : null;
+    const accessToken = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        schoolId: resolvedSchoolId,
+        schoolStatus: school?.status || null,
+        capabilities,
+      },
+      getJwtAccessSecret(),
+      { expiresIn: ACCESS_TOKEN_TTL }
+    );
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        photoUrl: user.photoUrl,
+        signatureUrl: user.signatureUrl,
+        phone: user.phone,
+        mustChangePassword: user.mustChangePassword,
+        preferredLocale: user.preferredLocale,
+        emailVerified: Boolean(user.emailVerifiedAt),
+      },
+      school,
+      capabilities,
+      entitlements: commercial?.entitlements ?? null,
+      quotas: commercial?.quotas ?? null,
+    };
+  },
+
+  async parentAccessCodeLogin(schoolSlug: string, code: string) {
+    const school = await parentAccessService.resolveSchoolBySlug(schoolSlug);
+    if (!school) throw invalidCredentialsError();
+    const codeLookupHash = makeParentAccessLookupHash(school.id, code);
+    const row = await prisma.parentAccessCode.findUnique({
+      where: { codeLookupHash },
+      include: { user: true },
+    });
+    if (
+      !row ||
+      row.schoolId !== school.id ||
+      row.revokedAt ||
+      !row.user ||
+      row.user.role !== "PARENT"
+    ) {
+      throw invalidCredentialsError();
+    }
+    await parentAccessService.assertParentInSchool(row.userId, school.id);
+    await parentAccessService.verifyAccessCode(row.userId, school.id, code);
+    await assertSchoolLoginGates(row.user, school);
+    const mfaChallenge = await mfaService.checkLoginMfa(
+      { id: row.user.id, role: row.user.role, school },
+      { authMethod: "ACCESS_CODE", schoolId: school.id, schoolSlug: school.slug }
+    );
+    if (mfaChallenge) return mfaChallenge;
+    return this.completeSchoolLogin({ user: row.user, school, authMethod: "ACCESS_CODE" });
+  },
+
+  async parentPhoneSendCode(schoolSlug: string, phone: string) {
+    if (!isParentPhoneLoginEnabled()) {
+      throw Object.assign(new Error("Parent phone sign-in is disabled"), {
+        code: "PARENT_PHONE_LOGIN_NOT_ALLOWED",
+        status: 403,
+      });
+    }
+    const school = await parentAccessService.resolveSchoolBySlug(schoolSlug);
+    const phoneE164 = normalizePhone(phone);
+    if (!school || !phoneE164) return { ok: true };
+    const row = await parentAccessService.findEnabledPhoneLogin(school.id, phoneE164);
+    if (!row) return { ok: true };
+    try {
+      return await parentAccessService.sendParentPhoneLoginCode(school.id, phoneE164, row.user.email);
+    } catch {
+      return { ok: true };
+    }
+  },
+
+  async parentPhoneLogin(schoolSlug: string, phone: string, code: string) {
+    if (!isParentPhoneLoginEnabled()) {
+      throw Object.assign(new Error("Parent phone sign-in is disabled"), {
+        code: "PARENT_PHONE_LOGIN_NOT_ALLOWED",
+        status: 403,
+      });
+    }
+    const school = await parentAccessService.resolveSchoolBySlug(schoolSlug);
+    const phoneE164 = normalizePhone(phone);
+    if (!school || !phoneE164) throw invalidCredentialsError();
+    const row = await parentAccessService.findEnabledPhoneLogin(school.id, phoneE164);
+    if (!row || row.user.role !== "PARENT") throw invalidCredentialsError();
+    await parentAccessService.assertPhoneLoginAllowed(school);
+    try {
+      await parentAccessService.verifyPhoneLoginCode(row, school.id, code);
+    } catch (err: any) {
+      throw Object.assign(err, {
+        code: err?.code === "TOO_MANY_ATTEMPTS" ? "TOO_MANY_ATTEMPTS" : "PARENT_PHONE_INVALID_OR_EXPIRED",
+      });
+    }
+    const user = await prisma.user.findUnique({ where: { id: row.userId }, include: { school: true } });
+    if (!user) throw invalidCredentialsError();
+    await assertSchoolLoginGates(user, school);
+    return this.completeSchoolLogin({ user, school, authMethod: "PHONE_OTP" });
+  },
+
+  async completeParentAccessCodeMfaLogin(user: any, school: any) {
+    await parentAccessService.assertParentInSchool(user.id, school.id);
+    await assertSchoolLoginGates(user, school);
+    return this.completeSchoolLogin({ user, school, authMethod: "ACCESS_CODE" });
   },
 
   async superAdminLogin(email: string, password: string) {

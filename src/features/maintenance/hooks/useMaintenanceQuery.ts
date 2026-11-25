@@ -38,6 +38,12 @@ function enrichWorkOrders(orders: any[], staff: StaffMember[]) {
     const assignee = o.assignedTo ? byId.get(o.assignedTo) : null;
     return {
       ...o,
+      events: Array.isArray(o.events)
+        ? o.events.map((event: any) => ({
+            ...event,
+            actorName: byId.get(event.actorId)?.name || null,
+          }))
+        : [],
       requester: requester
         ? {
             id: requester.id,
@@ -58,6 +64,42 @@ function enrichWorkOrders(orders: any[], staff: StaffMember[]) {
   });
 }
 
+export async function fetchAllWorkOrders(schoolId: string): Promise<any[]> {
+  const all: any[] = [];
+  let page = 1;
+  let total: number | null = null;
+
+  while (true) {
+    const response: unknown = await maintenanceApi.fetchWorkOrders(schoolId, page, 100);
+    if (Array.isArray(response)) {
+      if (page !== 1) throw new Error("Work-order pagination response changed unexpectedly");
+      return response;
+    }
+    if (response === null || typeof response !== "object" || !("items" in response)) {
+      throw new Error("Invalid work-order response");
+    }
+
+    const pageItems = response.items;
+    const pageTotal = "total" in response ? Number(response.total) : Number.NaN;
+    if (
+      !Array.isArray(pageItems) ||
+      !Number.isSafeInteger(pageTotal) ||
+      pageTotal < 0 ||
+      (total !== null && total !== pageTotal)
+    ) {
+      throw new Error("Invalid work-order pagination response");
+    }
+
+    total = pageTotal;
+    all.push(...pageItems);
+    if (all.length >= total) return all;
+    if (pageItems.length === 0) {
+      throw new Error("Work-order pagination ended before all records were loaded");
+    }
+    page += 1;
+  }
+}
+
 export function useMaintenanceQuery() {
   const schoolId = useAuthStore((s) => s.school?.id);
   const queryClient = useQueryClient();
@@ -67,19 +109,21 @@ export function useMaintenanceQuery() {
     enabled: Boolean(schoolId),
     queryFn: async () => {
       if (!schoolId) throw new Error("Missing school");
-      const [workOrdersRaw, inventoryRaw, staffRaw] = await Promise.all([
-        maintenanceApi.fetchWorkOrders(schoolId),
+      const [workOrders, inventoryRaw, staffRaw] = await Promise.all([
+        fetchAllWorkOrders(schoolId),
         maintenanceApi.fetchInventory(schoolId),
         maintenanceApi.fetchStaff(schoolId),
       ]);
       const staff = normalizeStaff(Array.isArray(staffRaw) ? staffRaw : []);
-      const workOrders = enrichWorkOrders(
-        Array.isArray(workOrdersRaw) ? workOrdersRaw : [],
-        staff
-      );
+      const inventory = Array.isArray(inventoryRaw)
+        ? inventoryRaw.map((item) => ({
+            ...item,
+            assignedToName: staff.find((member) => member.id === item.assignedTo)?.name || null,
+          }))
+        : [];
       return {
-        workOrders,
-        inventory: Array.isArray(inventoryRaw) ? inventoryRaw : [],
+        workOrders: enrichWorkOrders(workOrders, staff),
+        inventory,
         staff,
       };
     },

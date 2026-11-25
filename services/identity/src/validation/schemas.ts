@@ -59,6 +59,39 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const accessCodeLoginSchema = z.object({
+  schoolSlug: z.string().min(1),
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export const phoneCodeSendSchema = z.object({
+  schoolSlug: z.string().min(1),
+  phone: z.string().min(7),
+});
+
+export const phoneLoginSchema = z.object({
+  schoolSlug: z.string().min(1),
+  phone: z.string().min(7),
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export const parentPhoneRequestSchema = z.object({
+  schoolSlug: z.string().min(1),
+  phone: z.string().min(7),
+});
+
+export const parentPhoneCodeSchema = z.object({
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export const parentAccessReviewSchema = z.object({
+  reviewNote: z.string().max(1000).optional(),
+});
+
+export const parentPhoneEnabledSchema = z.object({
+  enabled: z.boolean(),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });

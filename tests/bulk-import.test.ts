@@ -208,7 +208,7 @@ const grades = [
 assert(studentImportTemplateCsv().includes("gradeLevel"), "student template has gradeLevel");
 assert(studentImportTemplateCsv().includes("parentEmail"), "student template has parentEmail");
 assert(staffImportTemplateCsv().includes("role"), "staff template has role");
-assert(BULK_IMPORT_MAX_ROWS === 500, "max rows constant");
+assert(BULK_IMPORT_MAX_ROWS === 1500, "max rows constant");
 
 {
   const csv = credentialsToCsv([
@@ -232,8 +232,8 @@ assert(BULK_IMPORT_MAX_ROWS === 500, "max rows constant");
 }
 
 {
-  const tooMany = validateStudentRows({
-    rows: Array.from({ length: 501 }, (_, i) => ({
+  const atLimit = validateStudentRows({
+    rows: Array.from({ length: BULK_IMPORT_MAX_ROWS }, (_, i) => ({
       name: `S${i}`,
       email: `s${i}@t.com`,
       gradeLevel: "Grade 7",
@@ -241,7 +241,21 @@ assert(BULK_IMPORT_MAX_ROWS === 500, "max rows constant");
     gradeLevels: grades,
     existingEmails: new Set(),
   });
-  assert(tooMany.ok === false, "over 500 rows rejected");
+  assert(atLimit.ok === true, "1500 rows accepted");
+  assert(atLimit.validCount === BULK_IMPORT_MAX_ROWS, "1500 rows all valid");
+}
+
+{
+  const tooMany = validateStudentRows({
+    rows: Array.from({ length: BULK_IMPORT_MAX_ROWS + 1 }, (_, i) => ({
+      name: `S${i}`,
+      email: `s${i}@t.com`,
+      gradeLevel: "Grade 7",
+    })),
+    gradeLevels: grades,
+    existingEmails: new Set(),
+  });
+  assert(tooMany.ok === false, "over 1500 rows rejected");
 }
 
 if (failed) {

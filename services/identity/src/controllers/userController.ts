@@ -111,10 +111,64 @@ export const userController = {
         .split(",")
         .map((r: string) => r.trim())
         .filter(Boolean);
-      const users = await userService.getUsersByRoles(schoolId, roles);
+      const hasPaging = req.query.limit !== undefined || req.query.offset !== undefined;
+      let paging: { limit: number; offset: number } | undefined;
+      if (hasPaging) {
+        const limit = req.query.limit === undefined ? 500 : Number(req.query.limit);
+        const offset = req.query.offset === undefined ? 0 : Number(req.query.offset);
+        if (
+          !Number.isSafeInteger(limit) ||
+          limit < 1 ||
+          limit > 500 ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0
+        ) {
+          return res.status(400).json({ error: "Invalid user pagination" });
+        }
+        paging = { limit, offset };
+      }
+      const users = await userService.getUsersByRoles(schoolId, roles, paging);
       res.json(users);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch users" });
+    }
+  },
+
+  async getParentsForSchoolInternal(req: any, res: any) {
+    const { schoolId } = req.params;
+    try {
+      let paging: { limit: number; offset: number } | undefined;
+      if (req.query.limit != null || req.query.offset != null) {
+        const limit = Number(req.query.limit);
+        const offset = Number(req.query.offset);
+        if (
+          !Number.isSafeInteger(limit) ||
+          limit < 1 ||
+          limit > 500 ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0
+        ) {
+          return res.status(400).json({ error: "Invalid parent pagination" });
+        }
+        paging = { limit, offset };
+      }
+      const parents = await userService.getParentsForSchool(schoolId, paging);
+      res.json(parents);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch parents" });
+    }
+  },
+
+  async getParentForSchoolInternal(req: any, res: any) {
+    try {
+      const parent = await userService.getParentForSchool(
+        req.params.schoolId,
+        req.params.parentId
+      );
+      if (!parent) return res.status(404).json({ error: "Parent not found in this school" });
+      res.json(parent);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch parent" });
     }
   },
 
@@ -417,7 +471,9 @@ export const userController = {
   async findOrCreateUserInternal(req: any, res: any) {
     try {
       const user = await userService.findOrCreateUser(req.body);
-      res.json(user);
+      const { passwordHash: _passwordHash, emailVerificationTokenHash: _emailToken, passwordResetTokenHash: _resetToken, ...safeUser } =
+        user as Record<string, unknown>;
+      res.json(safeUser);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to find or create user" });
     }

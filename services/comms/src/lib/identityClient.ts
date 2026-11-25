@@ -17,6 +17,7 @@ export type IdentityUserRef = {
   email: string;
   role?: string;
   schoolId?: string | null;
+  isActive?: boolean;
 };
 
 export type IdentitySchoolRef = {
@@ -85,4 +86,121 @@ export async function getIdentityUsersByRoles(
   } catch {
     return [];
   }
+}
+
+export async function getIdentityUsersByRolesPage(
+  schoolId: string,
+  roles: string[],
+  paging: { limit: number; offset: number }
+): Promise<IdentityUserRef[]> {
+  const cleaned = [...new Set(roles.map((r) => String(r || "").trim()).filter(Boolean))];
+  if (!schoolId || cleaned.length === 0) return [];
+
+  const qs = new URLSearchParams({
+    roles: cleaned.join(","),
+    limit: String(paging.limit),
+    offset: String(paging.offset),
+  });
+  const res = await fetch(
+    `${IDENTITY_URL}/api/internal/schools/${schoolId}/users?${qs}`,
+    { headers: internalHeaders() }
+  );
+  if (!res.ok) {
+    throw Object.assign(new Error(`Identity user lookup failed (${res.status})`), {
+      status: res.status >= 500 ? 502 : res.status,
+    });
+  }
+  const data = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error("Identity returned an invalid user list");
+  }
+  return data as IdentityUserRef[];
+}
+
+export async function getIdentityUsersByRolesAll(
+  schoolId: string,
+  roles: string[],
+  pageSize = 500
+): Promise<IdentityUserRef[]> {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 500) {
+    throw new Error("Identity user page size must be between 1 and 500");
+  }
+
+  const users: IdentityUserRef[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await getIdentityUsersByRolesPage(schoolId, roles, {
+      limit: pageSize,
+      offset,
+    });
+    users.push(...page);
+    if (page.length < pageSize) return users;
+    offset += page.length;
+  }
+}
+
+export async function getIdentityParentsForSchoolPage(
+  schoolId: string,
+  paging: { limit: number; offset: number }
+): Promise<IdentityUserRef[]> {
+  const qs = new URLSearchParams({
+    limit: String(paging.limit),
+    offset: String(paging.offset),
+  });
+  const res = await fetch(
+    `${IDENTITY_URL}/api/internal/schools/${schoolId}/parents?${qs}`,
+    { headers: internalHeaders() }
+  );
+  if (!res.ok) {
+    throw Object.assign(new Error(`Identity parent lookup failed (${res.status})`), {
+      status: res.status >= 500 ? 502 : res.status,
+    });
+  }
+  const data = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error("Identity returned an invalid parent list");
+  }
+  return data as IdentityUserRef[];
+}
+
+export async function getIdentityParentsForSchoolAll(
+  schoolId: string,
+  pageSize = 500
+): Promise<IdentityUserRef[]> {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 500) {
+    throw new Error("Identity parent page size must be between 1 and 500");
+  }
+
+  const parents: IdentityUserRef[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await getIdentityParentsForSchoolPage(schoolId, {
+      limit: pageSize,
+      offset,
+    });
+    parents.push(...page);
+    if (page.length < pageSize) return parents;
+    offset += page.length;
+  }
+}
+
+export async function getIdentityParentForSchool(
+  schoolId: string,
+  parentId: string
+): Promise<IdentityUserRef | null> {
+  const res = await fetch(
+    `${IDENTITY_URL}/api/internal/schools/${schoolId}/parents/${parentId}`,
+    { headers: internalHeaders() }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw Object.assign(new Error(`Identity parent lookup failed (${res.status})`), {
+      status: res.status >= 500 ? 502 : res.status,
+    });
+  }
+  const parent = await res.json();
+  if (!parent || typeof parent.id !== "string" || parent.role !== "PARENT") {
+    throw new Error("Identity returned an invalid parent");
+  }
+  return parent as IdentityUserRef;
 }

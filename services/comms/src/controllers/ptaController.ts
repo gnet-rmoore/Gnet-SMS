@@ -55,6 +55,16 @@ export const ptaController = {
     }
   },
 
+  async listParentOptions(req: Request, res: Response) {
+    try {
+      const { schoolId } = req.params;
+      const parents = await ptaService.listParentOptions(schoolId);
+      res.json(parents);
+    } catch (error: any) {
+      res.status(statusFromError(error)).json({ error: error.message });
+    }
+  },
+
   async removeOfficer(req: Request, res: Response) {
     try {
       const { schoolId, userId } = req.params;

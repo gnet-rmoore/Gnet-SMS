@@ -10,7 +10,7 @@ import {
   validatePasswordAgainstPolicy,
 } from "../lib/securityPolicy";
 
-export const BULK_IMPORT_MAX_ROWS = 500;
+export const BULK_IMPORT_MAX_ROWS = 1500;
 
 export type GradeLevelRef = { id: string; name: string };
 

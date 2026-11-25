@@ -21,6 +21,7 @@ import {
   type SecurityPolicy,
 } from "../../../lib/securityPolicy";
 import { MfaProfilePanel } from "../../mfa/MfaProfilePanel";
+import { ParentPhonePanel } from "../../parent-access/ParentPhonePanel";
 
 type Props = {
   userId: string;
@@ -327,6 +328,8 @@ export function SecurityTab({ userId, securityPolicyRaw, saving, onSubmit }: Pro
             </div>
           </div>
         </div>
+
+        <ParentPhonePanel />
 
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-xs leading-relaxed text-slate-500">
           {p("securityFooterHint")}

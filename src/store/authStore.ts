@@ -247,6 +247,8 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           school: null,
           capabilities: null,
+          entitlements: null,
+          quotas: null,
           impersonation: null,
         });
       },

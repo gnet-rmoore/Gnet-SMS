@@ -142,6 +142,154 @@ export const authController = {
     }
   },
 
+  async parentAccessCodeLogin(req: Request, res: Response) {
+    const started = Date.now();
+    const schoolSlug = String(req.body?.schoolSlug || "");
+    try {
+      const result = await authService.parentAccessCodeLogin(
+        schoolSlug,
+        String(req.body?.code || "")
+      );
+      if ((result as any).mfaRequired) {
+        await auditAuth(req, "parent_access_code_mfa_pending", "Parent access code MFA challenge issued", "INFO", {
+          outcome: "PENDING",
+          authMethod: "ACCESS_CODE",
+          statusCode: 200,
+          durationMs: Date.now() - started,
+          tags: ["auth", "parent", "mfa"],
+        });
+        return res.json(result);
+      }
+      await auditAuth(req, "parent_access_code_login_success", `Parent access code login: ${result.user.email}`, "INFO", {
+        userId: result.user.id,
+        userEmail: result.user.email,
+        userRole: result.user.role,
+        outcome: "SUCCESS",
+        authMethod: "ACCESS_CODE",
+        targetUserId: result.user.id,
+        targetUserEmail: result.user.email,
+        schoolId: result.school?.id ?? null,
+        entityType: "User",
+        entityId: result.user.id,
+        statusCode: 200,
+        durationMs: Date.now() - started,
+        tags: ["auth", "parent", "access_code"],
+      });
+      return res.json(result);
+    } catch (err: any) {
+      const status =
+        err.code === "TOO_MANY_ATTEMPTS"
+          ? 429
+          : err.code === "SCHOOL_SUSPENDED" || err.code === "TRIAL_EXPIRED" || err.code === "ACCOUNT_INACTIVE" || err.code === "EMAIL_NOT_VERIFIED"
+            ? 403
+            : err.code === "MAINTENANCE_MODE"
+              ? 503
+              : err.status || 500;
+      await auditAuth(req, "parent_access_code_login_failed", "Parent access code login failed", "WARNING", {
+        outcome: "DENIED",
+        authMethod: "ACCESS_CODE",
+        statusCode: status,
+        durationMs: Date.now() - started,
+        errorMessage: err.message,
+        dataSensitivity: "PII",
+        tags: ["auth", "parent", "access_code"],
+      });
+      return res.status(status).json({
+        error: status === 401 ? "Invalid credentials" : err.message || "Sign-in failed",
+        code: err.code || "SIGN_IN_FAILED",
+        schoolStatus: err.schoolStatus,
+        schoolName: err.schoolName,
+        schoolSlug: err.schoolSlug,
+      });
+    }
+  },
+
+  async parentPhoneSendCode(req: Request, res: Response) {
+    const started = Date.now();
+    try {
+      const result = await authService.parentPhoneSendCode(
+        String(req.body?.schoolSlug || ""),
+        String(req.body?.phone || "")
+      );
+      await auditAuth(req, "parent_phone_code_sent", "Parent phone sign-in code sent", "INFO", {
+        outcome: "SUCCESS",
+        authMethod: "PHONE_OTP",
+        statusCode: 200,
+        durationMs: Date.now() - started,
+        tags: ["auth", "parent", "phone"],
+      });
+      return res.json(result);
+    } catch (err: any) {
+      const status = err.code === "TOO_MANY_ATTEMPTS" ? 429 : err.status || 500;
+      await auditAuth(req, "parent_phone_code_failed", "Parent phone sign-in code request failed", "WARNING", {
+        outcome: "DENIED",
+        authMethod: "PHONE_OTP",
+        statusCode: status,
+        durationMs: Date.now() - started,
+        errorMessage: err.message,
+        tags: ["auth", "parent", "phone"],
+      });
+      return res.status(status).json({
+        error: err.message || "Unable to send code",
+        code: err.code || "SIGN_IN_FAILED",
+      });
+    }
+  },
+
+  async parentPhoneLogin(req: Request, res: Response) {
+    const started = Date.now();
+    try {
+      const result = await authService.parentPhoneLogin(
+        String(req.body?.schoolSlug || ""),
+        String(req.body?.phone || ""),
+        String(req.body?.code || "")
+      );
+      await auditAuth(req, "parent_phone_login_success", `Parent phone login: ${result.user.email}`, "INFO", {
+        userId: result.user.id,
+        userEmail: result.user.email,
+        userRole: result.user.role,
+        outcome: "SUCCESS",
+        authMethod: "PHONE_OTP",
+        targetUserId: result.user.id,
+        targetUserEmail: result.user.email,
+        schoolId: result.school?.id ?? null,
+        entityType: "User",
+        entityId: result.user.id,
+        statusCode: 200,
+        durationMs: Date.now() - started,
+        tags: ["auth", "parent", "phone"],
+      });
+      return res.json(result);
+    } catch (err: any) {
+      const status =
+        err.code === "TOO_MANY_ATTEMPTS"
+          ? 429
+          : err.code === "PARENT_PHONE_LOGIN_NOT_ALLOWED" || err.code === "ACCOUNT_INACTIVE" || err.code === "EMAIL_NOT_VERIFIED"
+            ? 403
+            : err.code === "SCHOOL_SUSPENDED" || err.code === "TRIAL_EXPIRED"
+              ? 403
+              : err.code === "MAINTENANCE_MODE"
+                ? 503
+                : err.status || 500;
+      await auditAuth(req, "parent_phone_login_failed", "Parent phone login failed", "WARNING", {
+        outcome: "DENIED",
+        authMethod: "PHONE_OTP",
+        statusCode: status,
+        durationMs: Date.now() - started,
+        errorMessage: err.message,
+        dataSensitivity: "PII",
+        tags: ["auth", "parent", "phone"],
+      });
+      return res.status(status).json({
+        error: status === 401 ? "Invalid credentials" : err.message || "Sign-in failed",
+        code: err.code || "SIGN_IN_FAILED",
+        schoolStatus: err.schoolStatus,
+        schoolName: err.schoolName,
+        schoolSlug: err.schoolSlug,
+      });
+    }
+  },
+
   async forgotPassword(req: Request, res: Response) {
     try {
       const { emailAuthService } = await import("../services/emailAuthService");

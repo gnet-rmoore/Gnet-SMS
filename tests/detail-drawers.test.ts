@@ -16,6 +16,8 @@ const staffPage = read("src/pages/School/StaffManagement.tsx");
 const transcripts = read("src/pages/School/Transcripts.tsx");
 const studentsPage = read("src/features/students/Page.tsx");
 const studentEdit = read("src/features/students/components/EditStudentModal.tsx");
+const studentPermissions = read("src/features/students/permissions.ts");
+const photoEditor = read("src/components/StudentPhotoEditor.tsx");
 const registrarPage = read("src/features/registrar/Page.tsx");
 const registrarEdit = read("src/features/registrar/components/EditStudentModal.tsx");
 const dossier = read("src/features/registrar/components/StudentDossierModal.tsx");
@@ -79,6 +81,48 @@ assert(registrarPage.includes("open={showEditStudentModal}") && !/\{\s*showEditS
 assert(registrarEdit.includes('form="edit-registrar-student-form"') && registrarEdit.includes('id="edit-registrar-student-form"'), "registrar drawer submit targets its form");
 assert(registrarPage.includes("open={Boolean(selectedStudent)}"), "student dossier open state is explicit");
 assert(dossier.includes("if (!open || !student?.id) return;"), "late dossier photo patches cannot reopen a closed drawer");
+
+assert(
+  studentEdit.includes('id="edit-student-name"') &&
+    studentEdit.includes('type="email"') &&
+    studentEdit.includes('id="edit-student-phone"') &&
+    studentEdit.includes('id="edit-student-address"') &&
+    studentEdit.includes('id="edit-student-parent-name"') &&
+    studentEdit.includes('id="edit-student-grade"'),
+  "student drawer edits identity, contact, guardian, and placement fields"
+);
+assert(
+  studentsPage.includes("canEdit={canEdit}") &&
+    studentsPage.includes("canEditStatus={canEditStatus}") &&
+    studentEdit.includes("disabled={!canEdit}") &&
+    studentEdit.includes("disabled={!statusEditable}"),
+  "student drawer gates edits by role"
+);
+assert(
+  studentEdit.includes('variant="dark"') &&
+    studentEdit.includes("onPhotoChange={onPhotoChange}"),
+  "student drawer uses the dark header photo editor and tracks photo changes"
+);
+assert(
+  studentPermissions.includes("export function canEditStudentRecord") &&
+    studentPermissions.includes("export function canEditStudentStatus") &&
+    studentPermissions.includes('"REGISTRAR"') &&
+    studentPermissions.includes('"PRINCIPAL"'),
+  "student edit permissions cover registrar and principal roles with status gating"
+);
+assert(
+  photoEditor.includes("relative inline-flex") &&
+    !photoEditor.includes("relative shrink-0") &&
+    photoEditor.includes("absolute -bottom-2 -right-2") &&
+    photoEditor.includes("absolute -bottom-2 -left-2"),
+  "camera and remove controls anchor to the avatar wrapper"
+);
+assert(
+  studentsPage.includes('phone: student.phone || ""') &&
+    studentsPage.includes('address: student.address || ""') &&
+    studentsPage.includes("onPhotoChange={handleEditPhotoChange}"),
+  "student save payload carries contact fields and latest photo state"
+);
 
 assert(transcripts.includes("open={Boolean(detail)}") && transcripts.includes("{detail ? ("), "transcript drawer guards its detail body");
 assert(transcripts.includes("suspendA11y={Boolean(reviewMode)}"), "transcript drawer suspends a11y for the nested review modal");

@@ -133,6 +133,7 @@ router.get(
   authenticate,
   requireTenant,
   requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "MAINTENANCE"]),
+  requireFeature("maintenance"),
   logisticsController.getWorkOrders
 );
 
@@ -141,6 +142,7 @@ router.post(
   authenticate,
   requireTenant,
   requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "MAINTENANCE"]),
+  requireFeature("maintenance"),
   logisticsController.createWorkOrder
 );
 
@@ -149,6 +151,7 @@ router.patch(
   authenticate,
   requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "MAINTENANCE"]),
   requireResourceTenant(resourceLoaders.workOrder),
+  requireFeature("maintenance"),
   logisticsController.updateWorkOrder
 );
 
@@ -177,6 +180,24 @@ router.patch(
   requireResourceTenant(resourceLoaders.inventory),
   requireFeature("inventory"),
   logisticsController.updateInventoryItem
+);
+
+router.get(
+  "/api/inventory/:id/movements",
+  authenticate,
+  requireRoles(INV_ROLES),
+  requireResourceTenant(resourceLoaders.inventory),
+  requireFeature("inventory"),
+  logisticsController.getInventoryMovements
+);
+
+router.post(
+  "/api/inventory/:id/movements",
+  authenticate,
+  requireRoles(INV_ROLES),
+  requireResourceTenant(resourceLoaders.inventory),
+  requireFeature("inventory"),
+  logisticsController.createInventoryMovement
 );
 
 router.get("/api/internal/audit/events", authenticateInternal, auditController.listEvents);

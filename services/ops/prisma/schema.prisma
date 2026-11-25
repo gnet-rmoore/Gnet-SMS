@@ -99,31 +99,115 @@ model WorkOrder {
   id          String   @id @default(uuid())
   title       String
   description String
+  requestType     String           @default("REPAIR")
   priority    String   @default("MEDIUM")
+  impact          String           @default("MEDIUM")
   status      String   @default("OPEN")
   location    String?
+  building        String?
+  room            String?
+  dueAt           DateTime?
+  safetyRelated   Boolean          @default(false)
+  safetyNotes     String?
+  accessNotes     String?
+  estimatedCost   Float?
+  resolutionNotes String?
+  completedAt     DateTime?
+  inventoryItemId String?
   assignedTo  String? // Identity.User.id (no FK)
   requestedBy String // Identity.User.id (no FK)
   schoolId    String // Identity.School.id (no FK)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  asset           InventoryItem?   @relation("WorkOrderAsset", fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  events          WorkOrderEvent[]
 
   @@index([schoolId])
+  @@index([schoolId, status, createdAt])
+  @@index([schoolId, dueAt])
+  @@index([inventoryItemId])
   @@schema("ops")
 }
 
 model InventoryItem {
   id          String   @id @default(uuid())
   name        String
+  itemType          String              @default("CONSUMABLE")
+  sku               String?
+  description       String?
   category    String
   quantity    Int      @default(0)
   unit        String   @default("pcs")
   minQuantity Int      @default(5)
+  location          String?
+  supplier          String?
+  unitCost          Float?
+  manufacturer      String?
+  model             String?
+  serialNumber      String?
+  assetTag          String?
+  condition         String?
+  assetStatus       String?
+  assignedTo        String? // Identity.User.id (no FK)
+  purchaseDate      DateTime?
+  warrantyExpiresAt DateTime?
+  notes             String?
   schoolId    String // Identity.School.id (no FK)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  movements         InventoryMovement[]
+  workOrders        WorkOrder[]         @relation("WorkOrderAsset")
 
+  @@unique([schoolId, sku])
+  @@unique([schoolId, serialNumber])
+  @@unique([schoolId, assetTag])
   @@index([schoolId])
+  @@index([schoolId, itemType, category])
+  @@index([schoolId, quantity, minQuantity])
+  @@schema("ops")
+}
+
+model InventoryMovement {
+  id                  String        @id @default(uuid())
+  itemId              String
+  baselineItemId      String?       @unique
+  schoolId            String
+  movementType        String
+  quantityDelta       Int           @default(0)
+  quantityBefore      Int
+  quantityAfter       Int
+  reason              String
+  reference           String?
+  previousCondition   String?
+  newCondition        String?
+  previousAssetStatus String?
+  newAssetStatus      String?
+  previousAssignedTo  String?
+  newAssignedTo       String?
+  movementUnitCost    Float?
+  details             Json?
+  performedBy         String // Identity.User.id (no FK)
+  createdAt           DateTime      @default(now())
+  item                InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, itemId, createdAt])
+  @@index([schoolId, movementType, createdAt])
+  @@schema("ops")
+}
+
+model WorkOrderEvent {
+  id                  String    @id @default(uuid())
+  workOrderId         String
+  baselineWorkOrderId String?   @unique
+  actorId             String // Identity.User.id (no FK)
+  eventType           String
+  summary             String
+  oldValue            String?
+  newValue            String?
+  createdAt           DateTime  @default(now())
+  workOrder           WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId, createdAt])
   @@schema("ops")
 }
 

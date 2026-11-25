@@ -105,6 +105,27 @@ export function LoginErrorAlert({ signal }: { signal: LoginErrorSignal | null })
           hint: t("auth:loginError.mfaEnrollHint"),
         };
         break;
+      case "parentCode":
+        info = {
+          title: t("auth:loginError.parentCodeTitle"),
+          message: t("auth:loginError.parentCodeMessage"),
+          hint: t("auth:loginError.parentCodeHint"),
+        };
+        break;
+      case "parentPhone":
+        info = {
+          title: t("auth:loginError.parentPhoneTitle"),
+          message: t("auth:loginError.parentPhoneMessage"),
+          hint: t("auth:loginError.parentPhoneHint"),
+        };
+        break;
+      case "parentPhoneUnavailable":
+        info = {
+          title: t("auth:loginError.parentPhoneUnavailableTitle"),
+          message: t("auth:loginError.parentPhoneUnavailableMessage"),
+          hint: t("auth:loginError.parentPhoneUnavailableHint"),
+        };
+        break;
       case "noSchool":
         info = {
           title: t("auth:loginError.genericTitle"),

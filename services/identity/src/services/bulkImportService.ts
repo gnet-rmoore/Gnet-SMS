@@ -4,6 +4,7 @@ import { fetchSchoolGradeLevelsInternal } from "../lib/academicClient";
 import { parseSecurityPolicy, DEFAULT_SECURITY_POLICY } from "../lib/securityPolicy";
 import { studentQuotaHeadroom } from "../lib/quotaEnforcement";
 import { userService } from "./userService";
+import { parentAccessService } from "./parentAccessService";
 import { allocateStudentId } from "./studentIdService";
 import {
   filterNonEmptyRows,
@@ -300,6 +301,7 @@ export const bulkImportService = {
       parentName: string | null;
       parentEmail: string | null;
       parentTemporaryPassword?: string;
+      parentAccessCode?: string;
       parentCreated: boolean;
       parentLinkFailed: boolean;
     };
@@ -394,6 +396,11 @@ export const bulkImportService = {
             record.parentCreated = parentUser.created === true;
             record.parentTemporaryPassword = parentUser.created ? parentPassword : undefined;
             await userService.createParentLink(parentUser.id, user.id);
+            const accessCode = await parentAccessService.regenerateParentAccessCode(
+              parentUser.id,
+              schoolId
+            );
+            record.parentAccessCode = accessCode.accessCode;
           }
         } catch (err: any) {
           record.parentLinkFailed = true;
@@ -572,7 +579,7 @@ export const bulkImportService = {
         }
         return out;
       },
-      { timeout: 120_000 }
+      { timeout: 300_000 }
     );
 
     return {

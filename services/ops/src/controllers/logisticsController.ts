@@ -137,8 +137,8 @@ export const logisticsController = {
         pageSize: req.query.pageSize as string | undefined,
       });
       res.json(result);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to fetch work orders" });
+    } catch (err: any) {
+      res.status(err?.status || 500).json({ error: err?.message || "Failed to fetch work orders" });
     }
   },
 
@@ -149,21 +149,18 @@ export const logisticsController = {
       const order = await logisticsService.createWorkOrder(schoolId, req.body, user.id);
       res.status(201).json(order);
     } catch (err: any) {
-      const msg = err?.message || "Failed to create work order";
-      const status = msg.includes("required") ? 400 : 500;
-      res.status(status).json({ error: msg });
+      res.status(err?.status || 500).json({ error: err?.message || "Failed to create work order" });
     }
   },
 
   async updateWorkOrder(req: Request, res: Response) {
     const { id } = req.params;
+    const user = (req as any).user;
     try {
-      const order = await logisticsService.updateWorkOrder(id, req.body);
+      const order = await logisticsService.updateWorkOrder(id, req.body, user.id);
       res.json(order);
     } catch (err: any) {
-      const msg = err?.message || "Failed to update work order";
-      const status = msg.includes("empty") ? 400 : 500;
-      res.status(status).json({ error: msg });
+      res.status(err?.status || 500).json({ error: err?.message || "Failed to update work order" });
     }
   },
 
@@ -186,20 +183,42 @@ export const logisticsController = {
       return res.status(403).json({ error: "Unauthorized" });
     }
     try {
-      const item = await logisticsService.createInventoryItem(schoolId, req.body);
-      res.json(item);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to create inventory item" });
+      const item = await logisticsService.createInventoryItem(schoolId, req.body, user.id);
+      res.status(201).json(item);
+    } catch (err: any) {
+      const status = err?.code === "P2002" ? 409 : err?.status || 500;
+      res.status(status).json({ error: err?.message || "Failed to create inventory item" });
     }
   },
 
   async updateInventoryItem(req: Request, res: Response) {
     const { id } = req.params;
+    const user = (req as any).user;
     try {
-      const item = await logisticsService.updateInventoryItem(id, req.body);
+      const item = await logisticsService.updateInventoryItem(id, req.body, user.id);
       res.json(item);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to update inventory" });
+    } catch (err: any) {
+      const status = err?.code === "P2002" ? 409 : err?.status || 500;
+      res.status(status).json({ error: err?.message || "Failed to update inventory" });
+    }
+  },
+
+  async getInventoryMovements(req: Request, res: Response) {
+    try {
+      res.json(await logisticsService.getInventoryMovements(req.params.id));
+    } catch (err: any) {
+      res.status(err?.status || 500).json({ error: err?.message || "Failed to fetch inventory history" });
+    }
+  },
+
+  async createInventoryMovement(req: Request, res: Response) {
+    const user = (req as any).user;
+    try {
+      res.status(201).json(
+        await logisticsService.createInventoryMovement(req.params.id, req.body, user.id)
+      );
+    } catch (err: any) {
+      res.status(err?.status || 500).json({ error: err?.message || "Failed to record inventory movement" });
     }
   },
 };

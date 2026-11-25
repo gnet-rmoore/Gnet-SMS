@@ -82,7 +82,7 @@ export function WorkOrdersTab({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex flex-wrap gap-1.5">
-            {["ALL", "OPEN", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map(
+            {["ALL", "OPEN", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED"].map(
               (status) => (
                 <button
                   key={status}
@@ -96,6 +96,8 @@ export function WorkOrdersTab({
                 >
                   {status === "IN_PROGRESS"
                     ? "In progress"
+                    : status === "ON_HOLD"
+                      ? "On hold"
                     : status === "ALL"
                       ? "All"
                       : status === "CANCELLED"
@@ -168,6 +170,9 @@ export function WorkOrdersTab({
                         >
                           {order.priority}
                         </span>
+                        <span className="px-2 py-0.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
+                          {String(order.requestType || "REPAIR").replace(/_/g, " ")}
+                        </span>
                       </div>
                       <p className="text-sm text-slate-500 font-medium line-clamp-2">
                         {order.description}
@@ -184,6 +189,12 @@ export function WorkOrdersTab({
                               })
                             : ""}
                         </span>
+                        {order.dueAt && (
+                          <span className={new Date(order.dueAt).getTime() < Date.now() && order.status !== "COMPLETED" && order.status !== "CANCELLED" ? "text-rose-600" : ""}>
+                            Due {new Date(order.dueAt).toLocaleDateString()}
+                          </span>
+                        )}
+                        {order.asset && <span>Asset: {order.asset.assetTag || order.asset.name}</span>}
                         <span>
                           {order.assignee?.name
                             ? `Assigned: ${order.assignee.name}`
@@ -201,11 +212,15 @@ export function WorkOrdersTab({
                               ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
                               : order.status === "CANCELLED"
                                 ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                : order.status === "ON_HOLD"
+                                  ? "bg-amber-50 text-amber-700 border border-amber-100"
                                 : "bg-amber-50 text-amber-700 border border-amber-100"
                         }`}
                       >
                         {order.status === "IN_PROGRESS"
                           ? "In progress"
+                          : order.status === "ON_HOLD"
+                            ? "On hold"
                           : order.status === "CANCELLED"
                             ? "Cancelled"
                             : order.status}

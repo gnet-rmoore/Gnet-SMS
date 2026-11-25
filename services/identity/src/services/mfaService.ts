@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma";
@@ -19,6 +20,7 @@ import { logSystemEvent } from "../utils/logger";
 import { sendSmsOtpViaComms } from "../lib/smsOtpClient";
 import { platformOpsService } from "./platformOpsService";
 import { normalizeSaPlatformRole, capabilitiesForSaRole } from "../domain/saCapabilities";
+import { parentPhoneOtpTtlMinutes } from "../domain/parentAccess";
 
 const NON_STAFF_ROLES = new Set(["STUDENT", "PARENT"]);
 
@@ -50,7 +52,94 @@ export function mfaRequiredForUser(
 }
 
 function generateSmsCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 1_000_000));
+}
+
+export async function createScopedSmsChallenge(
+  userId: string,
+  phoneE164: string,
+  purpose: string,
+  scopeKey: string
+) {
+  const code = generateSmsCode();
+  const codeHash = bcrypt.hashSync(code, 10);
+  const expiresAt = new Date(Date.now() + parentPhoneOtpTtlMinutes() * 60_000);
+  await prisma.mfaSmsChallenge.deleteMany({
+    where: { userId, purpose, phoneE164, scopeKey },
+  });
+  const row = await prisma.mfaSmsChallenge.create({
+    data: { userId, phoneE164, codeHash, purpose, scopeKey, expiresAt },
+  });
+  return { id: row.id, code };
+}
+
+export async function verifyScopedSmsChallenge(
+  userId: string,
+  phoneE164: string,
+  purpose: string,
+  scopeKey: string,
+  code: string
+): Promise<boolean> {
+  const row = await prisma.mfaSmsChallenge.findFirst({
+    where: {
+      userId,
+      phoneE164,
+      purpose,
+      scopeKey,
+      consumedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!row || !bcrypt.compareSync(code, row.codeHash)) return false;
+  await prisma.mfaSmsChallenge.update({
+    where: { id: row.id },
+    data: { consumedAt: new Date() },
+  });
+  return true;
+}
+
+export async function verifyScopedSmsChallengeById(
+  id: string,
+  userId: string,
+  phoneE164: string,
+  purpose: string,
+  scopeKey: string,
+  code: string
+): Promise<boolean> {
+  const row = await prisma.mfaSmsChallenge.findFirst({
+    where: {
+      id,
+      userId,
+      phoneE164,
+      purpose,
+      scopeKey,
+      consumedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+  });
+  if (!row || !bcrypt.compareSync(code, row.codeHash)) return false;
+  await prisma.mfaSmsChallenge.update({
+    where: { id: row.id },
+    data: { consumedAt: new Date() },
+  });
+  return true;
+}
+
+export async function deleteScopedSmsChallenges(
+  userId: string,
+  purpose: string,
+  scopeKey: string,
+  phoneE164?: string
+) {
+  await prisma.mfaSmsChallenge.deleteMany({
+    where: {
+      userId,
+      purpose,
+      scopeKey,
+      ...(phoneE164 ? { phoneE164 } : {}),
+    },
+  });
 }
 
 async function createSmsChallenge(userId: string, phoneE164: string, purpose: string) {
@@ -176,20 +265,46 @@ export const mfaService = {
     };
   },
 
-  signMfaToken(userId: string, opts?: { superAdmin?: boolean }) {
+  signMfaToken(
+    userId: string,
+    opts?: {
+      superAdmin?: boolean;
+      authMethod?: string;
+      schoolId?: string;
+      schoolSlug?: string;
+    }
+  ) {
     return jwt.sign(
-      { id: userId, purpose: opts?.superAdmin ? "mfa_pending_sa" : "mfa_pending" },
+      {
+        id: userId,
+        purpose: opts?.superAdmin ? "mfa_pending_sa" : "mfa_pending",
+        authMethod: opts?.authMethod || "PASSWORD",
+        schoolId: opts?.schoolId || null,
+        schoolSlug: opts?.schoolSlug || null,
+      },
       getJwtAccessSecret(),
       { expiresIn: "5m" }
     );
   },
 
-  verifyMfaToken(token: string): { userId: string; superAdmin: boolean } {
+  verifyMfaToken(token: string): {
+    userId: string;
+    superAdmin: boolean;
+    authMethod: string;
+    schoolId: string | null;
+    schoolSlug: string | null;
+  } {
     const decoded = jwt.verify(token, getJwtAccessSecret()) as any;
     if (!decoded.id || !String(decoded.purpose || "").startsWith("mfa_pending")) {
       throw Object.assign(new Error("Invalid MFA token"), { status: 401 });
     }
-    return { userId: decoded.id as string, superAdmin: decoded.purpose === "mfa_pending_sa" };
+    return {
+      userId: decoded.id as string,
+      superAdmin: decoded.purpose === "mfa_pending_sa",
+      authMethod: String(decoded.authMethod || "PASSWORD"),
+      schoolId: decoded.schoolId ? String(decoded.schoolId) : null,
+      schoolSlug: decoded.schoolSlug ? String(decoded.schoolSlug) : null,
+    };
   },
 
   async enrollSmsStart(userId: string, phoneE164: string, req?: any) {
@@ -271,7 +386,7 @@ export const mfaService = {
   },
 
   async verifyLoginCode(mfaToken: string, code: string, req?: any) {
-    const { userId, superAdmin } = this.verifyMfaToken(mfaToken);
+    const { userId, superAdmin, authMethod, schoolId } = this.verifyMfaToken(mfaToken);
     const row = await prisma.userMfaEnrollment.findUnique({ where: { userId } });
     if (!row || row.enrolledAt.getTime() <= 0) {
       throw Object.assign(new Error("MFA not enrolled"), { status: 400 });
@@ -323,6 +438,13 @@ export const mfaService = {
       userId,
       schoolId: user.schoolId,
     });
+
+    if (authMethod === "ACCESS_CODE" && schoolId && user.role === "PARENT") {
+      const school = await prisma.school.findUnique({ where: { id: schoolId } });
+      if (!school) throw Object.assign(new Error("School not found"), { status: 404 });
+      const { authService } = await import("./authService");
+      return authService.completeParentAccessCodeMfaLogin(user, school);
+    }
 
     if (superAdmin || user.role === "SUPER_ADMIN") {
       const platformRole = normalizeSaPlatformRole(user.platformRole);
@@ -385,7 +507,10 @@ export const mfaService = {
     };
   },
 
-  async checkLoginMfa(user: { id: string; role: string; school: { securityPolicy: string | null } | null }) {
+  async checkLoginMfa(
+    user: { id: string; role: string; school: { securityPolicy: string | null } | null },
+    opts?: { authMethod?: string; schoolId?: string; schoolSlug?: string }
+  ) {
     const policy = parseSecurityPolicy(user.school?.securityPolicy);
     const enrollment = await prisma.userMfaEnrollment.findUnique({ where: { userId: user.id } });
     const enrolled = Boolean(enrollment && enrollment.enrolledAt.getTime() > 0);
@@ -399,7 +524,11 @@ export const mfaService = {
     if (requirement === "challenge") {
       return {
         mfaRequired: true,
-        mfaToken: this.signMfaToken(user.id),
+        mfaToken: this.signMfaToken(user.id, {
+          authMethod: opts?.authMethod,
+          schoolId: opts?.schoolId,
+          schoolSlug: opts?.schoolSlug,
+        }),
         methods: loginMethods(enrollment),
       };
     }

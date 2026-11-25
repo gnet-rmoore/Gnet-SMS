@@ -3,15 +3,78 @@ import { notificationPreferenceService } from "./notificationPreferenceService";
 import { inAppNotificationService } from "./inAppNotificationService";
 import {
   getIdentitySchool,
-  getIdentityUser,
+  getIdentityParentForSchool,
+  getIdentityParentsForSchoolAll,
   getIdentityUsersByIds,
-  getIdentityUsersByRoles,
 } from "../lib/identityClient";
 
 type HttpError = Error & { status?: number };
 
 function httpError(message: string, status: number): HttpError {
   return Object.assign(new Error(message), { status });
+}
+
+function parsePtaDate(value: string | Date, field: string): Date {
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(parsed.getTime())) {
+    throw httpError(`${field} must be a valid date`, 400);
+  }
+  return parsed;
+}
+
+function parseOptionalPtaDate(
+  value: string | Date | null | undefined,
+  field: string
+): Date | null {
+  return value == null ? null : parsePtaDate(value, field);
+}
+
+function requirePositiveInteger(value: number, field: string): number {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw httpError(`${field} must be a positive whole number`, 400);
+  }
+  return value;
+}
+
+function requireNonNegativeAmount(value: number, field: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw httpError(`${field} must be a non-negative number`, 400);
+  }
+  return value;
+}
+
+function parseOptionalBoolean(value: unknown, field: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") {
+    throw httpError(`${field} must be a boolean`, 400);
+  }
+  return value;
+}
+
+function validateDateRange(startsAt: Date | null, endsAt: Date | null) {
+  if (startsAt && endsAt && endsAt <= startsAt) {
+    throw httpError("endsAt must be after startsAt", 400);
+  }
+}
+
+function isSerializationConflict(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2034"
+  );
+}
+
+async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isSerializationConflict(error) || attempt >= 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
 }
 
 async function ptaHref(schoolId: string): Promise<string> {
@@ -37,7 +100,7 @@ async function notifyParents(opts: {
     if (!inAppEnabled) return;
 
     const [users, href] = await Promise.all([
-      getIdentityUsersByRoles(opts.schoolId, ["PARENT"]),
+      getIdentityParentsForSchoolAll(opts.schoolId),
       ptaHref(opts.schoolId),
     ]);
 
@@ -129,7 +192,7 @@ function serializeVolunteer(
     organizationId: row.organizationId,
     title: row.title,
     description: row.description,
-    slots: row.slots,
+    slots: row.slots != null && row.slots > 0 ? row.slots : null,
     startsAt: row.startsAt,
     endsAt: row.endsAt,
     published: row.published,
@@ -261,7 +324,7 @@ export const ptaService = {
           role: o.role,
           createdAt: o.createdAt,
           name: user?.name ?? null,
-          email: user?.email ?? null,
+          email: isStaff ? user?.email ?? null : null,
         };
       }),
       meetings: meetings.map((m) =>
@@ -283,10 +346,20 @@ export const ptaService = {
     };
   },
 
+  async listParentOptions(schoolId: string) {
+    const parents = await getIdentityParentsForSchoolAll(schoolId);
+    return parents.map((parent) => ({
+      id: parent.id,
+      name: parent.name,
+      email: parent.email,
+    }));
+  },
+
   async upsertOrganization(
     schoolId: string,
     data: { name?: string; description?: string | null; enabled?: boolean }
   ) {
+    const enabled = parseOptionalBoolean(data.enabled, "enabled");
     const existing = await prisma.ptaOrganization.findUnique({ where: { schoolId } });
     const name =
       data.name?.trim() ||
@@ -299,12 +372,12 @@ export const ptaService = {
         schoolId,
         name,
         description: data.description ?? null,
-        enabled: data.enabled ?? false,
+        enabled: enabled ?? false,
       },
       update: {
         ...(data.name !== undefined ? { name: data.name.trim() || name } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
-        ...(data.enabled !== undefined ? { enabled: Boolean(data.enabled) } : {}),
+        ...(enabled !== undefined ? { enabled } : {}),
       },
     });
 
@@ -322,14 +395,8 @@ export const ptaService = {
   async appointOfficer(schoolId: string, userId: string) {
     if (!userId?.trim()) throw httpError("userId is required", 400);
 
-    const user = await getIdentityUser(userId);
-    if (!user) throw httpError("User not found", 404);
-    if (user.schoolId && user.schoolId !== schoolId) {
-      throw httpError("User does not belong to this school", 403);
-    }
-    if (user.role && user.role !== "PARENT") {
-      throw httpError("PTA officers should be PARENT role users", 400);
-    }
+    const user = await getIdentityParentForSchool(schoolId, userId);
+    if (!user) throw httpError("Active parent is not linked to this school", 403);
 
     const org = await ensureOrg(schoolId);
     const membership = await prisma.ptaMembership.upsert({
@@ -413,7 +480,13 @@ export const ptaService = {
     if (!data.title?.trim()) throw httpError("title is required", 400);
     if (!data.startsAt) throw httpError("startsAt is required", 400);
 
-    const published = Boolean(data.published);
+    const startsAt = parsePtaDate(data.startsAt, "startsAt");
+    const endsAt = parseOptionalPtaDate(data.endsAt, "endsAt");
+    validateDateRange(startsAt, endsAt);
+    const capacity = data.capacity == null
+      ? null
+      : requirePositiveInteger(data.capacity, "capacity");
+    const published = parseOptionalBoolean(data.published, "published") ?? false;
     const meeting = await prisma.ptaMeeting.create({
       data: {
         schoolId,
@@ -421,9 +494,9 @@ export const ptaService = {
         title: data.title.trim(),
         description: data.description ?? null,
         location: data.location ?? null,
-        startsAt: new Date(data.startsAt),
-        endsAt: data.endsAt ? new Date(data.endsAt) : null,
-        capacity: data.capacity ?? null,
+        startsAt,
+        endsAt,
+        capacity,
         published,
         createdById: data.createdById,
       },
@@ -461,21 +534,31 @@ export const ptaService = {
   ) {
     const existing = await prisma.ptaMeeting.findUnique({ where: { id } });
     if (!existing) throw httpError("Meeting not found", 404);
+    await requireOrg(existing.schoolId, { mustBeEnabled: true });
 
     const wasPublished = existing.published;
     const updateData: Record<string, unknown> = {};
+    const startsAt =
+      data.startsAt !== undefined ? parsePtaDate(data.startsAt, "startsAt") : existing.startsAt;
+    const endsAt =
+      data.endsAt !== undefined
+        ? parseOptionalPtaDate(data.endsAt, "endsAt")
+        : existing.endsAt;
+    validateDateRange(startsAt, endsAt);
     if (data.title !== undefined) {
       if (!data.title.trim()) throw httpError("title is required", 400);
       updateData.title = data.title.trim();
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.location !== undefined) updateData.location = data.location;
-    if (data.startsAt !== undefined) updateData.startsAt = new Date(data.startsAt);
-    if (data.endsAt !== undefined) {
-      updateData.endsAt = data.endsAt ? new Date(data.endsAt) : null;
+    if (data.startsAt !== undefined) updateData.startsAt = startsAt;
+    if (data.endsAt !== undefined) updateData.endsAt = endsAt;
+    if (data.capacity !== undefined) {
+      updateData.capacity =
+        data.capacity == null ? null : requirePositiveInteger(data.capacity, "capacity");
     }
-    if (data.capacity !== undefined) updateData.capacity = data.capacity;
-    if (data.published !== undefined) updateData.published = Boolean(data.published);
+    const published = parseOptionalBoolean(data.published, "published");
+    if (published !== undefined) updateData.published = published;
 
     const meeting = await prisma.ptaMeeting.update({
       where: { id },
@@ -508,40 +591,50 @@ export const ptaService = {
       throw httpError("status must be GOING, MAYBE, or DECLINED", 400);
     }
 
-    const meeting = await prisma.ptaMeeting.findUnique({ where: { id: meetingId } });
-    if (!meeting) throw httpError("Meeting not found", 404);
-    if (!meeting.published) throw httpError("Meeting is not published", 403);
+    return withSerializableRetry(() =>
+      prisma.$transaction(
+        async (tx) => {
+          const meeting = await tx.ptaMeeting.findUnique({ where: { id: meetingId } });
+          if (!meeting) throw httpError("Meeting not found", 404);
+          if (!meeting.published) throw httpError("Meeting is not published", 403);
 
-    await requireOrg(meeting.schoolId, { mustBeEnabled: true });
+          const org = await tx.ptaOrganization.findUnique({
+            where: { schoolId: meeting.schoolId },
+          });
+          if (!org) throw httpError("PTA is not configured for this school", 404);
+          if (!org.enabled) throw httpError("PTA is not enabled for this school", 403);
 
-    if (status === "GOING" && meeting.capacity != null && meeting.capacity > 0) {
-      const goingCount = await prisma.ptaMeetingRsvp.count({
-        where: { meetingId, status: "GOING", NOT: { userId } },
-      });
-      if (goingCount >= meeting.capacity) {
-        throw httpError("Meeting is at capacity", 409);
-      }
-    }
+          if (status === "GOING" && meeting.capacity != null && meeting.capacity > 0) {
+            const goingCount = await tx.ptaMeetingRsvp.count({
+              where: { meetingId, status: "GOING", NOT: { userId } },
+            });
+            if (goingCount >= meeting.capacity) {
+              throw httpError("Meeting is at capacity", 409);
+            }
+          }
 
-    const rsvp = await prisma.ptaMeetingRsvp.upsert({
-      where: { meetingId_userId: { meetingId, userId } },
-      create: { meetingId, userId, status },
-      update: { status },
-    });
+          const rsvp = await tx.ptaMeetingRsvp.upsert({
+            where: { meetingId_userId: { meetingId, userId } },
+            create: { meetingId, userId, status },
+            update: { status },
+          });
+          const goingCount = await tx.ptaMeetingRsvp.count({
+            where: { meetingId, status: "GOING" },
+          });
 
-    const goingCount = await prisma.ptaMeetingRsvp.count({
-      where: { meetingId, status: "GOING" },
-    });
-
-    return {
-      id: rsvp.id,
-      meetingId: rsvp.meetingId,
-      userId: rsvp.userId,
-      status: rsvp.status,
-      createdAt: rsvp.createdAt,
-      updatedAt: rsvp.updatedAt,
-      goingCount,
-    };
+          return {
+            id: rsvp.id,
+            meetingId: rsvp.meetingId,
+            userId: rsvp.userId,
+            status: rsvp.status,
+            createdAt: rsvp.createdAt,
+            updatedAt: rsvp.updatedAt,
+            goingCount,
+          };
+        },
+        { isolationLevel: "Serializable" }
+      )
+    );
   },
 
   async listVolunteers(schoolId: string, opts: { includeUnpublished: boolean; userId?: string }) {
@@ -589,16 +682,20 @@ export const ptaService = {
     const org = await requireOrg(schoolId, { mustBeEnabled: true });
     if (!data.title?.trim()) throw httpError("title is required", 400);
 
-    const published = Boolean(data.published);
+    const slots = data.slots == null ? null : requirePositiveInteger(data.slots, "slots");
+    const startsAt = parseOptionalPtaDate(data.startsAt, "startsAt");
+    const endsAt = parseOptionalPtaDate(data.endsAt, "endsAt");
+    validateDateRange(startsAt, endsAt);
+    const published = parseOptionalBoolean(data.published, "published") ?? false;
     const row = await prisma.ptaVolunteerOpportunity.create({
       data: {
         schoolId,
         organizationId: org.id,
         title: data.title.trim(),
         description: data.description ?? null,
-        slots: data.slots ?? null,
-        startsAt: data.startsAt ? new Date(data.startsAt) : null,
-        endsAt: data.endsAt ? new Date(data.endsAt) : null,
+        slots,
+        startsAt,
+        endsAt,
         published,
       },
       include: { _count: { select: { signups: true } } },
@@ -621,47 +718,57 @@ export const ptaService = {
   },
 
   async signupVolunteer(opportunityId: string, userId: string, notes?: string | null) {
-    const opportunity = await prisma.ptaVolunteerOpportunity.findUnique({
-      where: { id: opportunityId },
-    });
-    if (!opportunity) throw httpError("Volunteer opportunity not found", 404);
-    if (!opportunity.published) throw httpError("Opportunity is not published", 403);
+    return withSerializableRetry(() =>
+      prisma.$transaction(
+        async (tx) => {
+          const opportunity = await tx.ptaVolunteerOpportunity.findUnique({
+            where: { id: opportunityId },
+          });
+          if (!opportunity) throw httpError("Volunteer opportunity not found", 404);
+          if (!opportunity.published) throw httpError("Opportunity is not published", 403);
 
-    await requireOrg(opportunity.schoolId, { mustBeEnabled: true });
+          const org = await tx.ptaOrganization.findUnique({
+            where: { schoolId: opportunity.schoolId },
+          });
+          if (!org) throw httpError("PTA is not configured for this school", 404);
+          if (!org.enabled) throw httpError("PTA is not enabled for this school", 403);
 
-    if (opportunity.slots != null && opportunity.slots > 0) {
-      const count = await prisma.ptaVolunteerSignup.count({
-        where: { opportunityId, NOT: { userId } },
-      });
-      if (count >= opportunity.slots) {
-        throw httpError("Volunteer opportunity is full", 409);
-      }
-    }
+          if (opportunity.slots != null && opportunity.slots > 0) {
+            const count = await tx.ptaVolunteerSignup.count({
+              where: { opportunityId, NOT: { userId } },
+            });
+            if (count >= opportunity.slots) {
+              throw httpError("Volunteer opportunity is full", 409);
+            }
+          }
 
-    const signup = await prisma.ptaVolunteerSignup.upsert({
-      where: { opportunityId_userId: { opportunityId, userId } },
-      create: {
-        opportunityId,
-        userId,
-        notes: notes ?? null,
-      },
-      update: {
-        ...(notes !== undefined ? { notes: notes ?? null } : {}),
-      },
-    });
+          const signup = await tx.ptaVolunteerSignup.upsert({
+            where: { opportunityId_userId: { opportunityId, userId } },
+            create: {
+              opportunityId,
+              userId,
+              notes: notes ?? null,
+            },
+            update: {
+              ...(notes !== undefined ? { notes: notes ?? null } : {}),
+            },
+          });
+          const signupCount = await tx.ptaVolunteerSignup.count({
+            where: { opportunityId },
+          });
 
-    const signupCount = await prisma.ptaVolunteerSignup.count({
-      where: { opportunityId },
-    });
-
-    return {
-      id: signup.id,
-      opportunityId: signup.opportunityId,
-      userId: signup.userId,
-      notes: signup.notes,
-      createdAt: signup.createdAt,
-      signupCount,
-    };
+          return {
+            id: signup.id,
+            opportunityId: signup.opportunityId,
+            userId: signup.userId,
+            notes: signup.notes,
+            createdAt: signup.createdAt,
+            signupCount,
+          };
+        },
+        { isolationLevel: "Serializable" }
+      )
+    );
   },
 
   async listCampaigns(schoolId: string, opts: { includeUnpublished: boolean }) {
@@ -682,7 +789,6 @@ export const ptaService = {
       title: string;
       description?: string | null;
       goalAmount?: number | null;
-      raisedAmount?: number | null;
       currency?: string | null;
       published?: boolean;
       startsAt?: string | Date | null;
@@ -693,19 +799,26 @@ export const ptaService = {
     const org = await requireOrg(schoolId, { mustBeEnabled: true });
     if (!data.title?.trim()) throw httpError("title is required", 400);
 
-    const published = Boolean(data.published);
+    const goalAmount =
+      data.goalAmount == null
+        ? null
+        : requireNonNegativeAmount(data.goalAmount, "goalAmount");
+    const startsAt = parseOptionalPtaDate(data.startsAt, "startsAt");
+    const endsAt = parseOptionalPtaDate(data.endsAt, "endsAt");
+    validateDateRange(startsAt, endsAt);
+    const published = parseOptionalBoolean(data.published, "published") ?? false;
     const row = await prisma.ptaCampaign.create({
       data: {
         schoolId,
         organizationId: org.id,
         title: data.title.trim(),
         description: data.description ?? null,
-        goalAmount: data.goalAmount ?? null,
-        raisedAmount: data.raisedAmount ?? 0,
+        goalAmount,
+        raisedAmount: 0,
         currency: data.currency ?? null,
         published,
-        startsAt: data.startsAt ? new Date(data.startsAt) : null,
-        endsAt: data.endsAt ? new Date(data.endsAt) : null,
+        startsAt,
+        endsAt,
       },
     });
 
@@ -741,29 +854,38 @@ export const ptaService = {
   ) {
     const existing = await prisma.ptaCampaign.findUnique({ where: { id } });
     if (!existing) throw httpError("Campaign not found", 404);
+    await requireOrg(existing.schoolId, { mustBeEnabled: true });
 
     const wasPublished = existing.published;
     const updateData: Record<string, unknown> = {};
+    const startsAt =
+      data.startsAt !== undefined
+        ? parseOptionalPtaDate(data.startsAt, "startsAt")
+        : existing.startsAt;
+    const endsAt =
+      data.endsAt !== undefined
+        ? parseOptionalPtaDate(data.endsAt, "endsAt")
+        : existing.endsAt;
+    validateDateRange(startsAt, endsAt);
     if (data.title !== undefined) {
       if (!data.title.trim()) throw httpError("title is required", 400);
       updateData.title = data.title.trim();
     }
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.goalAmount !== undefined) updateData.goalAmount = data.goalAmount;
+    if (data.goalAmount !== undefined) {
+      updateData.goalAmount =
+        data.goalAmount == null
+          ? null
+          : requireNonNegativeAmount(data.goalAmount, "goalAmount");
+    }
     if (data.raisedAmount !== undefined) {
-      if (typeof data.raisedAmount !== "number" || data.raisedAmount < 0) {
-        throw httpError("raisedAmount must be a non-negative number", 400);
-      }
-      updateData.raisedAmount = data.raisedAmount;
+      updateData.raisedAmount = requireNonNegativeAmount(data.raisedAmount, "raisedAmount");
     }
     if (data.currency !== undefined) updateData.currency = data.currency;
-    if (data.published !== undefined) updateData.published = Boolean(data.published);
-    if (data.startsAt !== undefined) {
-      updateData.startsAt = data.startsAt ? new Date(data.startsAt) : null;
-    }
-    if (data.endsAt !== undefined) {
-      updateData.endsAt = data.endsAt ? new Date(data.endsAt) : null;
-    }
+    const published = parseOptionalBoolean(data.published, "published");
+    if (published !== undefined) updateData.published = published;
+    if (data.startsAt !== undefined) updateData.startsAt = startsAt;
+    if (data.endsAt !== undefined) updateData.endsAt = endsAt;
 
     const row = await prisma.ptaCampaign.update({
       where: { id },

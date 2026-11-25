@@ -13,7 +13,7 @@ import { useAuthStore } from "../../store/authStore";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { fieldInput, fieldLabel } from "../academics-shared/FeatureModalShell";
 import { FriendlyDateField } from "../academic-calendar/components/FriendlyDateField";
-import { ptaApi } from "./api";
+import { ptaApi, type PtaParentOption } from "./api";
 import { useTranslation } from "react-i18next";
 
 type PtaHome = {
@@ -69,6 +69,10 @@ export function PtaPage() {
   const [orgDesc, setOrgDesc] = useState("");
   const [orgEnabled, setOrgEnabled] = useState(false);
   const [officerId, setOfficerId] = useState("");
+  const [parentOptions, setParentOptions] = useState<PtaParentOption[]>([]);
+  const [parentsLoading, setParentsLoading] = useState(false);
+  const [parentsLoadFailed, setParentsLoadFailed] = useState(false);
+  const [appointing, setAppointing] = useState(false);
 
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
@@ -84,6 +88,24 @@ export function PtaPage() {
   const isOfficer = data?.myMembership?.role === "OFFICER";
   const canManage = isAdmin || isOfficer || user?.role === "PRINCIPAL";
   const isParent = user?.role === "PARENT";
+
+  const loadParentOptions = useCallback(async () => {
+    if (!school?.id || !isAdmin) {
+      setParentOptions([]);
+      return;
+    }
+    setParentsLoading(true);
+    setParentsLoadFailed(false);
+    try {
+      setParentOptions(await ptaApi.listParentOptions(school.id));
+    } catch (err: any) {
+      setParentOptions([]);
+      setParentsLoadFailed(true);
+      showToast(err?.message || "Could not load parents", "error");
+    } finally {
+      setParentsLoading(false);
+    }
+  }, [isAdmin, school?.id, showToast]);
 
   const load = useCallback(async () => {
     if (!school?.id) return;
@@ -112,6 +134,10 @@ export function PtaPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    void loadParentOptions();
+  }, [loadParentOptions]);
+
   const saveOrg = async () => {
     if (!school?.id) return;
     setSaving(true);
@@ -131,14 +157,17 @@ export function PtaPage() {
   };
 
   const appoint = async () => {
-    if (!school?.id || !officerId.trim()) return;
+    if (!school?.id || !officerId || appointing) return;
+    setAppointing(true);
     try {
-      await ptaApi.appointOfficer(school.id, officerId.trim());
+      await ptaApi.appointOfficer(school.id, officerId);
       setOfficerId("");
       showToast(t("pta.toast.officerAppointed"), "success");
       await load();
     } catch (err: any) {
       showToast(err?.message || t("pta.toast.appointFailed"), "error");
+    } finally {
+      setAppointing(false);
     }
   };
 
@@ -252,6 +281,9 @@ export function PtaPage() {
   const volunteers = data?.volunteers || [];
   const campaigns = data?.campaigns || [];
   const officers = data?.officers || [];
+  const availableParents = parentOptions.filter(
+    (parent) => !officers.some((officer) => officer.userId === parent.id)
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 w-full min-w-0 pb-16">
@@ -296,18 +328,47 @@ export function PtaPage() {
             <Users className="w-5 h-5 text-indigo-600" /> Officers
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              className={fieldInput}
-              placeholder="Parent user ID"
-              value={officerId}
-              onChange={(e) => setOfficerId(e.target.value)}
-            />
+            <label className="flex-1 space-y-1 text-sm">
+              <span className="font-bold text-slate-700">Parent</span>
+              <select
+                className={fieldInput}
+                value={officerId}
+                onChange={(e) => setOfficerId(e.target.value)}
+                disabled={parentsLoading || parentsLoadFailed || availableParents.length === 0}
+              >
+                <option value="">
+                  {parentsLoading
+                    ? "Loading parents…"
+                    : parentsLoadFailed
+                      ? "Could not load parents"
+                      : availableParents.length > 0
+                        ? "Select a parent…"
+                        : "No available parents"}
+                </option>
+                {availableParents.map((parent) => (
+                  <option key={parent.id} value={parent.id}>
+                    {parent.name || parent.email || `Parent ${parent.id.slice(0, 8)}`}
+                    {parent.name && parent.email ? ` · ${parent.email}` : ""}
+                  </option>
+                ))}
+              </select>
+              {parentsLoadFailed && (
+                <button
+                  type="button"
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-800"
+                  onClick={() => void loadParentOptions()}
+                >
+                  Retry loading parents
+                </button>
+              )}
+            </label>
             <button
               type="button"
               onClick={appoint}
-              className="px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
+              disabled={!officerId || appointing || parentsLoading || parentsLoadFailed}
+              className="px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50"
             >
-              Appoint
+              {appointing ? "Appointing…" : "Appoint"}
             </button>
           </div>
           {officers.length === 0 ? (
@@ -384,6 +445,9 @@ export function PtaPage() {
             />
             <input
               className={fieldInput}
+              type="number"
+              min="1"
+              step="1"
               placeholder="Slots (optional)"
               value={volSlots}
               onChange={(e) => setVolSlots(e.target.value)}
@@ -408,6 +472,9 @@ export function PtaPage() {
             />
             <input
               className={fieldInput}
+              type="number"
+              min="0"
+              step="0.01"
               placeholder="Goal amount (optional)"
               value={campGoal}
               onChange={(e) => setCampGoal(e.target.value)}

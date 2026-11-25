@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
 
 type Bucket = { count: number; resetAt: number };
@@ -137,4 +138,55 @@ export const loginRateLimiter = createRateLimiter({
   max: 20,
   keyFn: (req) => `${req.ip}:${(req.body?.email as string) || "anon"}`,
   message: "Too many login attempts. Please wait and try again.",
+});
+
+function parentRateHash(...parts: string[]): string {
+  const secret = process.env.PARENT_PAC_SECRET || "parent-rate-limit-key";
+  return crypto
+    .createHmac("sha256", secret)
+    .update(parts.join("|"))
+    .digest("hex");
+}
+
+function requestPart(req: Request, key: string): string {
+  return String(req.body?.[key] || "").trim().toLowerCase();
+}
+
+export const parentAccessCodeRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyFn: (req) => `parent-access-code:${parentRateHash(req.ip || "unknown", requestPart(req, "schoolSlug"))}`,
+  message: "Too many parent code attempts. Please wait and try again.",
+});
+
+export const parentPhoneSendRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  keyFn: (req) =>
+    `parent-phone-send:${parentRateHash(
+      req.ip || "unknown",
+      requestPart(req, "schoolSlug"),
+      requestPart(req, "phone")
+    )}`,
+  message: "Too many code requests. Please wait and try again.",
+});
+
+export const parentPhoneLoginRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyFn: (req) =>
+    `parent-phone-login:${parentRateHash(
+      req.ip || "unknown",
+      requestPart(req, "schoolSlug"),
+      requestPart(req, "phone")
+    )}`,
+  message: "Too many parent phone sign-in attempts. Please wait and try again.",
+});
+
+export const parentPhoneVerifyRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyFn: (req) =>
+    `parent-phone-verify:${parentRateHash(req.ip || "unknown", String(req.params?.id || "unknown"))}`,
+  message: "Too many verification attempts. Please wait and try again.",
 });

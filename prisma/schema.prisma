@@ -58,6 +58,7 @@ model School {
   users              User[]
   vehicles           Vehicle[]
   workOrders         WorkOrder[]
+
   @@schema("public")
 }
 
@@ -192,6 +193,7 @@ model GradeHistory {
   changedAt    DateTime   @default(now())
   user         User       @relation(fields: [changedBy], references: [id])
   gradeEntry   GradeEntry @relation(fields: [gradeEntryId], references: [id])
+
   @@schema("public")
 }
 
@@ -224,6 +226,7 @@ model AnnualGradeSummary {
   gpaPoints              Float?
   overallPosition        Int?
   isEligibleForPromotion Boolean?
+
   @@schema("public")
 }
 
@@ -235,6 +238,7 @@ model GradeLegend {
   createdAt DateTime     @default(now())
   school    School       @relation(fields: [schoolId], references: [id])
   scales    GradeScale[]
+
   @@schema("public")
 }
 
@@ -247,6 +251,7 @@ model GradeScale {
   gpaPoints     Float?
   remark        String?
   gradeLegend   GradeLegend @relation(fields: [gradeLegendId], references: [id])
+
   @@schema("public")
 }
 
@@ -297,6 +302,7 @@ model User {
   vehicles              Vehicle[]          @relation("VehicleDriver")
   workOrdersRequested   WorkOrder[]        @relation("WorkOrderRequestedBy")
   workOrdersAssigned    WorkOrder[]        @relation("AssignedTo")
+
   @@schema("public")
 }
 
@@ -341,6 +347,7 @@ model AttendanceRecord {
   notes        String?
   student      User       @relation("StudentAttendance", fields: [studentId], references: [id])
   attendance   Attendance @relation(fields: [attendanceId], references: [id])
+
   @@schema("public")
 }
 
@@ -475,6 +482,7 @@ model ClassroomPost {
   attachments PostAttachment[]
   comments    PostComment[]
   submissions Submission[]
+
   @@schema("public")
 }
 
@@ -485,6 +493,7 @@ model PostAttachment {
   fileType  String
   createdAt DateTime      @default(now())
   post      ClassroomPost @relation(fields: [postId], references: [id])
+
   @@schema("public")
 }
 
@@ -496,6 +505,7 @@ model PostComment {
   parentCommentId String?
   createdAt       DateTime      @default(now())
   post            ClassroomPost @relation(fields: [postId], references: [id])
+
   @@schema("public")
 }
 
@@ -514,6 +524,7 @@ model Submission {
   student      User                   @relation(fields: [studentId], references: [id])
   post         ClassroomPost          @relation(fields: [postId], references: [id])
   attachments  SubmissionAttachment[]
+
   @@schema("public")
 }
 
@@ -523,6 +534,7 @@ model SubmissionAttachment {
   fileUrl      String
   createdAt    DateTime   @default(now())
   submission   Submission @relation(fields: [submissionId], references: [id])
+
   @@schema("public")
 }
 
@@ -534,6 +546,7 @@ model ClassroomTopic {
   createdAt   DateTime        @default(now())
   posts       ClassroomPost[]
   classroom   Classroom       @relation(fields: [classroomId], references: [id])
+
   @@schema("public")
 }
 
@@ -545,6 +558,7 @@ model ClassroomMeeting {
   endedAt     DateTime?
   createdAt   DateTime  @default(now())
   classroom   Classroom @relation(fields: [classroomId], references: [id])
+
   @@schema("public")
 }
 
@@ -560,6 +574,7 @@ model Requisition {
   updatedAt   DateTime @updatedAt
   school      School   @relation(fields: [schoolId], references: [id])
   requester   User     @relation("RequestedBy", fields: [requestedBy], references: [id])
+
   @@schema("public")
 }
 
@@ -574,6 +589,7 @@ model SecurityLog {
   createdAt   DateTime @default(now())
   school      School   @relation(fields: [schoolId], references: [id])
   logger      User     @relation(fields: [loggedBy], references: [id])
+
   @@schema("public")
 }
 
@@ -591,6 +607,7 @@ model SystemLog {
   createdAt DateTime @default(now())
   school    School?  @relation(fields: [schoolId], references: [id])
   user      User?    @relation(fields: [userId], references: [id])
+
   @@schema("public")
 }
 
@@ -604,6 +621,7 @@ model SystemCredential {
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
   @@schema("public")
 }
 
@@ -620,6 +638,7 @@ model Vehicle {
   school          School               @relation(fields: [schoolId], references: [id])
   driver          User?                @relation("VehicleDriver", fields: [driverId], references: [id])
   maintenanceLogs VehicleMaintenance[]
+
   @@schema("public")
 }
 
@@ -632,6 +651,7 @@ model VehicleMaintenance {
   nextService DateTime?
   createdAt   DateTime  @default(now())
   vehicle     Vehicle   @relation(fields: [vehicleId], references: [id])
+
   @@schema("public")
 }
 
@@ -639,9 +659,21 @@ model WorkOrder {
   id          String   @id @default(uuid())
   title       String
   description String
+  requestType     String           @default("REPAIR")
   priority    String   @default("MEDIUM")
+  impact          String           @default("MEDIUM")
   status      String   @default("OPEN")
   location    String?
+  building        String?
+  room            String?
+  dueAt           DateTime?
+  safetyRelated   Boolean          @default(false)
+  safetyNotes     String?
+  accessNotes     String?
+  estimatedCost   Float?
+  resolutionNotes String?
+  completedAt     DateTime?
+  inventoryItemId String?
   assignedTo  String?
   requestedBy String
   schoolId    String
@@ -650,20 +682,94 @@ model WorkOrder {
   school      School   @relation(fields: [schoolId], references: [id])
   requester   User     @relation("WorkOrderRequestedBy", fields: [requestedBy], references: [id])
   assignee    User?    @relation("AssignedTo", fields: [assignedTo], references: [id])
+  asset           InventoryItem?   @relation("WorkOrderAsset", fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  events          WorkOrderEvent[]
+
+  @@index([schoolId, status, createdAt])
+  @@index([schoolId, dueAt])
+  @@index([inventoryItemId])
   @@schema("public")
 }
 
 model InventoryItem {
   id          String   @id @default(uuid())
   name        String
+  itemType          String              @default("CONSUMABLE")
+  sku               String?
+  description       String?
   category    String
   quantity    Int      @default(0)
   unit        String   @default("pcs")
   minQuantity Int      @default(5)
+  location          String?
+  supplier          String?
+  unitCost          Float?
+  manufacturer      String?
+  model             String?
+  serialNumber      String?
+  assetTag          String?
+  condition         String?
+  assetStatus       String?
+  assignedTo        String?
+  purchaseDate      DateTime?
+  warrantyExpiresAt DateTime?
+  notes             String?
   schoolId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   school      School   @relation(fields: [schoolId], references: [id])
+  movements         InventoryMovement[]
+  workOrders        WorkOrder[]         @relation("WorkOrderAsset")
+
+  @@unique([schoolId, sku])
+  @@unique([schoolId, serialNumber])
+  @@unique([schoolId, assetTag])
+  @@index([schoolId, itemType, category])
+  @@index([schoolId, quantity, minQuantity])
+  @@schema("public")
+}
+
+model InventoryMovement {
+  id                  String        @id @default(uuid())
+  itemId              String
+  baselineItemId      String?       @unique
+  schoolId            String
+  movementType        String
+  quantityDelta       Int           @default(0)
+  quantityBefore      Int
+  quantityAfter       Int
+  reason              String
+  reference           String?
+  previousCondition   String?
+  newCondition        String?
+  previousAssetStatus String?
+  newAssetStatus      String?
+  previousAssignedTo  String?
+  newAssignedTo       String?
+  movementUnitCost    Float?
+  details             Json?
+  performedBy         String
+  createdAt           DateTime      @default(now())
+  item                InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, itemId, createdAt])
+  @@index([schoolId, movementType, createdAt])
+  @@schema("public")
+}
+
+model WorkOrderEvent {
+  id                  String    @id @default(uuid())
+  workOrderId         String
+  baselineWorkOrderId String?   @unique
+  actorId             String
+  eventType           String
+  summary             String
+  oldValue            String?
+  newValue            String?
+  createdAt           DateTime  @default(now())
+  workOrder           WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId, createdAt])
   @@schema("public")
 }
 
@@ -838,5 +944,3 @@ model Expense {
   @@index([schoolId])
   @@schema("public")
 }
-
-

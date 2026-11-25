@@ -13,6 +13,9 @@ import {
   EyeOff,
   Loader2,
   AlertTriangle,
+  KeyRound,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import { changeAppLocale, getStoredLocale, normalizeLocale, resolveEffectiveLocale } from "../i18n";
 import { LanguageSelect } from "../i18n/LanguageSelect";
@@ -31,6 +34,9 @@ import {
 
 const fieldClass =
   "w-full rounded-2xl border border-slate-200/90 bg-white py-3.5 text-base text-slate-900 shadow-[inset_0_1px_2px_rgb(15_23_42/0.04)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-[3px] focus:ring-blue-500/15 sm:text-sm";
+
+type LoginPayload = Record<string, any>;
+type LoginMode = "password" | "parent-code" | "parent-phone";
 
 export const Login = () => {
   const { t, i18n } = useTranslation(["auth", "common"]);
@@ -55,7 +61,27 @@ export const Login = () => {
   const [mfaToken, setMfaToken] = React.useState<string | null>(null);
   const [mfaCode, setMfaCode] = React.useState("");
   const [mfaMethods, setMfaMethods] = React.useState<string[]>(["totp"]);
+  const [mfaMode, setMfaMode] = React.useState<LoginMode>("password");
   const [smsSent, setSmsSent] = React.useState(false);
+  const [loginTab, setLoginTab] = React.useState<"password" | "parent">("password");
+  const [parentMode, setParentMode] = React.useState<"code" | "phone">("code");
+  const [parentSchoolSlug, setParentSchoolSlug] = React.useState("");
+  const [parentAccessCode, setParentAccessCode] = React.useState("");
+  const [parentPhone, setParentPhone] = React.useState("");
+  const [parentPhoneCode, setParentPhoneCode] = React.useState("");
+  const [phoneCodeSent, setPhoneCodeSent] = React.useState(false);
+  const [parentPhoneLoginEnabled, setParentPhoneLoginEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    void fetch("/api/public/parent-login-config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (typeof data?.parentPhoneLoginEnabled === "boolean") {
+          setParentPhoneLoginEnabled(data.parentPhoneLoginEnabled);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   React.useEffect(() => {
     const host = window.location.hostname;
@@ -65,6 +91,7 @@ export const Login = () => {
       .then((data) => {
         if (data?.matched && data.schoolSlug) {
           setHostSchool({ schoolSlug: data.schoolSlug, schoolName: data.schoolName || data.schoolSlug });
+          setParentSchoolSlug((current) => current || data.schoolSlug);
         }
       })
       .catch(() => {
@@ -72,101 +99,111 @@ export const Login = () => {
       });
   }, []);
 
+  const showSchoolUnavailable = async (data: LoginPayload) => {
+    if (data?.code !== "SCHOOL_SUSPENDED" && data?.code !== "TRIAL_EXPIRED") return false;
+    const { rememberSchoolUnavailable, buildSchoolUnavailableUrl } = await import(
+      "../lib/schoolUnavailable"
+    );
+    const payload = {
+      schoolStatus: String(data.schoolStatus || "SUSPENDED"),
+      schoolName: data.schoolName || null,
+      schoolSlug: data.schoolSlug || null,
+    };
+    rememberSchoolUnavailable(payload);
+    navigate(buildSchoolUnavailableUrl(payload), { replace: true });
+    return true;
+  };
+
+  const finishLogin = async (data: LoginPayload, mode: LoginMode = "password") => {
+    if (data?.mfaRequired && data?.mfaToken) {
+      setMfaToken(String(data.mfaToken));
+      setMfaMode(mode);
+      setMfaMethods(Array.isArray(data.methods) ? data.methods.map(String) : ["totp"]);
+      setMfaCode("");
+      setSmsSent(false);
+      return;
+    }
+
+    if (data.user?.role !== "SUPER_ADMIN" && (!data.school || !data.school.slug)) {
+      throw loginErrorSignal({ case: "noSchool" });
+    }
+
+    setAuth(
+      data.user,
+      data.accessToken,
+      data.school ?? null,
+      data.capabilities ?? null,
+      data.entitlements ?? null,
+      data.quotas ?? null
+    );
+    await changeAppLocale(
+      resolveEffectiveLocale({
+        userPreferred: data.user?.preferredLocale,
+        schoolDefault: data.school?.defaultLocale,
+      })
+    );
+
+    navigate(getPostLoginPath(data.user, data.school ?? null));
+  };
+
+  const postJson = async (
+    endpoint: string,
+    payload: LoginPayload,
+    mode: LoginMode = "password",
+    mfa = false
+  ) => {
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      throw loginErrorSignal({ case: "offline" });
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Non-JSON response received:", text);
+      if (
+        text.includes("Starting Server") ||
+        text.includes("Please wait while your application starts") ||
+        text.includes("<title>Starting Server...")
+      ) {
+        throw loginErrorSignal({ case: "warming" });
+      }
+      throw loginErrorSignal(classifyLoginError({ status: response.status, kind: "bad-response", mode, mfa }));
+    }
+
+    return { response, data: (await response.json()) as LoginPayload };
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setLoginError(null);
 
-    const postCredentials = async (endpoint: string) => {
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-      } catch {
-        throw loginErrorSignal({ case: "offline" });
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        if (
-          text.includes("Starting Server") ||
-          text.includes("Please wait while your application starts") ||
-          text.includes("<title>Starting Server...")
-        ) {
-          throw loginErrorSignal({ case: "warming" });
-        }
-        throw loginErrorSignal(
-          classifyLoginError({ status: response.status, kind: "bad-response" })
-        );
-      }
-
-      return { response, data: await response.json() };
-    };
-
     try {
-      // A single sign-in serves both school users and Super Admins. The school
-      // endpoint already routes SUPER_ADMIN accounts; older backends may still
-      // ask the client to switch endpoints, so retry silently if told to.
-      let { response, data } = await postCredentials("/api/auth/login");
+      let { response, data } = await postJson("/api/auth/login", { email, password });
       if (!response.ok && data?.code === "USE_SUPER_ADMIN_LOGIN") {
-        ({ response, data } = await postCredentials("/api/super-admin/auth/login"));
+        ({ response, data } = await postJson("/api/super-admin/auth/login", { email, password }));
       }
 
       if (!response.ok) {
-        if (data?.code === "SCHOOL_SUSPENDED" || data?.code === "TRIAL_EXPIRED") {
-          const { rememberSchoolUnavailable, buildSchoolUnavailableUrl } = await import(
-            "../lib/schoolUnavailable"
-          );
-          const payload = {
-            schoolStatus: String(data.schoolStatus || "SUSPENDED"),
-            schoolName: data.schoolName || null,
-            schoolSlug: data.schoolSlug || null,
-          };
-          rememberSchoolUnavailable(payload);
-          navigate(buildSchoolUnavailableUrl(payload), { replace: true });
-          return;
-        }
+        if (await showSchoolUnavailable(data)) return;
         throw loginErrorSignal(
           classifyLoginError({
             status: response.status,
             code: data?.code,
             message: [data?.error, data?.details].filter(Boolean).join(" "),
+            mode: "password",
           })
         );
       }
 
-      if (data.mfaRequired && data.mfaToken) {
-        setMfaToken(String(data.mfaToken));
-        setMfaMethods(Array.isArray(data.methods) ? data.methods.map(String) : ["totp"]);
-        setMfaCode("");
-        setSmsSent(false);
-        return;
-      }
-
-      setAuth(
-        data.user,
-        data.accessToken,
-        data.school ?? null,
-        data.capabilities ?? null,
-        data.entitlements ?? null,
-        data.quotas ?? null
-      );
-      await changeAppLocale(
-        resolveEffectiveLocale({
-          userPreferred: data.user?.preferredLocale,
-          schoolDefault: data.school?.defaultLocale,
-        })
-      );
-
-      if (data.user?.role !== "SUPER_ADMIN" && (!data.school || !data.school.slug)) {
-        throw loginErrorSignal({ case: "noSchool" });
-      }
-      navigate(getPostLoginPath(data.user, data.school ?? null));
+      await finishLogin(data);
     } catch (err: unknown) {
       setLoginError(extractLoginErrorSignal(err));
     } finally {
@@ -180,39 +217,108 @@ export const Login = () => {
     setLoading(true);
     setLoginError(null);
     try {
-      const response = await fetch("/api/auth/mfa/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mfaToken, code: mfaCode }),
-      });
-      const data = await response.json().catch(() => ({}) as Record<string, unknown>);
+      const { response, data } = await postJson(
+        "/api/auth/mfa/verify",
+        { mfaToken, code: mfaCode },
+        mfaMode,
+        true
+      );
       if (!response.ok) {
+        if (await showSchoolUnavailable(data)) return;
         throw loginErrorSignal(
-          classifyLoginError({ status: response.status, code: data?.code, mfa: true })
+          classifyLoginError({ status: response.status, code: data?.code, mfa: true, mode: mfaMode })
         );
       }
       setMfaToken(null);
-      setAuth(
-        data.user,
-        data.accessToken,
-        data.school ?? null,
-        data.capabilities ?? null,
-        data.entitlements ?? null,
-        data.quotas ?? null
-      );
-      if (data.user?.role === "SUPER_ADMIN") {
-        navigate(typeof window !== "undefined" ? window.location.origin + "/super-admin/dashboard" : "/super-admin/dashboard");
-        return;
-      }
-      await changeAppLocale(
-        resolveEffectiveLocale({
-          userPreferred: data.user?.preferredLocale,
-          schoolDefault: data.school?.defaultLocale,
-        })
-      );
-      navigate(getPostLoginPath(data.user, data.school ?? null));
+      await finishLogin(data, mfaMode);
     } catch (err: unknown) {
-      setLoginError(extractLoginErrorSignal(err, { mfa: true }));
+      setLoginError(extractLoginErrorSignal(err, { mfa: true, mode: mfaMode }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParentAccessCodeLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setLoginError(null);
+    try {
+      const { response, data } = await postJson(
+        "/api/auth/parent/access-code/login",
+        { schoolSlug: parentSchoolSlug.trim(), code: parentAccessCode },
+        "parent-code"
+      );
+      if (!response.ok) {
+        if (await showSchoolUnavailable(data)) return;
+        throw loginErrorSignal(
+          classifyLoginError({
+            status: response.status,
+            code: data?.code,
+            message: [data?.error, data?.details].filter(Boolean).join(" "),
+            mode: "parent-code",
+          })
+        );
+      }
+      await finishLogin(data, "parent-code");
+    } catch (err: unknown) {
+      setLoginError(extractLoginErrorSignal(err, { mode: "parent-code" }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParentPhoneSendCode = async () => {
+    setLoading(true);
+    setLoginError(null);
+    try {
+      const { response, data } = await postJson(
+        "/api/auth/parent/phone/send-code",
+        { schoolSlug: parentSchoolSlug.trim(), phone: parentPhone },
+        "parent-phone"
+      );
+      if (!response.ok) {
+        throw loginErrorSignal(
+          classifyLoginError({
+            status: response.status,
+            code: data?.code,
+            message: [data?.error, data?.details].filter(Boolean).join(" "),
+            mode: "parent-phone",
+          })
+        );
+      }
+      setPhoneCodeSent(true);
+      showToast(t("auth:parent.codeSent"), "success");
+    } catch (err: unknown) {
+      setLoginError(extractLoginErrorSignal(err, { mode: "parent-phone" }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParentPhoneLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setLoginError(null);
+    try {
+      const { response, data } = await postJson(
+        "/api/auth/parent/phone/login",
+        { schoolSlug: parentSchoolSlug.trim(), phone: parentPhone, code: parentPhoneCode },
+        "parent-phone"
+      );
+      if (!response.ok) {
+        if (await showSchoolUnavailable(data)) return;
+        throw loginErrorSignal(
+          classifyLoginError({
+            status: response.status,
+            code: data?.code,
+            message: [data?.error, data?.details].filter(Boolean).join(" "),
+            mode: "parent-phone",
+          })
+        );
+      }
+      await finishLogin(data, "parent-phone");
+    } catch (err: unknown) {
+      setLoginError(extractLoginErrorSignal(err, { mode: "parent-phone" }));
     } finally {
       setLoading(false);
     }
@@ -278,6 +384,46 @@ export const Login = () => {
           </div>
 
           <div className="px-6 py-6 sm:px-8 sm:py-7">
+            {!mfaToken && (
+              <div className="mb-6 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={loginTab === "password"}
+                  onClick={() => {
+                    setLoginTab("password");
+                    setLoginError(null);
+                  }}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition-colors",
+                    loginTab === "password"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  <UserRound className="h-4 w-4" aria-hidden />
+                  {t("auth:tabs.emailPassword")}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={loginTab === "parent"}
+                  onClick={() => {
+                    setLoginTab("parent");
+                    setLoginError(null);
+                  }}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition-colors",
+                    loginTab === "parent"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  <KeyRound className="h-4 w-4" aria-hidden />
+                  {t("auth:tabs.parentCode")}
+                </button>
+              </div>
+            )}
             {mfaToken ? (
               <form onSubmit={handleMfaVerify} className="space-y-5" noValidate>
                 <LoginErrorAlert signal={loginError} />
@@ -351,10 +497,10 @@ export const Login = () => {
                   }}
                   className="w-full text-sm font-semibold text-slate-500 hover:text-slate-800"
                 >
-                  Back to password
+                  {t("auth:parent.backToSignIn")}
                 </button>
               </form>
-            ) : (
+            ) : loginTab === "password" ? (
             <form onSubmit={handleLogin} className="space-y-5" noValidate>
               <LoginErrorAlert signal={loginError} />
               {isExpired ? (
@@ -448,6 +594,167 @@ export const Login = () => {
                   </>
                 )}
               </button>
+            </form>
+            ) : (
+            <form
+              onSubmit={parentMode === "code" ? handleParentAccessCodeLogin : handleParentPhoneLogin}
+              className="space-y-5"
+              noValidate
+            >
+              <LoginErrorAlert signal={loginError} />
+              <div>
+                <p className="text-sm font-bold text-slate-900">{t("auth:parent.title")}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  {t("auth:parent.subtitle")}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="parent-school" className="block text-sm font-semibold text-slate-700">
+                  {t("auth:parent.schoolSlug")}
+                </label>
+                <input
+                  id="parent-school"
+                  value={parentSchoolSlug}
+                  onChange={(e) => {
+                    setParentSchoolSlug(e.target.value);
+                    setLoginError(null);
+                  }}
+                  className={fieldClass}
+                  placeholder={t("auth:parent.schoolSlugPlaceholder")}
+                  autoComplete="off"
+                  required
+                />
+              </div>
+
+              {parentPhoneLoginEnabled && (
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParentMode("code");
+                      setLoginError(null);
+                    }}
+                    className={cn(
+                      "rounded-lg px-2 py-2 text-xs font-bold transition-colors",
+                      parentMode === "code" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                    )}
+                  >
+                    {t("auth:tabs.parentCode")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParentMode("phone");
+                      setLoginError(null);
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-bold transition-colors",
+                      parentMode === "phone" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                    )}
+                  >
+                    <Phone className="h-3.5 w-3.5" aria-hidden />
+                    {t("auth:parent.phoneSignIn")}
+                  </button>
+                </div>
+              )}
+
+              {parentMode === "code" ? (
+                <div className="space-y-2">
+                  <label htmlFor="parent-code" className="block text-sm font-semibold text-slate-700">
+                    {t("auth:parent.accessCode")}
+                  </label>
+                  <input
+                    id="parent-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={parentAccessCode}
+                    onChange={(e) => {
+                      setParentAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      setLoginError(null);
+                    }}
+                    className={cn(fieldClass, "text-center font-mono tracking-widest")}
+                    placeholder={t("auth:parent.accessCodePlaceholder")}
+                    required
+                    pattern="[0-9]{6}"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || parentAccessCode.length !== 6 || !parentSchoolSlug.trim()}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition-colors hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                    {t("auth:parent.signInWithCode")}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="parent-phone" className="block text-sm font-semibold text-slate-700">
+                      {t("auth:parent.phoneNumber")}
+                    </label>
+                    <input
+                      id="parent-phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={parentPhone}
+                      onChange={(e) => {
+                        setParentPhone(e.target.value);
+                        setPhoneCodeSent(false);
+                        setLoginError(null);
+                      }}
+                      className={fieldClass}
+                      placeholder={t("auth:parent.phonePlaceholder")}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleParentPhoneSendCode}
+                    disabled={loading || !parentPhone.trim() || !parentSchoolSlug.trim()}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60"
+                  >
+                    {t("auth:parent.sendCode")}
+                  </button>
+                  <div className="space-y-2">
+                    <label htmlFor="parent-phone-code" className="block text-sm font-semibold text-slate-700">
+                      {t("auth:parent.verificationCode")}
+                    </label>
+                    <input
+                      id="parent-phone-code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={parentPhoneCode}
+                      onChange={(e) => {
+                        setParentPhoneCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                        setLoginError(null);
+                      }}
+                      className={cn(fieldClass, "text-center font-mono tracking-widest")}
+                      placeholder={t("auth:parent.accessCodePlaceholder")}
+                      required
+                      pattern="[0-9]{6}"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || parentPhoneCode.length !== 6 || !parentPhone.trim() || !parentSchoolSlug.trim()}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition-colors hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                    {t("auth:parent.signInWithPhone")}
+                  </button>
+                  {phoneCodeSent && (
+                    <button
+                      type="button"
+                      onClick={handleParentPhoneSendCode}
+                      disabled={loading}
+                      className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      {t("auth:parent.resendCode")}
+                    </button>
+                  )}
+                </div>
+              )}
             </form>
             )}
 

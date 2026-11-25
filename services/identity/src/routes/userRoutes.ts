@@ -207,6 +207,16 @@ router.get(
   userController.getUsersByRolesInternal
 );
 router.get(
+  "/api/internal/schools/:schoolId/parents",
+  authenticateInternal,
+  userController.getParentsForSchoolInternal
+);
+router.get(
+  "/api/internal/schools/:schoolId/parents/:parentId",
+  authenticateInternal,
+  userController.getParentForSchoolInternal
+);
+router.get(
   "/api/internal/schools/:schoolId/users/lookup",
   authenticateInternal,
   userController.lookupUserByEmailInternal

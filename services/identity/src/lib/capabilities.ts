@@ -56,6 +56,12 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
     "lockedForSchoolAdmin": false
   },
   {
+    "key": "action.parent_access.manage",
+    "label": "Manage parent access codes and phone sign-in",
+    "category": "Actions \u00b7 Admin",
+    "lockedForSchoolAdmin": false
+  },
+  {
     "key": "action.roles.assign",
     "label": "Assign user roles",
     "category": "Actions \u00b7 Admin",
@@ -314,6 +320,12 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
     "lockedForSchoolAdmin": false
   },
   {
+    "key": "nav.parent-access",
+    "label": "Parent Access",
+    "category": "Navigation",
+    "lockedForSchoolAdmin": false
+  },
+  {
     "key": "nav.payroll",
     "label": "Payroll",
     "category": "Navigation",
@@ -427,6 +439,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.leave.approve",
     "action.lesson_plans.approve",
     "action.payroll.run",
+    "action.parent_access.manage",
     "action.roles.assign",
     "action.roles.customize",
     "action.schedules.manage",
@@ -467,6 +480,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.notifications",
     "nav.onboarding",
     "nav.online-exams",
+    "nav.parent-access",
     "nav.payroll",
     "nav.procurement",
     "nav.promotion-statement",
@@ -494,6 +508,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.grade_review.decide",
     "action.leave.approve",
     "action.lesson_plans.approve",
+    "action.parent_access.manage",
     "action.schedules.manage",
     "action.settings.templates",
     "action.transcripts.approve",
@@ -527,6 +542,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.my-schedule",
     "nav.notifications",
     "nav.online-exams",
+    "nav.parent-access",
     "nav.procurement",
     "nav.pta",
     "nav.question-bank",
@@ -548,6 +564,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
   "REGISTRAR": [
     "action.admissions.manage",
     "action.bulk_import.roster",
+    "action.parent_access.manage",
     "action.settings.templates",
     "action.transcripts.prepare",
     "nav.admissions",
@@ -555,6 +572,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.dashboard",
     "nav.enrollment",
     "nav.notifications",
+    "nav.parent-access",
     "nav.promotion-statement",
     "nav.schedules",
     "nav.settings",
@@ -725,6 +743,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.staff-portal"
   ],
   "IT_ADMIN": [
+    "action.parent_access.manage",
     "action.settings.templates",
     "nav.api-docs",
     "nav.calendar",
@@ -732,6 +751,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "nav.my-schedule",
     "nav.notifications",
     "nav.onboarding",
+    "nav.parent-access",
     "nav.reports",
     "nav.roles",
     "nav.settings",
@@ -812,5 +832,6 @@ export function isKnownCapability(key: string): boolean {
 export function navCapabilityKey(routeKey: string): string {
   const cleaned = routeKey.replace(/^\/+|\/+$/g, "");
   if (!cleaned) return "nav.dashboard";
+  if (cleaned === "parents") return "nav.parent-access";
   return `nav.${cleaned}`;
 }

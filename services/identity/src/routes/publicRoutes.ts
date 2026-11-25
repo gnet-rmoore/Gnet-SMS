@@ -88,4 +88,9 @@ router.get("/api/public/schools/:slug/grade-levels", async (req, res) => {
   return schoolController.getPublicGradeLevels(req, res);
 });
 
+router.get("/api/public/parent-login-config", async (_req, res) => {
+  const { isParentPhoneLoginEnabled } = await import("../domain/parentAccess");
+  res.json({ parentPhoneLoginEnabled: isParentPhoneLoginEnabled() });
+});
+
 export default router;

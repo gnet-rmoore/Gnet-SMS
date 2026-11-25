@@ -7,6 +7,9 @@ import {
   Activity,
   X,
   Ban,
+  CalendarClock,
+  ClipboardList,
+  ShieldAlert,
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "motion/react";
@@ -26,6 +29,7 @@ export type HubWorkOrderDrawerProps = {
 const STATUS_OPTS = [
   { key: "OPEN", label: "Open", icon: Clock },
   { key: "IN_PROGRESS", label: "In progress", icon: Activity },
+  { key: "ON_HOLD", label: "On hold", icon: Clock },
   { key: "COMPLETED", label: "Completed", icon: CheckCircle2 },
   { key: "CANCELLED", label: "Cancelled", icon: Ban },
 ] as const;
@@ -80,9 +84,15 @@ export function HubWorkOrderDrawer({
             >
               {selectedOrder.priority}
             </span>
+            <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/15 bg-white/10 text-slate-200 ml-1">
+              {String(selectedOrder.impact || "MEDIUM").replace(/_/g, " ")} impact
+            </span>
             <h2 className="text-xl font-extrabold tracking-tight mt-2 leading-snug">
               {selectedOrder.title}
             </h2>
+            <p className="text-xs text-slate-300 mt-1">
+              {String(selectedOrder.requestType || "REPAIR").replace(/_/g, " ")}
+            </p>
             <p className="text-xs text-slate-500 font-mono mt-1">
               WO-{String(selectedOrder.id).slice(0, 8).toUpperCase()}
             </p>
@@ -141,7 +151,9 @@ export function HubWorkOrderDrawer({
                   <MapPin className="w-3 h-3" /> Location
                 </p>
                 <p className="text-sm font-bold text-slate-800 mt-1">
-                  {selectedOrder.location || "—"}
+                  {[selectedOrder.building, selectedOrder.room, selectedOrder.location]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
                 </p>
               </div>
               <div>
@@ -155,6 +167,53 @@ export function HubWorkOrderDrawer({
                 </p>
               </div>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                  <CalendarClock className="w-3 h-3" /> Target completion
+                </p>
+                <p className="text-sm font-bold text-slate-800 mt-1">
+                  {selectedOrder.dueAt
+                    ? format(new Date(selectedOrder.dueAt), "MMM d, yyyy h:mm a")
+                    : "No target date"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Estimated cost
+                </p>
+                <p className="text-sm font-bold text-slate-800 mt-1">
+                  {selectedOrder.estimatedCost == null
+                    ? "Not estimated"
+                    : Number(selectedOrder.estimatedCost).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            {selectedOrder.asset && (
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                  <ClipboardList className="w-3 h-3" /> Related asset
+                </p>
+                <p className="text-sm font-bold text-slate-800 mt-1">
+                  {selectedOrder.asset.name} · {selectedOrder.asset.assetTag || selectedOrder.asset.serialNumber || "No tag"}
+                </p>
+              </div>
+            )}
+            {selectedOrder.safetyRelated && (
+              <div className="rounded-xl border border-rose-100 bg-rose-50 p-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1">
+                  <ShieldAlert className="w-3.5 h-3.5" /> Safety-related work
+                </p>
+                <p className="text-sm text-rose-800 mt-1">{selectedOrder.safetyNotes || "No hazard notes provided."}</p>
+              </div>
+            )}
+            {selectedOrder.accessNotes && (
+              <p className="text-sm text-slate-600 border-t border-slate-100 pt-3">
+                <span className="font-bold text-slate-800">Access instructions: </span>
+                {selectedOrder.accessNotes}
+              </p>
+            )}
+          </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
@@ -211,6 +270,33 @@ export function HubWorkOrderDrawer({
                 </span>
               )}
             </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)]">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Work-order activity
+              </p>
+              {selectedOrder.events?.length ? (
+                <ol className="space-y-3">
+                  {selectedOrder.events.map((event: any) => (
+                    <li key={event.id} className="border-l-2 border-indigo-200 pl-3">
+                      <p className="text-sm font-bold text-slate-800">{event.summary}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {event.createdAt
+                          ? format(new Date(event.createdAt), "MMM d, yyyy h:mm a")
+                          : "—"}{" "}
+                        · {event.actorName || event.actorId}
+                      </p>
+                      {(event.oldValue || event.newValue) && (
+                        <p className="text-xs text-slate-600 mt-0.5 break-words">
+                          {event.oldValue || "—"} → {event.newValue || "—"}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-sm text-slate-500">No work-order history recorded.</p>
+              )}
           </div>
         </div>
       </motion.div>

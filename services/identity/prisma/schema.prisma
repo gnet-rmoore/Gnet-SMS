@@ -107,6 +107,9 @@ model School {
   mailDeliveryLogs MailDeliveryLog[]
   apiKeys        SchoolApiKey[]
   studentIdCounters StudentIdCounter[]
+  parentAccessCodes ParentAccessCode[]
+  parentPhoneLogins ParentPhoneLogin[]
+  parentPhoneLoginRequests ParentPhoneLoginRequest[]
 
   @@index([customDomain])
   @@schema("identity")
@@ -206,6 +209,10 @@ model User {
   children       ParentStudent[]     @relation("ParentToStudent")
   systemLogs     SystemLog[]
   mfaEnrollment  UserMfaEnrollment?
+  parentAccessCodes ParentAccessCode[] @relation("ParentAccessCodes")
+  parentPhoneLogins ParentPhoneLogin[] @relation("ParentPhoneLogins")
+  phoneLoginRequests ParentPhoneLoginRequest[] @relation("ParentPhoneLoginRequests")
+  reviewedPhoneLoginRequests ParentPhoneLoginRequest[] @relation("ReviewedParentPhoneLoginRequests")
 
   @@index([schoolId])
   @@index([schoolId, gradeLevelId])
@@ -258,11 +265,13 @@ model MfaSmsChallenge {
   phoneE164  String
   codeHash   String
   purpose    String
+  scopeKey   String?
   expiresAt  DateTime
   consumedAt DateTime?
   createdAt  DateTime  @default(now())
 
   @@index([userId, purpose])
+  @@index([userId, purpose, phoneE164, scopeKey])
   @@schema("identity")
 }
 
@@ -294,6 +303,72 @@ model ParentStudent {
   parent  User @relation("ParentToStudent", fields: [parentId], references: [id])
 
   @@unique([parentId, studentId])
+  @@schema("identity")
+}
+
+model ParentAccessCode {
+  id             String    @id @default(uuid())
+  userId         String
+  schoolId       String
+  codeHash       String
+  codeLookupHash String    @unique
+  codeHint       String
+  secretVersion  Int       @default(1)
+  issuedAt       DateTime  @default(now())
+  deliveredAt    DateTime?
+  failedCount    Int       @default(0)
+  lockedUntil    DateTime?
+  revokedAt      DateTime?
+
+  user   User   @relation("ParentAccessCodes", fields: [userId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schoolId])
+  @@index([schoolId, issuedAt])
+  @@schema("identity")
+}
+
+model ParentPhoneLogin {
+  id              String    @id @default(uuid())
+  userId          String
+  schoolId        String
+  phoneE164       String
+  verifiedAt      DateTime?
+  enabled         Boolean   @default(false)
+  failedCount     Int       @default(0)
+  lockedUntil     DateTime?
+  lastCodeSentAt  DateTime?
+  codesSentWindow Int       @default(0)
+  windowStartedAt DateTime?
+
+  user   User   @relation("ParentPhoneLogins", fields: [userId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schoolId])
+  @@unique([schoolId, phoneE164])
+  @@index([schoolId, enabled])
+  @@schema("identity")
+}
+
+model ParentPhoneLoginRequest {
+  id                    String    @id @default(uuid())
+  schoolId              String
+  parentId              String
+  phoneE164             String
+  status                String    @default("PENDING")
+  requestedAt           DateTime  @default(now())
+  verifiedAt            DateTime?
+  verificationChallenge String?
+  reviewedAt            DateTime?
+  reviewedById          String?
+  reviewNote            String?
+
+  school     School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  parent     User   @relation("ParentPhoneLoginRequests", fields: [parentId], references: [id], onDelete: Cascade)
+  reviewedBy User?  @relation("ReviewedParentPhoneLoginRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, status])
+  @@index([parentId, requestedAt])
   @@schema("identity")
 }
 

@@ -115,6 +115,9 @@ const ApiDocsPage = lazy(() =>
 const RoleAccessPage = lazy(() =>
   import("./pages/School/RoleAccessPage").then((m) => ({ default: m.RoleAccessPage }))
 );
+const ParentAccessPage = lazy(() =>
+  import("./pages/School/ParentAccess").then((m) => ({ default: m.ParentAccessPage }))
+);
 const Reports = lazy(() => import("./pages/School/Reports").then((m) => ({ default: m.Reports })));
 const Children = lazy(() => import("./pages/School/Children").then((m) => ({ default: m.Children })));
 const MyApplications = lazy(() =>
@@ -234,8 +237,8 @@ export default function App() {
           element={
             accessToken && user?.mustChangePassword ? (
               <MustChangePasswordPage />
-            ) : accessToken ? (
-              <Navigate to={getPostLoginPath(user!, school)} replace />
+            ) : accessToken && user ? (
+              <Navigate to={getPostLoginPath(user, school)} replace />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -690,6 +693,14 @@ export default function App() {
                     element={
                       <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "IT_ADMIN"]}>
                         <RoleAccessPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="parents"
+                    element={
+                      <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "IT_ADMIN"]}>
+                        <ParentAccessPage />
                       </ProtectedRoute>
                     }
                   />

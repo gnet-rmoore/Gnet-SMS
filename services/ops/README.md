@@ -1,9 +1,20 @@
 # Operations & Facilities
 
-**Owns:** `Vehicle`, `VehicleMaintenance`, `WorkOrder`, `InventoryItem`, `SecurityLog`, `Requisition`.
+**Owns:** `Vehicle`, `VehicleMaintenance`, `WorkOrder`, `WorkOrderEvent`,
+`InventoryItem`, `InventoryMovement`, `SecurityLog`, and `Requisition`.
 
-**Replaces:** `logisticsController`.
+Work orders retain request, impact, target date, safety, access, assignment,
+asset-link, and resolution details. Status and assignment changes are written to
+`WorkOrderEvent`.
 
-**Notes:** `Requisition` exists in Prisma but has no wired routes yet — build that API here when this service is extracted.
+Inventory supports consumable stock movements and individually tracked
+equipment assets. Asset tags, serials, condition, custody, warranty, and
+purchase details live on `InventoryItem`; receipts, issues, returns,
+adjustments, custody changes, and metadata edits are retained in
+`InventoryMovement`.
 
-**Status:** Scaffold only. Logic remains in the monolith.
+The Ops container pushes its Prisma schema before startup. On rollout, existing
+inventory balances and work orders receive explicit baseline events; the system
+does not reconstruct activity that was never recorded.
+
+**Notes:** `Requisition` exists in Prisma but does not yet have wired routes.

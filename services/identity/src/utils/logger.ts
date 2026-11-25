@@ -46,7 +46,7 @@ export type LogSystemEventExtras = {
 };
 
 const SENSITIVE_KEY_PATTERN =
-  /pass(word|wd)?|secret|token|api[_-]?key|authorization|auth|credential|private[_-]?key|otp|pin|ssn|card|cvv|cookie|session[_-]?id/i;
+  /pass(word|wd)?|secret|token|api[_-]?key|authorization|auth|credential|private[_-]?key|otp|pin|ssn|card|cvv|cookie|session[_-]?id|(^|_)code$|access[_-]?code|code[_-]?lookup[_-]?hash|phone|mobile|e164/i;
 
 const PII_KEY_PATTERN =
   /email|phone|mobile|address|dob|birth|national[_-]?id|id[_-]?number|passport|first[_-]?name|last[_-]?name|full[_-]?name/i;

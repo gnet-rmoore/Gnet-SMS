@@ -110,7 +110,7 @@
 ["Bulk import","Importation en masse","Importación masiva","Massenimport","الاستيراد الجماعي","批量导入","बल्क आयात"],
 ["Download template","Télécharger le modèle","Descargar plantilla","Vorlage herunterladen","تنزيل النموذج","下载模板","टेम्पलेट डाउनलोड करें"],
 ["Choose CSV or Excel file","Choisir un fichier CSV ou Excel","Elige un archivo CSV o Excel","CSV- oder Excel-Datei auswählen","اختر ملف CSV أو Excel","选择CSV或Excel文件","CSV या Excel फ़ाइल चुनें"],
-[".csv or .xlsx · up to 500 rows",".csv ou .xlsx · jusqu’à 500 lignes",".csv o .xlsx · hasta 500 filas",".csv oder .xlsx · bis zu 500 Zeilen",".csv أو .xlsx · حتى 500 صف",".csv 或 .xlsx · 最多500行",".csv या .xlsx · अधिकतम 500 पंक्तियां"],
+[".csv, .xlsx or .xls · up to 1500 rows",".csv, .xlsx ou .xls · jusqu’à 1500 lignes",".csv, .xlsx o .xls · hasta 1500 filas",".csv, .xlsx oder .xls · bis zu 1500 Zeilen",".csv أو .xlsx أو .xls · حتى 1500 صف",".csv、.xlsx 或 .xls · 最多 1500 行",".csv, .xlsx या .xls · अधिकतम 1500 पंक्तियाँ"],
 ["Browse","Parcourir","Explorar","Durchsuchen","استعراض","浏览","ब्राउज़ करें"],
 ["Import {{count}}","Importer {{count}}","Importar {{count}}","{{count}} importieren","استيراد {{count}}","导入 {{count}}","{{count}} आयात करें"],
 ["Importing…","Importation en cours…","Importando…","Import läuft…","جارٍ الاستيراد…","导入中…","आयात हो रहा है…"],

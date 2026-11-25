@@ -76,7 +76,7 @@ School-scoped: actor’s `schoolId` must match the target school (same guards as
 
 | Limit | Value |
 | :--- | :--- |
-| Max rows per commit | **500** (configurable constant; reject above with clear error) |
+| Max rows per commit | **1500** (configurable constant; reject above with clear error) |
 | Max file size (if server upload later) | 5 MB |
 | Empty rows | Ignored |
 | Duplicate email **within file** | Fail dry-run / fail commit (treat as row errors) |
@@ -240,7 +240,7 @@ Client may parse CSV/XLSX locally and POST JSON (MVP — no multipart on Identit
 ### Phase 0 — Spec lock (this doc)
 
 - [x] Product rules: direct create, atomic Identity batch, CSV + XLSX, separate student/staff
-- [x] Confirm max rows (500) and column aliases with product owner if needed
+- [x] Confirm max rows (1500) and column aliases with product owner if needed
 
 ### Phase 1 — Backend (Identity) MVP
 
@@ -309,7 +309,7 @@ Client may parse CSV/XLSX locally and POST JSON (MVP — no multipart on Identit
 | :--- | :--- |
 | Parser location | SPA parses file → JSON; Identity validates (keeps Identity free of Excel deps in MVP) |
 | Excel library | `xlsx` (SheetJS) in frontend `package.json` only for Phase 2 |
-| Transaction timeout | Size batch for 500 bcrypt hashes — may need longer interactive transaction timeout or pre-hash outside loop carefully (hash before `create` inside tx is fine; watch duration) |
+| Transaction timeout | Size batch for 1500 bcrypt hashes — staff import uses a 300s interactive transaction timeout; student import hashes before each create outside a transaction |
 | Idempotency | No silent skip; re-import same emails fails (emails exist). Client should not double-submit (disable button) |
 | Events | Optional later `user.bulk_imported`; not required for MVP |
 | Docs on ship | Flip this banner to Done; update APP_FEATURES_OVERVIEW Students/Staff rows; changelog below |

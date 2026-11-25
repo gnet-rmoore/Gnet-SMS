@@ -2,18 +2,44 @@ import express from "express";
 import { authController } from "../controllers/authController";
 import { validateBody } from "../middleware/validate";
 import {
+  accessCodeLoginSchema,
   forgotPasswordSchema,
   loginSchema,
+  phoneCodeSendSchema,
+  phoneLoginSchema,
   resetPasswordSchema,
   verifyEmailSchema,
 } from "../validation/schemas";
-import { loginRateLimiter } from "../middleware/rateLimit";
+import {
+  loginRateLimiter,
+  parentAccessCodeRateLimiter,
+  parentPhoneLoginRateLimiter,
+  parentPhoneSendRateLimiter,
+} from "../middleware/rateLimit";
 import { authenticate } from "../middleware/auth";
 import { mfaController } from "../controllers/mfaController";
 
 const router = express.Router();
 
 router.post("/api/auth/login", loginRateLimiter, validateBody(loginSchema), authController.login);
+router.post(
+  "/api/auth/parent/access-code/login",
+  parentAccessCodeRateLimiter,
+  validateBody(accessCodeLoginSchema),
+  authController.parentAccessCodeLogin
+);
+router.post(
+  "/api/auth/parent/phone/send-code",
+  parentPhoneSendRateLimiter,
+  validateBody(phoneCodeSendSchema),
+  authController.parentPhoneSendCode
+);
+router.post(
+  "/api/auth/parent/phone/login",
+  parentPhoneLoginRateLimiter,
+  validateBody(phoneLoginSchema),
+  authController.parentPhoneLogin
+);
 router.get("/api/auth/me", authenticate, authController.me);
 router.post("/api/auth/logout", authenticate, authController.logout);
 router.post(

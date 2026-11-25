@@ -16,6 +16,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useStudentsQuery } from "./hooks/useStudentsQuery";
 import { studentsApi } from "./api";
 import { EditStudentModal } from "./components/EditStudentModal";
+import { canEditStudentRecord, canEditStudentStatus } from "./permissions";
 import { ImportRosterModal } from "../bulk-import/ImportRosterModal";
 import { bulkImportApi } from "../bulk-import/api";
 import { confirmAction } from "../../lib/swal";
@@ -34,6 +35,8 @@ import { useListFilters, type FilterFieldDef } from "../list-filters";
 const emptyStudent = {
   name: "",
   email: "",
+  phone: "",
+  address: "",
   dob: "",
   gender: "MALE",
   parentName: "",
@@ -124,9 +127,8 @@ export const Students = () => {
   const canImport = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     user?.role || ""
   );
-  const canEdit = ["PRINCIPAL", "SCHOOL_ADMIN", "SUPER_ADMIN", "REGISTRAR"].includes(
-    user?.role || ""
-  );
+  const canEdit = canEditStudentRecord(user?.role);
+  const canEditStatus = canEditStudentStatus(user?.role);
   const canManage = ["REGISTRAR", "PRINCIPAL", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     user?.role || ""
   );
@@ -139,7 +141,20 @@ export const Students = () => {
     if (!selectedStudent) return;
     setSubmitting(true);
     try {
-      await studentsApi.updateUser(selectedStudent.id, editStudent);
+      await studentsApi.updateUser(selectedStudent.id, {
+        name: String(editStudent.name || "").trim(),
+        email: String(editStudent.email || "").trim(),
+        phone: editStudent.phone || "",
+        address: editStudent.address || "",
+        dob: editStudent.dob || null,
+        gender: editStudent.gender || "MALE",
+        parentName: editStudent.parentName || "",
+        parentPhone: editStudent.parentPhone || "",
+        gradeLevelId: editStudent.gradeLevelId || null,
+        feeCohort: editStudent.feeCohort || "NEW",
+        isActive: Boolean(editStudent.isActive),
+        photoUrl: editStudent.photoUrl || null,
+      });
       await refetchStudents();
       setShowEditModal(false);
       setSelectedStudent(null);
@@ -168,12 +183,18 @@ export const Students = () => {
     }
   };
 
+  const handleEditPhotoChange = (photoUrl: string | null) => {
+    setEditStudent((current: any) => ({ ...(current || {}), photoUrl }));
+  };
+
   const openEditModal = (student: any) => {
     setSelectedStudent(student);
     setEditStudent({
       id: student.id,
       name: student.name || "",
       email: student.email || "",
+      phone: student.phone || "",
+      address: student.address || "",
       photoUrl: student.photoUrl || null,
       dob: student.dob ? String(student.dob).split("T")[0] : "",
       gender: student.gender || "MALE",
@@ -521,10 +542,14 @@ export const Students = () => {
         open={showEditModal}
         editStudent={editStudent}
         gradeLevels={gradeLevels}
+        gradeLevelsLoading={loading}
+        canEdit={canEdit}
+        canEditStatus={canEditStatus}
         handleUpdate={handleUpdate}
         setEditStudent={setEditStudent}
         setShowEditModal={setShowEditModal}
         submitting={submitting}
+        onPhotoChange={handleEditPhotoChange}
       />
     </div>
   );

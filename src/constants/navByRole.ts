@@ -165,6 +165,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.schoolStaff" },
           { to: `/${slug}/roles`, icon: ShieldCheck, labelKey: "items.rolesAccess" },
+          { to: `/${slug}/parents`, icon: KeyRound, labelKey: "items.parentAccess" },
           { to: `/${slug}/admissions`, icon: FileSignature, labelKey: "items.admissions" },
           { to: `/${slug}/enrollment`, icon: ClipboardCheck, labelKey: "items.enrollment" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
@@ -219,6 +220,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
           { to: `/${slug}/students`, icon: Users, labelKey: "items.students" },
           { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.staffDirectory" },
+          { to: `/${slug}/parents`, icon: KeyRound, labelKey: "items.parentAccess" },
           { to: `/${slug}/admissions`, icon: FileSignature, labelKey: "items.admissions" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
           { to: `/${slug}/leave-approval`, icon: CalendarCheck, labelKey: "items.leaveApprovals" },
@@ -252,6 +254,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
         section("people", "People", [
           { to: `/${slug}/admissions`, icon: FileSignature, labelKey: "items.admissions" },
           { to: `/${slug}/students`, icon: Users, labelKey: "items.studentRecords" },
+          { to: `/${slug}/parents`, icon: KeyRound, labelKey: "items.parentAccess" },
           { to: `/${slug}/transcripts`, icon: FileText, labelKey: "items.transcripts" },
           { to: `/${slug}/certificates`, icon: GraduationCap, labelKey: "items.certificates" },
           { to: `/${slug}/enrollment`, icon: ClipboardCheck, labelKey: "items.enrollment" },
@@ -514,6 +517,7 @@ export function getNavSections(role: string | undefined, slug: string | undefine
         ]),
         section("people", "People", [
           { to: `/${slug}/staff`, icon: UserCog, labelKey: "items.userManagement" },
+          { to: `/${slug}/parents`, icon: KeyRound, labelKey: "items.parentAccess" },
           { to: `/${slug}/staff-portal`, icon: Briefcase, labelKey: "items.staffPortal" },
         ]),
         section("security", "Security", [

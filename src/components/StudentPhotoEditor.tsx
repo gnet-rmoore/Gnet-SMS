@@ -256,55 +256,59 @@ export function StudentPhotoEditor({
   }
 
   return (
-    <div className={cn("relative shrink-0", className)}>
-      {previewNode}
-      {canEdit ? (
-        <>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "absolute -bottom-1.5 -right-1.5 grid h-10 w-10 place-items-center rounded-xl text-white shadow-lg border transition-colors disabled:opacity-60",
-              isDark
-                ? "bg-indigo-600 hover:bg-indigo-500 border-indigo-400/30"
-                : "bg-indigo-600 hover:bg-indigo-700 border-indigo-500/20"
-            )}
-            title={t("studentPhoto.change")}
-            aria-label={t("studentPhoto.change")}
-          >
-            <Camera className="h-4 w-4" />
-          </button>
-          {displayPhoto ? (
+    <div className={cn("flex flex-col items-center gap-2", className)}>
+      <div className="relative inline-flex">
+        {previewNode}
+        {canEdit ? (
+          <>
             <button
               type="button"
               disabled={busy}
-              onClick={() => void handleRemove()}
+              onClick={() => fileInputRef.current?.click()}
               className={cn(
-                "absolute -bottom-1.5 -left-1.5 grid h-10 w-10 place-items-center rounded-xl shadow-lg border transition-colors disabled:opacity-60",
+                "absolute -bottom-2 -right-2 grid h-10 w-10 place-items-center rounded-full text-white shadow-lg border transition-colors disabled:opacity-60",
                 isDark
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-                  : "bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-slate-200"
+                  ? "bg-indigo-600 hover:bg-indigo-500 border-indigo-400/30"
+                  : "bg-indigo-600 hover:bg-indigo-700 border-indigo-500/20"
               )}
-              title={t("studentPhoto.remove")}
-              aria-label={t("studentPhoto.remove")}
+              title={t("studentPhoto.change")}
+              aria-label={t("studentPhoto.change")}
             >
-              <Trash2 className="h-4 w-4" />
+              <Camera className="h-4 w-4" />
             </button>
-          ) : null}
-          {input}
-          <p
-            className={cn(
-              "mt-2 text-center text-xs font-medium max-w-[8.5rem]",
-              isDark ? "text-slate-400" : "text-slate-500"
-            )}
-          >
-            {t("studentPhoto.hint")}
-          </p>
-        </>
+            {displayPhoto ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleRemove()}
+                className={cn(
+                  "absolute -bottom-2 -left-2 grid h-10 w-10 place-items-center rounded-full shadow-lg border transition-colors disabled:opacity-60",
+                  isDark
+                    ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                    : "bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-slate-200"
+                )}
+                title={t("studentPhoto.remove")}
+                aria-label={t("studentPhoto.remove")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            ) : null}
+            {input}
+          </>
+        ) : null}
+      </div>
+      {canEdit ? (
+        <p
+          className={cn(
+            "max-w-[8.5rem] text-center text-xs font-medium leading-relaxed",
+            isDark ? "text-slate-400" : "text-slate-500"
+          )}
+        >
+          {t("studentPhoto.hint")}
+        </p>
       ) : null}
       {error ? (
-        <p role="alert" className="mt-1 text-center text-xs font-semibold text-rose-600">
+        <p role="alert" className="text-center text-xs font-semibold text-rose-600">
           {error}
         </p>
       ) : null}

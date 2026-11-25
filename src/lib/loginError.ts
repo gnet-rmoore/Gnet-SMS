@@ -21,6 +21,9 @@ export type LoginErrorCase =
   | "warming"
   | "mfa"
   | "mfaEnroll"
+  | "parentCode"
+  | "parentPhone"
+  | "parentPhoneUnavailable"
   | "noSchool"
   | "code"
   | "generic";
@@ -38,6 +41,7 @@ export type LoginErrorInput = {
   message?: string | null;
   kind?: "network" | "warming" | "bad-response" | "no-school";
   mfa?: boolean;
+  mode?: "password" | "parent-code" | "parent-phone";
 };
 
 /** Backend error text that clearly means "wrong email or password". */
@@ -54,10 +58,15 @@ const KNOWN_CODE_CASES: Record<string, LoginErrorCase> = {
   MFA_ENROLLMENT_REQUIRED: "mfaEnroll",
   VALIDATION: "form",
   USE_SUPER_ADMIN_LOGIN: "code",
+  PARENT_PHONE_LOGIN_NOT_ALLOWED: "parentPhoneUnavailable",
+  PARENT_PHONE_VERIFICATION_REQUIRED: "parentPhone",
+  PARENT_PHONE_INVALID_OR_EXPIRED: "parentPhone",
+  PHONE_IN_USE: "parentPhone",
 };
 
 export function classifyLoginError(input: LoginErrorInput): LoginErrorSignal {
-  const { status = null, code = null, message = null, kind, mfa = false } = input;
+  const { status = null, code = null, message = null, kind, mfa = false, mode = "password" } = input;
+  const invalidCase = mode === "parent-code" ? "parentCode" : mode === "parent-phone" ? "parentPhone" : "invalid";
 
   if (kind === "network") return { case: "offline" };
   if (kind === "warming") return { case: "warming" };
@@ -66,16 +75,16 @@ export function classifyLoginError(input: LoginErrorInput): LoginErrorSignal {
 
   if (code) {
     const mapped = KNOWN_CODE_CASES[code];
-    if (mapped) return { case: mapped, code };
+    if (mapped) return { case: mapped === "invalid" ? invalidCase : mapped, code };
   }
 
-  if (message && INVALID_CREDENTIALS_TEXT.test(message)) return { case: "invalid" };
+  if (message && INVALID_CREDENTIALS_TEXT.test(message)) return { case: invalidCase };
 
   if (status === 429) return { case: "rateLimited" };
   if (status !== null && status >= 500) return { case: "down" };
   if (status === 404) return { case: "notFound" };
   if (mfa && (status === 400 || status === 401)) return { case: "mfa" };
-  if (status === 401) return { case: "invalid" };
+  if (status === 401) return { case: invalidCase };
   if (status === 400) return { case: "form" };
   if (status === 403) return { case: "inactive" };
 
@@ -103,7 +112,7 @@ function isSignal(value: unknown): value is LoginErrorSignal {
  */
 export function extractLoginErrorSignal(
   err: unknown,
-  opts: { mfa?: boolean } = {}
+  opts: { mfa?: boolean; mode?: LoginErrorInput["mode"] } = {}
 ): LoginErrorSignal {
   if (err && typeof err === "object") {
     const carried = (err as { loginError?: unknown }).loginError;
@@ -125,6 +134,7 @@ export function extractLoginErrorSignal(
         message: typeof e.message === "string" ? e.message : null,
         kind: e.kind as LoginErrorInput["kind"],
         mfa: opts.mfa,
+        mode: opts.mode,
       });
     }
   }
