@@ -17,6 +17,7 @@ import { decryptCredentialSecret, encryptCredentialSecret } from "../services/id
 import { accessCodeLoginSchema } from "../services/identity/src/validation/schemas";
 import { classifyLoginError } from "../src/lib/loginError";
 import { formatParentAccessCodeInput } from "../src/lib/parentAccessCode";
+import { getPostLoginPath, requiresPasswordChange } from "../src/lib/postLoginPath";
 
 const code = generateParentAccessCode();
 assert.match(code, /^\d{6}$/);
@@ -77,6 +78,48 @@ assert.equal(
   classifyLoginError({ status: 401, code: "INVALID_CREDENTIALS", mode: "password" }).case,
   "invalid"
 );
+
+const pendingPasswordChangeUser = {
+  id: "parent-1",
+  email: "parent@example.com",
+  name: "Parent",
+  role: "PARENT",
+  mustChangePassword: true,
+};
+const school = { slug: "demo-school" };
+assert.equal(requiresPasswordChange({ ...pendingPasswordChangeUser, authMethod: "PASSWORD" }), true);
+assert.equal(requiresPasswordChange({ ...pendingPasswordChangeUser, authMethod: "ACCESS_CODE" }), false);
+assert.equal(requiresPasswordChange({ ...pendingPasswordChangeUser, authMethod: "PHONE_OTP" }), false);
+assert.equal(requiresPasswordChange(pendingPasswordChangeUser), true);
+assert.equal(
+  getPostLoginPath({ ...pendingPasswordChangeUser, authMethod: "PASSWORD" }, school),
+  "/change-password-required"
+);
+assert.equal(
+  getPostLoginPath({ ...pendingPasswordChangeUser, authMethod: "ACCESS_CODE" }, school),
+  "/demo-school/dashboard"
+);
+assert.equal(
+  getPostLoginPath({ ...pendingPasswordChangeUser, authMethod: "PHONE_OTP" }, school),
+  "/demo-school/dashboard"
+);
+
+const authServiceSource = readFileSync(
+  new URL("../services/identity/src/services/authService.ts", import.meta.url),
+  "utf8"
+);
+const completeSchoolLoginSource = authServiceSource.slice(
+  authServiceSource.indexOf("async completeSchoolLogin"),
+  authServiceSource.indexOf("async parentAccessCodeLogin")
+);
+assert.match(completeSchoolLoginSource, /const authMethod = input\.authMethod \|\| "PASSWORD";/);
+assert.equal((completeSchoolLoginSource.match(/\bauthMethod,/g) || []).length >= 2, true);
+
+const authControllerSource = readFileSync(
+  new URL("../services/identity/src/controllers/authController.ts", import.meta.url),
+  "utf8"
+);
+assert.match(authControllerSource, /sessionForUserId\(req\.user\.id, req\.user\.authMethod\)/);
 
 assert.deepEqual(accessCodeLoginSchema.parse({ code: "123456", schoolSlug: "ignored" }), {
   code: "123456",

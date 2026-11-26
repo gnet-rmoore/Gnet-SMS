@@ -4,8 +4,10 @@ import { logSystemEvent } from "../utils/logger";
 import { generateTempPassword } from "../lib/mailer";
 import { maskSecret } from "../lib/mailRuntimeConfig";
 import {
+  clearTemporaryPasswordFields,
   encryptCredentialSecret,
   decryptCredentialSecret,
+  temporaryPasswordFields,
 } from "../lib/credentialCrypto";
 import {
   parseSecurityPolicy,
@@ -234,6 +236,7 @@ export const superAdminService = {
       data: {
         passwordHash: bcrypt.hashSync(password, 10),
         mustChangePassword: mustChange,
+        ...(mustChange ? temporaryPasswordFields(password) : clearTemporaryPasswordFields()),
       },
     });
 

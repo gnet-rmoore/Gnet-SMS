@@ -1,6 +1,7 @@
 import { userService } from "../services/userService";
 import { bulkImportService } from "../services/bulkImportService";
 import { fetchStudentGrades } from "../lib/academicClient";
+import { temporaryPasswordService } from "../services/temporaryPasswordService";
 import { logSystemEvent } from "../utils/logger";
 
 /** Ported from src/server/controllers/userController.ts */
@@ -355,6 +356,74 @@ export const userController = {
     }
   },
 
+  async revealTemporaryPassword(req: any, res: any) {
+    const { userId } = req.params;
+    const isSuperAdmin = req.user?.role === "SUPER_ADMIN";
+    const schoolId = isSuperAdmin ? null : String(req.user?.schoolId || "");
+    try {
+      if (!isSuperAdmin && !schoolId) {
+        return res.status(403).json({ error: "School context is required" });
+      }
+      const result = await temporaryPasswordService.revealTemporaryPassword(userId, schoolId);
+      let auditFailed = false;
+      try {
+        await logSystemEvent(
+          "user_temporary_password_revealed",
+          "AUTH",
+          `Temporary password reveal for user ${userId}: ${result ? "SUCCESS" : "NOT_FOUND"}`,
+          "WARNING",
+          req,
+          {
+            category: "SECURITY",
+            entityType: "User",
+            entityId: userId,
+            schoolId: result?.schoolId || schoolId,
+            outcome: result ? "SUCCESS" : "NOT_FOUND",
+            targetUserId: userId,
+            targetUserEmail: result?.email || null,
+            targetUserName: result?.name || null,
+            targetUserRole: result?.role || null,
+            dataSensitivity: "SECRET",
+            tags: ["user", "temporary-password", "reveal"],
+          }
+        );
+      } catch (logErr: any) {
+        auditFailed = true;
+        console.error("Failed to audit temporary password reveal", logErr?.message || logErr);
+      }
+      if (!result) {
+        return res.status(404).json({ error: "No active temporary password found" });
+      }
+      if (auditFailed) {
+        return res.status(500).json({ error: "Failed to audit temporary password reveal" });
+      }
+      res.json(result);
+    } catch (err: any) {
+      try {
+        await logSystemEvent(
+          "user_temporary_password_reveal_failed",
+          "AUTH",
+          `Temporary password reveal failed for user ${userId}: ${err?.message || "unknown error"}`,
+          "WARNING",
+          req,
+          {
+            category: "SECURITY",
+            entityType: "User",
+            entityId: userId,
+            schoolId: req.resourceSchoolId || req.user?.schoolId || null,
+            outcome: "FAILURE",
+            targetUserId: userId,
+            dataSensitivity: "SECRET",
+            tags: ["user", "temporary-password", "reveal", "failure"],
+          }
+        );
+      } catch (logErr: any) {
+        console.error("Failed to audit temporary password reveal failure", logErr?.message || logErr);
+      }
+      res.status(err.status || 500).json({ error: err.message || "Failed to reveal temporary password" });
+    }
+  },
+
   async listSchoolUsers(req: any, res: any) {
     const { schoolId } = req.params;
     try {
@@ -602,47 +671,55 @@ export const userController = {
         return res.status(403).json({ error: "Unauthorized" });
       }
       const result = await bulkImportService.importStudents(schoolId, req.body);
-      await logSystemEvent(
-        "bulk_students_imported",
-        "USERS",
-        `Student roster imported: ${result.createdCount} created, ${result.failedCount || 0} failed (${sourceFileName})`,
-        "INFO",
-        req,
-        {
-          category: "USER_MGMT",
-          entityType: "User",
-          schoolId,
-          outcome: "SUCCESS",
-          dataSensitivity: "PII",
-          after: {
-            sourceFileName,
-            rowCount: result.rowCount,
-            validCount: result.validCount,
-            createdCount: result.createdCount,
-            failedCount: result.failedCount || 0,
-            createdIds: result.created.map((row: any) => row.id),
-          },
-          tags: ["user", "student", "bulk-import"],
-        }
-      );
+      try {
+        await logSystemEvent(
+          "bulk_students_imported",
+          "USERS",
+          `Student roster imported: ${result.createdCount} created, ${result.failedCount || 0} failed (${sourceFileName})`,
+          "INFO",
+          req,
+          {
+            category: "USER_MGMT",
+            entityType: "User",
+            schoolId,
+            outcome: "SUCCESS",
+            dataSensitivity: "PII",
+            after: {
+              sourceFileName,
+              rowCount: result.rowCount,
+              validCount: result.validCount,
+              createdCount: result.createdCount,
+              failedCount: result.failedCount || 0,
+              createdIds: result.created.map((row: any) => row.id),
+            },
+            tags: ["user", "student", "bulk-import"],
+          }
+        );
+      } catch (logErr: any) {
+        console.error("Failed to audit student import success", logErr?.message || logErr);
+      }
       res.json(result);
     } catch (err: any) {
-      await logSystemEvent(
-        "bulk_students_import_failed",
-        "USERS",
-        `Student roster import failed (${sourceFileName}): ${err?.message || "unknown error"}`,
-        "WARNING",
-        req,
-        {
-          category: "USER_MGMT",
-          entityType: "User",
-          schoolId,
-          outcome: "FAILURE",
-          dataSensitivity: "PII",
-          after: { sourceFileName, reason: err?.message || "Import failed" },
-          tags: ["user", "student", "bulk-import", "failure"],
-        }
-      );
+      try {
+        await logSystemEvent(
+          "bulk_students_import_failed",
+          "USERS",
+          `Student roster import failed (${sourceFileName}): ${err?.message || "unknown error"}`,
+          "WARNING",
+          req,
+          {
+            category: "USER_MGMT",
+            entityType: "User",
+            schoolId,
+            outcome: "FAILURE",
+            dataSensitivity: "PII",
+            after: { sourceFileName, reason: err?.message || "Import failed" },
+            tags: ["user", "student", "bulk-import", "failure"],
+          }
+        );
+      } catch (logErr: any) {
+        console.error("Failed to audit student import failure", logErr?.message || logErr);
+      }
       if (err.preview) {
         return res.status(err.status || 400).json({
           ...err.preview,
@@ -672,7 +749,7 @@ export const userController = {
       if (req.user.schoolId !== schoolId && req.user.role !== "SUPER_ADMIN") {
         return res.status(403).json({ error: "Unauthorized" });
       }
-      const preview = await bulkImportService.previewStaff(schoolId, req.body);
+      const preview = await bulkImportService.previewStaff(schoolId, req.body, req.user?.role);
       res.json(preview);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Preview failed" });
@@ -681,15 +758,61 @@ export const userController = {
 
   async importStaff(req: any, res: any) {
     const { schoolId } = req.params;
+    const sourceFileName = String(req.body?.sourceFileName || "unknown");
     try {
       if (req.user.schoolId !== schoolId && req.user.role !== "SUPER_ADMIN") {
         return res.status(403).json({ error: "Unauthorized" });
       }
-      const result = await bulkImportService.importStaff(schoolId, req.body);
+      const result = await bulkImportService.importStaff(schoolId, req.body, req.user?.role);
+      try {
+        await logSystemEvent(
+          "bulk_staff_imported",
+          "USERS",
+          `Staff roster imported: ${result.createdCount} created (${sourceFileName})`,
+          "INFO",
+          req,
+          {
+            category: "USER_MGMT",
+            entityType: "User",
+            schoolId,
+            outcome: "SUCCESS",
+            dataSensitivity: "PII",
+            after: {
+              sourceFileName,
+              rowCount: result.rowCount,
+              createdCount: result.createdCount,
+              createdIds: result.created.map((row: any) => row.id),
+            },
+            tags: ["user", "staff", "bulk-import"],
+          }
+        );
+      } catch (logErr: any) {
+        console.error("Failed to audit staff import success", logErr?.message || logErr);
+      }
       res.json(result);
     } catch (err: any) {
+      try {
+        await logSystemEvent(
+          "bulk_staff_import_failed",
+          "USERS",
+          `Staff roster import failed (${sourceFileName}): ${err?.message || "unknown error"}`,
+          "WARNING",
+          req,
+          {
+            category: "USER_MGMT",
+            entityType: "User",
+            schoolId,
+            outcome: "FAILURE",
+            dataSensitivity: "PII",
+            after: { sourceFileName, reason: err?.message || "Import failed" },
+            tags: ["user", "staff", "bulk-import", "failure"],
+          }
+        );
+      } catch (logErr: any) {
+        console.error("Failed to audit staff import failure", logErr?.message || logErr);
+      }
       if (err.preview) {
-        return res.status(400).json(err.preview);
+        return res.status(err.status || 400).json(err.preview);
       }
       res.status(err.status || 400).json({ error: err.message || "Import failed" });
     }

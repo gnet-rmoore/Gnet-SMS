@@ -3,6 +3,7 @@ import {
   UserPlus,
   Plus,
   Edit,
+  KeyRound,
   Trash2,
   X,
   CheckCircle2,
@@ -19,14 +20,16 @@ import { bulkImportApi } from "../../features/bulk-import/api";
 import { STAFF_CREATE_ROLES, staffRoleLabel } from "../../constants/roles";
 import { confirmAction } from "../../lib/swal";
 import { UserAvatar } from "../../components/UserAvatar";
+import { TemporaryPasswordRevealModal } from "../../components/TemporaryPasswordRevealModal";
 import { canAdminResetPassword } from "../../lib/passwordResetPolicy";
+import { hasCapabilityOrRole } from "../../lib/capabilities";
 import { translateApiError } from "../../i18n/apiErrors";
 import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button, DetailDrawerShell } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../../features/list-filters";
 
 export const StaffManagement = () => {
   const { t } = useTranslation(["pages", "common"]);
-  const { school, accessToken, user } = useAuthStore();
+  const { school, accessToken, user, capabilities } = useAuthStore();
   const [staffList, setStaffList] = useState<any[]>([]);
   const [staffTotal, setStaffTotal] = useState(0);
   const [classrooms, setClassrooms] = useState<any[]>([]);
@@ -45,6 +48,8 @@ export const StaffManagement = () => {
   );
 
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTemporaryPasswordModal, setShowTemporaryPasswordModal] = useState(false);
+  const [temporaryPasswordTarget, setTemporaryPasswordTarget] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState({
     id: "",
     name: "",
@@ -97,9 +102,16 @@ export const StaffManagement = () => {
   const canImportStaff =
     user?.role === "SCHOOL_ADMIN" ||
     user?.role === "PRINCIPAL" ||
-    user?.role === "VPA";
+    user?.role === "VPA" ||
+    user?.role === "SUPER_ADMIN";
   const canChangeRoles = user?.role === "SCHOOL_ADMIN";
   const canResetPasswords = user?.role === "SCHOOL_ADMIN" || user?.role === "IT_ADMIN";
+  const canRevealTemporaryPassword = hasCapabilityOrRole(
+    capabilities,
+    "action.users.reveal_temporary_password",
+    ["SCHOOL_ADMIN", "PRINCIPAL", "REGISTRAR", "IT_ADMIN", "SUPER_ADMIN"],
+    user?.role
+  );
   const showPasswordReset =
     canResetPasswords &&
     canAdminResetPassword(
@@ -782,6 +794,21 @@ export const StaffManagement = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
+                          {canRevealTemporaryPassword && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="compact"
+                              onClick={() => {
+                                setTemporaryPasswordTarget(staff);
+                                setShowTemporaryPasswordModal(true);
+                              }}
+                              title="View temporary password"
+                              className="hover:bg-amber-50 hover:text-amber-600"
+                            >
+                              <KeyRound className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant="ghost"
@@ -1019,6 +1046,12 @@ export const StaffManagement = () => {
 
         </form>
       </DetailDrawerShell>
+
+      <TemporaryPasswordRevealModal
+        open={showTemporaryPasswordModal}
+        target={temporaryPasswordTarget}
+        onClose={() => setShowTemporaryPasswordModal(false)}
+      />
     </div>
   );
 };

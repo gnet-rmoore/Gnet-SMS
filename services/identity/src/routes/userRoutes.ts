@@ -12,6 +12,10 @@ import { resourceLoaders } from "../middleware/resourceLoaders";
 import { userController } from "../controllers/userController";
 import { capabilityController } from "../controllers/capabilityController";
 import { mailController } from "../controllers/mailController";
+import {
+  TEMPORARY_PASSWORD_REVEAL_CAPABILITY,
+  TEMPORARY_PASSWORD_REVEAL_ROLES,
+} from "../services/temporaryPasswordService";
 
 const router = express.Router();
 
@@ -103,7 +107,7 @@ router.post(
   "/api/schools/:schoolId/staff",
   authenticate,
   requireTenant,
-  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "SUPER_ADMIN"]),
   userController.createStaff
 );
 
@@ -111,7 +115,7 @@ router.get(
   "/api/schools/:schoolId/staff/import/template.csv",
   authenticate,
   requireTenant,
-  requireCapability("action.bulk_import.roster", ["SCHOOL_ADMIN", "PRINCIPAL", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "SUPER_ADMIN"]),
   userController.staffImportTemplate
 );
 
@@ -119,7 +123,7 @@ router.post(
   "/api/schools/:schoolId/staff/import/preview",
   authenticate,
   requireTenant,
-  requireCapability("action.bulk_import.roster", ["SCHOOL_ADMIN", "PRINCIPAL", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "SUPER_ADMIN"]),
   userController.previewStaffImport
 );
 
@@ -127,7 +131,7 @@ router.post(
   "/api/schools/:schoolId/staff/import",
   authenticate,
   requireTenant,
-  requireCapability("action.bulk_import.roster", ["SCHOOL_ADMIN", "PRINCIPAL", "VPA"]),
+  requireRoles(["SCHOOL_ADMIN", "PRINCIPAL", "VPA", "SUPER_ADMIN"]),
   userController.importStaff
 );
 
@@ -171,6 +175,15 @@ router.patch(
   requireSelfOrRoles(["SCHOOL_ADMIN", "IT_ADMIN", "REGISTRAR", "PRINCIPAL"]),
   requireResourceTenant(resourceLoaders.user),
   userController.updateUser
+);
+
+router.post(
+  "/api/users/:userId/temporary-password/reveal",
+  authenticate,
+  requireResourceTenant(resourceLoaders.user),
+  requireRoles([...TEMPORARY_PASSWORD_REVEAL_ROLES, "SUPER_ADMIN"]),
+  requireCapability(TEMPORARY_PASSWORD_REVEAL_CAPABILITY, [...TEMPORARY_PASSWORD_REVEAL_ROLES]),
+  userController.revealTemporaryPassword
 );
 
 router.patch(

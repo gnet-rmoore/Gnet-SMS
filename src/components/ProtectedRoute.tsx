@@ -4,6 +4,7 @@ import { useAuthStore } from "../store/authStore";
 import { hasCapability, isKnownCapability, navCapabilityKey } from "../lib/capabilities";
 import { entitlementForPath } from "../lib/routeEntitlements";
 import { hasPlanAccess } from "../lib/entitlements";
+import { requiresPasswordChange } from "../lib/postLoginPath";
 import {
   buildSchoolUnavailableUrl,
   isSchoolLoginAllowed,
@@ -91,7 +92,7 @@ export const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user?.mustChangePassword && !impersonation && !onChangePasswordRoute) {
+  if (user && requiresPasswordChange(user) && !impersonation && !onChangePasswordRoute) {
     return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
 

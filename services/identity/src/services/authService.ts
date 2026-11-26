@@ -133,6 +133,7 @@ export const authService = {
           schoolId: user.schoolId,
           schoolStatus: user.school?.status || null,
           capabilities,
+          authMethod: "PASSWORD",
         },
         getJwtAccessSecret(),
         { expiresIn: ACCESS_TOKEN_TTL }
@@ -149,6 +150,7 @@ export const authService = {
           signatureUrl: user.signatureUrl,
           phone: user.phone,
           mustChangePassword: user.mustChangePassword,
+          authMethod: "PASSWORD",
           preferredLocale: user.preferredLocale,
           emailVerified: Boolean(user.emailVerifiedAt),
         },
@@ -168,7 +170,7 @@ export const authService = {
   },
 
   /** Refresh session payload (capabilities) for an authenticated user. */
-  async sessionForUserId(userId: string) {
+  async sessionForUserId(userId: string, authMethod = "PASSWORD") {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { school: true },
@@ -182,7 +184,7 @@ export const authService = {
     if (user.role === "SUPER_ADMIN") {
       const platformRole = normalizeSaPlatformRole(user.platformRole);
       const accessToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, platformRole },
+        { id: user.id, email: user.email, role: user.role, platformRole, authMethod },
         getSuperAdminJwtSecret(),
         { expiresIn: ACCESS_TOKEN_TTL }
       );
@@ -198,6 +200,7 @@ export const authService = {
           signatureUrl: user.signatureUrl,
           phone: user.phone,
           mustChangePassword: user.mustChangePassword,
+          authMethod,
           preferredLocale: user.preferredLocale,
         },
         school: null,
@@ -232,6 +235,7 @@ export const authService = {
         schoolId: user.schoolId,
         schoolStatus: user.school?.status || null,
         capabilities,
+        authMethod,
       },
       getJwtAccessSecret(),
       { expiresIn: ACCESS_TOKEN_TTL }
@@ -247,6 +251,7 @@ export const authService = {
         signatureUrl: user.signatureUrl,
         phone: user.phone,
         mustChangePassword: user.mustChangePassword,
+        authMethod,
         preferredLocale: user.preferredLocale,
       },
       school: user.school,
@@ -263,6 +268,7 @@ export const authService = {
     schoolIdOverride?: string | null;
   }) {
     const { user, school } = input;
+    const authMethod = input.authMethod || "PASSWORD";
     const resolvedSchoolId = input.schoolIdOverride ?? school?.id ?? user.schoolId ?? null;
     const capabilities = await capabilityService.resolveEffective(resolvedSchoolId, user.role);
     const commercial = resolvedSchoolId ? await getSchoolCommercialContext(resolvedSchoolId) : null;
@@ -274,6 +280,7 @@ export const authService = {
         schoolId: resolvedSchoolId,
         schoolStatus: school?.status || null,
         capabilities,
+        authMethod,
       },
       getJwtAccessSecret(),
       { expiresIn: ACCESS_TOKEN_TTL }
@@ -289,6 +296,7 @@ export const authService = {
         signatureUrl: user.signatureUrl,
         phone: user.phone,
         mustChangePassword: user.mustChangePassword,
+        authMethod,
         preferredLocale: user.preferredLocale,
         emailVerified: Boolean(user.emailVerifiedAt),
       },
@@ -389,7 +397,7 @@ export const authService = {
       const platformRole = normalizeSaPlatformRole(user.platformRole);
       const capabilities = capabilitiesForSaRole(platformRole);
       const accessToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, platformRole },
+        { id: user.id, email: user.email, role: user.role, platformRole, authMethod: "PASSWORD" },
         getSuperAdminJwtSecret(),
         { expiresIn: ACCESS_TOKEN_TTL }
       );
@@ -406,6 +414,7 @@ export const authService = {
           signatureUrl: user.signatureUrl,
           preferredLocale: user.preferredLocale,
           mustChangePassword: user.mustChangePassword,
+          authMethod: "PASSWORD",
         },
         capabilities,
       };

@@ -23,6 +23,7 @@ export type BulkImportPreview = {
   warnings?: string[];
   rows: Array<{
     index: number;
+    rowNumber?: number;
     ok: boolean;
     errors: string[];
     normalized?: Record<string, unknown>;
@@ -34,12 +35,20 @@ export type BulkImportCreated = {
   name: string;
   email: string;
   role: string;
+  studentIdNumber?: string | null;
   temporaryPassword: string;
   parentName?: string | null;
   parentEmail?: string | null;
   parentTemporaryPassword?: string;
+  parentAccessCode?: string | null;
   parentCreated?: boolean;
   parentLinkFailed?: boolean;
+  parent2Name?: string | null;
+  parent2Email?: string | null;
+  parent2TemporaryPassword?: string;
+  parent2AccessCode?: string | null;
+  parent2Created?: boolean;
+  parent2LinkFailed?: boolean;
 };
 
 export type BulkImportImportResult = {
@@ -49,7 +58,7 @@ export type BulkImportImportResult = {
   failedCount?: number;
   created: BulkImportCreated[];
   warnings?: string[];
-  failed?: Array<{ index: number; email?: string | null; errors: string[] }>;
+  failed?: Array<{ index: number; rowNumber?: number; email?: string | null; errors: string[] }>;
 };
 
 type Props = {
@@ -175,7 +184,7 @@ export function ImportRosterModal({
         setError(
           quotaFailure
             ? t("pages:bulkImport.noSeats")
-            : t("pages:bulkImport.noValidRows")
+            : translateApiError(err) || err?.message || t("pages:bulkImport.noValidRows")
         );
         setStep("preview");
       } else {
@@ -341,7 +350,9 @@ export function ImportRosterModal({
                           r.ok ? "bg-white" : "bg-rose-50/60"
                         }`}
                       >
-                        <td className="px-4 py-2.5 font-mono text-slate-600">{r.index + 1}</td>
+                        <td className="px-4 py-2.5 font-mono text-slate-600">
+                          {r.rowNumber ?? r.index + 1}
+                        </td>
                         <td className="px-4 py-2.5 font-bold">
                           {r.ok ? (
                             <span className="text-emerald-700">{t("pages:bulkImport.valid")}</span>
@@ -399,7 +410,7 @@ export function ImportRosterModal({
                   <p className="font-bold">{t("pages:bulkImport.failedRows")}</p>
                   {failures.slice(0, 8).map((failure) => (
                     <p key={`${failure.index}-${failure.email || ""}`}>
-                      {failure.index + 1}
+                      {failure.rowNumber ?? failure.index + 1}
                       {failure.email ? ` · ${failure.email}` : ""}: {failure.errors.join("; ")}
                     </p>
                   ))}

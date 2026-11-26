@@ -91,6 +91,7 @@ export function ParentAccessPage() {
           role: session.user.role,
           photoUrl: session.user.photoUrl ?? null,
           mustChangePassword: Boolean(session.user.mustChangePassword),
+          authMethod: session.user.authMethod ?? null,
         },
         session.accessToken,
         session.school as any,

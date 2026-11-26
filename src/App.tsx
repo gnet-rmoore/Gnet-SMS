@@ -6,7 +6,7 @@ import { Login } from "./pages/Login";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LandingPageSkeleton } from "./features/landing/components/skeletons";
 import { isSchoolLoginAllowed, buildSchoolUnavailableUrl } from "./lib/schoolUnavailable";
-import { getPostLoginPath } from "./lib/postLoginPath";
+import { getPostLoginPath, requiresPasswordChange } from "./lib/postLoginPath";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { OfflineGate } from "./components/OfflineGate";
 import { ParentChildProvider } from "./context/ParentChildContext";
@@ -218,7 +218,7 @@ export default function App() {
           path="/login" 
           element={
             accessToken && user ? (
-              user.mustChangePassword ? (
+              requiresPasswordChange(user) ? (
                 <Navigate to="/change-password-required" replace />
               ) : user.role !== "SUPER_ADMIN" && school && !isSchoolLoginAllowed(school.status) ? (
                 <Navigate
@@ -240,7 +240,7 @@ export default function App() {
         <Route
           path="/change-password-required"
           element={
-            accessToken && user?.mustChangePassword ? (
+            accessToken && user && requiresPasswordChange(user) ? (
               <MustChangePasswordPage />
             ) : accessToken && user ? (
               <Navigate to={getPostLoginPath(user, school)} replace />

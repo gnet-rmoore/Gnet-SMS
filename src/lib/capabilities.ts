@@ -74,6 +74,12 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
     "lockedForSchoolAdmin": true
   },
   {
+    "key": "action.users.reveal_temporary_password",
+    "label": "View temporary passwords for student and staff accounts",
+    "category": "Actions \u00b7 Admin",
+    "lockedForSchoolAdmin": false
+  },
+  {
     "key": "action.schedules.manage",
     "label": "Create and edit class schedules",
     "category": "Actions \u00b7 Academics",
@@ -440,6 +446,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.lesson_plans.approve",
     "action.payroll.run",
     "action.parent_access.manage",
+    "action.users.reveal_temporary_password",
     "action.roles.assign",
     "action.roles.customize",
     "action.schedules.manage",
@@ -509,6 +516,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.leave.approve",
     "action.lesson_plans.approve",
     "action.parent_access.manage",
+    "action.users.reveal_temporary_password",
     "action.schedules.manage",
     "action.settings.templates",
     "action.transcripts.approve",
@@ -565,6 +573,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
     "action.admissions.manage",
     "action.bulk_import.roster",
     "action.parent_access.manage",
+    "action.users.reveal_temporary_password",
     "action.settings.templates",
     "action.transcripts.prepare",
     "nav.admissions",
@@ -743,6 +752,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, string[]> = {
   ],
   "IT_ADMIN": [
     "action.parent_access.manage",
+    "action.users.reveal_temporary_password",
     "action.settings.templates",
     "nav.api-docs",
     "nav.calendar",
@@ -822,6 +832,17 @@ export function mergeCapabilities(
 
 export function hasCapability(capabilities: string[] | undefined | null, key: string): boolean {
   return Array.isArray(capabilities) && capabilities.includes(key);
+}
+
+export function hasCapabilityOrRole(
+  capabilities: string[] | undefined | null,
+  key: string,
+  legacyRoles: string[],
+  role: string | undefined | null
+): boolean {
+  if (role === "SUPER_ADMIN") return true;
+  if (Array.isArray(capabilities)) return capabilities.includes(key);
+  return Boolean(role && legacyRoles.includes(role));
 }
 
 export function isKnownCapability(key: string): boolean {

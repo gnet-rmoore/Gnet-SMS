@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { generateTemporaryPassword } from "./tempPassword";
 import { consoleProvider } from "./mailProviders/console";
 import { resolveMailProviderWithConfig, type MailMessage } from "./mailProviders";
 
@@ -35,7 +36,7 @@ export function generateRawToken(bytes = 32): string {
 }
 
 export function generateTempPassword(): string {
-  return crypto.randomBytes(9).toString("base64url").slice(0, 12);
+  return generateTemporaryPassword("St");
 }
 
 export function hashIp(ip?: string | null): string | null {

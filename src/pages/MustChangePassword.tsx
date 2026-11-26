@@ -8,7 +8,7 @@ import { LoginBackground } from "./LoginBackground";
 import { PageToast, usePageToast } from "../features/academics-shared/PageToast";
 import { api } from "../services/api";
 import { translateApiError } from "../i18n/apiErrors";
-import { getPostLoginPath } from "../lib/postLoginPath";
+import { getPostLoginPath, requiresPasswordChange } from "../lib/postLoginPath";
 import {
   evaluatePassword,
   parseSecurityPolicy,
@@ -123,7 +123,7 @@ export const MustChangePassword = () => {
       navigate("/login", { replace: true });
       return;
     }
-    if (user && !user.mustChangePassword) {
+    if (user && !requiresPasswordChange(user)) {
       navigate(getPostLoginPath(user, school), { replace: true });
     }
   }, [accessToken, user, school, navigate]);
@@ -181,7 +181,7 @@ export const MustChangePassword = () => {
     }
   };
 
-  if (!accessToken || !user?.mustChangePassword) {
+  if (!accessToken || !user || !requiresPasswordChange(user)) {
     return (
       <div className="flex min-h-[100svh] items-center justify-center bg-slate-100 text-sm text-slate-500">
         {t("common:loading")}

@@ -39,7 +39,9 @@ export async function assertStudentQuota(schoolId: string) {
   );
 }
 
-export async function assertStaffQuota(schoolId: string) {
+export async function staffQuotaHeadroom(
+  schoolId: string
+): Promise<{ limit: number; remaining: number } | null> {
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
     select: { planCode: true, quotaOverrides: true },
@@ -48,7 +50,7 @@ export async function assertStaffQuota(schoolId: string) {
     throw Object.assign(new Error("School not found"), { status: 404 });
   }
   const quotas = resolveQuotas(school.planCode, school.quotaOverrides);
-  if (quotas.maxStaff == null) return;
+  if (quotas.maxStaff == null) return null;
 
   const rows = await prisma.user.groupBy({
     by: ["schoolId", "role"],
@@ -61,12 +63,16 @@ export async function assertStaffQuota(schoolId: string) {
       staffCount += typeof row._count === "number" ? row._count : row._count._all;
     }
   }
-  if (staffCount >= quotas.maxStaff) {
-    throw Object.assign(
-      new Error(`Staff seat limit reached (${quotas.maxStaff}). Upgrade your plan or contact support.`),
-      { status: 403, code: "QUOTA_EXCEEDED", quota: "maxStaff", limit: quotas.maxStaff }
-    );
-  }
+  return { limit: quotas.maxStaff, remaining: Math.max(0, quotas.maxStaff - staffCount) };
+}
+
+export async function assertStaffQuota(schoolId: string) {
+  const headroom = await staffQuotaHeadroom(schoolId);
+  if (!headroom || headroom.remaining > 0) return;
+  throw Object.assign(
+    new Error(`Staff seat limit reached (${headroom.limit}). Upgrade your plan or contact support.`),
+    { status: 403, code: "QUOTA_EXCEEDED", quota: "maxStaff", limit: headroom.limit }
+  );
 }
 
 export async function getSchoolCommercialContext(schoolId: string) {

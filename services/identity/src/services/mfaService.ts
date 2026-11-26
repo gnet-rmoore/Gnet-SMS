@@ -450,7 +450,7 @@ export const mfaService = {
       const platformRole = normalizeSaPlatformRole(user.platformRole);
       const capabilities = capabilitiesForSaRole(platformRole);
       const accessToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, platformRole },
+        { id: user.id, email: user.email, role: user.role, platformRole, authMethod },
         getSuperAdminJwtSecret(),
         { expiresIn: ACCESS_TOKEN_TTL }
       );
@@ -466,6 +466,7 @@ export const mfaService = {
           signatureUrl: user.signatureUrl,
           preferredLocale: user.preferredLocale,
           mustChangePassword: user.mustChangePassword,
+          authMethod,
         },
         capabilities,
       };
@@ -481,6 +482,7 @@ export const mfaService = {
         schoolId: user.schoolId,
         schoolStatus: user.school?.status || null,
         capabilities,
+        authMethod,
       },
       getJwtAccessSecret(),
       { expiresIn: ACCESS_TOKEN_TTL }
@@ -497,6 +499,7 @@ export const mfaService = {
         signatureUrl: user.signatureUrl,
         phone: user.phone,
         mustChangePassword: user.mustChangePassword,
+        authMethod,
         preferredLocale: user.preferredLocale,
         emailVerified: Boolean(user.emailVerifiedAt),
       },

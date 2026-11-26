@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Edit,
+  KeyRound,
   Trash2,
   Users,
   Upload,
@@ -22,6 +23,7 @@ import { bulkImportApi } from "../bulk-import/api";
 import { confirmAction } from "../../lib/swal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { UserAvatar } from "../../components/UserAvatar";
+import { TemporaryPasswordRevealModal } from "../../components/TemporaryPasswordRevealModal";
 import {
   FeatureModalShell,
   fieldInput,
@@ -29,6 +31,7 @@ import {
   cardShell,
 } from "../academics-shared/FeatureModalShell";
 import { translateApiError } from "../../i18n/apiErrors";
+import { hasCapabilityOrRole } from "../../lib/capabilities";
 import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
 
@@ -49,7 +52,7 @@ const emptyStudent = {
 
 export const Students = () => {
   const { t } = useTranslation(["pages", "common"]);
-  const { school, user } = useAuthStore();
+  const { school, user, capabilities } = useAuthStore();
   const { toast, showToast } = usePageToast();
 
   const baseFilterFields: FilterFieldDef[] = React.useMemo(
@@ -112,6 +115,8 @@ export const Students = () => {
   const [showImportModal, setShowImportModal] = React.useState(false);
   const [showAssignModal, setShowAssignModal] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
+  const [showTemporaryPasswordModal, setShowTemporaryPasswordModal] = React.useState(false);
+  const [temporaryPasswordTarget, setTemporaryPasswordTarget] = React.useState<any | null>(null);
   const [selectedStudent, setSelectedStudent] = React.useState<any | null>(null);
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc" | "none">("none");
   const [editStudent, setEditStudent] = React.useState<any>({
@@ -124,13 +129,22 @@ export const Students = () => {
   });
   const [submitting, setSubmitting] = React.useState(false);
 
-  const canImport = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
-    user?.role || ""
+  const canImport = hasCapabilityOrRole(
+    capabilities,
+    "action.bulk_import.roster",
+    ["SCHOOL_ADMIN", "REGISTRAR"],
+    user?.role
   );
   const canEdit = canEditStudentRecord(user?.role);
   const canEditStatus = canEditStudentStatus(user?.role);
   const canManage = ["REGISTRAR", "PRINCIPAL", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
     user?.role || ""
+  );
+  const canRevealTemporaryPassword = hasCapabilityOrRole(
+    capabilities,
+    "action.users.reveal_temporary_password",
+    ["SCHOOL_ADMIN", "PRINCIPAL", "REGISTRAR", "IT_ADMIN", "SUPER_ADMIN"],
+    user?.role
   );
 
   const gradeName = (id?: string) =>
@@ -410,17 +424,31 @@ export const Students = () => {
                     </td>
                     <td className={dataTableClass.td}>
                       <div className="flex items-center justify-end gap-1">
-                        {canEdit ? (
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(student)}
-                            className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        ) : null}
-                        {canManage ? (
+                         {canEdit ? (
+                           <button
+                             type="button"
+                             onClick={() => openEditModal(student)}
+                             className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-colors"
+                             title="Edit"
+                           >
+                             <Edit className="w-4 h-4" />
+                           </button>
+                         ) : null}
+                         {canRevealTemporaryPassword ? (
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setTemporaryPasswordTarget(student);
+                               setShowTemporaryPasswordModal(true);
+                             }}
+                             className="p-2 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-xl transition-colors"
+                             title="View temporary password"
+                           >
+                             <KeyRound className="w-4 h-4" />
+                           </button>
+                         ) : null}
+                         {canManage ? (
+
                           <>
                             <button
                               type="button"
@@ -537,6 +565,12 @@ export const Students = () => {
           </FeatureModalShell>
         )}
       </AnimatePresence>
+
+      <TemporaryPasswordRevealModal
+        open={showTemporaryPasswordModal}
+        target={temporaryPasswordTarget}
+        onClose={() => setShowTemporaryPasswordModal(false)}
+      />
 
       <EditStudentModal
         open={showEditModal}

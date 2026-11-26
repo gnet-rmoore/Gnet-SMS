@@ -170,7 +170,12 @@ model User {
   /// Permanent, school-scoped, digit-only identifier for students (e.g. 100456).
   /// Set at enrollment / student creation and stable for the student's lifetime.
   studentIdNumber    String?   @unique
+  employeeId         String?
+  department         String?
+  designation        String?
   passwordHash       String
+  temporaryPasswordEncrypted String?
+  temporaryPasswordIssuedAt  DateTime?
   name               String
   role               String
   isActive           Boolean   @default(true)
@@ -195,6 +200,8 @@ model User {
   preferredLocale    String?
   /// Role-guided wizard progress JSON: { trackId, version, status, steps, dismissedAt?, completedAt? }
   guideProgress      Json?
+  documents          Json?
+  customFields       Json?
   /// Super Admin operator role: OWNER | SUPPORT | BILLING | ANALYST (null treated as OWNER)
   platformRole       String?
   /// Set when the user confirms ownership of their email address.
@@ -216,6 +223,7 @@ model User {
 
   @@index([schoolId])
   @@index([schoolId, gradeLevelId])
+  @@unique([schoolId, employeeId])
   @@schema("identity")
 }
 

@@ -7,6 +7,7 @@ import {
   sendMail,
 } from "../lib/mailer";
 import { resolveEmailLocale, tEmail } from "../i18n/emailCatalogs";
+import { clearTemporaryPasswordFields } from "../lib/credentialCrypto";
 
 const RESET_TTL_MS = 60 * 60 * 1000;
 const VERIFY_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -140,6 +141,7 @@ export const emailAuthService = {
       data: {
         passwordHash: bcrypt.hashSync(newPassword, 10),
         mustChangePassword: false,
+        ...clearTemporaryPasswordFields(),
         passwordResetTokenHash: null,
         passwordResetExpiresAt: null,
       },

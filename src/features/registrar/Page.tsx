@@ -26,10 +26,11 @@ import { ImportRosterModal } from "../bulk-import/ImportRosterModal";
 import { bulkImportApi } from "../bulk-import/api";
 import { emptyManualAdmissionForm } from "./lib/manualAdmissionForm";
 import { useTranslation } from "react-i18next";
+import { hasCapabilityOrRole } from "../../lib/capabilities";
 
 export const Registrar = () => {
   const { t } = useTranslation("pages");
-  const { school, accessToken, user } = useAuthStore();
+  const { school, accessToken, user, capabilities } = useAuthStore();
   const {
     students,
     gradeLevels,
@@ -296,8 +297,11 @@ export const Registrar = () => {
     window.open(`/api/schools/${school.id}/applications/export.csv${qs ? `?${qs}` : ""}`, "_blank");
   };
 
-  const canImportStudents = ["REGISTRAR", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
-    String(user?.role || "")
+  const canImportStudents = hasCapabilityOrRole(
+    capabilities,
+    "action.bulk_import.roster",
+    ["SCHOOL_ADMIN", "REGISTRAR"],
+    user?.role
   );
   const placementLink: PlacementLink | null = school?.slug
     ? ["SCHOOL_ADMIN", "REGISTRAR"].includes(String(user?.role || ""))

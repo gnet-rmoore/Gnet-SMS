@@ -40,6 +40,20 @@ export function encryptCredentialSecret(plain: string): string {
   return CREDENTIAL_ENC_PREFIX + Buffer.concat([iv, tag, enc]).toString("base64");
 }
 
+export function temporaryPasswordFields(password: string | null | undefined) {
+  if (!password) {
+    return { temporaryPasswordEncrypted: null, temporaryPasswordIssuedAt: null };
+  }
+  return {
+    temporaryPasswordEncrypted: encryptCredentialSecret(password),
+    temporaryPasswordIssuedAt: new Date(),
+  };
+}
+
+export function clearTemporaryPasswordFields() {
+  return { temporaryPasswordEncrypted: null, temporaryPasswordIssuedAt: null };
+}
+
 /** Decrypts encrypted values; passes legacy plaintext through unchanged. */
 export function decryptCredentialSecret(stored: string | null | undefined): string | null {
   if (stored === null || stored === undefined) return null;

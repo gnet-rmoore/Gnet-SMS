@@ -58,7 +58,7 @@ export type RoleCapabilityMatrix = {
 
 export type AuthSessionPayload = {
   accessToken: string;
-  user: SchoolUserRow & { mustChangePassword?: boolean };
+  user: SchoolUserRow & { mustChangePassword?: boolean; authMethod?: string | null };
   school: unknown;
   capabilities: string[];
   entitlements?: string[] | null;

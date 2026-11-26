@@ -337,7 +337,7 @@ export const authController = {
 
   async me(req: any, res: Response) {
     try {
-      const result = await authService.sessionForUserId(req.user.id);
+      const result = await authService.sessionForUserId(req.user.id, req.user.authMethod);
       res.json(result);
     } catch (err: any) {
       if (err.status === 403 || err.code === "SCHOOL_SUSPENDED" || err.code === "TRIAL_EXPIRED") {

@@ -17,6 +17,7 @@ export interface AuthUser {
   preferredLocale?: string | null;
   /** When true, user must set a new password before using the app. */
   mustChangePassword?: boolean;
+  authMethod?: string | null;
 }
 
 interface School {

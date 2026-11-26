@@ -20,6 +20,11 @@ import {
 import { emailAuthService } from "./emailAuthService";
 import { assertStudentQuota, assertStaffQuota } from "../lib/quotaEnforcement";
 import { parentAccessService } from "./parentAccessService";
+import { generateTemporaryPassword as createTemporaryPassword } from "../lib/tempPassword";
+import {
+  clearTemporaryPasswordFields,
+  temporaryPasswordFields,
+} from "../lib/credentialCrypto";
 
 function withParentEmail<T extends { parents?: Array<{ parent: { email: string } }> }>(row: T) {
   const { parents, ...rest } = row;
@@ -30,7 +35,7 @@ function withParentEmail<T extends { parents?: Array<{ parent: { email: string }
 }
 
 function generateTemporaryPassword(prefix: string) {
-  return `${prefix}@${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+  return createTemporaryPassword(prefix);
 }
 
 async function assertPasswordForSchool(schoolId: string | null | undefined, password: string) {
@@ -210,6 +215,7 @@ export const userService = {
         parentPhone: parentPhone?.trim() || null,
         gradeLevelId,
         feeCohort: cohort,
+        ...temporaryPasswordFields(temporaryPassword),
         mustChangePassword: true,
         isActive: true,
       },
@@ -591,10 +597,11 @@ export const userService = {
     const temporaryPassword =
       typeof password === "string" && password.trim().length >= 8
         ? password.trim()
-        : `St@${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+        : generateTemporaryPassword("St");
     await assertPasswordForSchool(schoolId, temporaryPassword);
 
     const passwordHash = bcrypt.hashSync(temporaryPassword, 10);
+    const tempMustChange = mustChangePassword !== undefined ? Boolean(mustChangePassword) : true;
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
@@ -608,7 +615,8 @@ export const userService = {
         gender: gender || null,
         joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
         isActive: isActive !== undefined ? Boolean(isActive) : true,
-        mustChangePassword: mustChangePassword !== undefined ? Boolean(mustChangePassword) : true,
+        ...temporaryPasswordFields(tempMustChange ? temporaryPassword : null),
+        mustChangePassword: tempMustChange,
         photoUrl: typeof photoUrl === "string" && photoUrl.trim() ? photoUrl.trim() : null,
       },
       select: {
@@ -719,6 +727,9 @@ export const userService = {
     for (const key of Object.keys(updateData)) {
       if (updateData[key] === undefined) delete updateData[key];
     }
+    if (updateData.mustChangePassword === false) {
+      Object.assign(updateData, clearTemporaryPasswordFields());
+    }
 
     if (password) {
       const existing = await prisma.user.findUnique({
@@ -760,9 +771,14 @@ export const userService = {
       await assertPasswordForSchool(existing.schoolId, password);
       updateData.passwordHash = bcrypt.hashSync(password, 10);
       if (mustChangePassword === undefined) {
-        // Admin resets default to must-change; self-service clears the flag.
         updateData.mustChangePassword = isSelfChange ? false : true;
       }
+      Object.assign(
+        updateData,
+        isSelfChange || updateData.mustChangePassword === false
+          ? clearTemporaryPasswordFields()
+          : temporaryPasswordFields(password)
+      );
     }
 
     if (Object.keys(updateData).length === 0) {

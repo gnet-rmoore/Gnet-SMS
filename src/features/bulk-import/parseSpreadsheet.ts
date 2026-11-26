@@ -3,14 +3,15 @@
  * Server remains authoritative for validation.
  */
 
-function parseCsvText(text: string): Record<string, unknown>[] {
+export function parseCsvText(text: string): Record<string, unknown>[] {
   const normalized = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const lines = normalized.split("\n").filter((l) => l.trim().length > 0);
+  const lines = normalized.split("\n");
   if (lines.length < 2) return [];
 
   const headers = splitCsvLine(lines[0]).map((h) => h.trim());
   const rows: Record<string, unknown>[] = [];
   for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
     const cells = splitCsvLine(lines[i]);
     const row: Record<string, unknown> = {};
     let any = false;
@@ -19,7 +20,10 @@ function parseCsvText(text: string): Record<string, unknown>[] {
       if (v) any = true;
       row[h] = v;
     });
-    if (any) rows.push(row);
+    if (any) {
+      row.__sourceRow = i + 1;
+      rows.push(row);
+    }
   }
   return rows;
 }
@@ -63,11 +67,11 @@ function excelSerialToIso(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function cellToString(v: unknown): string {
+function cellToString(v: unknown, header = ""): string {
   if (v === undefined || v === null) return "";
+  const dateHeader = /date|dob|joining/i.test(header);
   if (typeof v === "number") {
-    // Likely Excel date serial if in a plausible range
-    if (v > 20000 && v < 80000 && Number.isFinite(v)) {
+    if (dateHeader && v > 20000 && v < 80000 && Number.isFinite(v)) {
       return excelSerialToIso(v);
     }
     return String(v);
@@ -98,11 +102,14 @@ async function parseXlsx(buffer: ArrayBuffer): Promise<Record<string, unknown>[]
     let any = false;
     headers.forEach((h, idx) => {
       if (!h) return;
-      const v = cellToString(line[idx]);
+      const v = cellToString(line[idx], h);
       if (v) any = true;
       row[h] = v;
     });
-    if (any) rows.push(row);
+    if (any) {
+      row.__sourceRow = i + 1;
+      rows.push(row);
+    }
   }
   return rows;
 }
@@ -129,27 +136,77 @@ export function credentialsToCsv(
     name?: string;
     email: string;
     role?: string;
+    studentIdNumber?: string | null;
     temporaryPassword: string;
     parentName?: string | null;
     parentEmail?: string | null;
     parentTemporaryPassword?: string;
+    parentAccessCode?: string | null;
     parentCreated?: boolean;
+    parent2Name?: string | null;
+    parent2Email?: string | null;
+    parent2TemporaryPassword?: string;
+    parent2AccessCode?: string | null;
+    parent2Created?: boolean;
   }>
 ): string {
-  const header = "name,email,role,temporaryPassword";
+  const header =
+    "name,email,role,studentIdNumber,temporaryPassword,parentName,parentEmail,parentTemporaryPassword,parentAccessCode,parent2Name,parent2Email,parent2TemporaryPassword,parent2AccessCode";
   const escape = (v: unknown) => {
     const s = String(v ?? "");
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
   };
   const lines = created.flatMap((r) => {
-    const rows = [[r.name || "", r.email, r.role || "", r.temporaryPassword]];
-    if (r.parentCreated && r.parentTemporaryPassword && r.parentEmail) {
+    const rows: unknown[][] = [
+      [
+        r.name || "",
+        r.email,
+        r.role || "",
+        r.studentIdNumber || "",
+        r.temporaryPassword,
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+    ];
+    if (r.parentAccessCode || (r.parentCreated && r.parentTemporaryPassword && r.parentEmail)) {
       rows.push([
         r.parentName || r.parentEmail,
         r.parentEmail,
         "PARENT",
-        r.parentTemporaryPassword,
+        "",
+        "",
+        r.parentName || r.parentEmail,
+        r.parentEmail,
+        r.parentCreated ? r.parentTemporaryPassword || "" : "",
+        r.parentAccessCode || "",
+        "",
+        "",
+        "",
+        "",
+      ]);
+    }
+    if (r.parent2AccessCode || (r.parent2Created && r.parent2TemporaryPassword && r.parent2Email)) {
+      rows.push([
+        r.parent2Name || r.parent2Email,
+        r.parent2Email,
+        "PARENT",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        r.parent2Name || r.parent2Email,
+        r.parent2Email,
+        r.parent2Created ? r.parent2TemporaryPassword || "" : "",
+        r.parent2AccessCode || "",
       ]);
     }
     return rows.map((line) => line.map(escape).join(","));

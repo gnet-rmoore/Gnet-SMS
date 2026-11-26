@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-25T14:14:50.417Z",
-  "total": 629,
-  "publicOrSchool": 562,
+  "generatedAt": "2026-11-26T12:18:07.583Z",
+  "total": 630,
+  "publicOrSchool": 563,
   "internal": 67,
   "byService": {
     "academic": 198,
@@ -9,7 +9,7 @@
     "classroom": 50,
     "comms": 33,
     "finance": 49,
-    "identity": 179,
+    "identity": 180,
     "lifecycle": 39,
     "ops": 22,
     "staff": 26
@@ -3784,6 +3784,13 @@
     {
       "method": "PATCH",
       "path": "/api/users/:userId/role",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/:userId/temporary-password/reveal",
       "service": "identity",
       "file": "services/identity/src/routes/userRoutes.ts",
       "internal": false
