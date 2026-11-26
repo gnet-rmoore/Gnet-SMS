@@ -16,8 +16,7 @@ export type AdmissionApplicationForm = {
   gender: string;
   gradeLevelId: string;
   classroomId: string;
-  studentEmail: string;
-  studentPhone: string;
+  studentIdNumber: string;
   address: string;
   fatherName: string;
   fatherPhone: string;
@@ -40,8 +39,7 @@ export function emptyAdmissionApplicationForm(): AdmissionApplicationForm {
     gender: "MALE",
     gradeLevelId: "",
     classroomId: "",
-    studentEmail: "",
-    studentPhone: "",
+    studentIdNumber: "",
     address: "",
     fatherName: "",
     fatherPhone: "",
@@ -96,8 +94,6 @@ export function studentToAdmissionApplicationForm(
   base: AdmissionApplicationForm = emptyAdmissionApplicationForm()
 ): AdmissionApplicationForm {
   const { firstName, middleName, lastName } = splitPersonName(student?.name);
-  const email = String(student?.email || "");
-  const isPlaceholder = /@placeholder\./i.test(email);
 
   return {
     ...base,
@@ -110,8 +106,7 @@ export function studentToAdmissionApplicationForm(
     gradeLevelId: student?.gradeLevelId || "",
     fatherName: student?.parentName || "",
     fatherPhone: student?.parentPhone || "",
-    studentEmail: isPlaceholder ? "" : email,
-    studentPhone: student?.phone || "",
+    studentIdNumber: String(student?.studentIdNumber || student?.idNumber || ""),
     notes: student?.id
       ? `Returning student (existing user ${String(student.id).slice(0, 8)}…). Review and update fields as needed.`
       : base.notes,
@@ -206,17 +201,12 @@ export function validateAdmissionStep(
       const last = nameIssue(form.lastName);
       if (last) errors.lastName = last;
     }
-    if (isReturningPublic) {
-      const email = String(form.studentEmail || "").trim();
-      if (!email) errors.studentEmail = "required";
-      else if (!isEmail(email)) errors.studentEmail = "invalidEmail";
-      if (!String(form.dob || "").trim()) errors.dob = "required";
-    } else if (form.studentEmail && !isEmail(form.studentEmail)) {
-      errors.studentEmail = "invalidEmail";
+    if (isReturningPublic && !String(form.studentIdNumber || "").trim()) {
+      errors.studentIdNumber = "required";
     }
+    if (isReturningPublic && !String(form.dob || "").trim()) errors.dob = "required";
     const dobIssue = dateOfBirthIssue(form.dob);
     if (dobIssue && !errors.dob) errors.dob = dobIssue;
-    if (form.studentPhone && !isValidPhone(form.studentPhone)) errors.studentPhone = "invalidPhone";
     if (gradeRequired && !String(form.gradeLevelId || "").trim()) errors.gradeLevelId = "gradeRequired";
   }
 
@@ -287,18 +277,6 @@ export function buildAdmissionApiPayload({
     ? String(existingStudentUserId).trim()
     : null;
   const studentName = composeStudentName(form) || (applicantType === "RETURNING" ? "" : "Unnamed Student");
-  const studentEmail =
-    (form.studentEmail && String(form.studentEmail).trim()) ||
-    (existingId
-      ? null
-      : form.fatherEmail
-        ? `student.${form.firstName.toLowerCase() || "new"}.${form.lastName.toLowerCase() || "candidate"}@placeholder.com`
-        : null);
-  const studentPhone =
-    (form.studentPhone && String(form.studentPhone).trim()) ||
-    form.fatherPhone ||
-    form.motherPhone ||
-    null;
   const parentName = form.fatherName || form.motherName || (applicantType === "RETURNING" ? "" : "Not Specified");
   const parentEmail = form.fatherEmail || form.motherEmail || null;
   const parentEmails = Array.from(
@@ -339,8 +317,7 @@ export function buildAdmissionApiPayload({
 
   return {
     studentName: studentName || null,
-    studentEmail,
-    studentPhone,
+    studentIdNumber: form.studentIdNumber ? String(form.studentIdNumber).trim() || null : null,
     dob: form.dob || null,
     gender: form.gender || "MALE",
     address: form.address || null,

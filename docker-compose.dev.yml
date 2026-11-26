@@ -25,6 +25,8 @@ x-local-dev-env: &local-dev-env
   JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-dev-access-secret-change-me}
   SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:-local-dev-super-admin-secret-change-me}
   INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-service-token-change-me}
+  PARENT_PAC_SECRET: ${PARENT_PAC_SECRET:-dev-parent-pac-secret-change-me}
+  PARENT_PAC_SECRET_VERSION: ${PARENT_PAC_SECRET_VERSION:-1}
   # Hardcoded localhost origins: the whole point of a dev run.
   APP_URL: http://localhost:3000,http://localhost:8080,http://localhost:8081
 

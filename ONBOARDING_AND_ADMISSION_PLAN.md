@@ -36,18 +36,18 @@
 
 ### 2026-07-24 — Online registration (public apply control + returning students)
 
-- **Change:** Registrar/Admin can enable online student registration and copy a public `/apply/{slug}` link. New applicants use the full form. Returning students verify with school email + DOB against an existing Identity `STUDENT` (no duplicate account); enroll sets `feeCohort=RETURNING` and skips force-password/welcome email.
+- **Change:** Registrar/Admin can enable online student registration and copy a public `/apply/{slug}` link. New applicants use the full form. Returning students verify with school ID number + DOB against an existing Identity `STUDENT` (no duplicate account); enroll sets `feeCohort=RETURNING` and skips force-password/welcome email.
 - **Services:** Identity (`admission-policy` GET/PATCH, public grade-levels, verify-returning); Lifecycle (policy gates, create/enroll); Gateway suffix `admission-policy` → identity
 - **UI / API:** Admissions → Overview → Online registration; `/apply/:slug`; `GET|PATCH /api/schools/:schoolId/admission-policy`
 - **Status:** done
 - **Verify:**
   - Registrar enables “Accept online applications” → copy link → submit new application → appears in Admissions as Online · New
   - Disable public apply → form unavailable + API 403
-  - Returning path with existing student email+DOB → Returning badge → enroll → student `feeCohort` Returning
+  - Returning path with existing student ID number + DOB → Returning badge → enroll → student `feeCohort` Returning
 
 ### 2026-07-24 — Direct Admission: select existing student + prefill
 
-- **Change:** On Registrar **Direct Admission**, staff can search/select an existing school student. Selecting one prefills identity, DOB, gender, grade, address, parent, and contact fields from Identity; admission type becomes Returning. Submit sends `applicantType=RETURNING` + `existingStudentUserId` so Lifecycle links the application to the existing user (same path as public returning apply). Clearing the select resets to a blank new-applicant form.
+- **Change:** On Registrar **Direct Admission**, staff can search/select an existing school student. Selecting one prefills identity, DOB, gender, grade, address, parent, and parent contact fields from Identity; admission type becomes Returning. Submit sends `applicantType=RETURNING` + `existingStudentUserId` so Lifecycle links the application to the existing user (same path as public returning apply). Clearing the select resets to a blank new-applicant form.
 - **Services / UI:** Frontend Registrar only (`ManualAdmissionTab`, `manualAdmissionForm` helpers, `usePageActions`); Lifecycle already accepts `existingStudentUserId` on create.
 - **Status:** done
 - **Verify:**
@@ -62,7 +62,7 @@
 - **Status:** done
 - **Verify:**
   - Public new apply shows first/middle/last, parents, family checkboxes, grade completed — same sections as Direct Admission
-  - Public returning still requires email + DOB; other fields optional / updateable
+  - Public returning still requires student ID number + DOB; contact fields are parent-only and other fields are optional / updateable
   - Direct Admission submit still lands in Pipeline with notes preserving shared fields
 
 ---

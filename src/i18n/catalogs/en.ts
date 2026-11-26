@@ -569,7 +569,7 @@ export const enPublic = {
     subtitleNew:
       "Apply for a new place using the same fields the registrar collects for direct admission. You will receive a status link after submitting.",
     subtitleReturning:
-      "Already enrolled at this school? Enter the student's school email and date of birth so we can match your existing record. Complete the same application fields as a new applicant; blank name fields use the school record.",
+      "Already enrolled at this school? Enter the student's school ID number and date of birth so we can match your existing record. Complete the same application fields as a new applicant; blank name fields use the school record.",
     loading: "Loading school…",
     newApplicant: "New student",
     returningApplicant: "Returning student",
@@ -593,7 +593,7 @@ export const enPublic = {
     applyDisabled: "This school is not accepting online applications",
     backHome: "Back to login",
     backToHome: "Back to home",
-    studentEmailRequired: "Student email is required",
+    studentIdNumberRequired: "Student ID number is required",
     dobRequired: "Date of birth is required to verify returning students",
     failed: "Application failed",
     checkStatusPage: "Already applied? Check application status",

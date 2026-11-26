@@ -55,8 +55,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   dob: "admissions.manualAdmission.form.field.dob",
   gender: "admissions.manualAdmission.form.field.gender",
   gradeLevelId: "admissions.manualAdmission.form.field.gradeApplyingFor",
-  studentEmail: "admissions.manualAdmission.form.field.studentEmail",
-  studentPhone: "admissions.manualAdmission.form.field.studentPhone",
+  studentIdNumber: "admissions.manualAdmission.form.field.studentIdNumber",
   address: "admissions.manualAdmission.form.field.address",
   fatherName: "admissions.manualAdmission.form.field.fatherGuardianName",
   fatherPhone: "admissions.manualAdmission.form.field.fatherPhone",
@@ -276,21 +275,13 @@ export function AdmissionFormWizard({
       label: t("common:admissionForm.review.grade"),
       value: gradeName,
     });
-  if (form.studentEmail)
+  if (form.studentIdNumber)
     reviewRows.push({
-      field: "studentEmail",
+      field: "studentIdNumber",
       step: 0,
       section: "personal",
-      label: t("common:admissionForm.review.email"),
-      value: form.studentEmail,
-    });
-  if (form.studentPhone)
-    reviewRows.push({
-      field: "studentPhone",
-      step: 0,
-      section: "personal",
-      label: t("common:admissionForm.review.phone"),
-      value: form.studentPhone,
+      label: t("admissions.manualAdmission.form.field.studentIdNumber"),
+      value: form.studentIdNumber,
     });
   if (form.address)
     reviewRows.push({

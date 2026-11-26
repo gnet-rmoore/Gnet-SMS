@@ -6,8 +6,10 @@
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 import {
+  buildAdmissionApiPayload,
   emptyAdmissionApplicationForm,
   isAdmissionFormEmpty,
+  validateAdmissionStep,
 } from "../src/features/admission-form/schema";
 
 let failed = 0;
@@ -39,6 +41,8 @@ const registrarApi = read("src/features/registrar/api.ts");
 const manualAdmissionTab = read("src/features/registrar/components/ManualAdmissionTab.tsx");
 const newEnrollmentDrawer = read("src/features/registrar/components/NewEnrollmentDrawer.tsx");
 const adminWizard = read("src/features/admission-form/AdmissionFormWizard.tsx");
+const admissionFields = read("src/features/admission-form/AdmissionApplicationFields.tsx");
+const lifecycleAdmissionService = read("services/lifecycle/src/services/admissionService.ts");
 const manualAdmissionForm = read("src/features/registrar/lib/manualAdmissionForm.ts");
 const studentsPage = read("src/features/students/Page.tsx");
 const studentRecordsPage = read("src/features/student-records/Page.tsx");
@@ -162,6 +166,45 @@ assert(
     pendingPhotoUrl: null,
   } as any),
   "empty manual admission form is treated as empty"
+);
+
+const parentOnlyForm = {
+  ...emptyAdmissionApplicationForm(),
+  firstName: "Ada",
+  lastName: "Lovelace",
+  fatherEmail: "father@example.com",
+  fatherPhone: "+231 77 000 0001",
+};
+const parentOnlyPayload = buildAdmissionApiPayload({ form: parentOnlyForm });
+assert(
+  !("studentEmail" in parentOnlyPayload) &&
+    !("studentPhone" in parentOnlyPayload) &&
+    parentOnlyPayload.parentEmail === "father@example.com" &&
+    parentOnlyPayload.parentPhone === "+231 77 000 0001",
+  "admission payload sends parent contacts only"
+);
+const returningErrors = validateAdmissionStep(
+  "student",
+  { ...emptyAdmissionApplicationForm(), dob: "2010-01-01" },
+  "public-returning"
+);
+assert(
+  Boolean(returningErrors.studentIdNumber) &&
+    !("studentEmail" in returningErrors) &&
+    !("studentPhone" in returningErrors),
+  "returning validation requires student ID, not student contact details"
+);
+assert(
+  !admissionFields.includes("studentEmail") &&
+    !admissionFields.includes("studentPhone") &&
+    adminWizard.includes("studentIdNumber"),
+  "admission forms do not ask for student email or phone"
+);
+assert(
+  !publicApply.includes("studentEmail") &&
+    publicApply.includes("studentIdNumberRequired") &&
+    !lifecycleAdmissionService.includes("Student ID or email is required"),
+  "public returning registration verifies by student ID only"
 );
 
 assert(

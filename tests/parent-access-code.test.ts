@@ -9,6 +9,8 @@ import {
   makeParentAccessLookupHash,
   maskParentAccessCode,
   normalizePhone,
+  getParentPacSecret,
+  getParentPacSecretVersion,
   verifyParentAccessCode,
 } from "../services/identity/src/domain/parentAccess";
 import { decryptCredentialSecret, encryptCredentialSecret } from "../services/identity/src/lib/credentialCrypto";
@@ -176,5 +178,61 @@ const emailCatalog = readFileSync(
   "utf8"
 );
 assert.match(emailCatalog, /parentAccessCode:/);
+
+const originalNodeEnv = process.env.NODE_ENV;
+const originalPacSecret = process.env.PARENT_PAC_SECRET;
+const originalPacVersion = process.env.PARENT_PAC_SECRET_VERSION;
+try {
+  delete process.env.PARENT_PAC_SECRET;
+  process.env.NODE_ENV = "development";
+  assert.equal(getParentPacSecret(), "dev-parent-pac-secret");
+  process.env.NODE_ENV = "production";
+  assert.throws(() => getParentPacSecret(), /PARENT_PAC_SECRET is required in production/);
+  process.env.PARENT_PAC_SECRET = "   ";
+  assert.throws(() => getParentPacSecret(), /PARENT_PAC_SECRET is required in production/);
+  process.env.PARENT_PAC_SECRET = "configured-parent-pac-secret";
+  assert.equal(getParentPacSecret(), "configured-parent-pac-secret");
+  process.env.PARENT_PAC_SECRET_VERSION = "7";
+  assert.equal(getParentPacSecretVersion(), 7);
+} finally {
+  if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = originalNodeEnv;
+  if (originalPacSecret === undefined) delete process.env.PARENT_PAC_SECRET;
+  else process.env.PARENT_PAC_SECRET = originalPacSecret;
+  if (originalPacVersion === undefined) delete process.env.PARENT_PAC_SECRET_VERSION;
+  else process.env.PARENT_PAC_SECRET_VERSION = originalPacVersion;
+}
+
+const readConfig = (file: string) =>
+  readFileSync(new URL(file, import.meta.url), "utf8");
+for (const file of [
+  "../docker-compose.yml",
+  "../docker-compose.dev.yml",
+  "../docker-compose.prod.yml",
+  "../deploy/docker-compose.yml",
+  "../deploy/docker-compose.prod.yml",
+]) {
+  assert.match(readConfig(file), /PARENT_PAC_SECRET:/, `${file} passes PARENT_PAC_SECRET to Identity`);
+}
+assert.match(
+  readConfig("../docker-compose.prod.yml"),
+  /PARENT_PAC_SECRET: \$\{PARENT_PAC_SECRET:\?set in \.env\}/,
+  "production compose requires PARENT_PAC_SECRET"
+);
+assert.match(
+  readConfig("../deploy/docker-compose.prod.yml"),
+  /PARENT_PAC_SECRET: \$\{PARENT_PAC_SECRET:\?set in \.env\}/,
+  "deploy production compose requires PARENT_PAC_SECRET"
+);
+assert.match(
+  readConfig("../.env.example"),
+  /PARENT_PAC_SECRET=/,
+  "root env template documents PARENT_PAC_SECRET"
+);
+assert.match(
+  readConfig("../deploy/.env.example"),
+  /PARENT_PAC_SECRET=/,
+  "deploy env template documents PARENT_PAC_SECRET"
+);
 
 console.log("parent access unit tests passed");

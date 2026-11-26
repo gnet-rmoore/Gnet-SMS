@@ -14,7 +14,7 @@ export type AdmissionApplicationFieldsProps = {
   form: AdmissionApplicationForm;
   onChange: (patch: Partial<AdmissionApplicationForm>) => void;
   gradeLevels: Array<{ id: string; name: string }>;
-  /** Public returning apply: email + DOB required for verify. */
+  /** Public returning apply: student ID + DOB required for verify. */
   mode?: "staff" | "public-new" | "public-returning";
   /** Wizard step to render. Defaults to every section (single-page form). */
   step?: AdmissionFormStep | "all";
@@ -54,8 +54,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   dob: "admissions.manualAdmission.form.field.dob",
   gender: "admissions.manualAdmission.form.field.gender",
   gradeLevelId: "admissions.manualAdmission.form.field.gradeApplyingFor",
-  studentEmail: "admissions.manualAdmission.form.field.studentEmail",
-  studentPhone: "admissions.manualAdmission.form.field.studentPhone",
+  studentIdNumber: "admissions.manualAdmission.form.field.studentIdNumber",
   address: "admissions.manualAdmission.form.field.address",
   fatherName: "admissions.manualAdmission.form.field.fatherGuardianName",
   fatherPhone: "admissions.manualAdmission.form.field.fatherPhone",
@@ -277,34 +276,24 @@ export function AdmissionApplicationFields({
                 <FieldError code={errors?.gradeLevelId} />
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                {label("studentEmail")}
-                <input
-                  id="admission-studentEmail"
-                  type="email"
-                  required={isReturningPublic}
-                  aria-required={isReturningPublic || undefined}
-                  aria-invalid={Boolean(errors?.studentEmail)}
-                  value={f.studentEmail}
-                  onChange={(e) => set({ studentEmail: e.target.value })}
-                  className={inputCls("studentEmail")}
-                />
-                <FieldError code={errors?.studentEmail} />
+            {isReturningPublic ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  {label("studentIdNumber", { required: true })}
+                  <input
+                    id="admission-studentIdNumber"
+                    type="text"
+                    required
+                    aria-required
+                    aria-invalid={Boolean(errors?.studentIdNumber)}
+                    value={f.studentIdNumber}
+                    onChange={(e) => set({ studentIdNumber: e.target.value })}
+                    className={inputCls("studentIdNumber")}
+                  />
+                  <FieldError code={errors?.studentIdNumber} />
+                </div>
               </div>
-              <div className="space-y-1">
-                {label("studentPhone")}
-                <input
-                  id="admission-studentPhone"
-                  type="text"
-                  aria-invalid={Boolean(errors?.studentPhone)}
-                  value={f.studentPhone}
-                  onChange={(e) => set({ studentPhone: e.target.value })}
-                  className={inputCls("studentPhone")}
-                />
-                <FieldError code={errors?.studentPhone} />
-              </div>
-            </div>
+            ) : null}
             <div className="space-y-1">
               {label("address")}
               <textarea

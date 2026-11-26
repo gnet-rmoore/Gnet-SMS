@@ -68,6 +68,7 @@ jobs:
       JWT_ACCESS_SECRET: ci-test-jwt-access-secret-not-for-production
       SUPER_ADMIN_JWT_SECRET: ci-test-super-admin-jwt-secret-not-for-production
       INTERNAL_SERVICE_TOKEN: ci-test-internal-service-token
+      PARENT_PAC_SECRET: ci-test-parent-pac-secret-not-for-production
       # Seed the demo school + persona users the login-based specs use.
       SEED_DEMO: "true"
     steps:

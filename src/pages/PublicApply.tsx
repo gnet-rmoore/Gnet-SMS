@@ -43,7 +43,7 @@ type ParentEmail = {
 /**
  * Public student application portal (/apply/:slug).
  * Same applicant fields as Registrar Direct Admission.
- * Returning: verify email + DOB against an existing STUDENT.
+ * Returning: verify student ID + DOB against an existing STUDENT.
  */
 export default function PublicApplyPage() {
   const { slug } = useParams();
@@ -176,7 +176,7 @@ export default function PublicApplyPage() {
     setError("");
     try {
       if (applicantType === "RETURNING") {
-        if (!form.studentEmail.trim()) throw new Error(t("public:apply.studentEmailRequired"));
+        if (!form.studentIdNumber.trim()) throw new Error(t("public:apply.studentIdNumberRequired"));
         if (!form.dob) throw new Error(t("public:apply.dobRequired"));
       }
       const gradeLevelName =

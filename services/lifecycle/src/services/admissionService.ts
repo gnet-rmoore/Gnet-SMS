@@ -76,7 +76,6 @@ function parentContactsFromData(data: any) {
   push(data?.fatherEmail, "FATHER");
   push(data?.motherEmail, "MOTHER");
   push(data?.parentEmail, "GUARDIAN");
-  if (!list.length) push(data?.studentEmail, "STUDENT");
   return list;
 }
 
@@ -532,14 +531,8 @@ export const admissionService = {
   },
 
   async createApplication(schoolId: string, data: any, source = "STAFF_DIRECT") {
-    const studentEmail =
-      data.studentEmail && String(data.studentEmail).trim() !== ""
-        ? String(data.studentEmail).trim().toLowerCase()
-        : null;
     const parentEmail =
       data.parentEmail && String(data.parentEmail).trim() !== "" ? String(data.parentEmail).trim() : null;
-    const studentPhone =
-      data.studentPhone && String(data.studentPhone).trim() !== "" ? String(data.studentPhone).trim() : null;
 
     const applicantType =
       String(data.applicantType || "").toUpperCase() === "RETURNING" ? "RETURNING" : "NEW";
@@ -561,19 +554,18 @@ export const admissionService = {
 
     if (source === "PUBLIC" && applicantType === "RETURNING") {
       const idNumber = data.studentIdNumber ? String(data.studentIdNumber).trim() : null;
-      const email = studentEmail;
-      if (!idNumber && !email) {
+      if (!idNumber) {
         throw Object.assign(
-          new Error("Student ID or email is required for returning registration"),
+          new Error("Student ID is required for returning registration"),
           { status: 400 }
         );
       }
-      const matched = await verifyReturningStudent(schoolId, { idNumber, email }, data.dob || null);
+      const matched = await verifyReturningStudent(schoolId, { idNumber, email: null }, data.dob || null);
       existingStudentUserId = matched.id;
       studentIdNumber = matched.studentIdNumber || idNumber || studentIdNumber;
       studentName = matched.name || studentName;
       parentName = parentName || matched.parentName || "Parent";
-      parentPhone = parentPhone || matched.parentPhone || matched.phone || "n/a";
+      parentPhone = parentPhone || matched.parentPhone || "n/a";
       gender = data.gender || matched.gender || "MALE";
       address = address || matched.address;
 
@@ -624,8 +616,8 @@ export const admissionService = {
           applicationNumber: generateApplicationNumber(schoolId),
           studentIdNumber,
           studentName,
-          studentEmail,
-          studentPhone,
+          studentEmail: null,
+          studentPhone: null,
           dob,
           gender,
           address,
@@ -876,10 +868,7 @@ export const admissionService = {
       });
     }
 
-    const studentEmail =
-      app.studentEmail && app.studentEmail.trim() !== ""
-        ? app.studentEmail
-        : `student_${app.id.slice(0, 8)}@placeholder.local`;
+    const studentEmail = `student_${app.id}@placeholder.local`;
 
     const studentPassword = randomPassword();
     const feeCohort = applicantTypeFromNotes(app.notes) === "RETURNING" ? "RETURNING" : "NEW";
@@ -1187,12 +1176,11 @@ export const admissionService = {
   /** Public "look me up" for returning students: verify identity and return prefill + promotion-aware locked grade. */
   async verifyReturningForPublic(schoolId: string, body: any) {
     const idNumber = body.studentIdNumber ? String(body.studentIdNumber).trim() : null;
-    const email = body.studentEmail ? String(body.studentEmail).trim().toLowerCase() : null;
     if (!idNumber) {
       throw Object.assign(new Error("Student ID is required"), { status: 400 });
     }
     const dob = body.dob ? String(body.dob) : null;
-    const matched = await verifyReturningStudent(schoolId, { idNumber, email: email || null }, dob);
+    const matched = await verifyReturningStudent(schoolId, { idNumber, email: null }, dob);
     const resolution = await resolveStudentNextGrade(schoolId, matched.id, matched.gradeLevelId);
     if (resolution && resolution.allowReturn === false) {
       throw Object.assign(

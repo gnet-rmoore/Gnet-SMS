@@ -42,7 +42,7 @@ export const frPublic = {
     subtitleNew:
       "Demandez une nouvelle place avec les mêmes champs que le secrétariat pour une admission directe. Vous recevrez un lien de suivi après l'envoi.",
     subtitleReturning:
-      "Déjà inscrit dans cet établissement ? Saisissez l'e-mail scolaire de l'élève et sa date de naissance pour retrouver le dossier existant. Remplissez les mêmes champs qu'un nouveau candidat ; les champs de nom laissés vides reprennent les données de l'établissement.",
+      "Déjà inscrit dans cet établissement ? Saisissez le numéro d'identifiant scolaire de l'élève et sa date de naissance pour retrouver le dossier existant. Remplissez les mêmes champs qu'un nouveau candidat ; les champs de nom laissés vides reprennent les données de l'établissement.",
     loading: "Chargement de l'établissement…",
     newApplicant: "Nouvel élève",
     returningApplicant: "Élève déjà inscrit",
@@ -60,7 +60,7 @@ export const frPublic = {
     schoolNotFound: "Établissement introuvable",
     applyDisabled: "Cet établissement n'accepte pas les candidatures en ligne",
     backHome: "Retour à la connexion",
-    studentEmailRequired: "L'e-mail de l'élève est obligatoire",
+    studentIdNumberRequired: "Le numéro d'identifiant de l'élève est obligatoire",
     dobRequired: "La date de naissance est requise pour vérifier les élèves déjà inscrits",
     failed: "Échec de la demande",
   },
@@ -397,7 +397,7 @@ export const arPublic = {
     subtitleNew:
       "قدّم للحصول على مقعد جديد باستخدام نفس الحقول التي يجمعها المسجّل للقبول المباشر. ستتلقى رابط حالة بعد الإرسال.",
     subtitleReturning:
-      "مسجّل مسبقًا في هذه المدرسة؟ أدخل البريد الإلكتروني المدرسي للطالب وتاريخ الميلاد لمطابقة سجلك الحالي. أكمل نفس حقول الطلب كالمتقدّم الجديد؛ الحقول الفارغة للاسم تستخدم سجل المدرسة.",
+      "مسجّل مسبقًا في هذه المدرسة؟ أدخل رقم الهوية المدرسي للطالب وتاريخ الميلاد لمطابقة سجلك الحالي. أكمل نفس حقول الطلب كالمتقدّم الجديد؛ الحقول الفارغة للاسم تستخدم سجل المدرسة.",
     loading: "جارٍ تحميل المدرسة…",
     newApplicant: "طالب جديد",
     returningApplicant: "طالب عائد",
@@ -415,7 +415,7 @@ export const arPublic = {
     schoolNotFound: "المدرسة غير موجودة",
     applyDisabled: "هذه المدرسة لا تقبل الطلبات عبر الإنترنت",
     backHome: "العودة إلى تسجيل الدخول",
-    studentEmailRequired: "البريد الإلكتروني للطالب مطلوب",
+    studentIdNumberRequired: "رقم هوية الطالب مطلوب",
     dobRequired: "تاريخ الميلاد مطلوب للتحقق من الطلاب العائدين",
     failed: "فشل الطلب",
   },
@@ -664,7 +664,7 @@ export const esPublic = {
     subtitleNew:
       "Solicite un cupo nuevo con los mismos campos que el registro recopila para admisión directa. Recibirá un enlace de estado después de enviar.",
     subtitleReturning:
-      "¿Ya está matriculado en esta escuela? Ingrese el correo escolar del estudiante y la fecha de nacimiento para vincular su registro existente. Complete los mismos campos que un solicitante nuevo; los campos de nombre en blanco usan el registro escolar.",
+      "¿Ya está matriculado en esta escuela? Ingrese el número de identificación escolar del estudiante y la fecha de nacimiento para vincular su registro existente. Complete los mismos campos que un solicitante nuevo; los campos de nombre en blanco usan el registro escolar.",
     loading: "Cargando escuela…",
     newApplicant: "Estudiante nuevo",
     returningApplicant: "Estudiante que regresa",
@@ -682,7 +682,7 @@ export const esPublic = {
     schoolNotFound: "Escuela no encontrada",
     applyDisabled: "Esta escuela no acepta solicitudes en línea",
     backHome: "Volver al inicio de sesión",
-    studentEmailRequired: "El correo del estudiante es obligatorio",
+    studentIdNumberRequired: "El número de identificación del estudiante es obligatorio",
     dobRequired: "La fecha de nacimiento es necesaria para verificar estudiantes que regresan",
     failed: "Error en la solicitud",
   },
@@ -931,7 +931,7 @@ export const dePublic = {
     subtitleNew:
       "Bewerben Sie sich um einen neuen Platz mit denselben Feldern, die die Schule für die Direktaufnahme erfasst. Nach dem Absenden erhalten Sie einen Statuslink.",
     subtitleReturning:
-      "Bereits an dieser Schule eingeschrieben? Geben Sie die Schul-E-Mail und das Geburtsdatum des Schülers ein, um den bestehenden Datensatz zu finden. Füllen Sie dieselben Felder wie ein Neuanmelder aus; leere Namensfelder übernehmen den Schulsatz.",
+      "Bereits an dieser Schule eingeschrieben? Geben Sie die Schul-ID-Nummer und das Geburtsdatum des Schülers ein, um den bestehenden Datensatz zu finden. Füllen Sie dieselben Felder wie ein Neuanmelder aus; leere Namensfelder übernehmen den Schulsatz.",
     loading: "Schule wird geladen…",
     newApplicant: "Neuer Schüler",
     returningApplicant: "Wiederkehrender Schüler",
@@ -949,7 +949,7 @@ export const dePublic = {
     schoolNotFound: "Schule nicht gefunden",
     applyDisabled: "Diese Schule nimmt keine Online-Bewerbungen an",
     backHome: "Zurück zur Anmeldung",
-    studentEmailRequired: "Schul-E-Mail des Schülers ist erforderlich",
+    studentIdNumberRequired: "Schul-ID-Nummer des Schülers ist erforderlich",
     dobRequired: "Geburtsdatum ist zur Verifizierung wiederkehrender Schüler erforderlich",
     failed: "Bewerbung fehlgeschlagen",
   },
@@ -1198,7 +1198,7 @@ export const zhHansPublic = {
     subtitleNew:
       "使用与教务直接录取相同的字段申请新名额。提交后将收到状态查询链接。",
     subtitleReturning:
-      "已在本校就读？请输入学生的学校邮箱和出生日期以匹配现有记录。填写与新申请人相同的字段；姓名留空时将使用学校记录。",
+      "已在本校就读？请输入学生的学校编号和出生日期以匹配现有记录。填写与新申请人相同的字段；姓名留空时将使用学校记录。",
     loading: "正在加载学校…",
     newApplicant: "新生",
     returningApplicant: "返校生",
@@ -1216,7 +1216,7 @@ export const zhHansPublic = {
     schoolNotFound: "未找到该学校",
     applyDisabled: "该学校暂不接受在线申请",
     backHome: "返回登录",
-    studentEmailRequired: "学生邮箱为必填项",
+    studentIdNumberRequired: "学生编号为必填项",
     dobRequired: "验证返校生需要填写出生日期",
     failed: "申请失败",
   },
@@ -1465,7 +1465,7 @@ export const hiPublic = {
     subtitleNew:
       "प्रत्यक्ष प्रवेश के लिए पंजीकरण अधिकारी द्वारा एकत्र किए जाने वाले समान फ़ील्ड का उपयोग करके नए स्थान के लिए आवेदन करें। जमा करने के बाद आपको स्थिति लिंक मिलेगा।",
     subtitleReturning:
-      "पहले से इस विद्यालय में नामांकित हैं? छात्र का विद्यालय ईमेल और जन्म तिथि दर्ज करें ताकि मौजूदा रिकॉर्ड मिल सके। नए आवेदक जैसे ही फ़ील्ड भरें; खाली नाम फ़ील्ड विद्यालय रिकॉर्ड का उपयोग करेंगे।",
+      "पहले से इस विद्यालय में नामांकित हैं? छात्र का विद्यालय पहचान नंबर और जन्म तिथि दर्ज करें ताकि मौजूदा रिकॉर्ड मिल सके। नए आवेदक जैसे ही फ़ील्ड भरें; खाली नाम फ़ील्ड विद्यालय रिकॉर्ड का उपयोग करेंगे।",
     loading: "विद्यालय लोड हो रहा है…",
     newApplicant: "नया छात्र",
     returningApplicant: "वापस आने वाला छात्र",
@@ -1483,7 +1483,7 @@ export const hiPublic = {
     schoolNotFound: "विद्यालय नहीं मिला",
     applyDisabled: "यह विद्यालय ऑनलाइन आवेदन स्वीकार नहीं कर रहा",
     backHome: "लॉगिन पर वापस",
-    studentEmailRequired: "छात्र ईमेल आवश्यक है",
+    studentIdNumberRequired: "छात्र पहचान नंबर आवश्यक है",
     dobRequired: "वापस आने वाले छात्रों की पुष्टि के लिए जन्म तिथि आवश्यक है",
     failed: "आवेदन विफल",
   },

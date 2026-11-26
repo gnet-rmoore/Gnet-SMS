@@ -91,7 +91,6 @@ export async function sendApplicationReceivedEmail(opts: {
     id: string;
     applicationNumber: string | null;
     studentName: string;
-    studentEmail?: string | null;
     parentEmail?: string | null;
     gradeLevelName?: string | null;
     entranceToken?: string | null;
@@ -104,9 +103,6 @@ export async function sendApplicationReceivedEmail(opts: {
   try {
     const { application, schoolName, slug, locale } = opts;
     const recipients = normalizeParentEmails(application.parentEmails, application.parentEmail);
-    if (!recipients.length && application.studentEmail) {
-      recipients.push({ email: application.studentEmail.trim().toLowerCase(), role: "STUDENT" });
-    }
     if (!recipients.length) return;
 
     const referenceNumber = application.applicationNumber || application.id.slice(0, 8);

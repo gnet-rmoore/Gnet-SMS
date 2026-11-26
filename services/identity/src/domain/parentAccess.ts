@@ -21,7 +21,7 @@ function positiveInt(value: string | undefined, fallback: number): number {
 }
 
 export function getParentPacSecret(): string {
-  const raw = process.env.PARENT_PAC_SECRET;
+  const raw = String(process.env.PARENT_PAC_SECRET || "").trim();
   if (raw) return raw;
   if (process.env.NODE_ENV === "production") {
     throw Object.assign(new Error("PARENT_PAC_SECRET is required in production"), {

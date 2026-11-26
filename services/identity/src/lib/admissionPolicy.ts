@@ -11,7 +11,7 @@ export type AdmissionEntranceSlot = {
 
 export type AdmissionPolicy = {
   publicApplyEnabled: boolean;
-  /** Allow returning students to re-register online (match existing STUDENT by email + DOB). */
+  /** Allow returning students to re-register online (match existing STUDENT by student ID + DOB). */
   returningApplyEnabled: boolean;
   requireEntranceFee: boolean;
   requiredDocTypes: string[];

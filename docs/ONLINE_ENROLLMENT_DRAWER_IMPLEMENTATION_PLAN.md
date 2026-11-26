@@ -275,8 +275,7 @@ Redesign the existing Student section as professional form groups.
 - Date of birth.
 - Gender.
 - Grade applying for.
-- Student email.
-- Student phone.
+- Student ID number (returning applicants only).
 
 ### Address card
 
