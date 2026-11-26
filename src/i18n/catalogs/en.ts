@@ -7388,6 +7388,7 @@ export const enPages = {
     subtitleStaff: "Upload a CSV or Excel spreadsheet. Accounts are created only if every row is valid.",
     eyebrow: "Bulk import",
     downloadTemplate: "Download template",
+    downloadTemplateHint: "ZIP includes the import template and a keys file",
     chooseFile: "Choose CSV or Excel file",
     chooseFileHint: ".csv, .xlsx or .xls · up to 1500 rows",
     browse: "Browse",

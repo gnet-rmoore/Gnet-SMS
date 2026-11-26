@@ -202,6 +202,14 @@ export function ImportRosterModal({
     );
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      await onDownloadTemplate();
+    } catch (err: any) {
+      setError(translateApiError(err) || err?.message || t("common:errorGeneric"));
+    }
+  };
+
   return (
     <AnimatePresence>
       <FeatureModalShell
@@ -285,12 +293,17 @@ export function ImportRosterModal({
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
-                  onClick={() => onDownloadTemplate()}
+                  onClick={handleDownloadTemplate}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 hover:bg-slate-50"
                 >
                   <Download className="w-4 h-4" />
                   {t("pages:bulkImport.downloadTemplate")}
                 </button>
+                {kind === "student" ? (
+                  <p className="text-xs text-slate-500 font-medium">
+                    {t("pages:bulkImport.downloadTemplateHint")}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"

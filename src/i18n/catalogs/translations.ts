@@ -1513,6 +1513,7 @@ const fr: any = {
       subtitleStaff:
         "Téléversez un fichier CSV ou Excel. Les comptes ne sont créés que si chaque ligne est valide.",
       downloadTemplate: "Télécharger le modèle",
+      downloadTemplateHint: "Le ZIP contient le modèle d’importation et un fichier de clés",
       chooseFile: "Choisir un fichier CSV ou Excel",
       chooseFileHint: ".csv, .xlsx ou .xls · jusqu’à 1500 lignes",
       browse: "Parcourir",
@@ -2085,6 +2086,7 @@ const ar: any = {
         "ارفع ملف CSV أو Excel. يتم استيراد صفوف الطلاب الصالحة، ويتم تخطي الصفوف غير الصالحة والإبلاغ عنها.",
       subtitleStaff: "ارفع ملف CSV أو Excel. تُنشأ الحسابات فقط إذا كانت كل الصفوف صالحة.",
       downloadTemplate: "تنزيل القالب",
+      downloadTemplateHint: "يحتوي ملف ZIP على قالب الاستيراد وملف المفاتيح",
       chooseFile: "اختر ملف CSV أو Excel",
       chooseFileHint: ".csv أو .xlsx أو .xls · حتى 1500 صف",
       browse: "استعراض",
@@ -2618,6 +2620,7 @@ const es: any = {
       subtitleStaff:
         "Suba un archivo CSV o Excel. Las cuentas solo se crean si cada fila es válida.",
       downloadTemplate: "Descargar plantilla",
+      downloadTemplateHint: "El ZIP contiene la plantilla de importación y un archivo de claves",
       chooseFile: "Elegir archivo CSV o Excel",
       chooseFileHint: ".csv, .xlsx o .xls · hasta 1500 filas",
       browse: "Examinar",
@@ -3153,6 +3156,7 @@ const de: any = {
       subtitleStaff:
         "Laden Sie eine CSV- oder Excel-Datei hoch. Konten werden nur erstellt, wenn jede Zeile gültig ist.",
       downloadTemplate: "Vorlage herunterladen",
+      downloadTemplateHint: "Die ZIP enthält die Importvorlage und eine Schlüsseldatei",
       chooseFile: "CSV- oder Excel-Datei wählen",
       chooseFileHint: ".csv, .xlsx oder .xls · bis zu 1500 Zeilen",
       browse: "Durchsuchen",
@@ -3672,6 +3676,7 @@ const zhHans: any = {
       subtitleStudents: "上传 CSV 或 Excel 电子表格。有效的学生行将被导入；无效行将被跳过并报告。",
       subtitleStaff: "上传 CSV 或 Excel 电子表格。仅当每一行都有效时才会创建账户。",
       downloadTemplate: "下载模板",
+      downloadTemplateHint: "ZIP 包含导入模板和键值文件",
       chooseFile: "选择 CSV 或 Excel 文件",
       chooseFileHint: ".csv、.xlsx 或 .xls · 最多 1500 行",
       browse: "浏览",
@@ -4196,6 +4201,7 @@ const hi: any = {
         "CSV या Excel स्प्रेडशीट अपलोड करें। मान्य छात्र पंक्तियाँ आयात की जाती हैं; अमान्य पंक्तियाँ छोड़ दी जाती हैं और रिपोर्ट की जाती हैं।",
       subtitleStaff: "CSV या Excel स्प्रेडशीट अपलोड करें। खाते तभी बनते हैं जब प्रत्येक पंक्ति मान्य हो।",
       downloadTemplate: "टेम्पलेट डाउनलोड करें",
+      downloadTemplateHint: "ZIP में आयात टेम्पलेट और कुंजी फ़ाइल है",
       chooseFile: "CSV या Excel फ़ाइल चुनें",
       chooseFileHint: ".csv, .xlsx या .xls · अधिकतम 1500 पंक्तियाँ",
       browse: "ब्राउज़ करें",

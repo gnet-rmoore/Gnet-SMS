@@ -43,6 +43,14 @@ router.get(
   userController.studentImportTemplate
 );
 
+router.get(
+  "/api/schools/:schoolId/students/import/template.zip",
+  authenticate,
+  requireTenant,
+  requireCapability("action.bulk_import.roster", ["SCHOOL_ADMIN", "REGISTRAR"]),
+  userController.studentImportTemplateBundle
+);
+
 router.post(
   "/api/schools/:schoolId/students/import/preview",
   authenticate,

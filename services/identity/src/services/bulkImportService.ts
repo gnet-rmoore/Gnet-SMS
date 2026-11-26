@@ -8,13 +8,16 @@ import { parentAccessService } from "./parentAccessService";
 import { emailAuthService } from "./emailAuthService";
 import { temporaryPasswordFields } from "../lib/credentialCrypto";
 import { generateTemporaryPassword } from "../lib/tempPassword";
+import { createZipArchive } from "../lib/zip";
 import { allocateStudentId } from "./studentIdService";
 import {
   filterNonEmptyRows,
   normalizeRowKeys,
   staffImportTemplateCsv,
   staffRolesAllowedForActor,
+  studentImportKeysCsv,
   studentImportTemplateCsv,
+  type StudentImportKeyRow,
   validateStaffRows,
   validateStudentRows,
   type BulkImportPreviewResult,
@@ -147,6 +150,160 @@ async function loadGradeLevels(schoolId: string) {
     .filter((g) => g.id && g.name);
 }
 
+async function loadClassrooms(schoolId: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (INTERNAL_TOKEN) headers["x-internal-token"] = INTERNAL_TOKEN;
+  const res = await fetch(`${CLASSROOM_URL}/api/internal/schools/${schoolId}/classrooms`, {
+    headers,
+  });
+  if (!res.ok) throw new Error(`Unable to load classrooms (${res.status})`);
+  const raw = await res.json();
+  const list = Array.isArray(raw) ? raw : raw?.items || raw?.classrooms || [];
+  return (list as any[])
+    .map((c) => ({
+      id: String(c.id || ""),
+      name: String(c.name || ""),
+      classCode: String(c.classCode || c.code || ""),
+      gradeLevelId: String(c.gradeLevelId || ""),
+      schoolYearId: String(c.schoolYearId || ""),
+      subjectId: String(c.subjectId || ""),
+    }))
+    .filter((c) => c.id && (c.classCode || c.name));
+}
+
+function jsonObjectKeys(value: unknown): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.keys(value as Record<string, unknown>).filter((key) => key.trim());
+}
+
+async function loadTenantStudentImportKeys(schoolId: string): Promise<StudentImportKeyRow[]> {
+  const [gradeResult, classroomResult, studentResult] = await Promise.allSettled([
+    loadGradeLevels(schoolId),
+    loadClassrooms(schoolId),
+    prisma.user.findMany({
+      where: { schoolId, role: "STUDENT" },
+      select: { customFields: true, documents: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: 5001,
+    }),
+  ]);
+
+  const gradeLevels = gradeResult.status === "fulfilled" ? gradeResult.value : [];
+  const classrooms = classroomResult.status === "fulfilled" ? classroomResult.value : [];
+  const allStudents = studentResult.status === "fulfilled" ? studentResult.value : [];
+  const students = allStudents.slice(0, 5000);
+  const warnings: StudentImportKeyRow[] = [];
+  if (gradeResult.status === "rejected") {
+    warnings.push({
+      key: "warning",
+      value: "gradeLevels unavailable",
+      details: "Grade-level keys could not be loaded; download again after the academic service recovers.",
+    });
+  }
+  if (classroomResult.status === "rejected") {
+    warnings.push({
+      key: "warning",
+      value: "classroomCodes unavailable",
+      details: "Classroom keys could not be loaded; download again after the classroom service recovers.",
+    });
+  }
+  if (studentResult.status === "rejected") {
+    warnings.push({
+      key: "warning",
+      value: "customFieldKeys unavailable",
+      details: "Existing custom-field keys could not be loaded.",
+    });
+  }
+  if (allStudents.length > 5000) {
+    warnings.push({
+      key: "warning",
+      value: "customFieldKeys capped",
+      details: "Only the first 5000 student records were scanned for custom-field keys.",
+    });
+  }
+
+  const customFieldKeys = new Set<string>();
+  const documentTypes = new Set<string>();
+  for (const student of students) {
+    for (const key of jsonObjectKeys(student.customFields)) customFieldKeys.add(key);
+    if (Array.isArray(student.documents)) {
+      for (const document of student.documents) {
+        const type = jsonObjectKeys(document).includes("type")
+          ? String((document as Record<string, unknown>).type || "").trim().toUpperCase()
+          : "";
+        if (type) documentTypes.add(type);
+      }
+    }
+  }
+
+  const rows: StudentImportKeyRow[] = [];
+  for (const grade of [...gradeLevels].sort((a, b) => a.name.localeCompare(b.name))) {
+    rows.push({
+      key: "gradeLevel",
+      value: grade.name,
+      label: grade.name,
+      id: grade.id,
+      details: "Use in the gradeLevel column",
+    });
+    rows.push({
+      key: "gradeLevelId",
+      value: grade.id,
+      label: grade.name,
+      details: "Alternative to gradeLevel",
+    });
+  }
+  for (const classroom of [...classrooms].sort((a, b) =>
+    (a.classCode || a.name).localeCompare(b.classCode || b.name)
+  )) {
+    rows.push({
+      key: "classroomCode",
+      value: classroom.classCode || classroom.name,
+      label: classroom.name,
+      id: classroom.id,
+      details: [
+        classroom.gradeLevelId ? `gradeLevelId:${classroom.gradeLevelId}` : "",
+        classroom.schoolYearId ? `schoolYearId:${classroom.schoolYearId}` : "",
+        classroom.subjectId ? "subjectRoom:true" : "classGroup:true",
+      ]
+        .filter(Boolean)
+        .join(";"),
+    });
+  }
+  for (const cohort of ["NEW", "RETURNING"]) {
+    rows.push({
+      key: "feeCohort",
+      value: cohort,
+      label: cohort === "NEW" ? "New student" : "Returning student",
+      details: "Accepted value",
+    });
+  }
+  for (const gender of ["MALE", "FEMALE", "OTHER"]) {
+    rows.push({
+      key: "gender",
+      value: gender,
+      label: gender.charAt(0) + gender.slice(1).toLowerCase(),
+      details: "Suggested value",
+    });
+  }
+  for (const key of [...customFieldKeys].sort((a, b) => a.localeCompare(b))) {
+    rows.push({
+      key: "customFields",
+      value: JSON.stringify({ [key]: "" }),
+      label: key,
+      details: "Example customFields JSON using an existing tenant key",
+    });
+  }
+  for (const type of [...documentTypes].sort((a, b) => a.localeCompare(b))) {
+    rows.push({
+      key: "documents",
+      value: JSON.stringify([{ type, url: "/docs/example.pdf" }]),
+      label: type,
+      details: "Example documents JSON using an existing tenant type",
+    });
+  }
+  return [...rows, ...warnings];
+}
+
 async function loadPasswordPolicy(schoolId: string) {
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
@@ -204,6 +361,14 @@ function previewPayload(result: BulkImportPreviewResult) {
 export const bulkImportService = {
   studentTemplateCsv: studentImportTemplateCsv,
   staffTemplateCsv: staffImportTemplateCsv,
+
+  async studentTemplateBundle(schoolId: string): Promise<Buffer> {
+    const keys = await loadTenantStudentImportKeys(schoolId);
+    return createZipArchive([
+      { name: "student-import-template.csv", content: studentImportTemplateCsv() },
+      { name: "student-import-keys.csv", content: studentImportKeysCsv(keys) },
+    ]);
+  },
 
   async previewStudents(schoolId: string, body: any) {
     const rows = extractRows(body);

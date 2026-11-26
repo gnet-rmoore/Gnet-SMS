@@ -786,10 +786,33 @@ export function validateStaffRows(opts: {
   };
 }
 
+export type StudentImportKeyRow = {
+  key: string;
+  value: string;
+  label?: string;
+  id?: string;
+  details?: string;
+};
+
+function csvField(value: string | undefined | null): string {
+  const raw = String(value ?? "");
+  const text = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 export function studentImportTemplateCsv(): string {
   return [
     "name,email,studentIdNumber,gradeLevel,dob,gender,phone,address,parentName,parentPhone,parentEmail,parent2Name,parent2Phone,parent2Email,feeCohort,classroomCode,documents,customFields",
     "Ada Lovelace,ada.lovelace@example.com,100456,Grade 7,2012-12-10,FEMALE,,,Ada Parent,+2315550001,parent.ada@example.com,Second Parent,+2315550002,second.ada@example.com,NEW,7A,\"[\"\"/docs/ada-id.pdf\"\"]\",\"{\"\"house\"\":\"\"Blue\"\"}\"",
+  ].join("\n");
+}
+
+export function studentImportKeysCsv(rows: StudentImportKeyRow[]): string {
+  return [
+    "key,value,label,id,details",
+    ...rows.map((row) =>
+      [row.key, row.value, row.label, row.id, row.details].map(csvField).join(",")
+    ),
   ].join("\n");
 }
 

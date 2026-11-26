@@ -39,15 +39,22 @@ async function downloadTemplate(url: string, filename: string) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || "Could not download template");
+    let message = text || "Could not download template";
+    try {
+      const data = JSON.parse(text);
+      if (data.error || data.message) message = data.error || data.message;
+    } catch {}
+    throw new Error(message);
   }
   const blob = await res.blob();
   const href = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = href;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(href);
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 0);
 }
 
 export const bulkImportApi = {
@@ -62,8 +69,8 @@ export const bulkImportApi = {
 
   downloadStudentTemplate: (schoolId: string) =>
     downloadTemplate(
-      `/api/schools/${schoolId}/students/import/template.csv`,
-      "student-import-template.csv"
+      `/api/schools/${schoolId}/students/import/template.zip`,
+      "student-import-template.zip"
     ),
 
   previewStaff: (schoolId: string, rows: Record<string, unknown>[], sourceFileName: string) =>

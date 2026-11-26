@@ -650,6 +650,22 @@ export const userController = {
     res.send(csv);
   },
 
+  async studentImportTemplateBundle(req: any, res: any) {
+    const { schoolId } = req.params;
+    if (req.user.schoolId !== schoolId && req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+      const archive = await bulkImportService.studentTemplateBundle(schoolId);
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", 'attachment; filename="student-import-template.zip"');
+      res.setHeader("Cache-Control", "private, no-store");
+      res.send(archive);
+    } catch {
+      res.status(502).json({ error: "Could not build student import template bundle" });
+    }
+  },
+
   async previewStudentImport(req: any, res: any) {
     const { schoolId } = req.params;
     try {

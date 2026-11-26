@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-26T12:18:07.583Z",
-  "total": 630,
-  "publicOrSchool": 563,
+  "generatedAt": "2026-11-26T13:40:27.532Z",
+  "total": 631,
+  "publicOrSchool": 564,
   "internal": 67,
   "byService": {
     "academic": 198,
@@ -9,7 +9,7 @@
     "classroom": 50,
     "comms": 33,
     "finance": 49,
-    "identity": 180,
+    "identity": 181,
     "lifecycle": 39,
     "ops": 22,
     "staff": 26
@@ -3196,6 +3196,13 @@
     {
       "method": "GET",
       "path": "/api/schools/:schoolId/students/import/template.csv",
+      "service": "identity",
+      "file": "services/identity/src/routes/userRoutes.ts",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/schools/:schoolId/students/import/template.zip",
       "service": "identity",
       "file": "services/identity/src/routes/userRoutes.ts",
       "internal": false
