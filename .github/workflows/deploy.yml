@@ -105,6 +105,17 @@ jobs:
                 docker builder prune -af || true
                 docker image prune -af || true
                 git pull --ff-only
+                touch .env
+                if ! grep -Eq '^PARENT_PAC_SECRET=.+$' .env; then
+                  sed -i '/^PARENT_PAC_SECRET=/d' .env
+                  pac_secret="\$(openssl rand -hex 32 2>/dev/null || od -An -tx1 -N32 /dev/urandom | tr -d ' \\n')"
+                  echo "PARENT_PAC_SECRET=\${pac_secret}" >> .env
+                  unset pac_secret
+                fi
+                if ! grep -Eq '^PARENT_PAC_SECRET_VERSION=.+$' .env; then
+                  sed -i '/^PARENT_PAC_SECRET_VERSION=/d' .env
+                  echo 'PARENT_PAC_SECRET_VERSION=1' >> .env
+                fi
                 echo '--- production cleanup (automatic) ---'
                 if ! bash scripts/cleanup-production.sh; then
                   echo '::warning::Production disk is still low after cleanup - check the host'

@@ -107,10 +107,16 @@ SUPER_ADMIN_JWT_SECRET=paste-random-64-hex
 RECEIPT_HMAC_SECRET=paste-random-64-hex
 INTERNAL_SERVICE_TOKEN=paste-random-64-hex
 MFA_ENCRYPTION_KEY=paste-base64-32-byte-key    # openssl rand -base64 32
+CREDENTIAL_ENCRYPTION_KEY=paste-base64-32-byte-key    # openssl rand -base64 32
+PARENT_PAC_SECRET=paste-random-64-hex   # required in production
+PARENT_PAC_SECRET_VERSION=1
 
 MINIO_ROOT_USER=gnet
 MINIO_ROOT_PASSWORD=paste-random-password
 ```
+
+The deploy workflow backfills a missing `PARENT_PAC_SECRET` on the server before
+Compose runs; existing values are never replaced.
 
 Log in to Docker Hub (image pulls on the server may need auth):
 
