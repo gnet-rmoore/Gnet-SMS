@@ -269,5 +269,10 @@ assert.equal(
   true
 );
 assert.equal(classGroupCard.includes('{orgType !== "DEPARTMENTALIZED" && (() => {'), true);
+assert.equal(
+  createModal.includes('setFormData({ ...formData, organizationType: "MIXED" })'),
+  true
+);
+assert.equal(createModal.includes('{t("classroomModals.orgMixedHint")}'), true);
 
 console.log("All departmentalized class-group staff tests passed");

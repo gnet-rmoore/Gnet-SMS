@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { Users, X, GraduationCap, School, ArrowLeftRight } from "lucide-react";
+import { Users, X, GraduationCap, School, ArrowLeftRight, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import { UserAvatar } from "../../../components/UserAvatar";
 import type { OrganizationType } from "../utils";
@@ -242,6 +242,29 @@ export function CreateClassroomModal({
                     </p>
                     <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed">
                       {t("classroomModals.orgDepartmentalizedHint")}
+                    </p>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, organizationType: "MIXED" })}
+                className={`text-left rounded-2xl border p-4 transition-colors ${
+                  formData.organizationType === "MIXED"
+                    ? "border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-500"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold tracking-tight text-slate-900">
+                      {t("classroomModals.orgMixed")}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed">
+                      {t("classroomModals.orgMixedHint")}
                     </p>
                   </div>
                 </div>

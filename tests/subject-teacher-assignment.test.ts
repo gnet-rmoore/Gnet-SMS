@@ -131,5 +131,6 @@ assert.equal(classroomService.includes("autoProvisionTeacherId("), true);
 assert.equal(classroomService.includes("requiresDistinctSpecialist("), true);
 assert.equal(pageActions.includes("roomsSyncedWithSkips"), true);
 assert.equal(englishCatalog.includes("roomsSyncedWithSkips:"), true);
+assert.equal(englishCatalog.includes("orgMixedHint:"), true);
 
 console.log("All subject teacher assignment tests passed");

@@ -7042,6 +7042,7 @@ export const zhHansResources = {
       "orgDepartmentalized": "Departmentalized",
       "orgDepartmentalizedHint": "Students rotate to specialist teachers by subject. Assign specialists when you sync subject classrooms.",
       "orgMixed": "Mixed",
+      "orgMixedHint": "Students keep a homeroom teacher and may have subject specialists. Optional co-teacher or assistant.",
       "primaryTeacher": "Primary teacher",
       "homeroomTeacherDeptHint": "This is the advisory / homeroom teacher. Subject specialists are assigned when you open subject classrooms.",
       "bannerColor": "横幅颜色",
