@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -6,11 +6,18 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
+  CheckCircle2,
+  ChevronRight,
   ClipboardList,
+  Clock3,
+  FileText,
+  GraduationCap,
   Image as ImageIcon,
+  LayoutGrid,
   MessageSquare,
   Paperclip,
   Plus,
+  Send,
   Users,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -24,9 +31,21 @@ import {
   fieldLabel,
 } from "../academics-shared/FeatureModalShell";
 import { DetailDrawerShell } from "../../components/ui";
+import { buttonClass, typeClass } from "../../components/ui/tokens";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { uploadClassroomFile, workspaceApi } from "./api";
 import { FileDropzone } from "./FileDropzone";
+import {
+  ClassroomEmptyState,
+  ClassroomField,
+  ClassroomFilterChip,
+  ClassroomMetric,
+  ClassroomNestedSurface,
+  ClassroomPill,
+  ClassroomSectionHeader,
+  ClassroomSurface,
+  SubmissionStatusPill,
+} from "./components/ClassroomUi";
 import {
   BANNER_SOLID_COLORS,
   ClassroomBannerStrip,
@@ -124,6 +143,9 @@ export function ClassroomRoomPage() {
   const [marks, setMarks] = useState<MarksPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<RoomTab>("STREAM");
+  const [classworkFilter, setClassworkFilter] = useState<
+    "ALL" | "ASSIGNMENT" | "MATERIAL" | "DUE_SOON" | "OVERDUE"
+  >("ALL");
 
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<"ANNOUNCEMENT" | "ASSIGNMENT" | "MATERIAL">(
@@ -172,6 +194,8 @@ export function ClassroomRoomPage() {
   const [gradeDrafts, setGradeDrafts] = useState<Record<string, { grade: string; feedback: string }>>(
     {}
   );
+  const turnInDirtyRef = useRef(false);
+  const dirtyGradeIdsRef = useRef<Set<string>>(new Set());
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [schoolUsers, setSchoolUsers] = useState<Array<{ id: string; name: string; role: string }>>(
@@ -199,6 +223,46 @@ export function ClassroomRoomPage() {
   const classroomListPath = studentId
     ? `/${slug}/classroom?studentId=${encodeURIComponent(studentId)}`
     : `/${slug}/classroom`;
+
+  const postTypeLabel = useCallback(
+    (type?: string | null) => {
+      if (type === "ASSIGNMENT") return t("classroomWorkspace.assignmentFallback");
+      if (type === "MATERIAL") return t("classroomWorkspace.materialFallback");
+      return t("classroomWorkspace.compose.announcement");
+    },
+    [t]
+  );
+
+  const submissionStatusLabel = useCallback(
+    (status?: string | null) => {
+      const value = String(status || "").toUpperCase();
+      const key =
+        value === "SUBMITTED" || value === "TURNED_IN"
+          ? "classroomWorkspace.ui.turnedIn"
+          : value === "RETURNED" || value === "ACCEPTED"
+            ? "classroomWorkspace.ui.returned"
+            : value === "REOPENED"
+              ? "classroomWorkspace.ui.reopened"
+              : value === "DRAFT"
+                ? "classroomWorkspace.ui.draft"
+                : value === "GRADED_DRAFT"
+                  ? "classroomWorkspace.ui.gradedDraft"
+                  : "classroomWorkspace.ui.notGraded";
+      return t(key);
+    },
+    [t]
+  );
+
+  const isDueSoon = (post: ClassroomPost) => {
+    if (!post.dueAt) return false;
+    const diff = new Date(post.dueAt).getTime() - Date.now();
+    return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
+  };
+
+  const isOverdue = (post: ClassroomPost) => {
+    if (!post.dueAt) return false;
+    return new Date(post.dueAt).getTime() < Date.now();
+  };
 
   const loadCore = useCallback(async () => {
     if (!id) return;
@@ -240,24 +304,35 @@ export function ClassroomRoomPage() {
       .catch((e: any) => showToast(e?.message || t("classroomWorkspace.toast.loadMarksFailed"), "error"));
   }, [id, tab, studentId, showToast]);
 
-  const applyPostDetail = useCallback((detail: PostDetail) => {
+  const applyPostDetail = useCallback((detail: PostDetail, preserveDirty = false) => {
     setPostDetail(detail);
-    setTurnInText(detail.mySubmission?.textResponse || "");
+    if (!preserveDirty || !turnInDirtyRef.current) {
+      setTurnInText(detail.mySubmission?.textResponse || "");
+    }
     const drafts: Record<string, { grade: string; feedback: string }> = {};
-    for (const s of detail.submissions || []) {
-      drafts[s.id] = {
-        grade: s.grade != null ? String(s.grade) : "",
-        feedback: s.feedback || "",
+    for (const submission of detail.submissions || []) {
+      drafts[submission.id] = {
+        grade: submission.grade != null ? String(submission.grade) : "",
+        feedback: submission.feedback || "",
       };
     }
-    setGradeDrafts(drafts);
+    setGradeDrafts((previous) => {
+      if (!preserveDirty || dirtyGradeIdsRef.current.size === 0) return drafts;
+      const merged = { ...drafts };
+      for (const [submissionId, draft] of Object.entries(previous)) {
+        if (dirtyGradeIdsRef.current.has(submissionId)) {
+          merged[submissionId] = draft;
+        }
+      }
+      return merged;
+    });
   }, []);
 
   const refreshActivePost = useCallback(async () => {
     if (!activePostId) return;
     try {
       const detail = await workspaceApi.fetchPost(activePostId, studentId);
-      applyPostDetail(detail);
+      applyPostDetail(detail, true);
     } catch {
       /* ignore background refresh errors */
     }
@@ -292,6 +367,8 @@ export function ClassroomRoomPage() {
     setDetailLoading(true);
     setCommentBody("");
     setTurnInFiles([]);
+    turnInDirtyRef.current = false;
+    dirtyGradeIdsRef.current.clear();
     try {
       const detail = await workspaceApi.fetchPost(postId, studentId);
       applyPostDetail(detail);
@@ -303,7 +380,18 @@ export function ClassroomRoomPage() {
     }
   };
 
-  const closePost = () => {
+  const closePost = async () => {
+    if (turnInDirtyRef.current || dirtyGradeIdsRef.current.size > 0) {
+      const confirmed = await confirmAction({
+        title: t("classroomWorkspace.ui.discardTitle"),
+        text: t("classroomWorkspace.ui.discardText"),
+        confirmText: t("classroomWorkspace.ui.discardButton"),
+        danger: true,
+      });
+      if (!confirmed) return;
+    }
+    turnInDirtyRef.current = false;
+    dirtyGradeIdsRef.current.clear();
     setActivePostId(null);
     setPostDetail(null);
     setTurnInFiles([]);
@@ -323,6 +411,25 @@ export function ClassroomRoomPage() {
     [posts]
   );
 
+  const filteredClasswork = useMemo(() => {
+    if (classworkFilter === "ASSIGNMENT") {
+      return classwork.filter((p) => p.type === "ASSIGNMENT");
+    }
+    if (classworkFilter === "MATERIAL") {
+      return classwork.filter((p) => p.type === "MATERIAL");
+    }
+    if (classworkFilter === "DUE_SOON" || classworkFilter === "OVERDUE") {
+      return classwork.filter((p) => {
+        if (!p.dueAt) return false;
+        const diff = new Date(p.dueAt).getTime() - Date.now();
+        return classworkFilter === "DUE_SOON"
+          ? diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000
+          : diff < 0;
+      });
+    }
+    return classwork;
+  }, [classwork, classworkFilter]);
+
   const classworkByTopic = useMemo(() => {
     const groups: Array<{ key: string; title: string; posts: ClassroomPost[] }> = topics
       .slice()
@@ -331,7 +438,7 @@ export function ClassroomRoomPage() {
     const byId = new Map(groups.map((g) => [g.key, g]));
     const uncategorized: ClassroomPost[] = [];
 
-    for (const p of classwork) {
+    for (const p of filteredClasswork) {
       if (p.topicId && byId.has(p.topicId)) {
         byId.get(p.topicId)!.posts.push(p);
       } else {
@@ -344,10 +451,25 @@ export function ClassroomRoomPage() {
       result.push({ key: "__none__", title: t("classroomWorkspace.classwork.uncategorized"), posts: uncategorized });
     }
     return result;
-  }, [classwork, topics, t]);
+  }, [filteredClasswork, topics, t]);
 
   const teachers = members.filter((m) => ["TEACHER", "CO_TEACHER", "ASSISTANT"].includes(m.role));
   const students = members.filter((m) => m.role === "STUDENT");
+
+  const marksSummary = useMemo(() => {
+    const grades = (marks?.assignments || []).flatMap((assignment) =>
+      assignment.submissions
+        .map((submission) => submission.grade)
+        .filter((grade): grade is number => typeof grade === "number")
+    );
+    return {
+      assignments: marks?.assignments.length || 0,
+      graded: grades.length,
+      average: grades.length
+        ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1)
+        : null,
+    };
+  }, [marks]);
 
   const resetCompose = () => {
     setComposeTitle("");
@@ -429,6 +551,12 @@ export function ClassroomRoomPage() {
 
   const handleTurnIn = async () => {
     if (!postDetail || !id) return;
+    const confirmed = await confirmAction({
+      title: t("classroomWorkspace.ui.turnInConfirmTitle"),
+      text: t("classroomWorkspace.ui.turnInConfirmText"),
+      confirmText: t("classroomWorkspace.ui.turnInConfirmButton"),
+    });
+    if (!confirmed) return;
     try {
       let submissionId = postDetail.mySubmission?.id;
       if (postDetail.mySubmission?.id && postDetail.mySubmission.status !== "RETURNED") {
@@ -556,9 +684,14 @@ export function ClassroomRoomPage() {
 
   const handleReturn = async (submissionId: string) => {
     const draft = gradeDrafts[submissionId] || { grade: "", feedback: "" };
+    const grade = draft.grade.trim() === "" ? null : Number(draft.grade);
+    if (grade != null && !Number.isFinite(grade)) {
+      showToast(t("classroomWorkspace.ui.invalidGrade"), "error");
+      return;
+    }
     try {
       await workspaceApi.returnSubmission(submissionId, {
-        grade: draft.grade === "" ? null : Number(draft.grade),
+        grade,
         feedback: draft.feedback || null,
       });
       showToast(t("classroomWorkspace.toast.returnedToStudent"));
@@ -662,12 +795,12 @@ export function ClassroomRoomPage() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] bg-white"
+        className="rounded-[32px] overflow-hidden border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] bg-white"
       >
-        <ClassroomBannerStrip classroom={classroom} className="h-28">
+        <ClassroomBannerStrip classroom={classroom} className="h-32">
           <Link
             to={classroomListPath}
-            className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-slate-800 text-xs font-bold hover:bg-white"
+            className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-slate-800 text-xs font-bold backdrop-blur hover:bg-white"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t("classroomWorkspace.myClasses")}
@@ -683,27 +816,29 @@ export function ClassroomRoomPage() {
                 setBannerImageFile([]);
                 setBannerOpen(true);
               }}
-              className="absolute top-4 right-4 z-10 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-slate-800 text-xs font-bold hover:bg-white"
+              className="absolute top-4 right-4 z-10 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 text-slate-800 text-xs font-bold backdrop-blur hover:bg-white"
             >
               <ImageIcon className="w-3.5 h-3.5" />
               {t("classroomWorkspace.customizeBanner")}
             </button>
           )}
         </ClassroomBannerStrip>
-        <div className="px-6 sm:px-8 py-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-dashboard">
+        <div className="px-6 sm:px-8 py-7 bg-gradient-to-b from-white to-slate-50/70 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+          <div className="min-w-0 space-y-2">
+            <ClassroomPill tone="indigo" icon={<LayoutGrid className="h-3.5 w-3.5" />}>
+              {t("classroomWorkspace.myClasses")}
+            </ClassroomPill>
+            <h1 className={`${typeClass.pageTitle} font-dashboard`}>
               {classroom.name}
             </h1>
-            <p className="text-slate-500 font-medium mt-1 text-sm">
+            <p className={`${typeClass.helper} max-w-2xl`}>
               {t("classroomWorkspace.marksHint")}{" "}
               <Link to={`/${slug}/gradebook`} className="text-indigo-600 font-bold hover:underline">
                 {t("classroomWorkspace.gradebook")}
               </Link>
               {isStudent ? (
                 <>
-                  {" "}
-                  /{" "}
+                  {" / "}
                   <Link to={`/${slug}/grades`} className="text-indigo-600 font-bold hover:underline">
                     {t("classroomWorkspace.myGrades")}
                   </Link>
@@ -719,28 +854,37 @@ export function ClassroomRoomPage() {
                 setComposeType("ANNOUNCEMENT");
                 setComposeOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
+              className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeDefault} shrink-0`}
             >
               <Plus className="w-4 h-4" />
               {t("classroomWorkspace.newPost")}
             </button>
           )}
         </div>
-        <div className="px-6 sm:px-8 border-t border-slate-100 flex gap-1 overflow-x-auto">
+        <div className="px-6 sm:px-8 py-2 bg-slate-50/60 border-t border-slate-100 flex gap-2 overflow-x-auto">
           {tabs
-            .filter((t) => t.show)
-            .map((t) => (
+            .filter((item) => item.show)
+            .map((item) => (
               <button
-                key={t.id}
+                key={item.id}
                 type="button"
-                onClick={() => setTab(t.id)}
-                className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  tab === t.id
-                    ? "border-indigo-600 text-indigo-700"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
+                onClick={() => setTab(item.id)}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap ${
+                  tab === item.id
+                    ? "bg-slate-950 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                {t.label}
+                {item.id === "STREAM" ? (
+                  <MessageSquare className="h-4 w-4" />
+                ) : item.id === "CLASSWORK" ? (
+                  <BookOpen className="h-4 w-4" />
+                ) : item.id === "PEOPLE" ? (
+                  <Users className="h-4 w-4" />
+                ) : (
+                  <GraduationCap className="h-4 w-4" />
+                )}
+                {item.label}
               </button>
             ))}
         </div>
@@ -749,49 +893,56 @@ export function ClassroomRoomPage() {
       {tab === "STREAM" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6">
-              <h2 className="text-sm font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                {t("classroomWorkspace.stream.upcoming")}
-              </h2>
+            <ClassroomSurface className="p-6">
+              <ClassroomSectionHeader
+                title={t("classroomWorkspace.stream.upcoming")}
+                action={
+                  <ClassroomPill tone="sky" icon={<Clock3 className="h-3.5 w-3.5" />}>
+                    {upcoming.length}
+                  </ClassroomPill>
+                }
+              />
               {upcoming.length === 0 ? (
-                <p className="text-sm text-slate-500 mt-3">{t("classroomWorkspace.stream.noUpcoming")}</p>
+                <p className="text-sm font-medium text-slate-500 mt-4">
+                  {t("classroomWorkspace.stream.noUpcoming")}
+                </p>
               ) : (
-                <ul className="mt-3 space-y-3">
+                <ul className="mt-4 space-y-2">
                   {upcoming.map((p) => (
                     <li key={p.id}>
                       <button
                         type="button"
                         onClick={() => openPost(p.id)}
-                        className="text-left w-full"
+                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 p-3 text-left transition-colors hover:border-indigo-100 hover:bg-indigo-50/60"
                       >
                         <p className="text-sm font-bold text-slate-900 line-clamp-1">
                           {p.title || t("classroomWorkspace.assignmentFallback")}
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">{formatDue(p.dueAt)}</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          {formatDue(p.dueAt)}
+                        </p>
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-            </div>
+            </ClassroomSurface>
           </div>
 
           <div className="lg:col-span-2 space-y-4">
             {posts.length === 0 ? (
-              <div className="rounded-[32px] border border-dashed border-slate-200 bg-white p-10 text-center">
-                <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                <p className="font-extrabold tracking-tight text-slate-900">{t("classroomWorkspace.stream.noPostsTitle")}</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  {canCompose ? t("classroomWorkspace.stream.noPostsStaff") : t("classroomWorkspace.stream.noPostsStudent")}
-                </p>
-              </div>
+              <ClassroomEmptyState
+                icon={<BookOpen className="h-6 w-6" />}
+                title={t("classroomWorkspace.stream.noPostsTitle")}
+                description={
+                  canCompose
+                    ? t("classroomWorkspace.stream.noPostsStaff")
+                    : t("classroomWorkspace.stream.noPostsStudent")
+                }
+              />
             ) : (
               posts.map((post) => (
-                <article
-                  key={post.id}
-                  className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6 space-y-3"
-                >
+                <ClassroomSurface key={post.id} className="p-6">
                   <div className="flex items-start gap-3">
                     <UserAvatar
                       name={post.author?.name || t("classroomWorkspace.unknownAuthor")}
@@ -799,57 +950,74 @@ export function ClassroomRoomPage() {
                       userId={post.authorId}
                       size="sm"
                     />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-extrabold text-slate-900">
                           {post.author?.name || t("classroomWorkspace.unknownAuthor")}
                         </p>
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                          {post.type}
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">
+                        <ClassroomPill
+                          tone={post.type === "ASSIGNMENT" ? "indigo" : post.type === "MATERIAL" ? "sky" : "slate"}
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                        >
+                          {postTypeLabel(post.type)}
+                        </ClassroomPill>
+                        <span className="text-xs font-medium text-slate-500">
                           {new Date(post.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       {post.title && (
-                        <h3 className="text-base font-extrabold tracking-tight text-slate-900 mt-1">
+                        <h3 className="text-base font-extrabold tracking-tight text-slate-900">
                           {post.title}
                         </h3>
                       )}
                       <div
-                        className="prose prose-sm max-w-none text-slate-600 mt-2"
+                        className="prose prose-sm max-w-none text-slate-600"
                         dangerouslySetInnerHTML={{ __html: post.body }}
                       />
-                      {post.type === "ASSIGNMENT" && (
-                        <div className="mt-3 flex flex-wrap gap-3 text-xs font-bold text-slate-500">
-                          {formatDue(post.dueAt) && (
-                            <span>{t("classroomWorkspace.stream.due", { date: formatDue(post.dueAt) })}</span>
-                          )}
-                          {post.maxPoints != null && (
-                            <span className="font-mono">{t("classroomWorkspace.stream.points", { count: post.maxPoints })}</span>
-                          )}
+                      {post.type === "ASSIGNMENT" ? (
+                        <div className="flex flex-wrap gap-2">
+                          {formatDue(post.dueAt) ? (
+                            <ClassroomPill tone="amber" icon={<Calendar className="h-3.5 w-3.5" />}>
+                              {t("classroomWorkspace.stream.due", { date: formatDue(post.dueAt) })}
+                            </ClassroomPill>
+                          ) : null}
+                          {post.maxPoints != null ? (
+                            <ClassroomPill tone="slate">
+                              <span className="font-mono">
+                                {t("classroomWorkspace.stream.points", { count: post.maxPoints })}
+                              </span>
+                            </ClassroomPill>
+                          ) : null}
                         </div>
-                      )}
-                      <AttachmentLinks attachments={post.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
-                      {post._count?.comments != null && post._count.comments > 0 && (
-                        <p className="mt-2 text-xs font-bold text-slate-500 inline-flex items-center gap-1">
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          {post._count.comments}{" "}
-                          {t("classroomWorkspace.stream.comment", { count: post._count.comments })}
-                        </p>
-                      )}
-                      {(post.type === "ASSIGNMENT" || post.type === "MATERIAL") && (
-                        <button
-                          type="button"
-                          onClick={() => openPost(post.id)}
-                          className="mt-4 text-sm font-bold text-indigo-600 hover:text-indigo-700"
-                        >
-                          {t("classroomWorkspace.stream.open")}
-                        </button>
-                      )}
+                      ) : null}
+                      <AttachmentLinks
+                        attachments={post.attachments}
+                        fallbackLabel={t("classroomWorkspace.attachment")}
+                      />
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                        {post._count?.comments != null && post._count.comments > 0 ? (
+                          <p className="text-xs font-bold text-slate-500 inline-flex items-center gap-1">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            {post._count.comments}{" "}
+                            {t("classroomWorkspace.stream.comment", { count: post._count.comments })}
+                          </p>
+                        ) : (
+                          <span />
+                        )}
+                        {(post.type === "ASSIGNMENT" || post.type === "MATERIAL") ? (
+                          <button
+                            type="button"
+                            onClick={() => openPost(post.id)}
+                            className={`${buttonClass.base} ${buttonClass.ghost} ${buttonClass.sizeCompact} text-indigo-600`}
+                          >
+                            {t("classroomWorkspace.stream.open")}
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </article>
+                </ClassroomSurface>
               ))
             )}
           </div>
@@ -857,74 +1025,175 @@ export function ClassroomRoomPage() {
       )}
 
       {tab === "CLASSWORK" && (
-        <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-extrabold tracking-tight text-slate-900">{t("classroomWorkspace.classwork.title")}</h2>
-            {canCompose && (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTopicCreateOpen(true)}
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  {t("classroomWorkspace.classwork.newTopic")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setComposeType("MATERIAL");
-                    setComposeOpen(true);
-                  }}
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  {t("classroomWorkspace.classwork.material")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setComposeType("ASSIGNMENT");
-                    setComposeOpen(true);
-                  }}
-                  className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
-                >
-                  {t("classroomWorkspace.classwork.assignment")}
-                </button>
-              </div>
-            )}
+        <ClassroomSurface className="p-6 sm:p-8 space-y-6">
+          <ClassroomSectionHeader
+            eyebrow={t("classroomWorkspace.myClasses")}
+            title={t("classroomWorkspace.classwork.title")}
+            action={
+              canCompose ? (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTopicCreateOpen(true)}
+                    className={`${buttonClass.base} ${buttonClass.secondary} ${buttonClass.sizeCompact}`}
+                  >
+                    {t("classroomWorkspace.classwork.newTopic")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setComposeType("MATERIAL");
+                      setComposeOpen(true);
+                    }}
+                    className={`${buttonClass.base} ${buttonClass.secondary} ${buttonClass.sizeCompact}`}
+                  >
+                    {t("classroomWorkspace.classwork.material")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setComposeType("ASSIGNMENT");
+                      setComposeOpen(true);
+                    }}
+                    className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeCompact}`}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t("classroomWorkspace.classwork.assignment")}
+                  </button>
+                </div>
+              ) : null
+            }
+          />
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.all")}
+              value={classwork.length}
+              tone="indigo"
+            />
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.assignments")}
+              value={classwork.filter((p) => p.type === "ASSIGNMENT").length}
+              tone="sky"
+            />
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.dueSoon")}
+              value={classwork.filter(isDueSoon).length}
+              tone="amber"
+            />
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.overdue")}
+              value={classwork.filter(isOverdue).length}
+              tone="rose"
+            />
           </div>
-          {classwork.length === 0 ? (
-            <p className="text-sm text-slate-500 py-8 text-center">{t("classroomWorkspace.classwork.empty")}</p>
+
+          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-5">
+            <ClassroomFilterChip
+              active={classworkFilter === "ALL"}
+              onClick={() => setClassworkFilter("ALL")}
+            >
+              {t("classroomWorkspace.ui.all")}
+            </ClassroomFilterChip>
+            <ClassroomFilterChip
+              active={classworkFilter === "ASSIGNMENT"}
+              onClick={() => setClassworkFilter("ASSIGNMENT")}
+            >
+              {t("classroomWorkspace.ui.assignments")}
+            </ClassroomFilterChip>
+            <ClassroomFilterChip
+              active={classworkFilter === "MATERIAL"}
+              onClick={() => setClassworkFilter("MATERIAL")}
+            >
+              {t("classroomWorkspace.ui.materials")}
+            </ClassroomFilterChip>
+            <ClassroomFilterChip
+              active={classworkFilter === "DUE_SOON"}
+              onClick={() => setClassworkFilter("DUE_SOON")}
+            >
+              <Clock3 className="mr-1 inline h-3.5 w-3.5" />
+              {t("classroomWorkspace.ui.dueSoon")}
+            </ClassroomFilterChip>
+            <ClassroomFilterChip
+              active={classworkFilter === "OVERDUE"}
+              onClick={() => setClassworkFilter("OVERDUE")}
+            >
+              {t("classroomWorkspace.ui.overdue")}
+            </ClassroomFilterChip>
+          </div>
+
+          {filteredClasswork.length === 0 ? (
+            <ClassroomEmptyState
+              icon={<ClipboardList className="h-6 w-6" />}
+              title={t("classroomWorkspace.classwork.empty")}
+            />
           ) : (
             <div className="space-y-8">
               {classworkByTopic.map((group) => (
-                <section key={group.key} className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-2">
-                    {group.title}
-                  </h3>
-                  <ul className="divide-y divide-slate-100">
+                <section key={group.key} className="space-y-3">
+                  <div className="flex items-center gap-3 px-1">
+                    <span className="h-px flex-1 bg-slate-200" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {group.title}
+                    </h3>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                  <ul className="space-y-2">
                     {group.posts.map((p) => (
                       <li key={p.id}>
                         <button
                           type="button"
                           onClick={() => openPost(p.id)}
-                          className="w-full flex items-center gap-3 py-4 text-left hover:bg-slate-50/80 px-2 rounded-2xl"
+                          className="group flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 text-left transition-colors hover:border-indigo-100 hover:bg-indigo-50/50"
                         >
-                          <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0">
-                            <ClipboardList className="w-5 h-5 text-slate-500" />
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                              p.type === "ASSIGNMENT"
+                                ? "bg-indigo-100 text-indigo-700"
+                                : "bg-sky-100 text-sky-700"
+                            }`}
+                          >
+                            {p.type === "ASSIGNMENT" ? (
+                              <ClipboardList className="h-5 w-5" />
+                            ) : (
+                              <BookOpen className="h-5 w-5" />
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-extrabold text-slate-900 truncate">
-                              {p.title || (p.type === "MATERIAL" ? t("classroomWorkspace.materialFallback") : t("classroomWorkspace.assignmentFallback"))}
+                            <p className="truncate text-sm font-extrabold text-slate-900">
+                              {p.title || postTypeLabel(p.type)}
                             </p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {p.type}
-                              {formatDue(p.dueAt) ? ` · ${t("classroomWorkspace.stream.due", { date: formatDue(p.dueAt) })}` : ""}
-                              {p.maxPoints != null ? ` · ${t("classroomWorkspace.stream.points", { count: p.maxPoints })}` : ""}
-                              {p.attachments?.length
-                                ? ` · ${p.attachments.length} ${t("classroomWorkspace.classwork.attachment", { count: p.attachments.length })}`
-                                : ""}
-                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+                              <ClassroomPill
+                                tone={p.type === "ASSIGNMENT" ? "indigo" : "sky"}
+                              >
+                                {postTypeLabel(p.type)}
+                              </ClassroomPill>
+                              {formatDue(p.dueAt) ? (
+                                <span>
+                                  {t("classroomWorkspace.stream.due", {
+                                    date: formatDue(p.dueAt),
+                                  })}
+                                </span>
+                              ) : null}
+                              {p.maxPoints != null ? (
+                                <span className="font-mono">
+                                  {t("classroomWorkspace.stream.points", {
+                                    count: p.maxPoints,
+                                  })}
+                                </span>
+                              ) : null}
+                              {p.attachments?.length ? (
+                                <span>
+                                  {p.attachments.length}{" "}
+                                  {t("classroomWorkspace.classwork.attachment", {
+                                    count: p.attachments.length,
+                                  })}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-600" />
                         </button>
                       </li>
                     ))}
@@ -933,7 +1202,7 @@ export function ClassroomRoomPage() {
               ))}
             </div>
           )}
-        </div>
+        </ClassroomSurface>
       )}
 
       {tab === "PEOPLE" && (
@@ -998,7 +1267,7 @@ export function ClassroomRoomPage() {
                       />
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 truncate">
-                          {m.user?.name || "Unknown"}
+                          {m.user?.name || t("classroomWorkspace.userFallback")}
                         </p>
                         <p className="text-xs text-slate-500 truncate">{m.user?.email}</p>
                       </div>
@@ -1021,93 +1290,157 @@ export function ClassroomRoomPage() {
       )}
 
       {tab === "MARKS" && (
-        <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_1px_2px_rgb(15,23,42,0.04),0_8px_24px_rgb(15,23,42,0.06)] p-6 sm:p-8 overflow-x-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-            <div>
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-900">{t("classroomWorkspace.marks.title")}</h2>
-              <p className="text-sm text-slate-500 mt-1">
-                {t("classroomWorkspace.marks.hint")}
-              </p>
-            </div>
-            {canCompose && (
-              <Link
-                to={`/${slug}/gradebook`}
-                className="text-sm font-bold text-indigo-600 hover:underline"
-              >
-                {t("classroomWorkspace.marks.openGradebook")}
-              </Link>
-            )}
+        <ClassroomSurface className="p-6 sm:p-8 space-y-6">
+          <ClassroomSectionHeader
+            eyebrow={t("classroomWorkspace.myClasses")}
+            title={t("classroomWorkspace.marks.title")}
+            description={t("classroomWorkspace.marks.hint")}
+            action={
+              canCompose ? (
+                <Link
+                  to={`/${slug}/gradebook`}
+                  className={`${buttonClass.base} ${buttonClass.secondary} ${buttonClass.sizeCompact}`}
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  {t("classroomWorkspace.marks.openGradebook")}
+                </Link>
+              ) : null
+            }
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.assignments")}
+              value={marksSummary.assignments}
+              tone="indigo"
+            />
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.graded")}
+              value={marksSummary.graded}
+              tone="emerald"
+            />
+            <ClassroomMetric
+              label={t("classroomWorkspace.ui.classAverage")}
+              value={marksSummary.average ?? "—"}
+              tone="amber"
+            />
           </div>
+
           {!marks || marks.assignments.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-10">{t("classroomWorkspace.marks.empty")}</p>
+            <ClassroomEmptyState
+              icon={<GraduationCap className="h-6 w-6" />}
+              title={t("classroomWorkspace.marks.empty")}
+            />
           ) : showPersonalMarks ? (
             <ul className="space-y-3">
-              {marks.assignments.map((a) => {
-                const sub = a.submissions[0];
+              {marks.assignments.map((assignment) => {
+                const submission = assignment.submissions[0];
                 return (
-                  <li
-                    key={a.id}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4 flex items-center justify-between gap-4"
-                  >
-                    <div>
-                      <p className="text-sm font-extrabold text-slate-900">{a.title || "Assignment"}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {sub?.status || t("classroomWorkspace.marks.notStarted")}
-                        {a.maxPoints != null ? ` · ${t("classroomWorkspace.marks.maxPoints", { count: a.maxPoints })}` : ""}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono text-lg font-extrabold text-slate-900">
-                        {sub?.grade != null ? sub.grade : "—"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => openPost(a.id)}
-                        className="text-xs font-bold text-indigo-600 mt-1"
-                      >
-                        Open
-                      </button>
-                    </div>
+                  <li key={assignment.id}>
+                    <ClassroomNestedSurface className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-slate-900">
+                          {assignment.title || t("classroomWorkspace.assignmentFallback")}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <SubmissionStatusPill
+                            status={submission?.status}
+                            label={
+                              submission
+                                ? submissionStatusLabel(submission.status)
+                                : t("classroomWorkspace.marks.notStarted")
+                            }
+                          />
+                          {assignment.maxPoints != null ? (
+                            <span className="text-xs font-medium text-slate-500">
+                              {t("classroomWorkspace.marks.maxPoints", {
+                                count: assignment.maxPoints,
+                              })}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-4">
+                        <p className="font-mono text-lg font-extrabold text-slate-900">
+                          {submission?.grade != null
+                            ? assignment.maxPoints != null
+                              ? t("classroomWorkspace.ui.scoreOutOf", {
+                                  score: submission.grade,
+                                  max: assignment.maxPoints,
+                                })
+                              : submission.grade
+                            : "—"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => openPost(assignment.id)}
+                          className={`${buttonClass.base} ${buttonClass.ghost} ${buttonClass.sizeCompact} text-indigo-600`}
+                        >
+                          {t("classroomWorkspace.ui.openAssignment")}
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </ClassroomNestedSurface>
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="text-left text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
-                  <th className="py-3 pr-4">{t("classroomWorkspace.marks.studentCol")}</th>
-                  {marks.assignments.map((a) => (
-                    <th key={a.id} className="py-3 px-2 font-mono normal-case tracking-normal">
-                      <button type="button" onClick={() => openPost(a.id)} className="hover:text-indigo-600 text-left">
-                        {(a.title || "A").slice(0, 18)}
-                      </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {marks.students.map((s) => (
-                  <tr key={s.id} className="border-b border-slate-50">
-                    <td className="py-3 pr-4 font-bold text-slate-900">{s.name}</td>
-                    {marks.assignments.map((a) => {
-                      const sub = a.submissions.find((x) => x.studentId === s.id);
-                      return (
-                        <td key={a.id} className="py-3 px-2 font-mono text-slate-700">
-                          {sub?.grade != null
-                            ? sub.grade
-                            : sub
-                              ? sub.status
-                              : "—"}
-                        </td>
-                      );
-                    })}
+            <ClassroomNestedSurface className="overflow-x-auto p-2 sm:p-4">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <th className="py-3 pr-4">{t("classroomWorkspace.marks.studentCol")}</th>
+                    {marks.assignments.map((assignment) => (
+                      <th
+                        key={assignment.id}
+                        className="px-2 py-3 font-mono normal-case tracking-normal"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => openPost(assignment.id)}
+                          className="text-left hover:text-indigo-600"
+                        >
+                          {(assignment.title || t("classroomWorkspace.assignmentFallback")).slice(0, 18)}
+                        </button>
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {marks.students.map((student) => (
+                    <tr key={student.id} className="border-b border-slate-100">
+                      <td className="py-3 pr-4 font-bold text-slate-900">{student.name}</td>
+                      {marks.assignments.map((assignment) => {
+                        const submission = assignment.submissions.find(
+                          (item) => item.studentId === student.id
+                        );
+                        return (
+                          <td key={assignment.id} className="px-2 py-3 font-mono text-slate-700">
+                            {submission?.grade != null ? (
+                              assignment.maxPoints != null ? (
+                                t("classroomWorkspace.ui.scoreOutOf", {
+                                  score: submission.grade,
+                                  max: assignment.maxPoints,
+                                })
+                              ) : (
+                                submission.grade
+                              )
+                            ) : submission ? (
+                              submissionStatusLabel(submission.status)
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ClassroomNestedSurface>
           )}
-        </div>
+        </ClassroomSurface>
       )}
 
       {composeOpen && (
@@ -1127,7 +1460,7 @@ export function ClassroomRoomPage() {
               <button
                 type="button"
                 onClick={() => setComposeOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700"
+                className={`${buttonClass.base} ${buttonClass.secondary} ${buttonClass.sizeDefault}`}
               >
                 {t("common:cancel")}
               </button>
@@ -1135,24 +1468,25 @@ export function ClassroomRoomPage() {
                 type="button"
                 disabled={savingPost}
                 onClick={submitCompose}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold disabled:opacity-50"
+                className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeDefault}`}
               >
+                <Send className="h-4 w-4" />
                 {savingPost ? t("classroomWorkspace.compose.posting") : t("classroomWorkspace.compose.post")}
               </button>
             </div>
           }
         >
-          <div className="p-6 sm:p-8 space-y-5">
-            <div className="flex gap-2">
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-50 p-2">
               {(["ANNOUNCEMENT", "ASSIGNMENT", "MATERIAL"] as const).map((typeKey) => (
                 <button
                   key={typeKey}
                   type="button"
                   onClick={() => setComposeType(typeKey)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                  className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
                     composeType === typeKey
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 text-slate-600"
+                      ? "bg-slate-950 text-white"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
                   }`}
                 >
                   {typeKey === "ANNOUNCEMENT"
@@ -1163,10 +1497,10 @@ export function ClassroomRoomPage() {
                 </button>
               ))}
             </div>
-            <div>
-              <label className={fieldLabel}>{t("classroomWorkspace.compose.title")}</label>
+
+            <ClassroomField label={t("classroomWorkspace.compose.title")}>
               <input
-                className={`${fieldInput} mt-1.5`}
+                className={fieldInput}
                 value={composeTitle}
                 onChange={(e) => setComposeTitle(e.target.value)}
                 placeholder={
@@ -1175,41 +1509,49 @@ export function ClassroomRoomPage() {
                     : t("classroomWorkspace.compose.requiredTitle")
                 }
               />
-            </div>
+            </ClassroomField>
+
             <div>
-              <label className={fieldLabel}>{t("classroomWorkspace.compose.body")}</label>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                {t("classroomWorkspace.compose.body")}
+              </p>
               <div className="mt-1.5">
                 <RichTextEditor value={composeBody} onChange={setComposeBody} minHeight="140px" />
               </div>
             </div>
-            {composeType === "ASSIGNMENT" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={fieldLabel}>{t("classroomWorkspace.compose.points")}</label>
-                  <input
-                    type="number"
-                    className={`${fieldInput} mt-1.5 font-mono`}
-                    value={composePoints}
-                    onChange={(e) => setComposePoints(e.target.value)}
-                    placeholder="100"
-                  />
+
+            {composeType === "ASSIGNMENT" ? (
+              <ClassroomNestedSurface className="p-4">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <GraduationCap className="h-4 w-4 text-indigo-600" />
+                  {t("classroomWorkspace.compose.assignment")}
                 </div>
-                <div>
-                  <label className={fieldLabel}>{t("classroomWorkspace.compose.due")}</label>
-                  <input
-                    type="datetime-local"
-                    className={`${fieldInput} mt-1.5`}
-                    value={composeDue}
-                    onChange={(e) => setComposeDue(e.target.value)}
-                  />
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ClassroomField label={t("classroomWorkspace.compose.points")}>
+                    <input
+                      type="number"
+                      className={`${fieldInput} font-mono`}
+                      value={composePoints}
+                      onChange={(e) => setComposePoints(e.target.value)}
+                      placeholder="100"
+                    />
+                  </ClassroomField>
+                  <ClassroomField label={t("classroomWorkspace.compose.due")}>
+                    <input
+                      type="datetime-local"
+                      className={fieldInput}
+                      value={composeDue}
+                      onChange={(e) => setComposeDue(e.target.value)}
+                    />
+                  </ClassroomField>
                 </div>
-              </div>
-            )}
-            {(composeType === "ASSIGNMENT" || composeType === "MATERIAL") && (
-              <div>
-                <label className={fieldLabel}>{t("classroomWorkspace.compose.topic")}</label>
+              </ClassroomNestedSurface>
+            ) : null}
+
+            {(composeType === "ASSIGNMENT" || composeType === "MATERIAL") ? (
+              <ClassroomField label={t("classroomWorkspace.compose.topic")}>
                 <select
-                  className={`${fieldInput} mt-1.5`}
+                  className={fieldInput}
                   value={composeTopicId}
                   onChange={(e) => {
                     const next = e.target.value;
@@ -1223,18 +1565,19 @@ export function ClassroomRoomPage() {
                   }}
                 >
                   <option value="">{t("classroomWorkspace.compose.noTopic")}</option>
-                  {topics.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.title}
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.title}
                     </option>
                   ))}
                   <option value={CREATE_TOPIC_OPTION}>
                     {t("classroomWorkspace.compose.createNewTopic")}
                   </option>
                 </select>
-              </div>
-            )}
-            <div>
+              </ClassroomField>
+            ) : null}
+
+            <ClassroomNestedSurface className="p-4">
               <FileDropzone
                 files={composeFiles}
                 onChange={setComposeFiles}
@@ -1243,17 +1586,17 @@ export function ClassroomRoomPage() {
                 hint={t("classroomWorkspace.compose.attachmentsHint")}
                 disabled={savingPost}
               />
-            </div>
-            <div>
-              <label className={fieldLabel}>{t("classroomWorkspace.compose.linkUrl")}</label>
+            </ClassroomNestedSurface>
+
+            <ClassroomField label={t("classroomWorkspace.compose.linkUrl")}>
               <input
                 type="url"
-                className={`${fieldInput} mt-1.5`}
+                className={fieldInput}
                 value={composeLinkUrl}
                 onChange={(e) => setComposeLinkUrl(e.target.value)}
                 placeholder="https://…"
               />
-            </div>
+            </ClassroomField>
           </div>
         </FeatureModalShell>
       )}
@@ -1523,6 +1866,34 @@ export function ClassroomRoomPage() {
               </div>
             ) : (
               <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ClassroomPill
+                    tone={
+                      postDetail.type === "ASSIGNMENT"
+                        ? "indigo"
+                        : postDetail.type === "MATERIAL"
+                          ? "sky"
+                          : "slate"
+                    }
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                  >
+                    {postTypeLabel(postDetail.type)}
+                  </ClassroomPill>
+                  {formatDue(postDetail.dueAt) ? (
+                    <ClassroomPill tone="amber" icon={<Calendar className="h-3.5 w-3.5" />}>
+                      {t("classroomWorkspace.stream.due", { date: formatDue(postDetail.dueAt) })}
+                    </ClassroomPill>
+                  ) : null}
+                  {postDetail.maxPoints != null ? (
+                    <ClassroomPill tone="slate">
+                      <span className="font-mono">
+                        {t("classroomWorkspace.stream.points", {
+                          count: postDetail.maxPoints,
+                        })}
+                      </span>
+                    </ClassroomPill>
+                  ) : null}
+                </div>
                 <div
                   className="prose prose-sm max-w-none text-slate-700"
                   dangerouslySetInnerHTML={{ __html: postDetail.body }}
@@ -1530,174 +1901,280 @@ export function ClassroomRoomPage() {
                 <AttachmentLinks attachments={postDetail.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
 
                 {isStudent && !readOnly && postDetail.type === "ASSIGNMENT" && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-extrabold text-slate-900">{t("classroomWorkspace.postDetail.yourWork")}</p>
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        {postDetail.mySubmission?.status || t("classroomWorkspace.postDetail.assigned")}
-                      </span>
+                  <ClassroomNestedSurface className="p-5 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </span>
+                        <p className="text-sm font-extrabold text-slate-900">
+                          {t("classroomWorkspace.postDetail.yourWork")}
+                        </p>
+                      </div>
+                      <SubmissionStatusPill
+                        status={postDetail.mySubmission?.status}
+                        label={
+                          postDetail.mySubmission
+                            ? submissionStatusLabel(postDetail.mySubmission.status)
+                            : t("classroomWorkspace.postDetail.assigned")
+                        }
+                      />
                     </div>
+
                     {postDetail.mySubmission?.status === "RETURNED" ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                          {postDetail.mySubmission.textResponse || "—"}
-                        </p>
-                        <AttachmentLinks attachments={postDetail.mySubmission.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
-                        <p className="font-mono text-lg font-extrabold text-slate-900">
-                          {t("classroomWorkspace.postDetail.score")}{" "}
-                          {postDetail.mySubmission.grade != null
-                            ? postDetail.mySubmission.grade
-                            : "—"}
-                          {postDetail.maxPoints != null ? ` / ${postDetail.maxPoints}` : ""}
-                        </p>
-                        {postDetail.mySubmission.feedback && (
-                          <p className="text-sm text-slate-600">
-                            {t("classroomWorkspace.postDetail.feedback")} {postDetail.mySubmission.feedback}
+                      <div className="space-y-4">
+                        <ClassroomNestedSurface className="bg-white p-4">
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            {t("classroomWorkspace.ui.response")}
                           </p>
-                        )}
+                          <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">
+                            {postDetail.mySubmission.textResponse || "—"}
+                          </p>
+                          <AttachmentLinks
+                            attachments={postDetail.mySubmission.attachments}
+                            fallbackLabel={t("classroomWorkspace.attachment")}
+                          />
+                        </ClassroomNestedSurface>
+                        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                          <span className="font-mono text-2xl font-extrabold text-emerald-800">
+                            {t("classroomWorkspace.ui.scoreOutOf", {
+                              score: postDetail.mySubmission.grade ?? "—",
+                              max: postDetail.maxPoints ?? "—",
+                            })}
+                          </span>
+                          <ClassroomPill tone="emerald">
+                            {t("classroomWorkspace.ui.returned")}
+                          </ClassroomPill>
+                        </div>
+                        {postDetail.mySubmission.feedback ? (
+                          <p className="text-sm text-slate-600">
+                            {t("classroomWorkspace.postDetail.feedback")}{" "}
+                            {postDetail.mySubmission.feedback}
+                          </p>
+                        ) : null}
                       </div>
                     ) : (
-                      <>
-                        <textarea
-                          className={`${fieldInput} min-h-[120px]`}
-                          value={turnInText}
-                          onChange={(e) => setTurnInText(e.target.value)}
-                          placeholder={t("classroomWorkspace.postDetail.typeResponse")}
-                        />
-                        <div>
-                          <FileDropzone
-                            files={turnInFiles}
-                            onChange={setTurnInFiles}
-                            multiple
-                            label="Attachments (optional)"
-                            hint="Drag and drop files here, or click to browse"
+                      <div className="space-y-4">
+                        <ClassroomField
+                          label={t("classroomWorkspace.ui.response")}
+                          hint={
+                            postDetail.mySubmission
+                              ? t("classroomWorkspace.ui.updateHint")
+                              : t("classroomWorkspace.ui.turnInHint")
+                          }
+                        >
+                          <textarea
+                            className={`${fieldInput} min-h-[120px]`}
+                            value={turnInText}
+                            onChange={(e) => {
+                              turnInDirtyRef.current = true;
+                              setTurnInText(e.target.value);
+                            }}
+                            placeholder={t("classroomWorkspace.postDetail.typeResponse")}
                           />
-                        </div>
+                        </ClassroomField>
+                        <FileDropzone
+                          files={turnInFiles}
+                          onChange={(files) => {
+                            turnInDirtyRef.current = true;
+                            setTurnInFiles(files);
+                          }}
+                          multiple
+                          label={t("classroomWorkspace.compose.attachments")}
+                          hint={t("classroomWorkspace.compose.attachmentsHint")}
+                        />
                         {postDetail.mySubmission?.attachments?.length ? (
-                          <AttachmentLinks attachments={postDetail.mySubmission.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
+                          <AttachmentLinks
+                            attachments={postDetail.mySubmission.attachments}
+                            fallbackLabel={t("classroomWorkspace.attachment")}
+                          />
                         ) : null}
                         <button
                           type="button"
                           onClick={handleTurnIn}
-                          className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold"
+                          className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeDefault}`}
                         >
-                          {postDetail.mySubmission ? t("classroomWorkspace.postDetail.updateTurnIn") : t("classroomWorkspace.postDetail.turnIn")}
+                          <Send className="h-4 w-4" />
+                          {postDetail.mySubmission
+                            ? t("classroomWorkspace.postDetail.updateTurnIn")
+                            : t("classroomWorkspace.postDetail.turnIn")}
                         </button>
-                      </>
+                      </div>
                     )}
-                  </div>
+                  </ClassroomNestedSurface>
                 )}
 
                 {isParent && postDetail.type === "ASSIGNMENT" && postDetail.mySubmission && (
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 space-y-2">
-                      <p className="text-sm font-extrabold text-slate-900">{t("classroomWorkspace.postDetail.submission")}</p>
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        {postDetail.mySubmission.status}
+                  <ClassroomNestedSurface className="p-5 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-extrabold text-slate-900">
+                        {t("classroomWorkspace.postDetail.submission")}
                       </p>
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                      <SubmissionStatusPill
+                        status={postDetail.mySubmission.status}
+                        label={submissionStatusLabel(postDetail.mySubmission.status)}
+                      />
+                    </div>
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        {t("classroomWorkspace.ui.response")}
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">
                         {postDetail.mySubmission.textResponse || "—"}
                       </p>
-                      <AttachmentLinks attachments={postDetail.mySubmission.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
-                      {postDetail.mySubmission.grade != null && (
-                        <p className="font-mono text-lg font-extrabold text-slate-900">
-                          {t("classroomWorkspace.postDetail.score")} {postDetail.mySubmission.grade}
-                          {postDetail.maxPoints != null ? ` / ${postDetail.maxPoints}` : ""}
-                        </p>
-                      )}
-                      {postDetail.mySubmission.feedback && (
-                        <p className="text-sm text-slate-600">
-                          Feedback: {postDetail.mySubmission.feedback}
-                        </p>
-                      )}
+                      <AttachmentLinks
+                        attachments={postDetail.mySubmission.attachments}
+                        fallbackLabel={t("classroomWorkspace.attachment")}
+                      />
                     </div>
-                  )}
+                    {postDetail.mySubmission.grade != null ? (
+                      <p className="font-mono text-lg font-extrabold text-slate-900">
+                        {t("classroomWorkspace.ui.scoreOutOf", {
+                          score: postDetail.mySubmission.grade,
+                          max: postDetail.maxPoints ?? "—",
+                        })}
+                      </p>
+                    ) : null}
+                    {postDetail.mySubmission.feedback ? (
+                      <p className="text-sm text-slate-600">
+                        {t("classroomWorkspace.postDetail.feedback")}{" "}
+                        {postDetail.mySubmission.feedback}
+                      </p>
+                    ) : null}
+                  </ClassroomNestedSurface>
+                )}
 
                 {canCompose && postDetail.type === "ASSIGNMENT" && (
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
-                      {t("classroomWorkspace.postDetail.studentSubmissions")}
-                    </h3>
+                  <div className="space-y-4 border-t border-slate-100 pt-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                          <ClipboardList className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-extrabold text-slate-900">
+                            {t("classroomWorkspace.postDetail.studentSubmissions")}
+                          </p>
+                          <p className="text-xs font-medium text-slate-500">
+                            {t("classroomWorkspace.ui.teacherReview")}
+                          </p>
+                        </div>
+                      </div>
+                      <ClassroomPill tone="indigo">
+                        {(postDetail.submissions || []).length}
+                      </ClassroomPill>
+                    </div>
+
                     {(postDetail.submissions || []).length === 0 ? (
-                      <p className="text-sm text-slate-500">{t("classroomWorkspace.postDetail.noSubmissions")}</p>
+                      <ClassroomEmptyState
+                        icon={<ClipboardList className="h-6 w-6" />}
+                        title={t("classroomWorkspace.postDetail.noSubmissions")}
+                      />
                     ) : (
                       <ul className="space-y-4">
-                        {(postDetail.submissions || []).map((s) => (
-                          <li
-                            key={s.id}
-                            className="rounded-2xl border border-slate-100 p-4 space-y-3"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <UserAvatar
-                                  name={s.student?.name || "Student"}
-                                  photoUrl={s.student?.photoUrl}
-                                  userId={s.studentId}
-                                  size="sm"
-                                />
-                                <div>
-                                  <p className="text-sm font-bold text-slate-900">
-                                    {s.student?.name || "Unknown"}
-                                  </p>
-                                  <p className="text-xs text-slate-500 font-medium">{s.status}</p>
+                        {(postDetail.submissions || []).map((submission) => (
+                          <li key={submission.id}>
+                            <ClassroomNestedSurface className="space-y-4 p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <UserAvatar
+                                    name={
+                                      submission.student?.name ||
+                                      t("classroomWorkspace.studentFallback")
+                                    }
+                                    photoUrl={submission.student?.photoUrl}
+                                    userId={submission.studentId}
+                                    size="sm"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-bold text-slate-900">
+                                      {submission.student?.name ||
+                                        t("classroomWorkspace.userFallback")}
+                                    </p>
+                                    <p className="text-xs font-medium text-slate-500">
+                                      {t("classroomWorkspace.ui.response")}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                            <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                              {s.textResponse || "—"}
-                            </p>
-                            <AttachmentLinks attachments={s.attachments} fallbackLabel={t("classroomWorkspace.attachment")} />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className={fieldLabel}>{t("classroomWorkspace.postDetail.grade")}</label>
-                                <input
-                                  className={`${fieldInput} mt-1 font-mono`}
-                                  value={gradeDrafts[s.id]?.grade ?? ""}
-                                  onChange={(e) =>
-                                    setGradeDrafts((prev) => ({
-                                      ...prev,
-                                      [s.id]: {
-                                        grade: e.target.value,
-                                        feedback: prev[s.id]?.feedback ?? "",
-                                      },
-                                    }))
-                                  }
+                                <SubmissionStatusPill
+                                  status={submission.status}
+                                  label={submissionStatusLabel(submission.status)}
                                 />
                               </div>
-                              <div>
-                                <label className={fieldLabel}>{t("classroomWorkspace.postDetail.feedbackLabel")}</label>
-                                <input
-                                  className={`${fieldInput} mt-1`}
-                                  value={gradeDrafts[s.id]?.feedback ?? ""}
-                                  onChange={(e) =>
-                                    setGradeDrafts((prev) => ({
-                                      ...prev,
-                                      [s.id]: {
-                                        grade: prev[s.id]?.grade ?? "",
-                                        feedback: e.target.value,
-                                      },
-                                    }))
-                                  }
+
+                              <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                  {t("classroomWorkspace.ui.response")}
+                                </p>
+                                <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">
+                                  {submission.textResponse || "—"}
+                                </p>
+                                <AttachmentLinks
+                                  attachments={submission.attachments}
+                                  fallbackLabel={t("classroomWorkspace.attachment")}
                                 />
                               </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleReturn(s.id)}
-                                className="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold"
-                              >
-                                {t("classroomWorkspace.postDetail.return")}
-                              </button>
-                              {s.status === "RETURNED" && (
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <ClassroomField label={t("classroomWorkspace.postDetail.grade")}>
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    className={`${fieldInput} font-mono`}
+                                    value={gradeDrafts[submission.id]?.grade ?? ""}
+                                    onChange={(e) => {
+                                      dirtyGradeIdsRef.current.add(submission.id);
+                                      setGradeDrafts((previous) => ({
+                                        ...previous,
+                                        [submission.id]: {
+                                          grade: e.target.value,
+                                          feedback: previous[submission.id]?.feedback ?? "",
+                                        },
+                                      }));
+                                    }}
+                                  />
+                                </ClassroomField>
+                                <ClassroomField
+                                  label={t("classroomWorkspace.postDetail.feedbackLabel")}
+                                  hint={t("classroomWorkspace.ui.gradeHint")}
+                                >
+                                  <input
+                                    className={fieldInput}
+                                    value={gradeDrafts[submission.id]?.feedback ?? ""}
+                                    onChange={(e) => {
+                                      dirtyGradeIdsRef.current.add(submission.id);
+                                      setGradeDrafts((previous) => ({
+                                        ...previous,
+                                        [submission.id]: {
+                                          grade: previous[submission.id]?.grade ?? "",
+                                          feedback: e.target.value,
+                                        },
+                                      }));
+                                    }}
+                                  />
+                                </ClassroomField>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                                 <button
                                   type="button"
-                                  onClick={() => handleReopen(s.id)}
-                                  className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700"
+                                  onClick={() => handleReturn(submission.id)}
+                                  className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeCompact}`}
                                 >
-                                  {t("classroomWorkspace.postDetail.reopen")}
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  {t("classroomWorkspace.postDetail.return")}
                                 </button>
-                              )}
-                            </div>
+                                {submission.status === "RETURNED" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReopen(submission.id)}
+                                    className={`${buttonClass.base} ${buttonClass.secondary} ${buttonClass.sizeCompact}`}
+                                  >
+                                    {t("classroomWorkspace.postDetail.reopen")}
+                                  </button>
+                                ) : null}
+                              </div>
+                            </ClassroomNestedSurface>
                           </li>
                         ))}
                       </ul>
@@ -1736,7 +2213,7 @@ export function ClassroomRoomPage() {
                                 />
                                 <div className="min-w-0">
                                   <p className="text-sm font-bold text-slate-900">
-                                    {c.author?.name || "Unknown"}
+                                    {c.author?.name || t("classroomWorkspace.unknownAuthor")}
                                   </p>
                                   <p className="text-xs text-slate-500 font-medium">
                                     {new Date(c.createdAt).toLocaleString()}
@@ -1771,8 +2248,9 @@ export function ClassroomRoomPage() {
                         type="button"
                         disabled={savingComment || !commentBody.trim()}
                         onClick={handlePostComment}
-                        className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold disabled:opacity-50"
+                        className={`${buttonClass.base} ${buttonClass.primary} ${buttonClass.sizeDefault}`}
                       >
+                        <Send className="h-4 w-4" />
                         {savingComment ? t("classroomWorkspace.postDetail.postingComment") : t("classroomWorkspace.postDetail.postComment")}
                       </button>
                     </div>
