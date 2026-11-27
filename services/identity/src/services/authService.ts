@@ -270,6 +270,9 @@ export const authService = {
     const { user, school } = input;
     const authMethod = input.authMethod || "PASSWORD";
     const resolvedSchoolId = input.schoolIdOverride ?? school?.id ?? user.schoolId ?? null;
+    if (authMethod === "ACCESS_CODE" && resolvedSchoolId && user.role === "PARENT") {
+      await parentAccessService.markParentAccessCodeUsed(user.id, resolvedSchoolId);
+    }
     const capabilities = await capabilityService.resolveEffective(resolvedSchoolId, user.role);
     const commercial = resolvedSchoolId ? await getSchoolCommercialContext(resolvedSchoolId) : null;
     const accessToken = jwt.sign(

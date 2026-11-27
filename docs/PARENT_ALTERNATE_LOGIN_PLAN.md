@@ -733,7 +733,7 @@ Notes:
 
 ## 14. Open product items
 
-1. PAC remains valid until regenerated (assumed).
+1. PAC expires 10 days after delivery if unused (or after issue if never delivered), and no later than 6 weeks after issue.
 2. PAC emailed at creation + one-time admin reveal (assumed).
 3. Super Admin support can regenerate with `users.parent_access.manage` (assumed).
 4. Phone changes require a new verified request (assumed).

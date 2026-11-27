@@ -137,7 +137,12 @@ export function ParentAccessPage() {
     return status;
   };
 
-  const revealParentCode = async (userId: string) => {
+  const revealParentCode = async (userId: string, expired = false) => {
+    if (expired) {
+      setRevealedCode(null);
+      setCodeRevealUnavailable(false);
+      return;
+    }
     setDrawerBusy(true);
     try {
       const result = await withFreshSession(() =>
@@ -196,7 +201,7 @@ export function ParentAccessPage() {
     setCodeRevealUnavailable(false);
     setCodeCopied(false);
     setError(null);
-    void revealParentCode(String(parent.id));
+    void revealParentCode(String(parent.id), Boolean(parent.accessCode?.expired));
   };
 
   const closeParent = () => {
@@ -503,6 +508,7 @@ export function ParentAccessPage() {
                   }
                 />
                 <DetailItem label={p("issuedAt")} value={formatDate(selectedParent.accessCode?.issuedAt)} />
+                <DetailItem label={p("expiresAt")} value={formatDate(selectedParent.accessCode?.expiresAt)} />
                 <DetailItem label={p("lockedUntil")} value={formatDate(selectedParent.accessCode?.lockedUntil)} />
                 <DetailItem label={p("phoneLogin")} value={selectedParent.phoneLogin?.phoneHint || "—"} />
                 <DetailItem label={p("verifiedAt")} value={formatDate(selectedParent.phoneLogin?.verifiedAt)} />
@@ -519,6 +525,9 @@ export function ParentAccessPage() {
               </dl>
               {!revealedCode && codeRevealUnavailable && (
                 <p className="mt-3 text-xs text-slate-500">{p("codeRevealUnavailable")}</p>
+              )}
+              {selectedParent.accessCode?.expired && (
+                <p className="mt-3 text-xs text-amber-600">{p("codeExpired")}</p>
               )}
             </section>
 
@@ -539,8 +548,13 @@ export function ParentAccessPage() {
                   type="button"
                   size="compact"
                   variant="secondary"
-                  disabled={busy || drawerBusy}
-                  onClick={() => void revealParentCode(String(selectedParent.id))}
+                  disabled={busy || drawerBusy || Boolean(selectedParent.accessCode?.expired)}
+                  onClick={() =>
+                    void revealParentCode(
+                      String(selectedParent.id),
+                      Boolean(selectedParent.accessCode?.expired)
+                    )
+                  }
                 >
                   <Eye className="h-4 w-4" aria-hidden />
                   {p("revealCode")}

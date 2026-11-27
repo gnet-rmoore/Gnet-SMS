@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 
 export const PARENT_ACCESS_ROLES = ["SCHOOL_ADMIN", "REGISTRAR", "PRINCIPAL", "IT_ADMIN"] as const;
 
+export const PARENT_ACCESS_UNUSED_EXPIRY_DAYS = 10;
+export const PARENT_ACCESS_MAX_LIFETIME_WEEKS = 6;
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 export const PARENT_SMS_PURPOSES = {
   ENROLL: "ENROLL",
   LOGIN: "LOGIN",
@@ -134,4 +139,51 @@ export function parentLockUntil(failedCount: number): Date | null {
 
 export function isParentLocked(lockedUntil: Date | null | undefined): boolean {
   return Boolean(lockedUntil && lockedUntil.getTime() > Date.now());
+}
+
+export type ParentAccessExpiryRow = {
+  issuedAt: Date;
+  deliveredAt?: Date | null;
+  usedAt?: Date | null;
+};
+
+export type ParentAccessExpiry = {
+  unusedExpiresAt: Date;
+  absoluteExpiresAt: Date;
+  expiresAt: Date;
+  expired: boolean;
+};
+
+export function parentAccessExpiry(
+  row: ParentAccessExpiryRow,
+  now: Date = new Date()
+): ParentAccessExpiry {
+  const issuedAt = row.issuedAt instanceof Date ? row.issuedAt : new Date(row.issuedAt);
+  const deliveredAt = row.deliveredAt
+    ? row.deliveredAt instanceof Date
+      ? row.deliveredAt
+      : new Date(row.deliveredAt)
+    : null;
+  const unusedExpiresAt = new Date(
+    (deliveredAt ?? issuedAt).getTime() + PARENT_ACCESS_UNUSED_EXPIRY_DAYS * DAY_IN_MS
+  );
+  const absoluteExpiresAt = new Date(
+    issuedAt.getTime() + PARENT_ACCESS_MAX_LIFETIME_WEEKS * 7 * DAY_IN_MS
+  );
+  const expiresAt = row.usedAt
+    ? absoluteExpiresAt
+    : new Date(Math.min(unusedExpiresAt.getTime(), absoluteExpiresAt.getTime()));
+  return {
+    unusedExpiresAt,
+    absoluteExpiresAt,
+    expiresAt,
+    expired: now.getTime() >= expiresAt.getTime(),
+  };
+}
+
+export function isParentAccessCodeExpired(
+  row: ParentAccessExpiryRow,
+  now: Date = new Date()
+): boolean {
+  return parentAccessExpiry(row, now).expired;
 }

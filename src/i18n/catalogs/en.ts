@@ -1347,6 +1347,8 @@ export const enPages = {
     detailsTitle: "Account details",
     accessActionsTitle: "Access actions",
     issuedAt: "Code issued",
+    expiresAt: "Code expires",
+    codeExpired: "This access code has expired. Regenerate it to issue a new one.",
     verifiedAt: "Phone verified",
     lockedUntil: "Locked until",
     resetPassword: "Reset password",
@@ -7235,6 +7237,8 @@ export const enPages = {
     orgDepartmentalizedHint:
       "Students rotate to specialist teachers by subject. Assign specialists when you sync subject classrooms.",
     orgMixed: "Mixed",
+    orgMixedHint:
+      "Students keep a homeroom teacher and may have subject specialists. Optional co-teacher or assistant.",
     primaryTeacher: "Primary teacher",
     homeroomTeacherDeptHint:
       "This is the advisory / homeroom teacher. Subject specialists are assigned when you open subject classrooms.",

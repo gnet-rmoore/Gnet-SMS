@@ -4,6 +4,7 @@ import {
   generateParentAccessCode,
   getParentPacSecretVersion,
   hashParentAccessCode,
+  isParentAccessCodeExpired,
   isParentLocked,
   makeParentAccessGlobalLookupHash,
   makeParentAccessLookupHash,
@@ -11,6 +12,7 @@ import {
   maskPhone,
   normalizePhone,
   parentAccessAttemptLimit,
+  parentAccessExpiry,
   parentLockUntil,
   parentPhoneMaxSends,
   parentPhoneResendSeconds,
@@ -162,13 +164,19 @@ function parentAccessMetadata(row: {
   codeHint: string;
   issuedAt: Date;
   deliveredAt: Date | null;
+  usedAt: Date | null;
   lockedUntil: Date | null;
   revokedAt: Date | null;
 }) {
+  const expiry = parentAccessExpiry(row);
   return {
     codeHint: row.codeHint,
     issuedAt: row.issuedAt,
     deliveredAt: row.deliveredAt,
+    usedAt: row.usedAt,
+    expiresAt: expiry.expiresAt,
+    expired: expiry.expired,
+    status: row.revokedAt ? "REVOKED" : expiry.expired ? "EXPIRED" : row.usedAt ? "USED" : "ACTIVE",
     lockedUntil: row.lockedUntil,
     revokedAt: row.revokedAt,
   };
@@ -226,7 +234,7 @@ export const parentAccessService = {
   async findByAccessCode(code: string) {
     const contexts = await parentAccessLookupContexts();
     if (!contexts.length) return [];
-    return prisma.parentAccessCode.findMany({
+    const rows = await prisma.parentAccessCode.findMany({
       where: {
         OR: [
           {
@@ -248,6 +256,7 @@ export const parentAccessService = {
       },
       include: { user: true, school: true },
     });
+    return rows.filter((row) => !isParentAccessCodeExpired(row));
   },
 
   async assertParentInSchool(parentId: string, schoolId: string) {
@@ -261,7 +270,7 @@ export const parentAccessService = {
     const existing = await prisma.parentAccessCode.findUnique({
       where: { userId_schoolId: { userId, schoolId } },
     });
-    if (existing && !existing.revokedAt) return null;
+    if (existing && !existing.revokedAt && !isParentAccessCodeExpired(existing)) return null;
 
     const secretVersion = getParentPacSecretVersion();
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -284,6 +293,7 @@ export const parentAccessService = {
             failedCount: 0,
             lockedUntil: null,
             deliveredAt: null,
+            usedAt: null,
             revokedAt: null,
           },
           update: {
@@ -295,6 +305,7 @@ export const parentAccessService = {
             secretVersion,
             issuedAt: new Date(),
             deliveredAt: null,
+            usedAt: null,
             failedCount: 0,
             lockedUntil: null,
             revokedAt: null,
@@ -340,6 +351,7 @@ export const parentAccessService = {
             codeEncrypted: encryptCredentialSecret(code),
             codeHint: maskParentAccessCode(code),
             secretVersion,
+            usedAt: null,
           },
           update: {
             codeHash: hashParentAccessCode(code),
@@ -350,6 +362,7 @@ export const parentAccessService = {
             secretVersion,
             issuedAt: new Date(),
             deliveredAt: null,
+            usedAt: null,
             failedCount: 0,
             lockedUntil: null,
             revokedAt: null,
@@ -385,7 +398,7 @@ export const parentAccessService = {
     const row = await prisma.parentAccessCode.findUnique({
       where: { userId_schoolId: { userId, schoolId } },
     });
-    if (!row || row.revokedAt) return null;
+    if (!row || row.revokedAt || isParentAccessCodeExpired(row)) return null;
     let accessCode: string | null = null;
     try {
       accessCode = decryptCredentialSecret(row.codeEncrypted);
@@ -454,7 +467,7 @@ export const parentAccessService = {
     const row = await prisma.parentAccessCode.findUnique({
       where: { userId_schoolId: { userId, schoolId } },
     });
-    if (!row || row.revokedAt) throw invalidCredentials();
+    if (!row || row.revokedAt || isParentAccessCodeExpired(row)) throw invalidCredentials();
     if (isParentLocked(row.lockedUntil)) {
       throw Object.assign(new Error("Too many attempts. Try again later."), {
         code: "TOO_MANY_ATTEMPTS",
@@ -474,6 +487,18 @@ export const parentAccessService = {
       data: { failedCount: 0, lockedUntil: null },
     });
     return row;
+  },
+
+  async markParentAccessCodeUsed(userId: string, schoolId: string) {
+    const row = await prisma.parentAccessCode.findUnique({
+      where: { userId_schoolId: { userId, schoolId } },
+    });
+    if (!row || row.revokedAt || row.usedAt || isParentAccessCodeExpired(row)) return false;
+    await prisma.parentAccessCode.update({
+      where: { id: row.id },
+      data: { usedAt: new Date() },
+    });
+    return true;
   },
 
   async resetLockouts(userId: string, schoolId: string) {

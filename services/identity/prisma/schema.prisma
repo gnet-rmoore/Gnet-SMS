@@ -326,6 +326,7 @@ model ParentAccessCode {
   secretVersion    Int       @default(1)
   issuedAt         DateTime  @default(now())
   deliveredAt      DateTime?
+  usedAt           DateTime?
   failedCount      Int       @default(0)
   lockedUntil      DateTime?
   revokedAt        DateTime?

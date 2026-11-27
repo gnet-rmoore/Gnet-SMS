@@ -4,6 +4,7 @@ import {
   canManageParentAccess,
   generateParentAccessCode,
   hashParentAccessCode,
+  isParentAccessCodeExpired,
   isParentLocked,
   makeParentAccessGlobalLookupHash,
   makeParentAccessLookupHash,
@@ -11,6 +12,9 @@ import {
   normalizePhone,
   getParentPacSecret,
   getParentPacSecretVersion,
+  parentAccessExpiry,
+  PARENT_ACCESS_MAX_LIFETIME_WEEKS,
+  PARENT_ACCESS_UNUSED_EXPIRY_DAYS,
   verifyParentAccessCode,
 } from "../services/identity/src/domain/parentAccess";
 import { decryptCredentialSecret, encryptCredentialSecret } from "../services/identity/src/lib/credentialCrypto";
@@ -61,6 +65,50 @@ assert.equal(canManageParentAccess({ role: "REGISTRAR", schoolId: "s1" }, "s1"),
 assert.equal(isParentLocked(null), false);
 assert.equal(isParentLocked(new Date(Date.now() + 60_000)), true);
 assert.equal(isParentLocked(new Date(Date.now() - 60_000)), false);
+
+assert.equal(PARENT_ACCESS_UNUSED_EXPIRY_DAYS, 10);
+assert.equal(PARENT_ACCESS_MAX_LIFETIME_WEEKS, 6);
+const issuedAt = new Date("2026-01-01T00:00:00.000Z");
+const deliveredAt = new Date("2026-01-02T00:00:00.000Z");
+const expiry = parentAccessExpiry({ issuedAt, deliveredAt });
+assert.equal(expiry.unusedExpiresAt.toISOString(), "2026-01-12T00:00:00.000Z");
+assert.equal(expiry.absoluteExpiresAt.toISOString(), "2026-02-12T00:00:00.000Z");
+assert.equal(expiry.expiresAt.toISOString(), "2026-01-12T00:00:00.000Z");
+assert.equal(
+  isParentAccessCodeExpired({ issuedAt, deliveredAt }, new Date("2026-01-11T23:59:59.999Z")),
+  false
+);
+assert.equal(
+  isParentAccessCodeExpired({ issuedAt, deliveredAt }, new Date("2026-01-12T00:00:00.000Z")),
+  true
+);
+assert.equal(
+  isParentAccessCodeExpired({ issuedAt, deliveredAt: null }, new Date("2026-01-11T00:00:00.000Z")),
+  true
+);
+const usedAt = new Date("2026-01-09T00:00:00.000Z");
+assert.equal(
+  parentAccessExpiry({ issuedAt, deliveredAt, usedAt }).expiresAt.toISOString(),
+  "2026-02-12T00:00:00.000Z"
+);
+assert.equal(
+  isParentAccessCodeExpired(
+    { issuedAt, deliveredAt, usedAt },
+    new Date("2026-02-11T23:59:59.999Z")
+  ),
+  false
+);
+assert.equal(
+  isParentAccessCodeExpired(
+    { issuedAt, deliveredAt, usedAt },
+    new Date("2026-02-12T00:00:00.000Z")
+  ),
+  true
+);
+assert.equal(
+  parentAccessExpiry({ issuedAt, deliveredAt: new Date("2026-02-05T00:00:00.000Z") }).expiresAt.toISOString(),
+  "2026-02-12T00:00:00.000Z"
+);
 
 assert.equal(
   classifyLoginError({ status: 401, code: "INVALID_CREDENTIALS", mode: "parent-code" }).case,
@@ -199,6 +247,8 @@ assert.match(parentAccessPage, /roleAccessApi\.refreshSession\(\)/);
 assert.match(parentAccessPage, /load\(\{ clearError: false \}\)/);
 assert.match(parentAccessPage, /revealCode/);
 assert.match(parentAccessPage, /setSelectedParentId\(userId\)/);
+assert.match(parentAccessPage, /p\("expiresAt"\)/);
+assert.match(parentAccessPage, /p\("codeExpired"\)/);
 
 const parentAccessService = readFileSync(
   new URL("../services/identity/src/services/parentAccessService.ts", import.meta.url),
@@ -211,6 +261,11 @@ assert.match(parentAccessService, /parentAccessCode/);
 assert.match(parentAccessService, /sendParentAccessCodeEmail\(user, code, schoolId\)/);
 assert.match(parentAccessService, /where: \{ id: schoolId \}/);
 assert.match(parentAccessService, /sensitive: true/);
+assert.match(parentAccessService, /isParentAccessCodeExpired\(row\)/);
+assert.match(parentAccessService, /markParentAccessCodeUsed\(/);
+assert.match(parentAccessService, /expiresAt: expiry\.expiresAt/);
+assert.match(parentAccessService, /usedAt: null/);
+assert.match(authServiceSource, /parentAccessService\.markParentAccessCodeUsed\(/);
 
 const encryptedCode = encryptCredentialSecret("123456");
 assert.notEqual(encryptedCode, "123456");
@@ -221,6 +276,8 @@ const emailCatalog = readFileSync(
   "utf8"
 );
 assert.match(emailCatalog, /parentAccessCode:/);
+assert.match(emailCatalog, /expires in 10 days/);
+assert.match(emailCatalog, /no later than 6 weeks after issue/);
 
 const originalNodeEnv = process.env.NODE_ENV;
 const originalPacSecret = process.env.PARENT_PAC_SECRET;
