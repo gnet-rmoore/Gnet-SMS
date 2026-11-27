@@ -5,9 +5,25 @@ export const resourceLoaders = {
   user: async (req: any) => {
     const row = await prisma.user.findUnique({
       where: { id: req.params.userId || req.params.id },
-      select: { schoolId: true },
+      select: {
+        role: true,
+        schoolId: true,
+        children: { select: { student: { select: { schoolId: true } } } },
+      },
     });
-    return row?.schoolId;
+    if (!row) return null;
+    const linkedSchoolIds = row.children
+      .map((link) => link.student.schoolId)
+      .filter((schoolId): schoolId is string => Boolean(schoolId));
+    const preferredSchoolId = String(req.user?.schoolId || "");
+    if (
+      row.role === "PARENT" &&
+      preferredSchoolId &&
+      (row.schoolId === preferredSchoolId || linkedSchoolIds.includes(preferredSchoolId))
+    ) {
+      return preferredSchoolId;
+    }
+    return row.schoolId || linkedSchoolIds[0] || null;
   },
   parent: async (req: any) => {
     const row = await prisma.user.findUnique({

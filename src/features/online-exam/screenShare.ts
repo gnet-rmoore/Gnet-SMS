@@ -21,6 +21,12 @@ export type ExamStreamResult =
   | { ok: true; stream: MediaStream; displaySurface?: string }
   | { ok: false; reason: ExamStreamFailureReason; message?: string; displaySurface?: string };
 
+export function isExamStreamFailure(
+  result: ExamStreamResult
+): result is Extract<ExamStreamResult, { ok: false }> {
+  return result.ok === false;
+}
+
 function getDisplaySurface(stream: MediaStream): string | undefined {
   try {
     const track = stream.getVideoTracks()[0];

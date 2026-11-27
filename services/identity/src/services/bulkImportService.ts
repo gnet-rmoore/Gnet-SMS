@@ -171,6 +171,27 @@ async function loadClassrooms(schoolId: string) {
     .filter((c) => c.id && (c.classCode || c.name));
 }
 
+async function sendVerificationEmailsInBatches(
+  users: Array<{ id: string; email: string }>
+): Promise<string[]> {
+  const warnings: string[] = [];
+  const concurrency = 10;
+  for (let i = 0; i < users.length; i += concurrency) {
+    const batch = users.slice(i, i + concurrency);
+    const results = await Promise.allSettled(
+      batch.map((user) => emailAuthService.sendVerificationEmail(user.id))
+    );
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        warnings.push(
+          `${batch[index].email}: verification email failed — ${result.reason?.message || "unknown error"}`
+        );
+      }
+    });
+  }
+  return warnings;
+}
+
 function jsonObjectKeys(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   return Object.keys(value as Record<string, unknown>).filter((key) => key.trim());
@@ -318,18 +339,29 @@ const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 async function assignStudentClassroomByCode(
   schoolId: string,
   userId: string,
-  classroomCode: string
+  classroomCode: string,
+  knownClassrooms?: Awaited<ReturnType<typeof loadClassrooms>> | null
 ): Promise<{ ok: boolean }> {
   const code = String(classroomCode || "").trim();
   if (!code) return { ok: false };
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (INTERNAL_TOKEN) headers["x-internal-token"] = INTERNAL_TOKEN;
-  const listRes = await fetch(`${CLASSROOM_URL}/api/internal/schools/${schoolId}/classrooms`, {
-    headers,
-  });
-  if (!listRes.ok) return { ok: false };
-  const list = await listRes.json();
-  const classrooms = Array.isArray(list) ? list : [];
+  let classrooms = knownClassrooms;
+  if (!classrooms) {
+    const listRes = await fetch(`${CLASSROOM_URL}/api/internal/schools/${schoolId}/classrooms`, {
+      headers,
+    });
+    if (!listRes.ok) return { ok: false };
+    const list = await listRes.json();
+    classrooms = (Array.isArray(list) ? list : []).map((c: any) => ({
+      id: String(c.id || ""),
+      name: String(c.name || ""),
+      classCode: String(c.classCode || c.code || ""),
+      gradeLevelId: String(c.gradeLevelId || ""),
+      schoolYearId: String(c.schoolYearId || ""),
+      subjectId: String(c.subjectId || ""),
+    }));
+  }
   const match = classrooms.find(
     (c: any) =>
       String(c.classCode || c.code || c.name || "")
@@ -445,6 +477,7 @@ export const bulkImportService = {
     } catch (e: any) {
       throw Object.assign(new Error(e?.message || "Failed to load grade levels"), { status: 502 });
     }
+    const classrooms = await loadClassrooms(schoolId).catch(() => null);
 
     const { students: normalizedEmails, parents: parentEmails } = normalizedImportEmails(rows);
     const existingAll = await existingEmailSet(normalizedEmails);
@@ -543,6 +576,7 @@ export const bulkImportService = {
     };
 
     const created: CreatedStudent[] = [];
+    const verificationTargets: Array<{ id: string; email: string }> = [];
     for (let i = 0; i < accepted.length; i++) {
       const row = accepted[i];
       const index = acceptedIndices[i];
@@ -644,11 +678,7 @@ export const bulkImportService = {
       };
 
       if (verifyEmails) {
-        try {
-          await emailAuthService.sendVerificationEmail(user.id);
-        } catch (err: any) {
-          warnings.push(`${row.email}: verification email failed — ${err?.message || "unknown error"}`);
-        }
+        verificationTargets.push({ id: user.id, email: user.email });
       }
 
       if (row.parentEmail) {
@@ -661,7 +691,7 @@ export const bulkImportService = {
             schoolId,
             password: parentPassword,
             phone: row.parentPhone,
-            sendWelcomeEmail: true,
+            sendWelcomeEmail: false,
           });
           if (parentUser.role !== "PARENT") {
             warnings.push(`${row.email}: parent email belongs to a non-parent account`);
@@ -676,13 +706,7 @@ export const bulkImportService = {
             );
             record.parentAccessCode = accessCode.accessCode;
             if (verifyEmails) {
-              try {
-                await emailAuthService.sendVerificationEmail(parentUser.id);
-              } catch (err: any) {
-                warnings.push(
-                  `${parentUser.email}: verification email failed — ${err?.message || "unknown error"}`
-                );
-              }
+              verificationTargets.push({ id: parentUser.id, email: parentUser.email });
             }
           }
         } catch (err: any) {
@@ -701,7 +725,7 @@ export const bulkImportService = {
             schoolId,
             password: parent2Password,
             phone: row.parent2Phone,
-            sendWelcomeEmail: true,
+            sendWelcomeEmail: false,
           });
           if (parent2User.role !== "PARENT") {
             warnings.push(`${row.email}: parent2 email belongs to a non-parent account`);
@@ -716,13 +740,7 @@ export const bulkImportService = {
             );
             record.parent2AccessCode = accessCode.accessCode;
             if (verifyEmails) {
-              try {
-                await emailAuthService.sendVerificationEmail(parent2User.id);
-              } catch (err: any) {
-                warnings.push(
-                  `${parent2User.email}: verification email failed — ${err?.message || "unknown error"}`
-                );
-              }
+              verificationTargets.push({ id: parent2User.id, email: parent2User.email });
             }
           }
         } catch (err: any) {
@@ -734,10 +752,19 @@ export const bulkImportService = {
       created.push(record);
     }
 
+    if (verifyEmails) {
+      warnings.push(...(await sendVerificationEmailsInBatches(verificationTargets)));
+    }
+
     for (const row of created) {
       if (!row.classroomCode) continue;
       try {
-        const assigned = await assignStudentClassroomByCode(schoolId, row.id, row.classroomCode);
+        const assigned = await assignStudentClassroomByCode(
+          schoolId,
+          row.id,
+          row.classroomCode,
+          classrooms
+        );
         if (!assigned.ok) {
           warnings.push(
             `${row.email}: classroom "${row.classroomCode}" not found — student created without class assign`
@@ -967,13 +994,11 @@ export const bulkImportService = {
 
     const warnings = [...validated.warnings];
     if (verifyEmails) {
-      for (const user of created) {
-        try {
-          await emailAuthService.sendVerificationEmail(user.id);
-        } catch (err: any) {
-          warnings.push(`${user.email}: verification email failed — ${err?.message || "unknown error"}`);
-        }
-      }
+      warnings.push(
+        ...(await sendVerificationEmailsInBatches(
+          created.map((user) => ({ id: user.id, email: user.email }))
+        ))
+      );
     }
 
     return {

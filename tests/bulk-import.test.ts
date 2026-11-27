@@ -598,6 +598,54 @@ assert(BULK_IMPORT_MAX_ROWS === 1500, "max rows constant");
   );
 }
 
+{
+  const appSrc = readFileSync("services/identity/src/app.ts", "utf8");
+  assert(
+    appSrc.includes('express.json({ limit: "20mb" })') &&
+      appSrc.includes('express.urlencoded({ extended: true, limit: "20mb" })'),
+    "identity accepts full-size roster payloads"
+  );
+
+  const gateway = readFileSync("services/gateway/src/server.ts", "utf8");
+  assert(
+    gateway.includes("createApiProxy(300_000)") &&
+      gateway.includes("IMPORT_PATH.test(pathnameOf(req))") &&
+      gateway.includes('IMPORT_PATH = /^\\/api\\/schools\\/[^/]+\\/(?:students|staff)\\/import(?:\\/|$)/'),
+    "bulk imports get a longer proxy timeout"
+  );
+
+  const service = readFileSync("services/identity/src/services/bulkImportService.ts", "utf8");
+  assert(
+    service.includes("sendVerificationEmailsInBatches") &&
+      service.includes("Promise.allSettled"),
+    "verification emails are sent in parallel batches"
+  );
+  assert(
+    service.includes("row.classroomCode,\n          classrooms"),
+    "classrooms are loaded once per student import"
+  );
+
+  const modal = readFileSync("src/features/bulk-import/ImportRosterModal.tsx", "utf8");
+  assert(
+    modal.includes("onImported?.(result)") && modal.includes("setRowCount(result.rowCount"),
+    "import modal reports the full result to callers"
+  );
+  assert(
+    !modal.includes("failures.slice(0, 8)") && !modal.includes("importWarnings.slice(0, 5)"),
+    "import modal shows every skipped row and warning"
+  );
+
+  const studentsPage = readFileSync("src/features/students/Page.tsx", "utf8");
+  const staffPage = readFileSync("src/pages/School/StaffManagement.tsx", "utf8");
+  const registrarPage = readFileSync("src/features/registrar/Page.tsx", "utf8");
+  assert(
+    [studentsPage, staffPage, registrarPage].every((src) =>
+      src.includes("result.createdCount ?? result.created.length")
+    ),
+    "import success messages include the created record count"
+  );
+}
+
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`);
   process.exit(1);

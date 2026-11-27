@@ -17,7 +17,7 @@ export const TEMPORARY_PASSWORD_REVEAL_CAPABILITY = "action.users.reveal_tempora
 const TEMPORARY_PASSWORD_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function isTemporaryPasswordRevealableRole(role: string): boolean {
-  return role === "STUDENT" || (isSchoolAssignableRole(role) && role !== "PARENT");
+  return role === "STUDENT" || role === "PARENT" || isSchoolAssignableRole(role);
 }
 
 export function isTemporaryPasswordExpired(issuedAt: Date | null, now = Date.now()): boolean {
@@ -27,7 +27,15 @@ export function isTemporaryPasswordExpired(issuedAt: Date | null, now = Date.now
 export const temporaryPasswordService = {
   async revealTemporaryPassword(userId: string, schoolId: string | null) {
     const user = await prisma.user.findFirst({
-      where: schoolId ? { id: userId, schoolId } : { id: userId },
+      where: schoolId
+        ? {
+            id: userId,
+            OR: [
+              { schoolId },
+              { role: "PARENT", children: { some: { student: { schoolId } } } },
+            ],
+          }
+        : { id: userId },
       select: {
         id: true,
         name: true,

@@ -11,6 +11,7 @@ export {
   validateAdmissionForm,
   firstStepWithErrors,
   isAdmissionFormEmpty,
+  hasPriorSchoolingDetails,
   ADMISSION_FORM_STEPS,
   type AdmissionApplicationForm,
   type AdmissionFieldsMode,

@@ -52,11 +52,14 @@ export const frResources = {
       "fixErrors": "Veuillez corriger ce qui suit avant de continuer :",
       "reviewTitle": "Vérifiez vos réponses",
       "reviewHint": "Vérifiez vos informations avant d'envoyer — utilisez Modifier pour revenir à une étape.",
+      "schoolingHint": "Ajoutez une école précédente, un niveau terminé ou des notes. Laissez vide si cela ne s'applique pas.",
+      "schoolingAcknowledgement": "J'ai vérifié cette étape et je n'ai aucun détail de scolarité antérieure à ajouter.",
       "reviewEmpty": "Rien à vérifier pour le moment — complétez les étapes précédentes.",
       "step": {
         "student": "Élève",
         "guardians": "Tuteurs",
-        "schooling": "Scolarité & révision",
+        "schooling": "Scolarité",
+        "review": "Révision",
       },
       "review": {
         "fullName": "Nom complet",

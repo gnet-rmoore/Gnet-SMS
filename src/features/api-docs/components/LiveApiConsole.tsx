@@ -81,7 +81,10 @@ export const LiveApiConsole = React.forwardRef<HTMLDivElement, Props>(function L
     setResult(null);
   }, [selected, resolvedPath]);
 
-  const canUseApiKey = Boolean(apiAccess && apiKey && storedKey?.keyType === mode);
+  const storedKeyMatchesMode = Boolean(
+    storedKey?.secret?.startsWith(mode === "sandbox" ? "gnet_sandbox_" : "gnet_live_")
+  );
+  const canUseApiKey = Boolean(apiAccess && apiKey && storedKeyMatchesMode);
   const authReady = authMode === "apiKey"
     ? storedKey?.secret?.startsWith(mode === "sandbox" ? "gnet_sandbox_" : "gnet_live_") &&
       apiAccess

@@ -14,8 +14,8 @@ import prisma from "./lib/prisma";
 const app = express();
 
 app.use(helmet());
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 mountEntitlementGate(app, IDENTITY_ENTITLEMENT_RULES);
 
 app.get("/health/live", (_req, res) => {

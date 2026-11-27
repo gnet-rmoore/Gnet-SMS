@@ -529,9 +529,16 @@ export const Registrar = () => {
           onImport={(rows, sourceFileName) =>
             bulkImportApi.importStudents(school.id, rows, sourceFileName)
           }
-          onImported={() => {
+          onImported={(result) => {
             refetchRegistrar();
-            setSuccessMessage(t("students.imported"));
+            const message = t("pages:bulkImport.importedStudents", {
+              count: result.createdCount ?? result.created.length,
+            });
+            setSuccessMessage(
+              result.failedCount
+                ? `${message} · ${t("pages:bulkImport.partialImported", { count: result.failedCount })}`
+                : message
+            );
             setErrorMessage("");
           }}
         />

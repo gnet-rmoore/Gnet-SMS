@@ -75,6 +75,7 @@ const SCHOOL_SUFFIX_TO_SERVICE: Record<string, ServiceKey> = {
   subscription: "identity",
   "api-keys": "identity",
   "receipt-template": "identity",
+  "certificate-settings": "identity",
   subjects: "academic",
   "subject-offerings": "academic",
   "my-applications": "lifecycle",
@@ -456,14 +457,13 @@ app.use("/api", (req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.use(
-  "/api",
-  createProxyMiddleware<Request>({
+function createApiProxy(timeoutMs: number) {
+  return createProxyMiddleware<Request>({
     changeOrigin: true,
     pathRewrite: (path) => `/api${path.startsWith("/") ? path : `/${path}`}`,
     router: (req) => (req as any).__upstream,
-    timeout: 120_000,
-    proxyTimeout: 120_000,
+    timeout: timeoutMs,
+    proxyTimeout: timeoutMs,
     on: {
       proxyReq: (proxyReq, req) => {
         const requestId = req.headers["x-request-id"];
@@ -474,8 +474,17 @@ app.use(
         if (!res.headersSent) res.status(502).json({ error: "Bad gateway" });
       },
     },
-  })
-);
+  });
+}
+
+const importProxy = createApiProxy(300_000);
+const standardProxy = createApiProxy(120_000);
+const IMPORT_PATH = /^\/api\/schools\/[^/]+\/(?:students|staff)\/import(?:\/|$)/;
+
+app.use("/api", (req, res, next) => {
+  const proxy = IMPORT_PATH.test(pathnameOf(req)) ? importProxy : standardProxy;
+  return proxy(req, res, next);
+});
 
 app.listen(PORT, () => {
   console.log(

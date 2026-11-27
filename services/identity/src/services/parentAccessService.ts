@@ -27,7 +27,12 @@ import {
 } from "./mfaService";
 import { sendSmsOtpViaComms } from "../lib/smsOtpClient";
 import { appBaseUrl, generateTempPassword, sendMail } from "../lib/mailer";
-import { decryptCredentialSecret, encryptCredentialSecret } from "../lib/credentialCrypto";
+import {
+  clearTemporaryPasswordFields,
+  decryptCredentialSecret,
+  encryptCredentialSecret,
+  temporaryPasswordFields,
+} from "../lib/credentialCrypto";
 import { resolveEmailLocale, tEmail } from "../i18n/emailCatalogs";
 import {
   DEFAULT_SECURITY_POLICY,
@@ -740,6 +745,8 @@ export const parentAccessService = {
         name: true,
         email: true,
         schoolId: true,
+        mustChangePassword: true,
+        temporaryPasswordIssuedAt: true,
         parentAccessCodes: { where: { schoolId } },
         parentPhoneLogins: { where: { schoolId } },
       },
@@ -749,6 +756,8 @@ export const parentAccessService = {
       name: parent.name,
       email: parent.email,
       schoolId: parent.schoolId,
+      mustChangePassword: Boolean(parent.mustChangePassword),
+      temporaryPasswordIssuedAt: parent.temporaryPasswordIssuedAt?.toISOString() ?? null,
       accessCode: parent.parentAccessCodes[0] ? parentAccessMetadata(parent.parentAccessCodes[0]) : null,
       phoneLogin: parent.parentPhoneLogins[0] ? phoneLoginMetadata(parent.parentPhoneLogins[0]) : null,
     }));
@@ -951,6 +960,9 @@ export const parentAccessService = {
       data: {
         passwordHash: bcrypt.hashSync(password, 10),
         mustChangePassword,
+        ...(mustChangePassword
+          ? temporaryPasswordFields(password)
+          : clearTemporaryPasswordFields()),
       },
     });
     return {

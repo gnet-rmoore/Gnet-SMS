@@ -52,11 +52,14 @@ export const deResources = {
       "fixErrors": "Bitte korrigiere Folgendes, bevor du fortfährst:",
       "reviewTitle": "Antworte überprüfen",
       "reviewHint": "Prüfe deine Angaben vor dem Absenden — mit Bearbeiten springst du zu einem Schritt zurück.",
+      "schoolingHint": "Füge eine frühere Schule, den abgeschlossenen Jahrgang oder Notizen hinzu. Lasse es leer, falls nicht zutreffend.",
+      "schoolingAcknowledgement": "Ich habe diesen Schritt geprüft und habe keine Angaben zur früheren Schulbildung hinzuzufügen.",
       "reviewEmpty": "Noch nichts zu prüfen — fülle die vorherigen Schritte aus.",
       "step": {
         "student": "Schüler",
         "guardians": "Erziehungsberechtigte",
-        "schooling": "Schulbildung & Prüfung",
+        "schooling": "Schulbildung",
+        "review": "Prüfung",
       },
       "review": {
         "fullName": "Vollständiger Name",

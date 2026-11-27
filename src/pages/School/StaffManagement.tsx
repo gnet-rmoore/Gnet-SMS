@@ -480,9 +480,17 @@ export const StaffManagement = () => {
             onImport={(rows, sourceFileName) =>
               bulkImportApi.importStaff(school.id, rows, sourceFileName)
             }
-            onImported={() => {
+            onImported={(result) => {
               fetchData();
-              showToast(t("pages:staff.imported"));
+              const message = t("pages:bulkImport.importedStaff", {
+                count: result.createdCount ?? result.created.length,
+              });
+              showToast(
+                result.failedCount
+                  ? `${message} · ${t("pages:bulkImport.partialImported", { count: result.failedCount })}`
+                  : message,
+                "success"
+              );
             }}
           />
         ) : null}

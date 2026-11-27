@@ -31,7 +31,7 @@ import { MethodBadge } from "./components/MethodBadge";
 import { LiveApiConsole } from "./components/LiveApiConsole";
 import { AuthReferencePanel } from "./components/AuthReferencePanel";
 import CodeExamples from "./components/CodeExamples";
-import type { LiveRequestAuthMode } from "../runLiveRequest";
+import type { LiveRequestAuthMode } from "./runLiveRequest";
 
 type SelectedRef = {
   sectionId: string;

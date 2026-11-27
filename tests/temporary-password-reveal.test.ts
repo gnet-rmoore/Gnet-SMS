@@ -53,7 +53,7 @@ assert.notEqual(generatedPassword, generateTemporaryPassword("St"));
 
 assert.equal(isTemporaryPasswordRevealableRole("STUDENT"), true);
 assert.equal(isTemporaryPasswordRevealableRole("TEACHER"), true);
-assert.equal(isTemporaryPasswordRevealableRole("PARENT"), false);
+assert.equal(isTemporaryPasswordRevealableRole("PARENT"), true);
 assert.equal(isTemporaryPasswordRevealableRole("API_CLIENT"), false);
 const now = Date.now();
 assert.equal(isTemporaryPasswordExpired(new Date(now - 31 * 24 * 60 * 60 * 1000), now), true);
@@ -81,8 +81,19 @@ assert.match(migration, /ADD COLUMN IF NOT EXISTS "temporaryPasswordIssuedAt"/);
 const userServiceSource = read("../services/identity/src/services/userService.ts");
 assert.match(userServiceSource, /temporaryPasswordFields\(temporaryPassword\)/);
 assert.match(userServiceSource, /temporaryPasswordFields\(tempMustChange \? temporaryPassword : null\)/);
+assert.match(userServiceSource, /temporaryPasswordFields\(tempPassword\)/);
 assert.match(userServiceSource, /clearTemporaryPasswordFields\(\)/);
 assert.match(userServiceSource, /if \(updateData\.mustChangePassword === false\)/);
+
+const parentAccessServiceSource = read(
+  "../services/identity/src/services/parentAccessService.ts"
+);
+assert.match(parentAccessServiceSource, /temporaryPasswordFields\(password\)/);
+assert.match(parentAccessServiceSource, /mustChangePassword: Boolean\(parent\.mustChangePassword\)/);
+assert.match(
+  parentAccessServiceSource,
+  /temporaryPasswordIssuedAt: parent\.temporaryPasswordIssuedAt\?\.toISOString\(\)/
+);
 
 const tempPasswordHelperSource = read("../services/identity/src/lib/tempPassword.ts");
 assert.match(tempPasswordHelperSource, /crypto\.randomBytes\(20\)/);
@@ -117,6 +128,8 @@ assert.match(temporaryPasswordServiceSource, /TEMPORARY_PASSWORD_TTL_MS/);
 assert.match(temporaryPasswordServiceSource, /decryptCredentialSecret\(user\.temporaryPasswordEncrypted\)/);
 assert.match(temporaryPasswordServiceSource, /clearTemporaryPasswordFields\(\)/);
 assert.match(temporaryPasswordServiceSource, /role === "STUDENT"/);
+assert.match(temporaryPasswordServiceSource, /role === "PARENT"/);
+assert.match(temporaryPasswordServiceSource, /children: \{ some: \{ student: \{ schoolId \} \} \}/);
 assert.match(temporaryPasswordServiceSource, /!user\.mustChangePassword/);
 
 const routes = read("../services/identity/src/routes/userRoutes.ts");
@@ -154,5 +167,12 @@ for (const file of [
   assert.match(source, /action\.users\.reveal_temporary_password/);
   assert.match(source, /View temporary password/);
 }
+
+const parentAccessPageSource = read("../src/features/parent-access/Page.tsx");
+assert.match(parentAccessPageSource, /TemporaryPasswordRevealModal/);
+assert.match(parentAccessPageSource, /action\.users\.reveal_temporary_password/);
+assert.match(parentAccessPageSource, /viewTemporaryPassword/);
+assert.match(parentAccessPageSource, /parent\.mustChangePassword/);
+assert.match(parentAccessPageSource, /passwordChanged/);
 
 console.log("temporary password reveal tests passed");

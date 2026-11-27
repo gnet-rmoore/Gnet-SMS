@@ -993,6 +993,9 @@ export const userService = {
             : null,
         isActive: true,
         mustChangePassword: mustChange,
+        ...(mustChange
+          ? temporaryPasswordFields(tempPassword)
+          : clearTemporaryPasswordFields()),
       },
     });
 

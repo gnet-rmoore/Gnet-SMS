@@ -28,6 +28,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
 import {
   requestExamTabStream,
+  isExamStreamFailure,
   stopMediaStream,
   attachStreamToVideo,
   examTabShareSupported,
@@ -110,6 +111,18 @@ export default function TakeOnlineExamPage() {
   const captureVideoRef = React.useRef<HTMLVideoElement | null>(null);
   const [screenSharing, setScreenSharing] = React.useState(false);
   const screenShareSupported = examTabShareSupported();
+
+  const stopScreenShare = React.useCallback(() => {
+    stopMediaStream(screenStreamRef.current);
+    screenStreamRef.current = null;
+    if (captureVideoRef.current) {
+      try { captureVideoRef.current.srcObject = null; } catch {}
+      captureVideoRef.current = null;
+    }
+    setScreenSharing(false);
+  }, []);
+
+  React.useEffect(() => () => stopScreenShare(), [stopScreenShare]);
 
   const capturesScreen = proctorLevel === "SCREEN_VIEW";
   const needsScreenConsent = kioskConfig.requireScreenShare || capturesScreen;
@@ -517,18 +530,6 @@ export default function TakeOnlineExamPage() {
     };
   }, [started, reportViolation, enterFullscreen]);
 
-  const stopScreenShare = React.useCallback(() => {
-    stopMediaStream(screenStreamRef.current);
-    screenStreamRef.current = null;
-    if (captureVideoRef.current) {
-      try { captureVideoRef.current.srcObject = null; } catch {}
-      captureVideoRef.current = null;
-    }
-    setScreenSharing(false);
-  }, []);
-
-  React.useEffect(() => () => stopScreenShare(), [stopScreenShare]);
-
   const finalizeAndExit = React.useCallback(async (id: string) => {
     if (endingRef.current) return;
     endingRef.current = true;
@@ -556,7 +557,7 @@ export default function TakeOnlineExamPage() {
       return false;
     }
     const res = await requestExamTabStream();
-    if (!res.ok) {
+    if (isExamStreamFailure(res)) {
       if (source === "start") {
         await alertError(
           t("onlineExams.take.startFailed"),

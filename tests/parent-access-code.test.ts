@@ -262,6 +262,12 @@ assert.match(parentAccessService, /sendParentAccessCodeEmail\(user, code, school
 assert.match(parentAccessService, /where: \{ id: schoolId \}/);
 assert.match(parentAccessService, /sensitive: true/);
 assert.match(parentAccessService, /isParentAccessCodeExpired\(row\)/);
+assert.match(parentAccessService, /mustChangePassword: Boolean\(parent\.mustChangePassword\)/);
+assert.match(parentAccessService, /temporaryPasswordFields\(password\)/);
+assert.match(parentAccessPage, /TemporaryPasswordRevealModal/);
+assert.match(parentAccessPage, /viewTemporaryPassword/);
+assert.match(parentAccessPage, /passwordPending/);
+assert.match(enCatalog, /viewTemporaryPassword: "View temporary password"/);
 assert.match(parentAccessService, /markParentAccessCodeUsed\(/);
 assert.match(parentAccessService, /expiresAt: expiry\.expiresAt/);
 assert.match(parentAccessService, /usedAt: null/);

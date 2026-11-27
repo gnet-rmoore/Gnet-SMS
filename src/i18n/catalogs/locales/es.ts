@@ -52,11 +52,14 @@ export const esResources = {
       "fixErrors": "Corrige lo siguiente antes de continuar:",
       "reviewTitle": "Revisa tus respuestas",
       "reviewHint": "Comprueba tus datos antes de enviar; usa Editar para volver a un paso.",
+      "schoolingHint": "Añade una escuela anterior, el grado completado o notas. Déjalo en blanco si no corresponde.",
+      "schoolingAcknowledgement": "He revisado este paso y no tengo detalles de escolaridad anterior que añadir.",
       "reviewEmpty": "Aún no hay nada que revisar: completa los pasos anteriores.",
       "step": {
         "student": "Estudiante",
         "guardians": "Tutores",
-        "schooling": "Escolaridad y revisión",
+        "schooling": "Escolaridad",
+        "review": "Revisión",
       },
       "review": {
         "fullName": "Nombre completo",

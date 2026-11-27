@@ -75,7 +75,7 @@ export const CAPABILITY_CATALOG: CapabilityDef[] = [
   },
   {
     "key": "action.users.reveal_temporary_password",
-    "label": "View temporary passwords for student and staff accounts",
+    "label": "View temporary passwords for student, staff, and parent accounts",
     "category": "Actions \u00b7 Admin",
     "lockedForSchoolAdmin": false
   },

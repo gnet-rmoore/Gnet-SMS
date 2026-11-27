@@ -38,6 +38,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
 import {
   requestExamTabStream,
+  isExamStreamFailure,
   stopMediaStream,
   attachStreamToVideo,
   examTabShareSupported,
@@ -278,7 +279,7 @@ export default function OnlineExamPreviewPage() {
         return false;
       }
       const res = await requestExamTabStream();
-      if (!res.ok) {
+      if (isExamStreamFailure(res)) {
         if (source === "start") {
           await alertError(t("onlineExams.take.startFailed"), res.message || t("onlineExams.take.screenShareRequired"));
         } else {

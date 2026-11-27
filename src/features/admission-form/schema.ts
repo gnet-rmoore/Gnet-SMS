@@ -122,12 +122,13 @@ export type BuildAdmissionApiPayloadOptions = {
 };
 
 /** Multi-step wizard keys shared by public apply and Registrar Direct Admission. */
-export type AdmissionFormStep = "student" | "guardians" | "schooling";
+export type AdmissionFormStep = "student" | "guardians" | "schooling" | "review";
 
 export const ADMISSION_FORM_STEPS: readonly AdmissionFormStep[] = [
   "student",
   "guardians",
   "schooling",
+  "review",
 ];
 
 /** Field validation modes — mirror AdmissionApplicationFields props. */
@@ -189,6 +190,7 @@ export function validateAdmissionStep(
   mode: AdmissionFieldsMode = "staff"
 ): AdmissionFieldErrors {
   const errors: AdmissionFieldErrors = {};
+  if (step === "review") return errors;
   const isReturningPublic = mode === "public-returning";
   const nameRequired = !isReturningPublic;
   const gradeRequired = mode === "staff" || mode === "public-new";
@@ -263,6 +265,14 @@ export function isAdmissionFormEmpty(form: AdmissionApplicationForm): boolean {
     if (Array.isArray(value)) return value.length === 0;
     return typeof value === "string" && value.trim() === "";
   });
+}
+
+export function hasPriorSchoolingDetails(form: AdmissionApplicationForm): boolean {
+  return Boolean(
+    String(form.previousSchool || "").trim() ||
+      String(form.gradeCompleted || "").trim() ||
+      String(form.notes || "").trim()
+  );
 }
 
 /** Map shared form → Lifecycle application create body (+ notes JSON). */

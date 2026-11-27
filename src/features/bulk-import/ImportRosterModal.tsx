@@ -54,6 +54,8 @@ export type BulkImportCreated = {
 export type BulkImportImportResult = {
   ok: boolean;
   canImport?: boolean;
+  rowCount?: number;
+  validCount?: number;
   createdCount: number;
   failedCount?: number;
   created: BulkImportCreated[];
@@ -71,7 +73,7 @@ type Props = {
     rows: Record<string, unknown>[],
     sourceFileName: string
   ) => Promise<BulkImportImportResult>;
-  onImported?: () => void;
+  onImported?: (result: BulkImportImportResult) => void;
 };
 
 type Step = "upload" | "preview" | "done";
@@ -91,6 +93,8 @@ export function ImportRosterModal({
   const [rows, setRows] = React.useState<Record<string, unknown>[]>([]);
   const [preview, setPreview] = React.useState<BulkImportPreview | null>(null);
   const [created, setCreated] = React.useState<BulkImportCreated[]>([]);
+  const [rowCount, setRowCount] = React.useState(0);
+  const [validCount, setValidCount] = React.useState(0);
   const [failedCount, setFailedCount] = React.useState(0);
   const [failures, setFailures] = React.useState<NonNullable<BulkImportImportResult["failed"]>>([]);
   const [importWarnings, setImportWarnings] = React.useState<string[]>([]);
@@ -105,6 +109,8 @@ export function ImportRosterModal({
       setRows([]);
       setPreview(null);
       setCreated([]);
+      setRowCount(0);
+      setValidCount(0);
       setFailedCount(0);
       setFailures([]);
       setImportWarnings([]);
@@ -129,6 +135,8 @@ export function ImportRosterModal({
   const handleFile = async (file: File | null) => {
     if (!file) return;
     setError("");
+    setRowCount(0);
+    setValidCount(0);
     setFailedCount(0);
     setFailures([]);
     setImportWarnings([]);
@@ -171,11 +179,13 @@ export function ImportRosterModal({
     try {
       const result = await onImport(rows, fileName);
       setCreated(result.created || []);
+      setRowCount(result.rowCount ?? rows.length);
+      setValidCount(result.validCount ?? result.createdCount);
       setFailedCount(result.failedCount ?? 0);
       setFailures(result.failed || []);
       setImportWarnings(result.warnings || []);
       setStep("done");
-      onImported?.();
+      onImported?.(result);
     } catch (err: any) {
       if (err?.preview) {
         setPreview(err.preview);
@@ -238,6 +248,8 @@ export function ImportRosterModal({
                     setRows([]);
                     setFileName("");
                     setError("");
+                    setRowCount(0);
+                    setValidCount(0);
                     setFailedCount(0);
                     setFailures([]);
                     setImportWarnings([]);
@@ -340,8 +352,8 @@ export function ImportRosterModal({
                 {preview.rowCount} rows
               </p>
               {preview.warnings?.length ? (
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600 space-y-1">
-                  {preview.warnings.slice(0, 5).map((w) => (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600 space-y-1 max-h-32 overflow-y-auto">
+                  {preview.warnings.map((w) => (
                     <p key={w}>{w}</p>
                   ))}
                 </div>
@@ -403,25 +415,32 @@ export function ImportRosterModal({
                   ? t("pages:bulkImport.importedStudents", { count: created.length })
                   : t("pages:bulkImport.importedStaff", { count: created.length })}
               </p>
+              {rowCount > 0 ? (
+                <p className="text-sm font-medium text-slate-600">
+                  {fileName ? `${fileName} · ` : ""}
+                  {rowCount} rows · {validCount} {t("pages:bulkImport.valid")} · {failedCount}{" "}
+                  {t("pages:bulkImport.error")}
+                </p>
+              ) : null}
               {failedCount > 0 ? (
                 <p className="text-sm font-medium text-amber-700">
                   {t("pages:bulkImport.partialImported", { count: failedCount })}
                 </p>
               ) : null}
               {importWarnings.length ? (
-                <div className="w-full text-left rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-600 space-y-1">
+                <div className="w-full text-left rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-600 space-y-1 max-h-40 overflow-y-auto">
                   <p className="font-bold text-slate-800">
                     {t("pages:bulkImport.importWarnings")}
                   </p>
-                  {importWarnings.slice(0, 5).map((warning) => (
+                  {importWarnings.map((warning) => (
                     <p key={warning}>{warning}</p>
                   ))}
                 </div>
               ) : null}
               {failures.length ? (
-                <div className="w-full text-left rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-xs font-medium text-rose-800 space-y-1">
+                <div className="w-full text-left rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 text-xs font-medium text-rose-800 space-y-1 max-h-40 overflow-y-auto">
                   <p className="font-bold">{t("pages:bulkImport.failedRows")}</p>
-                  {failures.slice(0, 8).map((failure) => (
+                  {failures.map((failure) => (
                     <p key={`${failure.index}-${failure.email || ""}`}>
                       {failure.rowNumber ?? failure.index + 1}
                       {failure.email ? ` · ${failure.email}` : ""}: {failure.errors.join("; ")}

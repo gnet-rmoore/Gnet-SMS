@@ -78,11 +78,16 @@ export const enCommon = {
     fixErrors: "Please fix the following before continuing:",
     reviewTitle: "Review your answers",
     reviewHint: "Check your details before submitting — use Edit to jump back to a step.",
+    schoolingHint:
+      "Add any previous school, completed grade, or notes. Leave blank if not applicable.",
+    schoolingAcknowledgement:
+      "I have checked this step and have no prior schooling details to add.",
     reviewEmpty: "Nothing to review yet — complete the previous steps.",
     step: {
       student: "Student",
       guardians: "Guardians",
-      schooling: "Schooling & review",
+      schooling: "Schooling",
+      review: "Review",
     },
     review: {
       fullName: "Full name",
@@ -1356,6 +1361,10 @@ export const enPages = {
     resetPasswordHint: "Temporary passwords are shown once after the reset.",
     mustChangePassword: "Require password change at next login",
     temporaryPasswordHint: "Copy this temporary password now — it will not be shown again.",
+    temporaryPassword: "Temporary password",
+    passwordPending: "Not changed yet",
+    passwordChanged: "Changed",
+    viewTemporaryPassword: "View temporary password",
     passwordResetForbidden: "Only School Admin and IT Admin can reset parent passwords from this page.",
     copyFailed: "Could not copy to clipboard.",
     selfTitle: "Parent sign-in",

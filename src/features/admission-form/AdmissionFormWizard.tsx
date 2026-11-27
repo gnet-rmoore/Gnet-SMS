@@ -8,6 +8,7 @@ import {
   ADMISSION_FORM_STEPS,
   composeStudentName,
   firstStepWithErrors,
+  hasPriorSchoolingDetails,
   isAdmissionFormEmpty,
   validateAdmissionForm,
   validateAdmissionStep,
@@ -116,9 +117,13 @@ export function AdmissionFormWizard({
   const [maxVisited, setMaxVisited] = React.useState(0);
   const [errors, setErrors] = React.useState<AdmissionFieldErrors>({});
   const [returnToReview, setReturnToReview] = React.useState(false);
+  const [schoolingAcknowledged, setSchoolingAcknowledged] = React.useState(false);
   const containerRef = React.useRef<HTMLFormElement>(null);
   const step = ADMISSION_FORM_STEPS[Math.min(stepIndex, total - 1)];
   const isFinalStep = stepIndex === total - 1;
+  const schoolingHasDetails = hasPriorSchoolingDetails(form);
+  const needsSchoolingAcknowledgement = step === "schooling" && !schoolingHasDetails;
+  const schoolingGateSatisfied = !needsSchoolingAcknowledgement || schoolingAcknowledged;
 
   const signature = JSON.stringify(form);
   const prevSignature = React.useRef(signature);
@@ -130,8 +135,13 @@ export function AdmissionFormWizard({
       setMaxVisited(0);
       setErrors({});
       setReturnToReview(false);
+      setSchoolingAcknowledged(false);
     }
   }, [signature]);
+
+  React.useEffect(() => {
+    if (schoolingHasDetails) setSchoolingAcknowledged(false);
+  }, [schoolingHasDetails]);
 
   const focusFirstProblem = React.useCallback(() => {
     requestAnimationFrame(() => {
@@ -175,6 +185,7 @@ export function AdmissionFormWizard({
       return;
     }
     setErrors({});
+    if (!schoolingGateSatisfied) return;
     if (returnToReview) {
       setReturnToReview(false);
       goToStep(total - 1);
@@ -190,6 +201,7 @@ export function AdmissionFormWizard({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (stepIndex !== total - 1) return;
     const results: AdmissionStepErrors = validateAdmissionForm(form, mode);
     const firstBad = firstStepWithErrors(results);
     if (firstBad) {
@@ -478,23 +490,43 @@ export function AdmissionFormWizard({
       >
         {stepIndex === 0 && firstStepExtra ? <div className="space-y-8">{firstStepExtra}</div> : null}
 
-        <AdmissionApplicationFields
-          form={form}
-          onChange={handleChange}
-          gradeLevels={gradeLevels}
-          mode={mode}
-          step={step}
-          errors={errors}
-          inputClassName={inputClassName}
-          labelClassName={labelClassName}
-          sectionTitleClassName={sectionTitleClassName}
-          gradeLoadState={gradeLoadState}
-          onRetryGrades={onRetryGrades}
-          gradesStateLabels={gradesStateLabels}
-          submitting={submitting}
-          changedFields={changedFields}
-          studentPhotoSlot={studentPhotoSlot}
-        />
+        {!isFinalStep ? (
+          <AdmissionApplicationFields
+            form={form}
+            onChange={handleChange}
+            gradeLevels={gradeLevels}
+            mode={mode}
+            step={step}
+            errors={errors}
+            inputClassName={inputClassName}
+            labelClassName={labelClassName}
+            sectionTitleClassName={sectionTitleClassName}
+            gradeLoadState={gradeLoadState}
+            onRetryGrades={onRetryGrades}
+            gradesStateLabels={gradesStateLabels}
+            submitting={submitting}
+            changedFields={changedFields}
+            studentPhotoSlot={studentPhotoSlot}
+          />
+        ) : null}
+
+        {step === "schooling" ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-600">
+            <p>{t("common:admissionForm.schoolingHint")}</p>
+            {needsSchoolingAcknowledgement ? (
+              <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-semibold text-indigo-800">
+                <input
+                  type="checkbox"
+                  checked={schoolingAcknowledged}
+                  onChange={(e) => setSchoolingAcknowledged(e.target.checked)}
+                  disabled={submitting}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>{t("common:admissionForm.schoolingAcknowledgement")}</span>
+              </label>
+            ) : null}
+          </div>
+        ) : null}
 
         {isFinalStep ? (
           <div className="space-y-4">
@@ -630,7 +662,7 @@ export function AdmissionFormWizard({
           <button
             type="button"
             onClick={handleNext}
-            disabled={submitting}
+            disabled={submitting || !schoolingGateSatisfied}
             className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-40"
           >
             {t("common:next")}

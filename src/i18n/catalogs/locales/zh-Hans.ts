@@ -52,11 +52,14 @@ export const zhHansResources = {
       "fixErrors": "请先修正以下内容再继续：",
       "reviewTitle": "检查你的答案",
       "reviewHint": "提交前请核对信息——点击“编辑”可返回上一步。",
+      "schoolingHint": "请填写既往学校、已完成年级或备注；如不适用请留空。",
+      "schoolingAcknowledgement": "我已检查此步骤，没有既往学籍信息需要补充。",
       "reviewEmpty": "暂无内容可检查——请完成前面的步骤。",
       "step": {
         "student": "学生",
         "guardians": "监护人",
-        "schooling": "学业与检查",
+        "schooling": "学业",
+        "review": "审核",
       },
       "review": {
         "fullName": "全名",

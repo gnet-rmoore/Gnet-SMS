@@ -43,6 +43,7 @@
     "test:enroll-approval-path": "tsx tests/enroll-approval-path.test.ts",
     "test:class-capacity": "tsx tests/class-capacity.test.ts",
     "test:admission-review-stage": "tsx tests/admission-review-stage.test.ts",
+    "test:admission-form-steps": "tsx tests/admission-form-steps.test.ts",
     "test:admission-review-drawer": "tsx tests/admission-review-drawer.test.ts",
     "test:detail-drawers": "tsx tests/detail-drawers.test.ts",
     "test:bulk-import": "tsx tests/bulk-import.test.ts",

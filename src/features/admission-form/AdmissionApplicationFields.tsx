@@ -201,7 +201,7 @@ export function AdmissionApplicationFields({
 
           <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.personalDetails")}>
             {sectionHeader(
-              "2",
+              "1",
               t("admissions.manualAdmission.form.section.personalDetails"),
               t("admissions.manualAdmission.form.section.personalDetailsHint")
             )}
@@ -318,7 +318,7 @@ export function AdmissionApplicationFields({
         <>
           <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.parentsGuardians")}>
             {sectionHeader(
-              "3",
+              "2",
               t("admissions.manualAdmission.form.section.parentsGuardians"),
               t("admissions.manualAdmission.form.section.parentsGuardiansHint")
             )}
@@ -408,7 +408,7 @@ export function AdmissionApplicationFields({
       {showSchooling ? (
         <section className="space-y-5" aria-label={t("admissions.manualAdmission.form.section.priorSchooling")}>
           {sectionHeader(
-            "4",
+            "3",
             t("admissions.manualAdmission.form.section.priorSchooling"),
             t("admissions.manualAdmission.form.section.priorSchoolingHint")
           )}

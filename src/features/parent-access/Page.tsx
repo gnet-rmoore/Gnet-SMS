@@ -14,7 +14,9 @@ import {
   X,
 } from "lucide-react";
 import { Button, DetailDrawerShell } from "../../components/ui";
+import { TemporaryPasswordRevealModal } from "../../components/TemporaryPasswordRevealModal";
 import { roleAccessApi } from "../role-access/api";
+import { hasCapabilityOrRole } from "../../lib/capabilities";
 import { canResetParentPassword } from "../../lib/passwordResetPolicy";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
@@ -42,6 +44,7 @@ export function ParentAccessPage() {
   const p = (key: string, opts?: Record<string, unknown>) => t(`parentAccess.${key}`, opts);
   const school = useAuthStore((state) => state.school);
   const user = useAuthStore((state) => state.user);
+  const capabilities = useAuthStore((state) => state.capabilities);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [requests, setRequests] = React.useState<Row[]>([]);
@@ -60,6 +63,12 @@ export function ParentAccessPage() {
   const [temporaryPassword, setTemporaryPassword] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [drawerBusy, setDrawerBusy] = React.useState(false);
+  const [revealTarget, setRevealTarget] = React.useState<{
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+  } | null>(null);
 
   const load = React.useCallback(async (options?: { clearError?: boolean }) => {
     if (!school?.id) return;
@@ -185,6 +194,12 @@ export function ParentAccessPage() {
   };
 
   const selectedParent = parents.find((parent) => String(parent.id) === selectedParentId) ?? null;
+  const canRevealTemporaryPassword = hasCapabilityOrRole(
+    capabilities,
+    "action.users.reveal_temporary_password",
+    ["SCHOOL_ADMIN", "PRINCIPAL", "REGISTRAR", "IT_ADMIN", "SUPER_ADMIN"],
+    user?.role
+  );
   const canResetSelectedPassword = canResetParentPassword(user, {
     id: String(selectedParent?.id || ""),
     role: "PARENT",
@@ -386,11 +401,12 @@ export function ParentAccessPage() {
           <p className="mt-4 text-sm text-slate-500">{p("noParents")}</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[52rem] text-start text-sm">
+            <table className="w-full min-w-[64rem] text-start text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-2 text-start">{p("parent")}</th>
                   <th className="py-2 text-start">{p("accessCode")}</th>
+                  <th className="py-2 text-start">{p("temporaryPassword")}</th>
                   <th className="py-2 text-start">{p("phoneLogin")}</th>
                   <th className="py-2 text-start">{t("common:actions")}</th>
                 </tr>
@@ -406,6 +422,37 @@ export function ParentAccessPage() {
                       {String(parent.id) === selectedParentId && revealedCode
                         ? revealedCode
                         : parent.accessCode?.codeHint || "—"}
+                    </td>
+                    <td className="py-3">
+                      {parent.mustChangePassword ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">
+                            {p("passwordPending")}
+                          </span>
+                          {canRevealTemporaryPassword && (
+                            <button
+                              type="button"
+                              title={p("viewTemporaryPassword")}
+                              onClick={() =>
+                                setRevealTarget({
+                                  id: String(parent.id),
+                                  name: parent.name,
+                                  email: parent.email,
+                                  role: "PARENT",
+                                })
+                              }
+                              className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                              {p("viewTemporaryPassword")}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-500">
+                          {p("passwordChanged")}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3">
                       <p className="text-xs font-semibold text-slate-700">
@@ -510,6 +557,14 @@ export function ParentAccessPage() {
                 <DetailItem label={p("issuedAt")} value={formatDate(selectedParent.accessCode?.issuedAt)} />
                 <DetailItem label={p("expiresAt")} value={formatDate(selectedParent.accessCode?.expiresAt)} />
                 <DetailItem label={p("lockedUntil")} value={formatDate(selectedParent.accessCode?.lockedUntil)} />
+                <DetailItem
+                  label={p("temporaryPassword")}
+                  value={
+                    selectedParent.mustChangePassword
+                      ? p("passwordPending")
+                      : p("passwordChanged")
+                  }
+                />
                 <DetailItem label={p("phoneLogin")} value={selectedParent.phoneLogin?.phoneHint || "—"} />
                 <DetailItem label={p("verifiedAt")} value={formatDate(selectedParent.phoneLogin?.verifiedAt)} />
                 <DetailItem
@@ -569,6 +624,25 @@ export function ParentAccessPage() {
                   <KeyRound className="h-4 w-4" aria-hidden />
                   {p("regenerate")}
                 </Button>
+                {canRevealTemporaryPassword && selectedParent.mustChangePassword && (
+                  <Button
+                    type="button"
+                    size="compact"
+                    variant="secondary"
+                    disabled={busy || drawerBusy}
+                    onClick={() =>
+                      setRevealTarget({
+                        id: String(selectedParent.id),
+                        name: selectedParent.name,
+                        email: selectedParent.email,
+                        role: "PARENT",
+                      })
+                    }
+                  >
+                    <KeyRound className="h-4 w-4" aria-hidden />
+                    {p("viewTemporaryPassword")}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="compact"
@@ -664,6 +738,11 @@ export function ParentAccessPage() {
           </div>
         ) : null}
       </DetailDrawerShell>
+      <TemporaryPasswordRevealModal
+        open={Boolean(revealTarget)}
+        target={revealTarget}
+        onClose={() => setRevealTarget(null)}
+      />
     </div>
   );
 }

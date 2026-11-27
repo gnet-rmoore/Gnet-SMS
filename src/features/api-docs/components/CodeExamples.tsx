@@ -1,7 +1,7 @@
 ﻿import React from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, Globe, Terminal } from "lucide-react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../../lib/cn";
 
 type CodeExample = {
   language: string;
