@@ -2232,6 +2232,7 @@ export const arResources = {
         "selectTeacher": "اختر معلماً",
         "descriptionPlaceholder": "نظرة عامة موجزة عن المادة…",
         "adding": "جارٍ الإضافة…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "إضافة مستوى دراسي",
@@ -2240,7 +2241,7 @@ export const arResources = {
         "namePlaceholder": "مثال: الصف العاشر",
         "adding": "جارٍ الإضافة…",
         "noSectionNames": "استخدم مستوى دراسيًا بسيطًا مثل \"Grade 8\"؛ وأنشئ الأقسام مثل \"Grade 8A\" كمجموعات صفية.",
-        "noComposedNames": "استخدم مستوى دراسيًا بسيطًا مثل \"Grade 8\"؛ وأنشئ الأقسام مثل \"Grade 8A\" كمجموعات صفية.",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "المستوى الدراسي",

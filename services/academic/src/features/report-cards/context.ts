@@ -19,9 +19,8 @@ import type {
 } from "./types";
 import {
   canonicalSubjectName,
-  parseGradeLabel,
   reportGradeLabel,
-} from "../../../../../src/features/academics-shared/gradeSubjectLabels";
+} from "../../../../shared/src/lib/gradeSubjectLabels";
 
 type ScaleLike = {
   minScore: number;
@@ -205,7 +204,7 @@ export async function buildReportCardContext(
 ): Promise<ReportCardPayload> {
   const [exam, student, school] = await Promise.all([
     prisma.exam.findUnique({ where: { id: examId } }),
-    prisma.user.findUnique({ where: { id: studentId } }),
+    prisma.user.findUnique({ where: { id: studentId }, include: { gradeLevel: true } }),
     prisma.school.findUnique({ where: { id: schoolId } }),
   ]);
   if (!exam) throw new Error("Exam not found");
@@ -314,9 +313,7 @@ export async function buildReportCardContext(
     .sort((a, b) => b.minScore - a.minScore)
     .find((entry) => overallAverage >= entry.minScore && overallAverage <= entry.maxScore);
   const classLabel = gradeEntries.find((grade) => grade.classroom?.name)?.classroom?.name || "";
-  const gradeLevelLabel = parseGradeLabel(classLabel).isGradeLike
-    ? reportGradeLabel(null, classLabel)
-    : "";
+  const gradeLevelLabel = reportGradeLabel(student.gradeLevel?.name, classLabel);
 
   return {
     school: {

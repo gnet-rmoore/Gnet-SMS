@@ -169,7 +169,7 @@ export function ManageSubjectsModal({
         assignments.push({
           classGroupId: cg.id,
           subjectId: subject.id,
-          subjectName: canonicalSubjectName(subject.name),
+          subjectName: subject.name,
           subjectCode: subject.code || "",
           teacherId,
           gradeLevelId: selectedGradeLevel.id,

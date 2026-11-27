@@ -2232,6 +2232,7 @@ export const deResources = {
         "selectTeacher": "Lehrkraft auswählen",
         "descriptionPlaceholder": "Kurzübersicht des Fachs…",
         "adding": "Wird hinzugefügt…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "Klassenstufe hinzufügen",
@@ -2240,7 +2241,7 @@ export const deResources = {
         "namePlaceholder": "z. B. Klasse 10",
         "adding": "Wird hinzugefügt…",
         "noSectionNames": "Verwenden Sie eine einfache Klassenstufe wie \"Grade 8\"; erstellen Sie Abschnitte wie \"Grade 8A\" als Klassengruppen.",
-        "noComposedNames": "Verwenden Sie eine einfache Klassenstufe wie \"Grade 8\"; erstellen Sie Abschnitte wie \"Grade 8A\" als Klassengruppen.",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "Klassenstufe",

@@ -2232,6 +2232,7 @@ export const frResources = {
         "selectTeacher": "Sélectionner un enseignant",
         "descriptionPlaceholder": "Aperçu bref de la matière…",
         "adding": "Ajout en cours…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "Ajouter un niveau scolaire",
@@ -2240,7 +2241,7 @@ export const frResources = {
         "namePlaceholder": "p. ex. 10e année",
         "adding": "Ajout en cours…",
         "noSectionNames": "Utilisez un niveau scolaire simple comme « Grade 8 » ; créez des sections comme « Grade 8A » en tant que groupes de classe.",
-        "noComposedNames": "Utilisez un niveau scolaire simple comme « Grade 8 » ; créez des sections comme « Grade 8A » en tant que groupes de classe.",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "Niveau scolaire",

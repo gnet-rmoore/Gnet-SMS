@@ -18,7 +18,6 @@ import type {
 } from "./types";
 import {
   canonicalSubjectName,
-  parseGradeLabel,
   reportGradeLabel,
 } from "../academics-shared/gradeSubjectLabels";
 
@@ -205,12 +204,7 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
     input.student.classLabel ||
     input.grades.find((g) => g.classroom?.name)?.classroom?.name ||
     "—";
-  const gradeLabelCandidate = [input.student.gradeLevelLabel, classLabel].find((value) =>
-    parseGradeLabel(value).isGradeLike
-  );
-  const gradeLevelLabel = gradeLabelCandidate
-    ? reportGradeLabel(gradeLabelCandidate, classLabel)
-    : "";
+  const gradeLevelLabel = reportGradeLabel(input.student.gradeLevelLabel, classLabel);
 
   return {
     school: {

@@ -155,8 +155,9 @@ export function EnrollmentPage() {
     () => students.find((s) => s.id === selectedStudentId) || null,
     [students, selectedStudentId]
   );
-  const selectedStudentGradeLabel = canonicalGradeName(selectedStudent?.gradeLevel?.name);
-  const activeClassroomGradeLabel = canonicalGradeName(activeClassroom?.gradeLevel?.name);
+  const selectedStudentGradeLabel = selectedStudent?.gradeLevel?.name || "";
+  const activeClassroomGradeLabel = activeClassroom?.gradeLevel?.name || "";
+  const activeClassroomGradeDisplay = canonicalGradeName(activeClassroomGradeLabel);
 
   /** studentId → classroom ids they belong to */
   const classroomsByStudent = useMemo(() => {
@@ -853,7 +854,7 @@ export function EnrollmentPage() {
                       })}
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      {activeClassroomGradeLabel || t("enrollment.classGroups.noGrade")}
+                      {activeClassroomGradeDisplay || t("enrollment.classGroups.noGrade")}
                       {(linkedSubjectCountByGroup[activeClassroom.id] || 0) > 0 &&
                         ` · ${t("enrollment.classGroups.subjectsLinked", {
                           count: linkedSubjectCountByGroup[activeClassroom.id],

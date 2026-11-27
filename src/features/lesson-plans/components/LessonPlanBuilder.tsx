@@ -305,9 +305,9 @@ export function LessonPlanBuilder({
                   setForm((f) => ({
                     ...f,
                     subjectId: e.target.value,
-                    subjectName: canonicalSubjectName(sub?.name),
+                    subjectName: sub?.name || f.subjectName,
                     gradeLevelId: sub?.gradeLevelId || f.gradeLevelId,
-                    gradeLevelName: canonicalGradeName(gl?.name) || f.gradeLevelName,
+                    gradeLevelName: gl?.name || f.gradeLevelName,
                     classroomId: "",
                     classroomName: "",
                   }));
@@ -332,7 +332,7 @@ export function LessonPlanBuilder({
                   setForm((f) => ({
                     ...f,
                     gradeLevelId: e.target.value,
-                    gradeLevelName: canonicalGradeName(gl?.name),
+                    gradeLevelName: gl?.name || "",
                   }));
                 }}
               >

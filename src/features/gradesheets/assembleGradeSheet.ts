@@ -13,7 +13,6 @@ import {
 import type { GradeSheetData, GradeSheetSubject, GradeSheetColumn, GradeSheetLegendBand } from "./types";
 import {
   canonicalSubjectName,
-  parseGradeLabel,
   reportGradeLabel,
 } from "../academics-shared/gradeSubjectLabels";
 
@@ -217,12 +216,7 @@ export function assembleGradeSheetData(input: AssembleGradeSheetInput): GradeShe
 
   const contactParts = [input.school?.contactPhone, input.school?.contactEmail].filter(Boolean);
   const classFromGrades = input.classLabel || [...map.values()].find((m) => m.classroomName)?.classroomName || "";
-  const gradeLabelCandidate = [input.classLabel, classFromGrades].find((value) =>
-    parseGradeLabel(value).isGradeLike
-  );
-  const gradeLevelLabel = gradeLabelCandidate
-    ? reportGradeLabel(gradeLabelCandidate, classFromGrades)
-    : "";
+  const gradeLevelLabel = reportGradeLabel(input.classLabel, classFromGrades);
   const issueIso = input.examDate || new Date().toISOString();
   let yearLabel = input.academicYearLabel?.trim() || "";
   if (!yearLabel) { try { yearLabel = String(new Date(issueIso).getFullYear()); } catch { yearLabel = ""; } }

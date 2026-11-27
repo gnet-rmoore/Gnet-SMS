@@ -2232,6 +2232,7 @@ export const esResources = {
         "selectTeacher": "Seleccionar docente",
         "descriptionPlaceholder": "Breve descripción de la materia…",
         "adding": "Añadiendo…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "Añadir nivel de grado",
@@ -2240,7 +2241,7 @@ export const esResources = {
         "namePlaceholder": "p. ej. Grado 10",
         "adding": "Añadiendo…",
         "noSectionNames": "Usa un nivel de grado simple como \"Grade 8\"; crea secciones como \"Grade 8A\" como grupos de clase.",
-        "noComposedNames": "Usa un nivel de grado simple como \"Grade 8\"; crea secciones como \"Grade 8A\" como grupos de clase.",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "Nivel de grado",

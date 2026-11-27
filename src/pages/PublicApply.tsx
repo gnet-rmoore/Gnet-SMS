@@ -24,7 +24,6 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { captchaEnabledOnClient, turnstileSiteKey } from "../lib/captcha";
 import { buildStatusUrl, saveReference } from "../lib/publicApplyStatus";
 import { unwrapItems } from "../lib/apiEnvelope";
-import { canonicalGradeName } from "../features/academics-shared/gradeSubjectLabels";
 
 type PublicClassroom = {
   id: string;
@@ -181,9 +180,7 @@ export default function PublicApplyPage() {
         if (!form.dob) throw new Error(t("public:apply.dobRequired"));
       }
       const gradeLevelName =
-        canonicalGradeName(grades.find((g) => g.id === form.gradeLevelId)?.name) ||
-        form.gradeLevelId ||
-        null;
+        grades.find((g) => g.id === form.gradeLevelId)?.name || form.gradeLevelId || null;
       const payload = {
         ...buildAdmissionApiPayload({
           form,

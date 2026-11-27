@@ -5,7 +5,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
-import { gradeLevelNameIssue } from "../../../../services/academic/src/lib/gradeLevelName";
+import { gradeLevelNameIssue } from "../../academics-shared/gradeSubjectLabels";
 
 export type GradeLevelModalProps = {
   gradeForm?: any;
@@ -32,11 +32,6 @@ export function GradeLevelModal({
     if (!name) {
       e.preventDefault();
       setLocalError(t("curriculum.gradeLevelModal.nameRequired", { defaultValue: "Please enter a grade level name." }));
-      return;
-    }
-    if (name.length < 2) {
-      e.preventDefault();
-      setLocalError(t("curriculum.gradeLevelModal.nameTooShort", { defaultValue: "Grade level name must be at least 2 characters." }));
       return;
     }
     const issue = gradeLevelNameIssue(name);

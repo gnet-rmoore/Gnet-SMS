@@ -2232,6 +2232,7 @@ export const hiResources = {
         "selectTeacher": "शिक्षक चुनें",
         "descriptionPlaceholder": "विषय का संक्षिप्त अवलोकन…",
         "adding": "जोड़ा जा रहा है…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "ग्रेड स्तर जोड़ें",
@@ -2240,7 +2241,7 @@ export const hiResources = {
         "namePlaceholder": "उदाहरण: ग्रेड 10",
         "adding": "जोड़ा जा रहा है…",
         "noSectionNames": "साधारण ग्रेड स्तर का उपयोग करें जैसे \"Grade 8\"; \"Grade 8A\" जैसे खंडों को कक्षा समूहों के रूप में बनाएं।",
-        "noComposedNames": "साधारण ग्रेड स्तर का उपयोग करें जैसे \"Grade 8\"; \"Grade 8A\" जैसे खंडों को कक्षा समूहों के रूप में बनाएं।",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "ग्रेड स्तर",

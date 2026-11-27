@@ -164,6 +164,15 @@ assert(
   typeof (enResources.pages as any).curriculum?.divisions?.title === "string",
   "en curriculum.divisions.title present"
 );
+for (const code of ["fr", "ar", "es", "de", "zh-Hans", "hi"] as const) {
+  const curriculum = (localeResources[code] as any).pages?.curriculum;
+  assert(
+    typeof curriculum?.gradeLevelModal?.noSectionNames === "string" &&
+      typeof curriculum?.gradeLevelModal?.noComposedNames === "string" &&
+      typeof curriculum?.subjectModal?.noComposedNames === "string",
+    `${code} curriculum validation copy present`
+  );
+}
 assert(
   typeof (enResources.pages as any).classSchedule?.modals?.class === "string",
   "en classSchedule.modals.class present"

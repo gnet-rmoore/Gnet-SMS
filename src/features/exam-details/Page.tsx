@@ -694,18 +694,15 @@ export const ExamDetails = () => {
           examTitle={exam.title}
           examComponentId={exam.examComponentId}
           classId={selectedClassroom}
-          className={subjectRoomLabel(
-            teacherClassrooms.find((c) => c.id === selectedClassroom)?.name,
-            teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject?.name
-          )}
+          className={teacherClassrooms.find((c) => c.id === selectedClassroom)?.name || ""}
           subjectId={
             teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject
               ?.id || ""
           }
-          subjectName={canonicalSubjectName(
+          subjectName={
             teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject
-              ?.name
-          )}
+              ?.name || ""
+          }
           onBack={() => setSelectedClassroom(null)}
           showToast={showToast}
         />

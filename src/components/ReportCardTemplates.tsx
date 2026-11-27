@@ -16,6 +16,7 @@ import {
   resolveReportCardTemplateKey,
 } from "../features/report-cards";
 import type { IntlCalendarPeriod } from "../features/report-cards/components/international/shared";
+import { reportGradeLabel } from "../features/academics-shared/gradeSubjectLabels";
 
 interface GradeEntry {
   id: string;
@@ -42,6 +43,7 @@ interface ReportCardProps {
   teacherComment?: string | null;
   studentId?: string;
   studentSex?: string | null;
+  gradeLevelLabel?: string | null;
   academicYearLabel?: string;
   calendarPeriods?: IntlCalendarPeriod[] | null;
   preview?: boolean;
@@ -68,6 +70,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
   teacherComment = null,
   studentId = "",
   studentSex = null,
+  gradeLevelLabel,
   academicYearLabel,
   calendarPeriods = null,
   preview = false,
@@ -97,7 +100,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
         name: studentName,
         sex: studentSex,
         classLabel: grades[0]?.classroom?.name || "",
-        gradeLevelLabel: "",
+        gradeLevelLabel: reportGradeLabel(gradeLevelLabel, grades[0]?.classroom?.name),
       },
       academicYearLabel:
         academicYearLabel ||

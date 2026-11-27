@@ -2761,6 +2761,8 @@ export const enPages = {
       selectTeacher: "Select teacher",
       descriptionPlaceholder: "Brief overview of the subject…",
       adding: "Adding…",
+      noComposedNames:
+        'Use a plain subject name like "Mathematics"; do not include a class group.',
     },
     gradeLevelModal: {
       title: "Add grade level",
@@ -2771,7 +2773,7 @@ export const enPages = {
       noSectionNames:
         'Use a plain grade level like "Grade 8"; create sections like "Grade 8A" as class groups.',
       noComposedNames:
-        'Use a plain grade level like "Grade 8"; create sections like "Grade 8A" as class groups.',
+        'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
     },
     manageSubjects: {
       eyebrow: "Grade level",

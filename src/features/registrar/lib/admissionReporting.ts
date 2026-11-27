@@ -1,7 +1,5 @@
 /** Client-side admissions reporting helpers (mirrors lifecycle admissionReporting). */
 
-import { canonicalGradeName } from "../../academics-shared/gradeSubjectLabels";
-
 export const FUNNEL_STATUSES = [
   "PENDING",
   "UNDER_REVIEW",
@@ -56,7 +54,7 @@ export function applicationsToCsv(applications: Array<Record<string, any>>): str
             /* keep */
           }
         }
-        if (c.key === "gradeLevelName") v = canonicalGradeName(v || app.gradeLevel?.name);
+        if (c.key === "gradeLevelName") v = v || app.gradeLevel?.name || "";
         if (c.key === "applicantType") {
           v = "NEW";
           try {

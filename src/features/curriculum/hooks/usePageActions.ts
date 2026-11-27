@@ -13,7 +13,11 @@ import {
   requiresSpecialistTeacher,
   resolveSubjectTeacherId,
 } from "../../academics-shared/subjectTeacherAssignment";
-import { gradeLevelNameIssue } from "../../../../services/academic/src/lib/gradeLevelName";
+import {
+  gradeLevelNameIssue,
+  isComposedSubjectName,
+  SUBJECT_NAME_ERROR,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type PageActionsDeps = {
   school: any;
@@ -355,8 +359,17 @@ export function usePageActions(deps: PageActionsDeps) {
     });
   };
 
+  const subjectNameError = () =>
+    t("curriculum.subjectModal.noComposedNames", {
+      defaultValue: 'Use a plain subject name like "Mathematics"; do not include a class group.',
+    });
+
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isComposedSubjectName(subjectForm.name)) {
+      showToast(subjectNameError(), "error");
+      return;
+    }
     if (!school?.id) {
       showToast(t("curriculum.toast.schoolNotFound"), "error");
       return;
@@ -430,11 +443,21 @@ export function usePageActions(deps: PageActionsDeps) {
         fetchData();
         showToast(t("curriculum.toast.subjectCreated", { name: data.name, suffix: assignMsg }));
       } else {
-        showToast(data.error || t("curriculum.toast.subjectCreateFailed"), "error");
+        showToast(
+          data.error === SUBJECT_NAME_ERROR
+            ? subjectNameError()
+            : data.error || t("curriculum.toast.subjectCreateFailed"),
+          "error"
+        );
       }
     } catch (err: any) {
       console.error(err);
-      showToast(t("curriculum.toast.subjectCreateFailed"), "error");
+      showToast(
+        err?.message === SUBJECT_NAME_ERROR
+          ? subjectNameError()
+          : t("curriculum.toast.subjectCreateFailed"),
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -713,7 +736,13 @@ export function usePageActions(deps: PageActionsDeps) {
   const handleUpdateSubject = async (id: string, data: any) => {
     try {
       const payload: any = {};
-      if (data.name !== undefined) payload.name = String(data.name).trim();
+      if (data.name !== undefined) {
+        payload.name = String(data.name).trim();
+        if (isComposedSubjectName(payload.name)) {
+          showToast(subjectNameError(), "error");
+          return;
+        }
+      }
       if (data.code !== undefined) payload.code = String(data.code).trim().toUpperCase();
       if (data.description !== undefined) payload.description = data.description;
       await curriculumApi.updateSubject(id, payload);
@@ -721,7 +750,12 @@ export function usePageActions(deps: PageActionsDeps) {
       showToast((t as any)("curriculum.toast.subjectUpdated") || "Subject updated", "success");
     } catch (err: any) {
       console.error(err);
-      showToast(err?.message || t("curriculum.toast.subjectUpdateFailed"), "error");
+      showToast(
+        err?.message === SUBJECT_NAME_ERROR
+          ? subjectNameError()
+          : err?.message || t("curriculum.toast.subjectUpdateFailed"),
+        "error"
+      );
     }
   };
 
@@ -772,6 +806,22 @@ export function usePageActions(deps: PageActionsDeps) {
       const trimmed = name?.trim();
       if (!trimmed) {
         showToast(t("curriculum.toast.gradeLevelUpdateFailed"), "error");
+        return;
+      }
+      const nameIssue = gradeLevelNameIssue(trimmed);
+      if (nameIssue) {
+        showToast(
+          t(
+            nameIssue === "composed"
+              ? "curriculum.gradeLevelModal.noComposedNames"
+              : "curriculum.gradeLevelModal.noSectionNames",
+            {
+              defaultValue:
+                'Use a plain grade level like "Grade 8"; create sections like "Grade 8A" as class groups.',
+            }
+          ),
+          "error"
+        );
         return;
       }
       await curriculumApi.updateGradeLevel(id, { name: trimmed });

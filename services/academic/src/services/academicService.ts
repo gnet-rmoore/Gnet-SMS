@@ -589,6 +589,7 @@ export const academicService = {
     const trimmedName =
       patch.name !== undefined ? String(patch.name).trim() : existing.name;
     if (!trimmedName) throw new Error("Grade level name is required");
+    assertValidGradeLevelName(trimmedName);
 
     if (trimmedName !== existing.name) {
       const schoolLevels = await prisma.gradeLevel.findMany({

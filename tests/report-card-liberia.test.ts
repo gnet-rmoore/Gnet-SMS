@@ -253,6 +253,14 @@ assert(normalizedAssembly.columns.map((c) => c.key).join(",") === "T1,T2,T3", "n
 assert(normalizedAssembly.school.name === "School", "empty school name keeps fallback");
 assert(normalizedAssembly.subjects[0].cells.T1?.letter === "D", "normalized legacy key uses IPREP legend");
 
+const nonGradeAssembly = assembleReportCardPayload({
+  templateKey: IPREP_PROGRESS_CLASSIC,
+  school: { name: "School" },
+  student: { id: "s4b", name: "Non-grade", classLabel: "Kindergarten A", gradeLevelLabel: "" },
+  grades: [],
+});
+assert(nonGradeAssembly.student.gradeLevelLabel === "Kindergarten A", "non-grade class label is preserved");
+
 const schoolScales = [{ minScore: 0, maxScore: 100, gradeLetter: "P", gpaPoints: 2, remark: "Pass" }];
 const withSchoolScales = assembleReportCardPayload({
   templateKey: IPREP_SEMESTER_BOOKLET,

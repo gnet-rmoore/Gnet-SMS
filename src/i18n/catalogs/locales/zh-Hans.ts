@@ -2232,6 +2232,7 @@ export const zhHansResources = {
         "selectTeacher": "选择教师",
         "descriptionPlaceholder": "科目简要概述…",
         "adding": "添加中…",
+        "noComposedNames": 'Use a plain subject name like "Mathematics"; do not include a class group.',
       },
       "gradeLevelModal": {
         "title": "添加年级",
@@ -2240,7 +2241,7 @@ export const zhHansResources = {
         "namePlaceholder": "例如：十年级",
         "adding": "添加中…",
         "noSectionNames": "请使用简单的年级名称，例如“Grade 8”；将“Grade 8A”等班级创建为班级组。",
-        "noComposedNames": "请使用简单的年级名称，例如“Grade 8”；将“Grade 8A”等班级创建为班级组。",
+        "noComposedNames": 'Use a plain grade level like "Grade 8"; a class-room prefix belongs on class groups, not grade levels.',
       },
       "manageSubjects": {
         "eyebrow": "年级",
