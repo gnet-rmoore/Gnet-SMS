@@ -62,12 +62,12 @@ export default function QuestionBankPage() {
   const visibleSubjects = teacherScope?.subjects || subjects;
   const visibleGrades = teacherScope?.gradeLevels || grades;
   const subjectOptions = React.useMemo(
-    () => buildSubjectOptions(visibleSubjects),
-    [visibleSubjects]
+    () => buildSubjectOptions(visibleSubjects, [subjectId]),
+    [visibleSubjects, subjectId]
   );
   const gradeOptions = React.useMemo(
-    () => buildGradeOptions(visibleGrades),
-    [visibleGrades]
+    () => buildGradeOptions(visibleGrades, [gradeLevelId]),
+    [visibleGrades, gradeLevelId]
   );
   const canManage = (item: BankItem) =>
     isStaff &&

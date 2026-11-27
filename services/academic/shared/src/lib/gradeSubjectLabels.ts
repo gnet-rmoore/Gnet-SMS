@@ -130,9 +130,20 @@ export type GradeOption<T> = Omit<T, "label" | "canonicalName" | "sectionSuffix"
 };
 
 export function buildGradeOptions<T extends { id?: string; name?: string | null }>(
-  grades: T[]
+  grades: T[],
+  selectedIds?: Iterable<string | null | undefined>
 ): GradeOption<T>[] {
   const byCanonical = new Map<string, { option: GradeOption<T>; index: number }>();
+  const retained: { option: GradeOption<T>; index: number }[] = [];
+  const selected = new Set(
+    Array.from(selectedIds ?? [])
+      .map((id) => String(id ?? ""))
+      .filter(Boolean)
+  );
+  const isRetained = (id: unknown) => {
+    const value = String(id ?? "");
+    return Boolean(value) && selected.has(value);
+  };
 
   grades.forEach((grade, index) => {
     const parsed = parseGradeLabel(grade.name);
@@ -158,11 +169,15 @@ export function buildGradeOptions<T extends { id?: string; name?: string | null 
     const candidateIsExact =
       parsed.canonical.toLowerCase() === String(grade.name ?? "").trim().toLowerCase();
     if (candidateIsExact && !currentIsExact) {
+      if (isRetained(current.option.id)) retained.push(current);
       byCanonical.set(key, { option: candidate, index });
+      return;
     }
+    if (isRetained(grade.id)) retained.push({ option: candidate, index });
   });
 
   return Array.from(byCanonical.values())
+    .concat(retained)
     .sort((a, b) => a.index - b.index)
     .map((entry) => entry.option);
 }
@@ -210,9 +225,20 @@ export type SubjectOption<T> = Omit<T, "label" | "canonicalName"> & {
 };
 
 export function buildSubjectOptions<T extends { id?: string; name?: string | null }>(
-  subjects: T[]
+  subjects: T[],
+  selectedIds?: Iterable<string | null | undefined>
 ): SubjectOption<T>[] {
   const byCanonical = new Map<string, { option: SubjectOption<T>; index: number }>();
+  const retained: { option: SubjectOption<T>; index: number }[] = [];
+  const selected = new Set(
+    Array.from(selectedIds ?? [])
+      .map((id) => String(id ?? ""))
+      .filter(Boolean)
+  );
+  const isRetained = (id: unknown) => {
+    const value = String(id ?? "");
+    return Boolean(value) && selected.has(value);
+  };
 
   subjects.forEach((subject, index) => {
     const canonical = canonicalSubjectName(subject.name);
@@ -237,11 +263,15 @@ export function buildSubjectOptions<T extends { id?: string; name?: string | nul
     const candidateIsExact =
       canonical.toLowerCase() === String(subject.name ?? "").trim().toLowerCase();
     if (candidateIsExact && !currentIsExact) {
+      if (isRetained(current.option.id)) retained.push(current);
       byCanonical.set(key, { option: candidate, index });
+      return;
     }
+    if (isRetained(subject.id)) retained.push({ option: candidate, index });
   });
 
   return Array.from(byCanonical.values())
+    .concat(retained)
     .sort((a, b) => a.index - b.index)
     .map((entry) => entry.option);
 }

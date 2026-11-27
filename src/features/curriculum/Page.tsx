@@ -460,6 +460,8 @@ export const Curriculum = () => {
           handleDeleteSyllabus={handleDeleteSyllabus}
             handleSeedGradeLevels={handleSeedGradeLevels}
             handleUpdateGradeLevel={handleUpdateGradeLevel}
+            setEditingSubject={setEditingSubject}
+            setShowEditSubjectModal={setShowEditSubjectModal}
             onOpenNewSyllabusModal={openNewSyllabusModal}
             onOpenSetupWizard={() => setShowSetupWizard(true)}
 submitting={submitting}

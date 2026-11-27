@@ -35,7 +35,10 @@ export function TemplateModal({
 }: TemplateModalProps) {
   const { t } = useTranslation(["pages", "common"]);
   const scopeMode = templateForm.scopeMode || "SCHOOL";
-  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(gradeLevels, [templateForm.gradeLevelId]),
+    [gradeLevels, templateForm.gradeLevelId]
+  );
 
   React.useEffect(() => {
     const defaultForm = {

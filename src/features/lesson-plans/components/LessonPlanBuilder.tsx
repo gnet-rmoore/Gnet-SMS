@@ -90,8 +90,14 @@ export function LessonPlanBuilder({
     () => normalizeCalendarPeriods(calendar?.periods),
     [calendar]
   );
-  const subjectOptions = useMemo(() => buildSubjectOptions(subjects), [subjects]);
-  const gradeOptions = useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const subjectOptions = useMemo(
+    () => buildSubjectOptions(subjects, [form.subjectId]),
+    [subjects, form.subjectId]
+  );
+  const gradeOptions = useMemo(
+    () => buildGradeOptions(gradeLevels, [form.gradeLevelId]),
+    [gradeLevels, form.gradeLevelId]
+  );
 
   const lessonDateWarning = useMemo(() => {
     if (!form.lessonDate || calendarPeriods.length === 0) return null;

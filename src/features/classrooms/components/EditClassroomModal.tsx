@@ -48,7 +48,10 @@ export function EditClassroomModal({
   submitting,
 }: EditClassroomModalProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(gradeLevels, [formData.gradeLevelId]),
+    [gradeLevels, formData.gradeLevelId]
+  );
   const teachers = (staff || []).filter((s) => s.role === "TEACHER");
   const selectedTeacher = teachers.find((s) => s.id === formData.ownerTeacherId);
   const isDepartmentalized = formData.organizationType === "DEPARTMENTALIZED";

@@ -148,8 +148,8 @@ export function QuestionBankEditorModal({
 
   if (!open) return null;
 
-  const subjectOptions = buildSubjectOptions(subjects);
-  const gradeOptions = buildGradeOptions(grades);
+  const subjectOptions = buildSubjectOptions(subjects, [subjectId]);
+  const gradeOptions = buildGradeOptions(grades, [gradeLevelId]);
 
   const patch = (next: Partial<DraftQuestion>) => setDraft((prev) => ({ ...prev, ...next }));
 

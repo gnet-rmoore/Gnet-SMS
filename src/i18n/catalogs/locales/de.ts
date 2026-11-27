@@ -147,6 +147,7 @@ export const deResources = {
     "female": "Weiblich",
     "other": "Andere",
     "gradeLevel": "Klassenstufe",
+    "allGradeLevels": "Alle Klassenstufen",
     "saving": "Wird gespeichert…",
     "copied": "Kopiert",
     "preview": "Vorschau",
@@ -2217,6 +2218,8 @@ export const deResources = {
       "subjectModal": {
         "title": "Fach hinzufügen",
         "subtitle": "Define a subject and assign it to all class groups in a grade level.",
+        "editTitle": "Fach bearbeiten",
+        "editSubtitle": "Name, Code und Beschreibung des Fachs aktualisieren.",
         "subjectName": "Fachname",
         "subjectCode": "Fachcode",
         "namePlaceholder": "z. B. Höhere Mathematik",

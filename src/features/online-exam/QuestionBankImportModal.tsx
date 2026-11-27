@@ -50,12 +50,12 @@ export function QuestionBankImportModal({
   const [saving, setSaving] = React.useState(false);
 
   const subjectOptions = React.useMemo(
-    () => buildSubjectOptions(subjects),
-    [subjects]
+    () => buildSubjectOptions(subjects, [subjectId]),
+    [subjects, subjectId]
   );
   const gradeOptions = React.useMemo(
-    () => buildGradeOptions(grades),
-    [grades]
+    () => buildGradeOptions(grades, [gradeLevelId]),
+    [grades, gradeLevelId]
   );
   const prepared = React.useMemo(
     () => (rows ? prepareQuestionBankImport(rows) : null),

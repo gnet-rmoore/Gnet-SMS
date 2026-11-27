@@ -8,7 +8,7 @@ import {
 
 export type EditSubjectModalProps = {
   subject: any | null;
-  handleUpdateSubject: (id: string, data: any) => Promise<void> | void;
+  handleUpdateSubject: (id: string, data: any) => Promise<boolean>;
   setShowEditSubjectModal: (v: boolean) => void;
   submitting?: boolean;
 };
@@ -25,6 +25,7 @@ export function EditSubjectModal({
     code: "",
     description: "",
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (subject) {
@@ -45,15 +46,20 @@ export function EditSubjectModal({
       code: formData.code.trim().toUpperCase(),
       description: formData.description,
     };
-    await handleUpdateSubject(subject.id, payload);
-    setShowEditSubjectModal(false);
+    setSaving(true);
+    try {
+      const saved = await handleUpdateSubject(subject.id, payload);
+      if (saved) setShowEditSubjectModal(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <FeatureModalShell
       eyebrow={t("curriculum.eyebrow")}
-      title={t("curriculum.subjectModal.editTitle") || t("curriculum.subjects.editSubject")}
-      subtitle={t("curriculum.subjectModal.editSubtitle") || ""}
+      title={t("curriculum.subjectModal.editTitle")}
+      subtitle={t("curriculum.subjectModal.editSubtitle")}
       onClose={() => setShowEditSubjectModal(false)}
     >
       <form id="edit-subject-form" onSubmit={handleSubmit} className="p-8 space-y-5">
@@ -107,10 +113,10 @@ export function EditSubjectModal({
         <button
           type="submit"
           form="edit-subject-form"
-          disabled={submitting}
+          disabled={submitting || saving}
           className="flex-1 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm disabled:opacity-50"
         >
-          {submitting ? t("common:saving") : t("common:save")}
+          {submitting || saving ? t("common:saving") : t("common:save")}
         </button>
       </div>
     </FeatureModalShell>

@@ -65,6 +65,20 @@ assert.deepEqual(
   ]
 );
 
+assert.deepEqual(
+  buildGradeOptions(
+    [
+      { id: "section", name: "Grade 8A" },
+      { id: "parent", name: "Grade 8" },
+    ],
+    ["section"]
+  ).map((grade) => ({ id: grade.id, label: grade.label })),
+  [
+    { id: "section", label: "Grade 8" },
+    { id: "parent", label: "Grade 8" },
+  ]
+);
+
 assert.equal(canonicalSubjectName("Mathematics"), "Mathematics");
 assert.equal(canonicalSubjectName("Grade 8A - Mathematics"), "Mathematics");
 assert.equal(canonicalSubjectName("Mathematics - Grade 9A"), "Mathematics");
@@ -82,6 +96,20 @@ assert.deepEqual(
   [
     { id: "math", label: "Mathematics" },
     { id: "english", label: "English Language" },
+  ]
+);
+
+assert.deepEqual(
+  buildSubjectOptions(
+    [
+      { id: "dirty", name: "Grade 8A - Mathematics" },
+      { id: "math", name: "Mathematics" },
+    ],
+    ["dirty"]
+  ).map((subject) => ({ id: subject.id, label: subject.label })),
+  [
+    { id: "dirty", label: "Mathematics" },
+    { id: "math", label: "Mathematics" },
   ]
 );
 

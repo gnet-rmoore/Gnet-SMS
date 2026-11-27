@@ -110,7 +110,10 @@ export function AdmissionApplicationFields({
   const gradeRequired = mode === "staff" || mode === "public-new";
   const parentRequired = mode === "public-new";
   const changedSet = React.useMemo(() => new Set(changedFields), [changedFields]);
-  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(gradeLevels, [f.gradeLevelId]),
+    [gradeLevels, f.gradeLevelId]
+  );
 
   const fieldLabel = (key: keyof AdmissionApplicationForm) =>
     t(FIELD_LABEL_KEYS[key] || `admissions.manualAdmission.form.field.${key}`);

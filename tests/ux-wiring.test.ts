@@ -34,6 +34,10 @@ const lessonPage = read("src/features/lesson-plans/Page.tsx");
 const publicApply = read("src/pages/PublicApply.tsx");
 const gradebook = read("src/features/gradebook/Page.tsx");
 const curriculumHook = read("src/features/curriculum/hooks/useCurriculumQuery.ts");
+const curriculumPage = read("src/features/curriculum/Page.tsx");
+const curriculumViews = read("src/features/curriculum/components/CurriculumViews.tsx");
+const editSubjectModal = read("src/features/curriculum/components/EditSubjectModal.tsx");
+const enCatalog = read("src/i18n/catalogs/en.ts");
 const schedulePage = read("src/features/class-schedule/Page.tsx");
 const feesPageActions = read("src/features/fees/hooks/usePageActions.ts");
 const applicationReviewModal = read("src/features/registrar/components/ApplicationReviewModal.tsx");
@@ -277,6 +281,26 @@ assert(
   !studentFeesQuery.includes('role === "STUDENT"') &&
     !studentFeesLedgerQuery.includes('role === "STUDENT"'),
   "fee queries do not fetch student-owned views"
+);
+assert(
+  enrollmentPage.includes('useTranslation(["pages", "nav", "common"])') &&
+    enrollmentPage.includes('t("common:allGradeLevels")') &&
+    enCatalog.includes('allGradeLevels: "All Grade Levels"'),
+  "enrollment Grade level filter shows the translated All Grade Levels option"
+);
+assert(
+  !curriculumViews.includes('prompt(t("curriculum.subjects.promptName")') &&
+    curriculumViews.includes("openSubjectEditor(subject)") &&
+    curriculumPage.includes("setEditingSubject={setEditingSubject}") &&
+    curriculumPage.includes("setShowEditSubjectModal={setShowEditSubjectModal}"),
+  "subject cards open the full edit modal"
+);
+assert(
+  editSubjectModal.includes("formData.name") &&
+    editSubjectModal.includes("formData.code") &&
+    editSubjectModal.includes("formData.description") &&
+    editSubjectModal.includes("if (saved) setShowEditSubjectModal(false)"),
+  "subject editor covers name, code, and description"
 );
 
 console.log("");

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { PageShell } from "../../components/ui";
@@ -31,6 +32,7 @@ import { hasCapabilityOrRole } from "../../lib/capabilities";
 
 export const Registrar = () => {
   const { t } = useTranslation("pages");
+  const [searchParams] = useSearchParams();
   const { school, accessToken, user, capabilities } = useAuthStore();
   const {
     students,
@@ -80,13 +82,17 @@ export const Registrar = () => {
   }, [activeTab, school?.id]);
 
   // Search & Filters
+  const selectedGradeFilterIds = useMemo(() => {
+    const value = searchParams.get("gradeLevelId");
+    return value ? [value] : [];
+  }, [searchParams]);
   const gradeFilterOptions = useMemo(
     () =>
-      buildGradeOptions(gradeLevels).map((gl) => ({
+      buildGradeOptions(gradeLevels, selectedGradeFilterIds).map((gl) => ({
         value: gl.id,
         label: gl.label,
       })),
-    [gradeLevels]
+    [gradeLevels, selectedGradeFilterIds]
   );
   const directoryFilterFields: FilterFieldDef[] = useMemo(
     () => [

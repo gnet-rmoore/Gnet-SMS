@@ -147,6 +147,7 @@ export const arResources = {
     "female": "أنثى",
     "other": "آخر",
     "gradeLevel": "المستوى الدراسي",
+    "allGradeLevels": "جميع المستويات الدراسية",
     "saving": "جارٍ الحفظ…",
     "copied": "تم النسخ",
     "preview": "معاينة",
@@ -2217,6 +2218,8 @@ export const arResources = {
       "subjectModal": {
         "title": "إضافة مادة",
         "subtitle": "Define a subject and assign it to all class groups in a grade level.",
+        "editTitle": "تعديل المادة",
+        "editSubtitle": "حدّث اسم المادة ورمزها ووصفها.",
         "subjectName": "اسم المادة",
         "subjectCode": "رمز المادة",
         "namePlaceholder": "مثال: الرياضيات المتقدمة",

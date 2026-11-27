@@ -97,7 +97,9 @@ export function SyllabusBuilderModal({
   const { t } = useTranslation(["pages", "common"]);
 
   const subjectOptions = useMemo(() => {
-    if (!isTeacherScoped || !teachingScope) return buildSubjectOptions<any>(subjects);
+    if (!isTeacherScoped || !teachingScope) {
+      return buildSubjectOptions<any>(subjects, [syllabusForm.subjectId]);
+    }
     let list = teachingScope.subjects;
     if (syllabusForm.gradeLevelId) {
       const allowed = new Set(
@@ -105,16 +107,19 @@ export function SyllabusBuilderModal({
       );
       list = list.filter((s) => allowed.has(s.id));
     }
-    return buildSubjectOptions<any>(list);
+    return buildSubjectOptions<any>(list, [syllabusForm.subjectId]);
   }, [
     isTeacherScoped,
     teachingScope,
     subjects,
     syllabusForm.gradeLevelId,
+    syllabusForm.subjectId,
   ]);
 
   const gradeOptions = useMemo(() => {
-    if (!isTeacherScoped || !teachingScope) return buildGradeOptions(gradeLevels);
+    if (!isTeacherScoped || !teachingScope) {
+      return buildGradeOptions(gradeLevels, [syllabusForm.gradeLevelId]);
+    }
     let list = teachingScope.gradeLevels;
     if (syllabusForm.subjectId) {
       const allowed = new Set(
@@ -122,12 +127,13 @@ export function SyllabusBuilderModal({
       );
       list = list.filter((g) => allowed.has(g.id));
     }
-    return buildGradeOptions(list);
+    return buildGradeOptions(list, [syllabusForm.gradeLevelId]);
   }, [
     isTeacherScoped,
     teachingScope,
     gradeLevels,
     syllabusForm.subjectId,
+    syllabusForm.gradeLevelId,
   ]);
 
   const teacherHasNoRooms =

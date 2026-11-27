@@ -43,7 +43,7 @@ export function SubjectModal({
   teachers,
 }: SubjectModalProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const gradeOptions = buildGradeOptions(gradeLevels);
+  const gradeOptions = buildGradeOptions(gradeLevels, [subjectGradeLevelId]);
 
   const close = () => {
     setShowSubjectModal(false);

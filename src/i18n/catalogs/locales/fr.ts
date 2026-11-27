@@ -147,6 +147,7 @@ export const frResources = {
     "female": "Féminin",
     "other": "Autre",
     "gradeLevel": "Niveau scolaire",
+    "allGradeLevels": "Tous les niveaux scolaires",
     "saving": "Enregistrement…",
     "copied": "Copié",
     "preview": "Aperçu",
@@ -2217,6 +2218,8 @@ export const frResources = {
       "subjectModal": {
         "title": "Ajouter une matière",
         "subtitle": "Define a subject and assign it to all class groups in a grade level.",
+        "editTitle": "Modifier la matière",
+        "editSubtitle": "Mettez à jour le nom, le code et la description de la matière.",
         "subjectName": "Nom de la matière",
         "subjectCode": "Code de la matière",
         "namePlaceholder": "p. ex. Mathématiques avancées",

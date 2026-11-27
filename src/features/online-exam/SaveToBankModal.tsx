@@ -80,8 +80,8 @@ export function SaveToBankModal({
 
   if (!open) return null;
 
-  const subjectOptions = buildSubjectOptions(subjects);
-  const gradeOptions = buildGradeOptions(grades);
+  const subjectOptions = buildSubjectOptions(subjects, [subjectId]);
+  const gradeOptions = buildGradeOptions(grades, [gradeLevelId]);
 
   const toggle = (i: number) => {
     setSelected((prev) => {

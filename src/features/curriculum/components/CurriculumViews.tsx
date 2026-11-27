@@ -34,7 +34,6 @@ export type CurriculumViewsProps = {
   handleDeleteSyllabus?: any;
   handleSeedGradeLevels?: any;
   handleUpdateGradeLevel?: any;
-  handleUpdateSubject?: any;
   school?: any;
   searchTerm?: any;
   setActiveDropdown?: any;
@@ -42,7 +41,9 @@ export type CurriculumViewsProps = {
   setSelectedGradeLevel?: any;
   setSelectedSubject?: any;
   setSelectedSyllabus?: any;
+  setEditingSubject?: (subject: any) => void;
   setShowGradeModal?: any;
+  setShowEditSubjectModal?: (show: boolean) => void;
   setShowManageSubjectsModal?: any;
   setShowSyllabusModal?: any;
   setShowSyllabusViewModal?: any;
@@ -76,7 +77,6 @@ export function CurriculumViews({
   handleDeleteSyllabus,
   handleSeedGradeLevels,
   handleUpdateGradeLevel,
-  handleUpdateSubject,
   school,
   searchTerm,
   setActiveDropdown,
@@ -104,6 +104,12 @@ export function CurriculumViews({
   user,
 }: CurriculumViewsProps) {
   const { t } = useTranslation(["pages", "common"]);
+
+  const openSubjectEditor = (subject: any) => {
+    if (!canManage) return;
+    setEditingSubject?.(subject);
+    setShowEditSubjectModal?.(true);
+  };
 
   const visibleSyllabi = useMemo(() => {
     if (user?.role !== "TEACHER") return syllabi;
@@ -397,17 +403,7 @@ export function CurriculumViews({
                           <div className="flex items-center gap-2 mb-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                if (!canManage) return;
-                                const newName = prompt(t("curriculum.subjects.promptName"), subject.name);
-                                const newCode = prompt(t("curriculum.subjects.promptCode"), subject.code);
-                                if (newName || newCode) {
-                                  handleUpdateSubject(subject.id, { 
-                                    name: newName?.trim() || subject.name, 
-                                    code: (newCode?.trim() || subject.code).toUpperCase() 
-                                  });
-                                }
-                              }}
+                              onClick={() => openSubjectEditor(subject)}
                               className="font-bold text-slate-900 text-left hover:text-indigo-600 transition-colors"
                               title={canManage ? t("curriculum.subjects.editSubject") : undefined}
                             >
@@ -415,17 +411,7 @@ export function CurriculumViews({
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                if (!canManage) return;
-                                const newName = prompt(t("curriculum.subjects.promptName"), subject.name);
-                                const newCode = prompt(t("curriculum.subjects.promptCode"), subject.code);
-                                if (newName || newCode) {
-                                  handleUpdateSubject(subject.id, { 
-                                    name: newName?.trim() || subject.name, 
-                                    code: (newCode?.trim() || subject.code).toUpperCase() 
-                                  });
-                                }
-                              }}
+                              onClick={() => openSubjectEditor(subject)}
                               className="text-xs font-extrabold text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
                               title={canManage ? t("curriculum.subjects.editSubject") : undefined}
                             >
@@ -438,21 +424,7 @@ export function CurriculumViews({
                       {canManage && (
                         <button
                           type="button"
-                          onClick={() => {
-                            if (setEditingSubject && setShowEditSubjectModal) {
-                              setEditingSubject(subject);
-                              setShowEditSubjectModal(true);
-                            } else {
-                              const newName = prompt(t("curriculum.subjects.promptName"), subject.name);
-                              const newCode = prompt(t("curriculum.subjects.promptCode"), subject.code);
-                              if (newName || newCode) {
-                                handleUpdateSubject(subject.id, { 
-                                  name: newName?.trim() || subject.name, 
-                                  code: (newCode?.trim() || subject.code).toUpperCase() 
-                                });
-                              }
-                            }
-                          }}
+                          onClick={() => openSubjectEditor(subject)}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title={t("curriculum.subjects.editSubject")}
                         >

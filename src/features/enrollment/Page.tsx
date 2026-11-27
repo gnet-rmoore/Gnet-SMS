@@ -72,7 +72,7 @@ type BulkAssignmentResult = {
 };
 
 export function EnrollmentPage() {
-  const { t } = useTranslation(["pages", "nav"]);
+  const { t } = useTranslation(["pages", "nav", "common"]);
   const { school } = useAuthStore();
   const slug = school?.slug || "";
   const { toast, showToast } = usePageToast();
@@ -100,8 +100,6 @@ export function EnrollmentPage() {
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [students, gradeLevels]);
-  const gradeOptions = useMemo(() => buildGradeOptions(availableGrades), [availableGrades]);
-
   // Paged student fetching
   const studentFilterFields: FilterFieldDef[] = useMemo(
     () => [
@@ -118,6 +116,10 @@ export function EnrollmentPage() {
   );
 
   const studentFilters = useListFilters({ fields: studentFilterFields, syncUrl: true, defaultPageSize: 50 });
+  const gradeOptions = useMemo(
+    () => buildGradeOptions(availableGrades, [studentFilters.values.gradeLevelId]),
+    [availableGrades, studentFilters.values.gradeLevelId]
+  );
   const [totalStudents, setTotalStudents] = useState(0);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);

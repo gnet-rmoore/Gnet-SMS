@@ -74,7 +74,14 @@ export function YearTransitionPage() {
   const [targetYearKey, setTargetYearKey] = React.useState(() => nextYearKey(defaultYearKey()));
   const [transitioning, setTransitioning] = React.useState(false);
   const [transitionResult, setTransitionResult] = React.useState<YearTransitionResult | null>(null);
-  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const gradeOptions = React.useMemo(
+    () =>
+      buildGradeOptions(
+        gradeLevels,
+        (activeRun?.decisions ?? []).map((decision) => decision.toGradeLevelId)
+      ),
+    [gradeLevels, activeRun?.decisions]
+  );
 
   React.useEffect(() => {
     setTargetYearKey(nextYearKey(yearKey));

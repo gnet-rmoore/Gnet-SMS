@@ -147,6 +147,7 @@ export const hiResources = {
     "female": "महिला",
     "other": "अन्य",
     "gradeLevel": "ग्रेड स्तर",
+    "allGradeLevels": "सभी ग्रेड स्तर",
     "saving": "सहेजा जा रहा है…",
     "copied": "कॉपी किया गया",
     "preview": "पूर्वावलोकन",
@@ -2217,6 +2218,8 @@ export const hiResources = {
       "subjectModal": {
         "title": "विषय जोड़ें",
         "subtitle": "Define a subject and assign it to all class groups in a grade level.",
+        "editTitle": "विषय संपादित करें",
+        "editSubtitle": "विषय का नाम, कोड और विवरण अपडेट करें।",
         "subjectName": "विषय नाम",
         "subjectCode": "विषय कोड",
         "namePlaceholder": "उदाहरण: उन्नत गणित",

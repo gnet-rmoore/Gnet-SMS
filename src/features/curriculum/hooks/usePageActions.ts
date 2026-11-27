@@ -740,7 +740,7 @@ export function usePageActions(deps: PageActionsDeps) {
         payload.name = String(data.name).trim();
         if (isComposedSubjectName(payload.name)) {
           showToast(subjectNameError(), "error");
-          return;
+          return false;
         }
       }
       if (data.code !== undefined) payload.code = String(data.code).trim().toUpperCase();
@@ -748,6 +748,7 @@ export function usePageActions(deps: PageActionsDeps) {
       await curriculumApi.updateSubject(id, payload);
       await fetchData();
       showToast((t as any)("curriculum.toast.subjectUpdated") || "Subject updated", "success");
+      return true;
     } catch (err: any) {
       console.error(err);
       showToast(
@@ -756,6 +757,7 @@ export function usePageActions(deps: PageActionsDeps) {
           : err?.message || t("curriculum.toast.subjectUpdateFailed"),
         "error"
       );
+      return false;
     }
   };
 

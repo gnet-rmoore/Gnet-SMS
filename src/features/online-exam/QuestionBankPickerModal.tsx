@@ -105,8 +105,8 @@ export function QuestionBankPickerModal({ schoolId, open, onClose, onInsert }: P
 
   if (!open) return null;
 
-  const subjectOptions = buildSubjectOptions(subjects);
-  const gradeOptions = buildGradeOptions(grades);
+  const subjectOptions = buildSubjectOptions(subjects, [subjectId]);
+  const gradeOptions = buildGradeOptions(grades, [gradeLevelId]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {

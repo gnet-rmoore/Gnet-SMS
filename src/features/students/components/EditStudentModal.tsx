@@ -33,7 +33,10 @@ export function EditStudentModal({
   onPhotoChange,
 }: EditStudentModalProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(gradeLevels, [editStudent?.gradeLevelId]),
+    [gradeLevels, editStudent?.gradeLevelId]
+  );
   const sectionClass =
     "border-b border-slate-100 pb-3 text-sm font-extrabold tracking-tight text-slate-900";
   const controlClass = `${fieldInput} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70`;

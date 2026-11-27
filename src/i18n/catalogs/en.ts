@@ -177,6 +177,7 @@ export const enCommon = {
   female: "Female",
   other: "Other",
   gradeLevel: "Grade level",
+  allGradeLevels: "All Grade Levels",
   saving: "Saving…",
   copied: "Copied",
   preview: "Preview",
@@ -2746,6 +2747,8 @@ export const enPages = {
     subjectModal: {
       title: "Add subject",
       subtitle: "Define a subject and assign it to all class groups in a grade level.",
+      editTitle: "Edit subject",
+      editSubtitle: "Update the subject name, code, and description.",
       subjectName: "Subject name",
       subjectCode: "Subject code",
       namePlaceholder: "e.g. Advanced Mathematics",

@@ -147,6 +147,7 @@ export const zhHansResources = {
     "female": "女",
     "other": "其他",
     "gradeLevel": "年级",
+    "allGradeLevels": "所有年级",
     "saving": "保存中…",
     "copied": "已复制",
     "preview": "预览",
@@ -2217,6 +2218,8 @@ export const zhHansResources = {
       "subjectModal": {
         "title": "添加科目",
         "subtitle": "Define a subject and assign it to all class groups in a grade level.",
+        "editTitle": "编辑科目",
+        "editSubtitle": "更新科目名称、代码和描述。",
         "subjectName": "科目名称",
         "subjectCode": "科目代码",
         "namePlaceholder": "例如：高等数学",
