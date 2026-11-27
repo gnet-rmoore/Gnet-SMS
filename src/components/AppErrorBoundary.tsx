@@ -1,5 +1,6 @@
 import React from "react";
 import ServerErrorPage from "../pages/errors/ServerErrorPage";
+import ConnectionStatusPage, { isNetworkFailure } from "../pages/errors/ConnectionStatusPage";
 
 type Props = {
   children: React.ReactNode;
@@ -10,7 +11,8 @@ type State = {
 };
 
 /**
- * Catches render and lazy-chunk failures and shows the branded 500 page.
+ * Catches render and lazy-chunk failures, showing the connection status page
+ * for network problems and the branded 500 page for application errors.
  */
 export class AppErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };
@@ -31,6 +33,12 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.error) {
+      if (
+        isNetworkFailure(this.state.error) ||
+        (typeof navigator !== "undefined" && !navigator.onLine)
+      ) {
+        return <ConnectionStatusPage onRetry={this.clear} />;
+      }
       return <ServerErrorPage error={this.state.error} onRetry={this.clear} />;
     }
     return this.props.children;

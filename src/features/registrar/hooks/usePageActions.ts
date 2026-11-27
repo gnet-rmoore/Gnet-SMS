@@ -6,6 +6,7 @@ import { ApiError } from "../../../services/api";
 import { confirmAction } from "../../../lib/swal";
 import { buildAdmissionApiPayload, emptyManualAdmissionForm } from "../lib/manualAdmissionForm";
 import { persistUserPhoto } from "../../../lib/persistUserPhoto";
+import { canonicalGradeName } from "../../academics-shared/gradeSubjectLabels";
 
 export type PageActionsDeps = {
   school: any;
@@ -332,9 +333,11 @@ export function usePageActions(deps: PageActionsDeps) {
     try {
       const existingStudentId = String(manualAdmissionForm.existingStudentId || "").trim() || null;
       const gradeLevelName =
-        (Array.isArray(gradeLevels)
-          ? gradeLevels.find((g: any) => g.id === manualAdmissionForm.gradeLevelId)?.name
-          : null) || null;
+        canonicalGradeName(
+          Array.isArray(gradeLevels)
+            ? gradeLevels.find((g: any) => g.id === manualAdmissionForm.gradeLevelId)?.name
+            : null
+        ) || null;
       const payload = buildAdmissionApiPayload({
         form: manualAdmissionForm,
         applicantType: existingStudentId ? "RETURNING" : "NEW",

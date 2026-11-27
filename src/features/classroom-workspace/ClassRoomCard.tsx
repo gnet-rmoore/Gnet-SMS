@@ -5,6 +5,11 @@ import { ArrowRight, Clock, FileText, Users } from "lucide-react";
 import { UserAvatar } from "../../components/UserAvatar";
 import { getTeachersForClassGroup } from "../classrooms/utils";
 import type { ClassroomSummary } from "./types";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+  subjectRoomLabel,
+} from "../academics-shared/gradeSubjectLabels";
 
 export type ClassDurationInfo = {
   /** e.g. "45 min" or "40–50 min" */
@@ -46,12 +51,12 @@ export function ClassRoomCard({
   const postCount = room._count?.posts ?? 0;
 
   const categoryPills = studentView ? [] : [kindLabel];
-  if (!studentView && room.subject?.name) categoryPills.push(room.subject.name);
-  else if (!studentView && room.gradeLevel?.name) categoryPills.push(room.gradeLevel.name);
+  if (!studentView && room.subject?.name) categoryPills.push(canonicalSubjectName(room.subject.name));
+  else if (!studentView && room.gradeLevel?.name) categoryPills.push(canonicalGradeName(room.gradeLevel.name));
 
   const metaChips: string[] = [];
   if (room.subject?.name && room.gradeLevel?.name) {
-    metaChips.push(room.gradeLevel.name);
+    metaChips.push(canonicalGradeName(room.gradeLevel.name));
   }
   const visibleChips = metaChips.slice(0, 3);
   const extraChips = Math.max(0, metaChips.length - visibleChips.length);
@@ -78,7 +83,9 @@ export function ClassRoomCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 line-clamp-2 leading-snug">
-              {studentView ? room.subject?.name || room.name : room.name}
+              {studentView
+                ? canonicalSubjectName(room.subject?.name) || room.name
+                : subjectRoomLabel(room.name, room.subject?.name)}
             </h2>
             {room.classCode ? (
               <span className="shrink-0 text-xs font-mono text-slate-400 pt-0.5">

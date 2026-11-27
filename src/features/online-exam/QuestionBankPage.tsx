@@ -11,6 +11,12 @@ import { QuestionBankEditorModal } from "./QuestionBankEditorModal";
 import { QuestionBankImportModal } from "./QuestionBankImportModal";
 import { downloadQuestionTemplate } from "./parseQuestionSheet";
 import { fieldInput, fieldSelect } from "../academics-shared/FeatureModalShell";
+import {
+  buildGradeOptions,
+  buildSubjectOptions,
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../academics-shared/gradeSubjectLabels";
 import { DetailDrawerShell } from "../../components/ui";
 import { workspaceApi } from "../classroom-workspace/api";
 import { buildTeachingScope } from "../curriculum/teacherTeachingScope";
@@ -55,6 +61,14 @@ export default function QuestionBankPage() {
   );
   const visibleSubjects = teacherScope?.subjects || subjects;
   const visibleGrades = teacherScope?.gradeLevels || grades;
+  const subjectOptions = React.useMemo(
+    () => buildSubjectOptions(visibleSubjects),
+    [visibleSubjects]
+  );
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(visibleGrades),
+    [visibleGrades]
+  );
   const canManage = (item: BankItem) =>
     isStaff &&
     (item.createdBy === user?.id ||
@@ -109,8 +123,10 @@ export default function QuestionBankPage() {
     };
   }, [schoolId, user?.role]);
 
-  const subjectName = (id: string | null) => subjects.find((s) => s.id === id)?.name || "";
-  const gradeName = (id: string | null) => grades.find((g) => g.id === id)?.name || "";
+  const subjectName = (id: string | null) =>
+    canonicalSubjectName(subjects.find((s) => s.id === id)?.name);
+  const gradeName = (id: string | null) =>
+    canonicalGradeName(grades.find((g) => g.id === id)?.name);
 
   const openNew = () => {
     setEditing(null);
@@ -204,17 +220,17 @@ export default function QuestionBankPage() {
           </div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className={fieldSelect}>
             <option value="">{t("onlineExams.questionBank.allSubjects")}</option>
-            {visibleSubjects.map((s) => (
+            {subjectOptions.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {s.label}
               </option>
             ))}
           </select>
           <select value={gradeLevelId} onChange={(e) => setGradeLevelId(e.target.value)} className={fieldSelect}>
             <option value="">{t("onlineExams.questionBank.allGrades")}</option>
-            {visibleGrades.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.name}
+                {g.label}
               </option>
             ))}
           </select>

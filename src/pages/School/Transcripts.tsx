@@ -38,6 +38,7 @@ import {
   SAMPLE_TRANSCRIPT_RECORDS,
   TranscriptPreview,
 } from "../../features/transcripts/components/TranscriptPreview";
+import { canonicalGradeName } from "../../features/academics-shared/gradeSubjectLabels";
 
 const PREPARE_ROLES = ["SCHOOL_ADMIN", "REGISTRAR"];
 const APPROVE_ROLES = ["SCHOOL_ADMIN", "PRINCIPAL", "VPI", "VPA"];
@@ -164,15 +165,17 @@ export const Transcripts = () => {
   const gradeNameById = useMemo(() => {
     const map = new Map<string, string>();
     for (const level of gradeLevels) {
-      if (level?.id) map.set(level.id, level.name);
+      if (level?.id) map.set(level.id, canonicalGradeName(level.name));
     }
     return map;
   }, [gradeLevels]);
   const studentGradeLevel = (student: StudentOption): string =>
-    (student.gradeLevelId ? gradeNameById.get(student.gradeLevelId) : undefined) ||
-    student.gradeLevel?.name ||
-    latest.get(student.id)?.gradeLevel ||
-    "";
+    canonicalGradeName(
+      (student.gradeLevelId ? gradeNameById.get(student.gradeLevelId) : undefined) ||
+        student.gradeLevel?.name ||
+        latest.get(student.id)?.gradeLevel ||
+        ""
+    );
   const pending = useMemo(() => records.filter((r) => r.status === "SUBMITTED"), [records]);
   const approved = useMemo(() => records.filter((r) => r.status === "APPROVED"), [records]);
   const returned = useMemo(() => records.filter((r) => r.status === "REJECTED"), [records]);
@@ -698,7 +701,7 @@ export const Transcripts = () => {
                   <div className="min-w-0">
                     <p className="font-bold text-slate-800 text-sm truncate">{prepareFor.name}</p>
                     <p className="text-xs text-slate-500 font-semibold truncate">
-                      {prepareFor.email || tr("noEmail")} · {prepareFor.gradeLevel?.name || tr("unassigned")}
+                      {prepareFor.email || tr("noEmail")} · {canonicalGradeName(prepareFor.gradeLevel?.name) || tr("unassigned")}
                     </p>
                   </div>
                 </div>
@@ -940,7 +943,7 @@ export const Transcripts = () => {
                             id: detail.studentId,
                             name: detail.studentName,
                             email: detail.studentEmail,
-                            gradeLevel: detail.gradeLevel ? { name: detail.gradeLevel } : null,
+                            gradeLevel: detail.gradeLevel ? { name: canonicalGradeName(detail.gradeLevel) } : null,
                           };
                         setDetail(null);
                         openPrepare(student);

@@ -3,6 +3,7 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { buildGradeOptions, buildSubjectOptions } from "../academics-shared/gradeSubjectLabels";
 import { alertError, confirmAction } from "../../lib/swal";
 import { questionBankApi, type BankItem, type BankVisibility } from "./api";
 import { fromApiQuestions, toApiQuestions } from "./mappers";
@@ -146,6 +147,9 @@ export function QuestionBankEditorModal({
   }, [busy, isDirty, onClose, t]);
 
   if (!open) return null;
+
+  const subjectOptions = buildSubjectOptions(subjects);
+  const gradeOptions = buildGradeOptions(grades);
 
   const patch = (next: Partial<DraftQuestion>) => setDraft((prev) => ({ ...prev, ...next }));
 
@@ -374,9 +378,9 @@ export function QuestionBankEditorModal({
                   className={`${fieldSelect} mt-1.5`}
                 >
                   <option value="">{q("noSubject")}</option>
-                  {subjects.map((s) => (
+                  {subjectOptions.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {s.label}
                     </option>
                   ))}
                 </select>
@@ -389,9 +393,9 @@ export function QuestionBankEditorModal({
                   className={`${fieldSelect} mt-1.5`}
                 >
                   <option value="">{q("noGrade")}</option>
-                  {grades.map((g) => (
+                  {gradeOptions.map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.name}
+                      {g.label}
                     </option>
                   ))}
                 </select>

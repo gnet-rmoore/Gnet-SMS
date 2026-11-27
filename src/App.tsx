@@ -50,6 +50,7 @@ const NotFoundPage = lazy(() => import("./pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("./pages/errors/ForbiddenPage"));
 const ServerErrorPage = lazy(() => import("./pages/errors/ServerErrorPage"));
 const OfflinePage = lazy(() => import("./pages/errors/OfflinePage"));
+const ConnectionStatusPage = lazy(() => import("./pages/errors/ConnectionStatusPage"));
 const MockCheckoutPage = lazy(() => import("./pages/MockCheckout"));
 const SchoolOnboardingPage = lazy(() => import("./pages/School/Onboarding"));
 const PlatformGuidePage = lazy(() => import("./features/platform-guide/Page"));
@@ -254,6 +255,7 @@ export default function App() {
         <Route path="/forbidden" element={<ForbiddenPage />} />
         <Route path="/error" element={<ServerErrorPage />} />
         <Route path="/offline" element={<OfflinePage />} />
+        <Route path="/connection" element={<ConnectionStatusPage />} />
         <Route path="/register-school" element={<RegisterSchoolPage />} />
         <Route path="/register-school/confirm" element={<RegisterSchoolPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

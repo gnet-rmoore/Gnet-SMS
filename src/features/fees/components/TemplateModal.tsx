@@ -7,6 +7,7 @@ import {
   fieldSelect,
 } from "../../academics-shared/FeatureModalShell";
 import { MoneyInput } from "../../../components/MoneyInput";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 import { FEE_TYPES } from "../types";
 
 export type TemplateModalProps = {
@@ -34,6 +35,7 @@ export function TemplateModal({
 }: TemplateModalProps) {
   const { t } = useTranslation(["pages", "common"]);
   const scopeMode = templateForm.scopeMode || "SCHOOL";
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
 
   React.useEffect(() => {
     const defaultForm = {
@@ -185,9 +187,9 @@ export function TemplateModal({
               required
             >
               <option value="">{t("pages:fees.selectGrade")}</option>
-              {gradeLevels.map((g) => (
+              {gradeOptions.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.name}
+                  {g.label}
                 </option>
               ))}
             </select>

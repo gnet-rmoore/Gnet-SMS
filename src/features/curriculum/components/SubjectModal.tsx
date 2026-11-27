@@ -6,6 +6,7 @@ import {
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
 import { buildSectionSubjectCode } from "../../academics-shared/sectionSubjectCode";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 
 export type SubjectModalProps = {
   addSubjectClassTeachers?: any;
@@ -42,6 +43,7 @@ export function SubjectModal({
   teachers,
 }: SubjectModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const gradeOptions = buildGradeOptions(gradeLevels);
 
   const close = () => {
     setShowSubjectModal(false);
@@ -104,9 +106,9 @@ export function SubjectModal({
             className={fieldInput}
           >
             <option value="">{t("curriculum.subjectModal.doNotAssign")}</option>
-            {gradeLevels.map((gl: any) => (
+            {gradeOptions.map((gl) => (
               <option key={gl.id} value={gl.id}>
-                {gl.name}
+                {gl.label}
               </option>
             ))}
           </select>

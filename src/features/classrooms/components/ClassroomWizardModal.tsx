@@ -8,6 +8,10 @@ import {
   requiresSpecialistTeacher,
   resolveSubjectTeacherId,
 } from "../../academics-shared/subjectTeacherAssignment";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type ClassroomWizardModalProps = {
   classrooms: any[];
@@ -274,7 +278,7 @@ export function ClassroomWizardModal({
                     <option value="">{t("classrooms.assignSubject.selectSubject")}</option>
                     {subjects.map((sub) => (
                       <option key={sub.id} value={sub.id}>
-                        {sub.name}
+                        {canonicalSubjectName(sub.name)}
                         {sub.code ? ` (${sub.code})` : ""}
                       </option>
                     ))}
@@ -382,7 +386,7 @@ export function ClassroomWizardModal({
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-slate-900 truncate">{classGroup.name}</p>
                             <p className="text-xs text-slate-500 font-medium">
-                              {classGroup.gradeLevel?.name || t("classrooms.wizard.noGrade")} ·{" "}
+                              {canonicalGradeName(classGroup.gradeLevel?.name) || t("classrooms.wizard.noGrade")} ·{" "}
                               {orgLabel(classGroup)}
                             </p>
                           </div>
@@ -444,7 +448,7 @@ export function ClassroomWizardModal({
                     {classGroups.map((classGroup) => (
                       <option key={classGroup.id} value={classGroup.id}>
                         {classGroup.name}
-                        {classGroup.gradeLevel?.name ? ` · ${classGroup.gradeLevel.name}` : ""} ·{" "}
+                        {classGroup.gradeLevel?.name ? ` · ${canonicalGradeName(classGroup.gradeLevel.name)}` : ""} ·{" "}
                         {orgLabel(classGroup)}
                       </option>
                     ))}
@@ -510,7 +514,7 @@ export function ClassroomWizardModal({
                             className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                           />
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 truncate">{subject.name}</p>
+                            <p className="text-sm font-bold text-slate-900 truncate">{canonicalSubjectName(subject.name)}</p>
                             {subject.code && (
                               <p className="text-xs text-slate-500 font-mono">{subject.code}</p>
                             )}

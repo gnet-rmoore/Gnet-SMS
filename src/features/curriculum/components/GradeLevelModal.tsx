@@ -5,6 +5,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import { gradeLevelNameIssue } from "../../../../services/academic/src/lib/gradeLevelName";
 
 export type GradeLevelModalProps = {
   gradeForm?: any;
@@ -36,6 +37,17 @@ export function GradeLevelModal({
     if (name.length < 2) {
       e.preventDefault();
       setLocalError(t("curriculum.gradeLevelModal.nameTooShort", { defaultValue: "Grade level name must be at least 2 characters." }));
+      return;
+    }
+    const issue = gradeLevelNameIssue(name);
+    if (issue === "composed") {
+      e.preventDefault();
+      setLocalError(t("curriculum.gradeLevelModal.noComposedNames", { defaultValue: "Use a plain grade level like \"Grade 8\"; create sections like \"Grade 8A\" as class groups." }));
+      return;
+    }
+    if (issue === "section") {
+      e.preventDefault();
+      setLocalError(t("curriculum.gradeLevelModal.noSectionNames", { defaultValue: "Use a plain grade level like \"Grade 8\"; create sections like \"Grade 8A\" as class groups." }));
       return;
     }
     if (handleCreateGradeLevel) {

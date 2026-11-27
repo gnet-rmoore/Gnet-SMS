@@ -1,4 +1,5 @@
 import type { ApplicationReviewModalProps } from "../components/ApplicationReviewModal";
+import { canonicalGradeName } from "../../academics-shared/gradeSubjectLabels";
 
 export type AdmissionStage = "SUBMITTED" | "REVIEW" | "ENTRANCE" | "APPROVED" | "ENROLLED" | "TERMINAL";
 export type StepperStage = Exclude<AdmissionStage, "TERMINAL">;
@@ -174,7 +175,7 @@ export function getStageHistorySummary(stage: BrowsableStage, snapshot: Partial<
     rows.push({ labelKey: "admissions.review.stage.summary.decision", value: String(app.status || "PENDING") });
     rows.push({ labelKey: "admissions.review.gender", value: String(app.gender || "-") });
     rows.push({ labelKey: "admissions.review.dateOfBirth", value: app.dob ? String(app.dob).slice(0, 10) : "-" });
-    if (app.gradeLevel?.name || app.gradeLevelName) rows.push({ labelKey: "admissions.review.appliedGrade", value: String(app.gradeLevel?.name || app.gradeLevelName) });
+    if (app.gradeLevel?.name || app.gradeLevelName) rows.push({ labelKey: "admissions.review.appliedGrade", value: canonicalGradeName(app.gradeLevel?.name || app.gradeLevelName) });
     if (app.address) rows.push({ labelKey: "admissions.review.homeAddress", value: String(app.address) });
     rows.push({ labelKey: "admissions.review.guardianDetails", value: String(app.parentName || "-") });
     rows.push({ labelKey: "admissions.review.stage.summary.documents", value: String(docs.length) });

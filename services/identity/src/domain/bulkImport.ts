@@ -802,8 +802,8 @@ function csvField(value: string | undefined | null): string {
 
 export function studentImportTemplateCsv(): string {
   return [
-    "name,email,studentIdNumber,gradeLevel,dob,gender,phone,address,parentName,parentPhone,parentEmail,parent2Name,parent2Phone,parent2Email,feeCohort,classroomCode,documents,customFields",
-    "Ada Lovelace,ada.lovelace@example.com,100456,Grade 7,2012-12-10,FEMALE,,,Ada Parent,+2315550001,parent.ada@example.com,Second Parent,+2315550002,second.ada@example.com,NEW,7A,\"[\"\"/docs/ada-id.pdf\"\"]\",\"{\"\"house\"\":\"\"Blue\"\"}\"",
+    "name,email,studentIdNumber,gradeLevel,feeCohort,classroomCode",
+    "Ada Lovelace,ada.lovelace@example.com,100456,Grade 7,NEW,7A",
   ].join("\n");
 }
 

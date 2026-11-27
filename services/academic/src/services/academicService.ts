@@ -15,6 +15,10 @@ import {
   provisionSubjectRoomsForOffering,
 } from "../lib/classroomClient";
 import { resolveActiveCalendarPattern } from "../lib/activeCalendar";
+import {
+  assertValidGradeLevelName,
+  assertValidSubjectName,
+} from "../lib/gradeLevelName";
 
 /**
  * Ported from src/server/services/academicService.ts.
@@ -347,6 +351,7 @@ export const academicService = {
     const trimmedName = name.trim();
     if (!trimmedName) throw new Error("Grade level name is required");
     if (!schoolId) throw new Error("School ID is required");
+    assertValidGradeLevelName(trimmedName);
 
     const schoolLevels = await prisma.gradeLevel.findMany({ where: { schoolId } });
     const exists = schoolLevels.some((l) => l.name.toLowerCase() === trimmedName.toLowerCase());
@@ -412,6 +417,7 @@ export const academicService = {
     if (!trimmedName) throw new Error("Subject name is required");
     if (!trimmedCode) throw new Error("Subject code is required");
     if (!schoolId) throw new Error("School ID is required");
+    assertValidSubjectName(trimmedName);
 
     const schoolSubjects = await prisma.subject.findMany({ where: { schoolId } });
     const exists = schoolSubjects.some(
@@ -442,6 +448,7 @@ export const academicService = {
 
     const existing = await prisma.subject.findUnique({ where: { id } });
     if (!existing) throw new Error("Subject not found");
+    if (trimmedName !== existing.name) assertValidSubjectName(trimmedName);
 
     const schoolSubjects = await prisma.subject.findMany({ where: { schoolId: existing.schoolId } });
     const exists = schoolSubjects.some(

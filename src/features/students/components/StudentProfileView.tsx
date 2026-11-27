@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { SMS_SHADOW_SURFACE } from "../../../components/ui";
 import { cn } from "../../../lib/cn";
+import { canonicalGradeName } from "../../academics-shared/gradeSubjectLabels";
 
 export type StudentProfileStudent = {
   id: string;
@@ -131,10 +132,9 @@ export function StudentProfileView({
   const { t } = useTranslation(["pages", "common"]);
   const p = (key: string, opts?: Record<string, unknown>) =>
     t(`studentProfile.${key}`, opts);
-  const grade =
-    gradeLabel ||
-    student.gradeLevel?.name ||
-    p("unassignedGrade");
+  const grade = canonicalGradeName(
+    gradeLabel || student.gradeLevel?.name || p("unassignedGrade")
+  );
 
   const demographics: InfoRow[] = [
     { label: p("officialName"), value: student.name || "—" },

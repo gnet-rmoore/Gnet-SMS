@@ -15,6 +15,10 @@ import {
   PlusCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type CurriculumViewsProps = {
   activeDropdown?: any;
@@ -251,10 +255,10 @@ export function CurriculumViews({
                             <div>
                               <div className="flex flex-wrap items-center gap-2 mb-2">
                                 <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-extrabold uppercase tracking-wider">
-                                  {syllabus.gradeLevelName}
+                                  {canonicalGradeName(syllabus.gradeLevelName)}
                                 </span>
                                 <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-extrabold uppercase tracking-wider">
-                                  {syllabus.subjectName}
+                                  {canonicalSubjectName(syllabus.subjectName)}
                                 </span>
                               </div>
                               <h3 className="font-bold text-slate-950 text-lg leading-snug group-hover:text-indigo-600 transition-colors">
@@ -407,7 +411,7 @@ export function CurriculumViews({
                               className="font-bold text-slate-900 text-left hover:text-indigo-600 transition-colors"
                               title={canManage ? t("curriculum.subjects.editSubject") : undefined}
                             >
-                              {subject.name}
+                              {canonicalSubjectName(subject.name)}
                             </button>
                             <button
                               type="button"
@@ -528,7 +532,7 @@ export function CurriculumViews({
                           className="font-bold text-slate-900 text-left hover:text-indigo-600 transition-colors"
                           title={canManage ? t("curriculum.gradeLevels.editName") : undefined}
                         >
-                          {grade.name}
+                          {canonicalGradeName(grade.name)}
                         </button>
                       </div>
                       {canManage && (
@@ -585,7 +589,7 @@ export function CurriculumViews({
                         {gradeSubjects.length > 0 ? (
                           gradeSubjects.map(s => (
                             <span key={s.id} className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded text-xs font-bold border border-slate-100">
-                              {s.name}
+                              {canonicalSubjectName(s.name)}
                             </span>
                           ))
                         ) : (

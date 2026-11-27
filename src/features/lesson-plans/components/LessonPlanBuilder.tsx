@@ -7,6 +7,12 @@ import {
   periodContainingDate,
   type ActiveCalendar,
 } from "../../academics-shared/syllabusCalendar";
+import {
+  buildGradeOptions,
+  buildSubjectOptions,
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../../academics-shared/gradeSubjectLabels";
 import type { LessonPlanForm } from "../types";
 
 type Subject = { id: string; name: string; gradeLevelId?: string };
@@ -84,6 +90,8 @@ export function LessonPlanBuilder({
     () => normalizeCalendarPeriods(calendar?.periods),
     [calendar]
   );
+  const subjectOptions = useMemo(() => buildSubjectOptions(subjects), [subjects]);
+  const gradeOptions = useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
 
   const lessonDateWarning = useMemo(() => {
     if (!form.lessonDate || calendarPeriods.length === 0) return null;
@@ -297,18 +305,18 @@ export function LessonPlanBuilder({
                   setForm((f) => ({
                     ...f,
                     subjectId: e.target.value,
-                    subjectName: sub?.name || "",
+                    subjectName: canonicalSubjectName(sub?.name),
                     gradeLevelId: sub?.gradeLevelId || f.gradeLevelId,
-                    gradeLevelName: gl?.name || f.gradeLevelName,
+                    gradeLevelName: canonicalGradeName(gl?.name) || f.gradeLevelName,
                     classroomId: "",
                     classroomName: "",
                   }));
                 }}
               >
                 <option value="">{b("selectSubject")}</option>
-                {subjects.map((s) => (
+                {subjectOptions.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
+                    {s.label}
                   </option>
                 ))}
               </select>
@@ -324,14 +332,14 @@ export function LessonPlanBuilder({
                   setForm((f) => ({
                     ...f,
                     gradeLevelId: e.target.value,
-                    gradeLevelName: gl?.name || "",
+                    gradeLevelName: canonicalGradeName(gl?.name),
                   }));
                 }}
               >
                 <option value="">{b("none")}</option>
-                {gradeLevels.map((g) => (
+                {gradeOptions.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name}
+                    {g.label}
                   </option>
                 ))}
               </select>

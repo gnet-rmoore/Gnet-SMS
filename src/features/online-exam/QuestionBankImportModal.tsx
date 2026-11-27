@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { alertError, alertSuccess } from "../../lib/swal";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { buildGradeOptions, buildSubjectOptions } from "../academics-shared/gradeSubjectLabels";
 import { questionBankApi, type BankVisibility } from "./api";
 import {
   downloadQuestionTemplate,
@@ -48,6 +49,14 @@ export function QuestionBankImportModal({
   const [visibility, setVisibility] = React.useState<BankVisibility>("SHARED");
   const [saving, setSaving] = React.useState(false);
 
+  const subjectOptions = React.useMemo(
+    () => buildSubjectOptions(subjects),
+    [subjects]
+  );
+  const gradeOptions = React.useMemo(
+    () => buildGradeOptions(grades),
+    [grades]
+  );
   const prepared = React.useMemo(
     () => (rows ? prepareQuestionBankImport(rows) : null),
     [rows]
@@ -257,8 +266,8 @@ export function QuestionBankImportModal({
                   onChange={(event) => setSubjectId(event.target.value)}
                 >
                   <option value="">{t("onlineExams.questionBank.noSubject")}</option>
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>{subject.name}</option>
+                  {subjectOptions.map((subject) => (
+                    <option key={subject.id} value={subject.id}>{subject.label}</option>
                   ))}
                 </select>
               </label>
@@ -270,8 +279,8 @@ export function QuestionBankImportModal({
                   onChange={(event) => setGradeLevelId(event.target.value)}
                 >
                   <option value="">{t("onlineExams.questionBank.noGrade")}</option>
-                  {grades.map((grade) => (
-                    <option key={grade.id} value={grade.id}>{grade.name}</option>
+                  {gradeOptions.map((grade) => (
+                    <option key={grade.id} value={grade.id}>{grade.label}</option>
                   ))}
                 </select>
               </label>

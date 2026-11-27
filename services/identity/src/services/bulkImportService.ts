@@ -192,27 +192,14 @@ async function sendVerificationEmailsInBatches(
   return warnings;
 }
 
-function jsonObjectKeys(value: unknown): string[] {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  return Object.keys(value as Record<string, unknown>).filter((key) => key.trim());
-}
-
 async function loadTenantStudentImportKeys(schoolId: string): Promise<StudentImportKeyRow[]> {
-  const [gradeResult, classroomResult, studentResult] = await Promise.allSettled([
+  const [gradeResult, classroomResult] = await Promise.allSettled([
     loadGradeLevels(schoolId),
     loadClassrooms(schoolId),
-    prisma.user.findMany({
-      where: { schoolId, role: "STUDENT" },
-      select: { customFields: true, documents: true },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      take: 5001,
-    }),
   ]);
 
   const gradeLevels = gradeResult.status === "fulfilled" ? gradeResult.value : [];
   const classrooms = classroomResult.status === "fulfilled" ? classroomResult.value : [];
-  const allStudents = studentResult.status === "fulfilled" ? studentResult.value : [];
-  const students = allStudents.slice(0, 5000);
   const warnings: StudentImportKeyRow[] = [];
   if (gradeResult.status === "rejected") {
     warnings.push({
@@ -228,35 +215,8 @@ async function loadTenantStudentImportKeys(schoolId: string): Promise<StudentImp
       details: "Classroom keys could not be loaded; download again after the classroom service recovers.",
     });
   }
-  if (studentResult.status === "rejected") {
-    warnings.push({
-      key: "warning",
-      value: "customFieldKeys unavailable",
-      details: "Existing custom-field keys could not be loaded.",
-    });
-  }
-  if (allStudents.length > 5000) {
-    warnings.push({
-      key: "warning",
-      value: "customFieldKeys capped",
-      details: "Only the first 5000 student records were scanned for custom-field keys.",
-    });
-  }
 
-  const customFieldKeys = new Set<string>();
-  const documentTypes = new Set<string>();
-  for (const student of students) {
-    for (const key of jsonObjectKeys(student.customFields)) customFieldKeys.add(key);
-    if (Array.isArray(student.documents)) {
-      for (const document of student.documents) {
-        const type = jsonObjectKeys(document).includes("type")
-          ? String((document as Record<string, unknown>).type || "").trim().toUpperCase()
-          : "";
-        if (type) documentTypes.add(type);
-      }
-    }
-  }
-
+  const gradeNameById = new Map(gradeLevels.map((grade) => [grade.id, grade.name]));
   const rows: StudentImportKeyRow[] = [];
   for (const grade of [...gradeLevels].sort((a, b) => a.name.localeCompare(b.name))) {
     rows.push({
@@ -266,28 +226,20 @@ async function loadTenantStudentImportKeys(schoolId: string): Promise<StudentImp
       id: grade.id,
       details: "Use in the gradeLevel column",
     });
-    rows.push({
-      key: "gradeLevelId",
-      value: grade.id,
-      label: grade.name,
-      details: "Alternative to gradeLevel",
-    });
   }
-  for (const classroom of [...classrooms].sort((a, b) =>
+  const classGroups = classrooms.filter((classroom) => !classroom.subjectId);
+  for (const classroom of [...classGroups].sort((a, b) =>
     (a.classCode || a.name).localeCompare(b.classCode || b.name)
   )) {
+    const gradeName = classroom.gradeLevelId
+      ? gradeNameById.get(classroom.gradeLevelId) || classroom.gradeLevelId
+      : "";
     rows.push({
       key: "classroomCode",
       value: classroom.classCode || classroom.name,
       label: classroom.name,
       id: classroom.id,
-      details: [
-        classroom.gradeLevelId ? `gradeLevelId:${classroom.gradeLevelId}` : "",
-        classroom.schoolYearId ? `schoolYearId:${classroom.schoolYearId}` : "",
-        classroom.subjectId ? "subjectRoom:true" : "classGroup:true",
-      ]
-        .filter(Boolean)
-        .join(";"),
+      details: gradeName ? `gradeLevel:${gradeName}; classGroup` : "classGroup",
     });
   }
   for (const cohort of ["NEW", "RETURNING"]) {
@@ -296,30 +248,6 @@ async function loadTenantStudentImportKeys(schoolId: string): Promise<StudentImp
       value: cohort,
       label: cohort === "NEW" ? "New student" : "Returning student",
       details: "Accepted value",
-    });
-  }
-  for (const gender of ["MALE", "FEMALE", "OTHER"]) {
-    rows.push({
-      key: "gender",
-      value: gender,
-      label: gender.charAt(0) + gender.slice(1).toLowerCase(),
-      details: "Suggested value",
-    });
-  }
-  for (const key of [...customFieldKeys].sort((a, b) => a.localeCompare(b))) {
-    rows.push({
-      key: "customFields",
-      value: JSON.stringify({ [key]: "" }),
-      label: key,
-      details: "Example customFields JSON using an existing tenant key",
-    });
-  }
-  for (const type of [...documentTypes].sort((a, b) => a.localeCompare(b))) {
-    rows.push({
-      key: "documents",
-      value: JSON.stringify([{ type, url: "/docs/example.pdf" }]),
-      label: type,
-      details: "Example documents JSON using an existing tenant type",
     });
   }
   return [...rows, ...warnings];

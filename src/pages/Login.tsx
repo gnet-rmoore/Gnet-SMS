@@ -12,7 +12,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  AlertTriangle,
   KeyRound,
   Phone,
   UserRound,
@@ -55,6 +54,18 @@ export const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isExpired = searchParams.get("expired") === "true";
+  const expiredNotified = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!isExpired) {
+      expiredNotified.current = false;
+      return;
+    }
+    if (!expiredNotified.current) {
+      expiredNotified.current = true;
+      showToast(t("auth:expired"), "info");
+    }
+  }, [isExpired, showToast, t]);
   const [hostSchool, setHostSchool] = React.useState<{
     schoolSlug: string;
     schoolName: string;
@@ -504,15 +515,6 @@ export const Login = () => {
             ) : loginTab === "password" ? (
             <form onSubmit={handleLogin} className="space-y-5" noValidate>
               <LoginErrorAlert signal={loginError} />
-              {isExpired ? (
-                <div
-                  role="status"
-                  className="flex gap-3 rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3.5 text-sm font-medium text-amber-900"
-                >
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-                  <span>{t("auth:expired")}</span>
-                </div>
-              ) : null}
 
               <div className="space-y-2">
                 <label htmlFor="login-email" className="block text-sm font-semibold text-slate-700">

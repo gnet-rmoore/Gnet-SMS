@@ -2239,6 +2239,8 @@ export const frResources = {
         "nameLabel": "Nom du niveau scolaire",
         "namePlaceholder": "p. ex. 10e année",
         "adding": "Ajout en cours…",
+        "noSectionNames": "Utilisez un niveau scolaire simple comme « Grade 8 » ; créez des sections comme « Grade 8A » en tant que groupes de classe.",
+        "noComposedNames": "Utilisez un niveau scolaire simple comme « Grade 8 » ; créez des sections comme « Grade 8A » en tant que groupes de classe.",
       },
       "manageSubjects": {
         "eyebrow": "Niveau scolaire",

@@ -22,6 +22,7 @@ import {
 } from "../lib/publicPortalLayout";
 import { buildStatusUrl } from "../lib/publicApplyStatus";
 import { alertError, alertSuccess, confirmAction } from "../lib/swal";
+import { canonicalGradeName } from "../features/academics-shared/gradeSubjectLabels";
 
 type EntranceSlot = {
   id: string;
@@ -357,7 +358,12 @@ export default function EntranceSchedulePage() {
                 {t("public:entrance.title", "Choose your entrance date")}
               </h1>
               <p className="text-sm font-medium text-slate-600">
-                {[data.studentName, data.gradeLevelName].filter(Boolean).join(" · ")}
+                {[
+                  data.studentName,
+                  canonicalGradeName(data.gradeLevelName) || data.gradeLevelName,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
               {data.deadline ? (
                 <p className="text-xs font-semibold text-amber-700">

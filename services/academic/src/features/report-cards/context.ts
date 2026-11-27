@@ -17,6 +17,11 @@ import type {
   ReportCardSignature,
   ReportCardSubject,
 } from "./types";
+import {
+  canonicalSubjectName,
+  parseGradeLabel,
+  reportGradeLabel,
+} from "../../../../../src/features/academics-shared/gradeSubjectLabels";
 
 type ScaleLike = {
   minScore: number;
@@ -250,7 +255,7 @@ export async function buildReportCardContext(
     if (!bySubject.has(id)) {
       bySubject.set(id, {
         subjectId: id,
-        name: grade.subject?.name || "Subject",
+        name: canonicalSubjectName(grade.subject?.name) || "Subject",
         code: grade.subject?.code || "",
         cells: Object.fromEntries(columns.map((column) => [column.key, { score: null, letter: null }])),
         sem1Avg: null,
@@ -309,6 +314,9 @@ export async function buildReportCardContext(
     .sort((a, b) => b.minScore - a.minScore)
     .find((entry) => overallAverage >= entry.minScore && overallAverage <= entry.maxScore);
   const classLabel = gradeEntries.find((grade) => grade.classroom?.name)?.classroom?.name || "";
+  const gradeLevelLabel = parseGradeLabel(classLabel).isGradeLike
+    ? reportGradeLabel(null, classLabel)
+    : "";
 
   return {
     school: {
@@ -329,7 +337,7 @@ export async function buildReportCardContext(
       name: student.name,
       sex: null,
       classLabel,
-      gradeLevelLabel: classLabel,
+      gradeLevelLabel,
     },
     academicYear: { id: "CURRENT", label: yearLabel(exam.startDate) },
     columns,

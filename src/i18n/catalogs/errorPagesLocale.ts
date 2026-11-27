@@ -23,6 +23,13 @@ const sharedShape = {
     chunk: { title: "", body: "" },
   },
   offline: { eyebrow: "", title: "", body: "", hint: "", hintRetry: "" },
+  connection: {
+    eyebrow: "",
+    onlineTitle: "",
+    onlineBody: "",
+    onlineHint: "",
+    onlineHintRetry: "",
+  },
 };
 
 export type ErrorPagesLocale = typeof sharedShape;
@@ -80,6 +87,14 @@ export const frErrorPages: ErrorPagesLocale = {
     hintRetry:
       "Quand la connexion revient, cette page se ferme seule — ou appuyez sur Réessayer.",
   },
+  connection: {
+    eyebrow: "État de la connexion",
+    onlineTitle: "Vous êtes en ligne",
+    onlineBody:
+      "Votre appareil est connecté, mais l’application n’a pas pu joindre le serveur. Réessayez, ou contactez l’admin de l’école si le problème continue.",
+    onlineHint: "Un problème réseau ou serveur temporaire peut bloquer cette page.",
+    onlineHintRetry: "Rechargez la page, ou changez de réseau et réessayez.",
+  },
 };
 
 export const arErrorPages: ErrorPagesLocale = {
@@ -130,6 +145,14 @@ export const arErrorPages: ErrorPagesLocale = {
     body: "يحتاج Gnet SMS إلى الإنترنت لتحميل بيانات المدرسة. تحقق من الواي فاي أو بيانات الجوال ثم أعد المحاولة.",
     hint: "قد تبقى الصفحات المفتوحة ظاهرة، لكن الحفظ والتحميل الجديد سيفشلان حتى تعود الاتصال.",
     hintRetry: "عند عودة الاتصال تُغلق هذه الصفحة تلقائيًا — أو اضغط إعادة المحاولة.",
+  },
+  connection: {
+    eyebrow: "حالة الاتصال",
+    onlineTitle: "أنت متصل",
+    onlineBody:
+      "جهازك متصل، لكن التطبيق لم يتمكن من الوصول إلى الخادم. أعد المحاولة، أو تواصل مع مسؤول المدرسة إذا استمرت المشكلة.",
+    onlineHint: "قد تمنع مشكلة مؤقتة في الشبكة أو الخادم تحميل هذه الصفحة.",
+    onlineHintRetry: "أعد تحميل الصفحة، أو بدّل الشبكة ثم حاول مرة أخرى.",
   },
 };
 
@@ -186,6 +209,14 @@ export const esErrorPages: ErrorPagesLocale = {
     hintRetry:
       "Cuando vuelva la conexión, esta página se cierra sola — o pulse Reintentar.",
   },
+  connection: {
+    eyebrow: "Estado de la conexión",
+    onlineTitle: "Está en línea",
+    onlineBody:
+      "Su dispositivo está conectado, pero la app no pudo comunicarse con el servidor. Inténtelo de nuevo o contacte al admin escolar si continúa.",
+    onlineHint: "Un problema temporal de red o del servidor puede estar bloqueando esta página.",
+    onlineHintRetry: "Recargue la página o cambie de red e inténtelo de nuevo.",
+  },
 };
 
 export const deErrorPages: ErrorPagesLocale = {
@@ -241,6 +272,14 @@ export const deErrorPages: ErrorPagesLocale = {
     hintRetry:
       "Wenn die Verbindung zurückkehrt, schließt sich diese Seite automatisch — oder tippen Sie auf Erneut versuchen.",
   },
+  connection: {
+    eyebrow: "Verbindungsstatus",
+    onlineTitle: "Sie sind online",
+    onlineBody:
+      "Ihr Gerät ist verbunden, aber die App konnte den Server nicht erreichen. Versuchen Sie es erneut oder kontaktieren Sie die Schuladministration, falls das Problem besteht.",
+    onlineHint: "Eine vorübergehende Netzwerk- oder Serverstörung blockiert diese Seite möglicherweise.",
+    onlineHintRetry: "Laden Sie die Seite neu oder wechseln Sie das Netzwerk.",
+  },
 };
 
 export const zhHansErrorPages: ErrorPagesLocale = {
@@ -292,6 +331,14 @@ export const zhHansErrorPages: ErrorPagesLocale = {
     hint: "已打开的页面可能仍可见，但保存与新加载在恢复联网前会失败。",
     hintRetry: "网络恢复后此页会自动关闭 — 也可点击重试。",
   },
+  connection: {
+    eyebrow: "连接状态",
+    onlineTitle: "你已在线",
+    onlineBody:
+      "你的设备已连接，但应用无法连接到服务器。请重试；如果问题持续，请联系学校管理员。",
+    onlineHint: "临时网络或服务器问题可能导致此页面无法加载。",
+    onlineHintRetry: "刷新页面，或切换网络后重试。",
+  },
 };
 
 export const hiErrorPages: ErrorPagesLocale = {
@@ -342,5 +389,13 @@ export const hiErrorPages: ErrorPagesLocale = {
     body: "स्कूल डेटा लोड करने के लिए Gnet SMS को इंटरनेट चाहिए। Wi‑Fi या मोबाइल डेटा जाँचकर फिर कोशिश करें।",
     hint: "पहले खोले गए पेज दिख सकते हैं, पर सेव और नए लोड ऑनलाइन होने तक विफल रहेंगे।",
     hintRetry: "कनेक्शन लौटते ही यह पेज अपने आप बंद हो जाता है — या फिर कोशिश करें दबाएँ।",
+  },
+  connection: {
+    eyebrow: "कनेक्शन स्थिति",
+    onlineTitle: "आप ऑनलाइन हैं",
+    onlineBody:
+      "आपका डिवाइस कनेक्ट है, लेकिन ऐप सर्वर से संपर्क नहीं कर सका। फिर से प्रयास करें या समस्या बनी रहने पर स्कूल एडमिन से संपर्क करें।",
+    onlineHint: "अस्थायी नेटवर्क या सर्वर समस्या इस पृष्ठ को ब्लॉक कर सकती है।",
+    onlineHintRetry: "पृष्ठ रीफ़्रेश करें या नेटवर्क बदलकर फिर प्रयास करें।",
   },
 };

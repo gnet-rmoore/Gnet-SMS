@@ -2239,6 +2239,8 @@ export const deResources = {
         "nameLabel": "Name der Klassenstufe",
         "namePlaceholder": "z. B. Klasse 10",
         "adding": "Wird hinzugefügt…",
+        "noSectionNames": "Verwenden Sie eine einfache Klassenstufe wie \"Grade 8\"; erstellen Sie Abschnitte wie \"Grade 8A\" als Klassengruppen.",
+        "noComposedNames": "Verwenden Sie eine einfache Klassenstufe wie \"Grade 8\"; erstellen Sie Abschnitte wie \"Grade 8A\" als Klassengruppen.",
       },
       "manageSubjects": {
         "eyebrow": "Klassenstufe",

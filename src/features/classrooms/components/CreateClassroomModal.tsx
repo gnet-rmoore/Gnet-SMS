@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { Users, X, GraduationCap, School, ArrowLeftRight, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import { UserAvatar } from "../../../components/UserAvatar";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 import type { OrganizationType } from "../utils";
 
 const BANNER_COLORS = [
@@ -53,6 +54,7 @@ export function CreateClassroomModal({
   const { t } = useTranslation(["pages", "common"]);
   const { slug: routeSlug } = useParams();
   const slug = school?.slug || routeSlug;
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
   const teachers = (staff || []).filter((s) => s.role === "TEACHER");
   const selectedTeacher = teachers.find((s) => s.id === formData.ownerTeacherId);
   const supportOptions = teachers.filter((s) => s.id !== formData.ownerTeacherId);
@@ -139,9 +141,9 @@ export function CreateClassroomModal({
                 required
               >
                 <option value="">{t("classroomModals.selectGradeLevel")}</option>
-                {gradeLevels.map((g) => (
+                {gradeOptions.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name}
+                    {g.label}
                   </option>
                 ))}
               </select>

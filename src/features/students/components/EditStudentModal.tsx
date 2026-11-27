@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { fieldInput, fieldLabel, fieldSelect } from "../../academics-shared/FeatureModalShell";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 import { Button, DetailDrawerShell } from "../../../components/ui";
 import { StudentPhotoEditor } from "../../../components/StudentPhotoEditor";
 
@@ -32,6 +33,7 @@ export function EditStudentModal({
   onPhotoChange,
 }: EditStudentModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
   const sectionClass =
     "border-b border-slate-100 pb-3 text-sm font-extrabold tracking-tight text-slate-900";
   const controlClass = `${fieldInput} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70`;
@@ -258,9 +260,9 @@ export function EditStudentModal({
                     ? t("common:loading")
                     : t("admissions.editStudent.unassigned")}
                 </option>
-                {gradeLevels.map((grade: any) => (
+                {gradeOptions.map((grade) => (
                   <option key={grade.id} value={grade.id}>
-                    {grade.name}
+                    {grade.label}
                   </option>
                 ))}
               </select>

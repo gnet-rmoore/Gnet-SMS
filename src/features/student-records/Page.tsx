@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, 
@@ -39,6 +39,10 @@ import { studentRecordsApi } from "./api";
 import { StudentDetailPanel } from "./components/StudentDetailPanel";
 import { DataTable, dataTableClass } from "../../components/ui";
 import { confirmAction } from "../../lib/swal";
+import {
+  buildGradeOptions,
+  canonicalGradeName,
+} from "../academics-shared/gradeSubjectLabels";
 
 export const StudentRecords = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -192,7 +196,7 @@ export const StudentRecords = () => {
                           student.phone.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesGrade = selectedGrade === "ALL" || 
-                         (student.gradeLevel?.name === selectedGrade) ||
+                         (canonicalGradeName(student.gradeLevel?.name) === selectedGrade) ||
                          (selectedGrade === "N/A" && !student.gradeLevel);
 
     const matchesStatus = selectedStatus === "ALL" || student.standing === selectedStatus;
@@ -201,7 +205,12 @@ export const StudentRecords = () => {
   });
 
   // Extract unique grades for filters
-  const availableGrades = Array.from(new Set(students.map(s => s.gradeLevel?.name).filter(Boolean)));
+  const availableGrades = useMemo(() => {
+    const rawGrades = Array.from(
+      new Set(students.map((s) => s.gradeLevel?.name).filter(Boolean))
+    ).map((name) => ({ id: String(name), name: String(name) }));
+    return buildGradeOptions(rawGrades);
+  }, [students]);
 
   // Calculate Metrics
   const totalCount = students.length;
@@ -352,8 +361,8 @@ export const StudentRecords = () => {
                 className="bg-transparent border-none text-xs font-bold text-slate-600 py-2.5 focus:outline-none focus:ring-0 cursor-pointer"
               >
                 <option value="ALL">{t("studentRecords.gradeAllLevels")}</option>
-                {availableGrades.map((g: string) => (
-                  <option key={g} value={g}>{g}</option>
+                {availableGrades.map((g) => (
+                  <option key={g.id} value={g.label}>{g.label}</option>
                 ))}
                 <option value="N/A">{t("studentRecords.unassignedGrade")}</option>
               </select>
@@ -487,7 +496,7 @@ export const StudentRecords = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-slate-700 bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-md">
-                            {student.gradeLevel?.name || t("studentRecords.unassignedGrade")}
+                            {canonicalGradeName(student.gradeLevel?.name) || t("studentRecords.unassignedGrade")}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium truncate">

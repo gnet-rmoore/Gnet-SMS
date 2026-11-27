@@ -25,6 +25,10 @@ import {
   filterHomeroomClassrooms,
   subjectRoomsForClassGroup,
 } from "../academics-shared/classGroupLinks";
+import {
+  buildGradeOptions,
+  canonicalGradeName,
+} from "../academics-shared/gradeSubjectLabels";
 import { enrollmentApi } from "./api";
 import { UserAvatar } from "../../components/UserAvatar";
 import { useTranslation } from "react-i18next";
@@ -96,6 +100,7 @@ export function EnrollmentPage() {
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [students, gradeLevels]);
+  const gradeOptions = useMemo(() => buildGradeOptions(availableGrades), [availableGrades]);
 
   // Paged student fetching
   const studentFilterFields: FilterFieldDef[] = useMemo(
@@ -150,6 +155,8 @@ export function EnrollmentPage() {
     () => students.find((s) => s.id === selectedStudentId) || null,
     [students, selectedStudentId]
   );
+  const selectedStudentGradeLabel = canonicalGradeName(selectedStudent?.gradeLevel?.name);
+  const activeClassroomGradeLabel = canonicalGradeName(activeClassroom?.gradeLevel?.name);
 
   /** studentId → classroom ids they belong to */
   const classroomsByStudent = useMemo(() => {
@@ -594,9 +601,9 @@ export function EnrollmentPage() {
                 className={`${fieldInput} w-full sm:max-w-sm`}
               >
                 <option value="">{t("common:allGradeLevels")}</option>
-                {availableGrades.map((grade) => (
+                {gradeOptions.map((grade) => (
                   <option key={grade.id} value={grade.id}>
-                    {grade.name}
+                    {grade.label}
                   </option>
                 ))}
               </select>
@@ -741,7 +748,7 @@ export function EnrollmentPage() {
                                 isSelected ? "text-indigo-200" : "text-slate-400"
                               }`}
                             >
-                              {student.gradeLevel?.name || t("enrollment.noGrade")}
+                              {canonicalGradeName(student.gradeLevel?.name) || t("enrollment.noGrade")}
                             </p>
                           </div>
                         </div>
@@ -806,7 +813,7 @@ export function EnrollmentPage() {
                           isActive ? "text-slate-300" : "text-slate-400"
                         }`}
                       >
-                        {c.gradeLevel?.name || t("enrollment.classGroups.noGrade")}
+                        {canonicalGradeName(c.gradeLevel?.name) || t("enrollment.classGroups.noGrade")}
                       </p>
                       {subjectCount > 0 && (
                         <p
@@ -846,7 +853,7 @@ export function EnrollmentPage() {
                       })}
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      {activeClassroom.gradeLevel?.name || t("enrollment.classGroups.noGrade")}
+                      {activeClassroomGradeLabel || t("enrollment.classGroups.noGrade")}
                       {(linkedSubjectCountByGroup[activeClassroom.id] || 0) > 0 &&
                         ` · ${t("enrollment.classGroups.subjectsLinked", {
                           count: linkedSubjectCountByGroup[activeClassroom.id],
@@ -871,15 +878,14 @@ export function EnrollmentPage() {
                   )}
                 </div>
 
-                {selectedStudent &&
-                  selectedStudent.gradeLevel?.name &&
-                  activeClassroom.gradeLevel?.name &&
-                  selectedStudent.gradeLevel.name !== activeClassroom.gradeLevel.name && (
+                {selectedStudentGradeLabel &&
+                  activeClassroomGradeLabel &&
+                  selectedStudentGradeLabel !== activeClassroomGradeLabel && (
                     <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 font-medium flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       {t("enrollment.gradeMismatch", {
-                        studentGrade: selectedStudent.gradeLevel.name,
-                        classGrade: activeClassroom.gradeLevel.name,
+                        studentGrade: selectedStudentGradeLabel,
+                        classGrade: activeClassroomGradeLabel,
                       })}
                     </div>
                   )}
@@ -941,7 +947,7 @@ export function EnrollmentPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             {rosterStudent.gradeLevel?.name && (
                               <span className="text-xs bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-lg mr-1">
-                                {rosterStudent.gradeLevel.name}
+                                {canonicalGradeName(rosterStudent.gradeLevel.name)}
                               </span>
                             )}
                             <button

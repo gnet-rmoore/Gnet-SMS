@@ -9,6 +9,11 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { getTeachersForClassGroup } from "../utils";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+  subjectRoomLabel,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type StandaloneSubjectsSectionProps = {
   handleDeleteClassroom: (id: string) => void;
@@ -54,10 +59,10 @@ export function StandaloneSubjectsSection({
 
                 <div>
                   <h3 className="text-base font-extrabold tracking-tight text-slate-900 leading-tight">
-                    {subClassroom.name}
+                    {subjectRoomLabel(subClassroom.name, subClassroom.subject?.name)}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium mt-1">
-                    {subClassroom.subject?.name || t("classrooms.standaloneSubjects.subjectFallback")}
+                    {canonicalSubjectName(subClassroom.subject?.name) || t("classrooms.standaloneSubjects.subjectFallback")}
                     {(subClassroom.sectionSubjectCode || subClassroom.subject?.code)
                       ? ` · ${subClassroom.sectionSubjectCode || subClassroom.subject?.code}`
                       : ""}
@@ -75,7 +80,7 @@ export function StandaloneSubjectsSection({
                   <div className="flex items-center gap-1.5 text-slate-600">
                     <GraduationCap className="w-4 h-4 text-slate-400" />
                     <span className="text-xs font-bold text-slate-700">
-                      {subClassroom.gradeLevel?.name || t("classrooms.standaloneSubjects.noGrade")}
+                      {canonicalGradeName(subClassroom.gradeLevel?.name) || t("classrooms.standaloneSubjects.noGrade")}
                     </span>
                   </div>
                 </div>

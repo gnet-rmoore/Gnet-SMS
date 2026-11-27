@@ -30,6 +30,7 @@ import {
   requiresSpecialistTeacher,
   resolveSubjectTeacherId,
 } from "../academics-shared/subjectTeacherAssignment";
+import { gradeOptionLabel } from "../academics-shared/gradeSubjectLabels";
 
 export const Classrooms = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -100,7 +101,10 @@ export const Classrooms = () => {
           type: "enum",
           primary: true,
           allLabel: t("common:all"),
-          options: gradeLevels.map((g: any) => ({ value: g.id, label: g.name })),
+          options: gradeLevels.map((g: any) => ({
+            value: g.id,
+            label: gradeOptionLabel(g.name),
+          })),
         });
       }
       fields.push({

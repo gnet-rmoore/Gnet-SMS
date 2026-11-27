@@ -2239,6 +2239,8 @@ export const esResources = {
         "nameLabel": "Nombre del nivel de grado",
         "namePlaceholder": "p. ej. Grado 10",
         "adding": "Añadiendo…",
+        "noSectionNames": "Usa un nivel de grado simple como \"Grade 8\"; crea secciones como \"Grade 8A\" como grupos de clase.",
+        "noComposedNames": "Usa un nivel de grado simple como \"Grade 8\"; crea secciones como \"Grade 8A\" como grupos de clase.",
       },
       "manageSubjects": {
         "eyebrow": "Nivel de grado",

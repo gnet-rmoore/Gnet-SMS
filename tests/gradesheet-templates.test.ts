@@ -99,8 +99,8 @@ assert(math!.exam === 60, `math exam from FIN (${math!.exam})`);
 // weighted: 24*0.3 + 60*0.7 = 7.2 + 42 = 49.2
 assert(math!.obtained === 49.2, `math weighted avg (${math!.obtained})`);
 assert(math!.classAvg === null, "no invented class avg");
-assert(data.summary.rank === "—", "no invented rank");
-assert(data.attendance.present === null, "no invented attendance");
+assert(data.summary.rank === null && data.summary.rankLabel === "—", "no invented rank");
+assert(data.attendance === null, "no invented attendance");
 assert(data.school.crestInitials === "TA", `crest initials (${data.school.crestInitials})`);
 
 assert(!isDenseGradeSheet(9), "9 subjects not dense");

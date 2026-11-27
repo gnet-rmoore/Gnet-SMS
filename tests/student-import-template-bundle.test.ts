@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { studentImportKeysCsv } from "../services/identity/src/domain/bulkImport";
+import {
+  studentImportKeysCsv,
+  studentImportTemplateCsv,
+} from "../services/identity/src/domain/bulkImport";
 import { createZipArchive } from "../services/identity/src/lib/zip";
+
+{
+  const header = studentImportTemplateCsv().split("\n")[0];
+  assert(
+    header === "name,email,studentIdNumber,gradeLevel,feeCohort,classroomCode",
+    "template has only essential headers"
+  );
+}
 
 {
   const csv = studentImportKeysCsv([
@@ -49,16 +60,15 @@ import { createZipArchive } from "../services/identity/src/lib/zip";
   );
   assert(
     service.includes("Promise.allSettled") &&
-      service.includes('orderBy: [{ createdAt: "asc" }, { id: "asc" }]') &&
-      service.includes("take: 5001") &&
-      service.includes('key: "warning"'),
-    "bundle degrades gracefully and scans tenant keys deterministically"
-  );
-  assert(
-    service.includes('key: "documents"') &&
-      service.includes('key: "customFields"') &&
-      !service.includes('key: "documentType"'),
-    "JSON keys render as importable customFields/documents examples"
+      service.includes('key: "warning"') &&
+      !service.includes("take: 5001") &&
+      !service.includes("customFieldKeys") &&
+      !service.includes("documentTypes") &&
+      !service.includes('key: "documents"') &&
+      !service.includes('key: "customFields"') &&
+      !service.includes('key: "gender"') &&
+      !service.includes('key: "gradeLevelId"'),
+    "bundle degrades gracefully and omits complex or unnecessary keys"
   );
   assert(
     controller.includes("studentImportTemplateBundle") &&

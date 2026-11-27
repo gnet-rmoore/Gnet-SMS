@@ -11,6 +11,12 @@ import {
   type GradeLegendLike,
 } from "../../lib/gradeLegend";
 import type { GradeSheetData, GradeSheetSubject, GradeSheetColumn, GradeSheetLegendBand } from "./types";
+import {
+  canonicalSubjectName,
+  parseGradeLabel,
+  reportGradeLabel,
+} from "../academics-shared/gradeSubjectLabels";
+
 
 export type AssembleGradeEntry = {
   score: number | null | undefined;
@@ -130,7 +136,7 @@ export function assembleGradeSheetData(input: AssembleGradeSheetInput): GradeShe
   const map = new Map<string, SubjectAcc>();
   for (const g of input.grades) {
     const code = g.subject?.code || g.subject?.name || "UNK";
-    if (!map.has(code)) map.set(code, { name: g.subject?.name || code, code, classroomName: g.classroom?.name || "", byCol: {}, structureRollup: null });
+    if (!map.has(code)) map.set(code, { name: canonicalSubjectName(g.subject?.name) || code, code, classroomName: g.classroom?.name || "", byCol: {}, structureRollup: null });
     const row = map.get(code)!;
     if (typeof g.score !== "number" || Number.isNaN(g.score)) continue;
 
@@ -194,7 +200,8 @@ export function assembleGradeSheetData(input: AssembleGradeSheetInput): GradeShe
     subjects.push({
       name: acc.name, code: acc.code, scores, total, letter, remark, position: null,
       max: 100, obtained: total ?? 0, classAvg: null, grade: letter || "—",
-      ca: scores["CA"] ?? null, exam: scores["EXAM"] ?? scores["FIN"] ?? null,
+      ca: scores["CA"] ?? scores["CW"] ?? scores["HW"] ?? scores["QZ"] ?? scores["QUIZ"] ?? null,
+      exam: scores["EXAM"] ?? scores["FIN"] ?? scores["MID"] ?? null,
     });
     if (total != null) obtainedSum += total;
   }
@@ -210,6 +217,12 @@ export function assembleGradeSheetData(input: AssembleGradeSheetInput): GradeShe
 
   const contactParts = [input.school?.contactPhone, input.school?.contactEmail].filter(Boolean);
   const classFromGrades = input.classLabel || [...map.values()].find((m) => m.classroomName)?.classroomName || "";
+  const gradeLabelCandidate = [input.classLabel, classFromGrades].find((value) =>
+    parseGradeLabel(value).isGradeLike
+  );
+  const gradeLevelLabel = gradeLabelCandidate
+    ? reportGradeLabel(gradeLabelCandidate, classFromGrades)
+    : "";
   const issueIso = input.examDate || new Date().toISOString();
   let yearLabel = input.academicYearLabel?.trim() || "";
   if (!yearLabel) { try { yearLabel = String(new Date(issueIso).getFullYear()); } catch { yearLabel = ""; } }
@@ -230,7 +243,7 @@ export function assembleGradeSheetData(input: AssembleGradeSheetInput): GradeShe
     },
     student: {
       name: input.studentName || "—", id: dash(input.admissionNo), admissionNo: dash(input.admissionNo),
-      classLabel: dash(classFromGrades), gradeLevel: dash(classFromGrades), section: dash(input.section),
+      classLabel: dash(classFromGrades), gradeLevel: dash(gradeLevelLabel), section: dash(input.section),
       dob: dash(input.dob), guardian: dash(input.guardian),
     },
     columns, legend, subjects,

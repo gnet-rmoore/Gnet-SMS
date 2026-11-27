@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
+import { buildGradeOptions } from "../academics-shared/gradeSubjectLabels";
 import {
   FAMILY_OPTIONS,
   type AdmissionApplicationForm,
@@ -109,6 +110,7 @@ export function AdmissionApplicationFields({
   const gradeRequired = mode === "staff" || mode === "public-new";
   const parentRequired = mode === "public-new";
   const changedSet = React.useMemo(() => new Set(changedFields), [changedFields]);
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
 
   const fieldLabel = (key: keyof AdmissionApplicationForm) =>
     t(FIELD_LABEL_KEYS[key] || `admissions.manualAdmission.form.field.${key}`);
@@ -258,9 +260,9 @@ export function AdmissionApplicationFields({
                             ? gradesStateLabels?.empty
                             : t("admissions.manualAdmission.form.placeholder.selectGrade")}
                   </option>
-                  {gradeLevels.map((gl) => (
+                  {gradeOptions.map((gl) => (
                     <option key={gl.id} value={gl.id}>
-                      {gl.name}
+                      {gl.label}
                     </option>
                   ))}
                 </select>

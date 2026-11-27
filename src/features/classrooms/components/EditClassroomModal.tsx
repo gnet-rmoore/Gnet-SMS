@@ -6,6 +6,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 import type { OrganizationType } from "../utils";
 
 const BANNER_COLORS = [
@@ -47,6 +48,7 @@ export function EditClassroomModal({
   submitting,
 }: EditClassroomModalProps) {
   const { t } = useTranslation(["pages", "common"]);
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
   const teachers = (staff || []).filter((s) => s.role === "TEACHER");
   const selectedTeacher = teachers.find((s) => s.id === formData.ownerTeacherId);
   const isDepartmentalized = formData.organizationType === "DEPARTMENTALIZED";
@@ -117,9 +119,9 @@ export function EditClassroomModal({
             required
           >
             <option value="">{t("classroomModals.selectGradeLevel")}</option>
-            {gradeLevels.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.name}
+                {g.label}
               </option>
             ))}
           </select>

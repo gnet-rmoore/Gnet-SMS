@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { AdmissionApplicantPhoto } from "../../AdmissionApplicantPhoto";
+import { canonicalGradeName } from "../../../../academics-shared/gradeSubjectLabels";
 
 export function SubmittedStage({
   selectedApp,
@@ -40,7 +41,7 @@ export function SubmittedStage({
           <div><p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.gender")}</p><p className="mt-1 font-semibold text-slate-900">{selectedApp?.gender || t("common:male")}</p></div>
           <div><p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.dateOfBirth")}</p><p className="mt-1 font-semibold text-slate-900">{selectedApp?.dob ? format(new Date(selectedApp.dob), "MMMM d, yyyy") : t("admissions.review.unspecified")}</p></div>
         </div>
-        <div><p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.appliedGrade")}</p><p className="mt-1 font-semibold text-slate-900">{selectedApp?.gradeLevel?.name || selectedApp?.gradeLevelName || t("admissions.review.none")}</p></div>
+        <div><p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.appliedGrade")}</p><p className="mt-1 font-semibold text-slate-900">{canonicalGradeName(selectedApp?.gradeLevel?.name || selectedApp?.gradeLevelName) || t("admissions.review.none")}</p></div>
         {selectedApp?.address ? <div><p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.homeAddress")}</p><p className="mt-1 font-semibold text-slate-900 flex items-start gap-1"><MapPin className="w-4 h-4 mt-0.5 text-slate-400" />{selectedApp.address}</p></div> : null}
         <div className="border-t border-slate-200 pt-3">
           <p className="text-xs font-bold uppercase text-slate-500">{t("admissions.review.guardianDetails")}</p>

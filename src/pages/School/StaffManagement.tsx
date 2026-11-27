@@ -26,6 +26,10 @@ import { hasCapabilityOrRole } from "../../lib/capabilities";
 import { translateApiError } from "../../i18n/apiErrors";
 import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button, DetailDrawerShell } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../../features/list-filters";
+import {
+  canonicalGradeName,
+  subjectRoomLabel,
+} from "../../features/academics-shared/gradeSubjectLabels";
 
 export const StaffManagement = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -581,9 +585,8 @@ export const StaffManagement = () => {
                   <option value="">{t("pages:staff.directory.selectClassroom")}</option>
                   {assignableClassrooms.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.subject?.name ? ` - ${c.subject.name}` : ""}
-                      {c.gradeLevel?.name ? ` (${c.gradeLevel.name})` : ""}
+                      {subjectRoomLabel(c.name, c.subject?.name)}
+                      {c.gradeLevel?.name ? ` (${canonicalGradeName(c.gradeLevel.name)})` : ""}
                     </option>
                   ))}
                 </select>

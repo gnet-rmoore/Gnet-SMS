@@ -4,6 +4,7 @@ import { Button, PageHeader, PageShell, Surface } from "../../components/ui";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { useAuthStore } from "../../store/authStore";
 import { classroomsApi } from "../classrooms/api";
+import { canonicalGradeName } from "../academics-shared/gradeSubjectLabels";
 
 type ClassroomRow = {
   id: string;
@@ -56,8 +57,8 @@ export function ClassCapacityPage() {
         (row: any) => !row.subjectId
       ) as ClassroomRow[];
       homerooms.sort((a, b) => {
-        const gradeA = a.gradeLevel?.name || "";
-        const gradeB = b.gradeLevel?.name || "";
+        const gradeA = canonicalGradeName(a.gradeLevel?.name);
+        const gradeB = canonicalGradeName(b.gradeLevel?.name);
         return gradeA.localeCompare(gradeB) || a.name.localeCompare(b.name);
       });
       setClassrooms(homerooms);
@@ -176,7 +177,7 @@ export function ClassCapacityPage() {
                   <tr key={classroom.id} className="align-middle">
                     <td className="py-3 pr-4 font-semibold text-slate-900">{classroom.name}</td>
                     <td className="py-3 pr-4 text-slate-600">
-                      {classroom.gradeLevel?.name || "—"}
+                      {canonicalGradeName(classroom.gradeLevel?.name) || "—"}
                     </td>
                     <td className="py-3 pr-4 text-slate-600">
                       <span>{classroom.studentCount ?? 0}</span>

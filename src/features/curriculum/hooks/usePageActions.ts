@@ -13,6 +13,7 @@ import {
   requiresSpecialistTeacher,
   resolveSubjectTeacherId,
 } from "../../academics-shared/subjectTeacherAssignment";
+import { gradeLevelNameIssue } from "../../../../services/academic/src/lib/gradeLevelName";
 
 export type PageActionsDeps = {
   school: any;
@@ -473,6 +474,27 @@ export function usePageActions(deps: PageActionsDeps) {
     const trimmedName = gradeForm.name.trim();
     if (!trimmedName) {
       showToast(t("curriculum.toast.gradeLevelNameRequired"), "error");
+      return;
+    }
+    const nameIssue = gradeLevelNameIssue(trimmedName);
+    if (nameIssue === "composed") {
+      showToast(
+        t("curriculum.gradeLevelModal.noComposedNames", {
+          defaultValue:
+            "Use a plain grade level like \"Grade 8\"; create sections like \"Grade 8A\" as class groups.",
+        }),
+        "error"
+      );
+      return;
+    }
+    if (nameIssue === "section") {
+      showToast(
+        t("curriculum.gradeLevelModal.noSectionNames", {
+          defaultValue:
+            "Use a plain grade level like \"Grade 8\"; create sections like \"Grade 8A\" as class groups.",
+        }),
+        "error"
+      );
       return;
     }
     const alreadyExists = gradeLevels.some(

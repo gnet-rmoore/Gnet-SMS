@@ -2239,6 +2239,8 @@ export const hiResources = {
         "nameLabel": "ग्रेड स्तर का नाम",
         "namePlaceholder": "उदाहरण: ग्रेड 10",
         "adding": "जोड़ा जा रहा है…",
+        "noSectionNames": "साधारण ग्रेड स्तर का उपयोग करें जैसे \"Grade 8\"; \"Grade 8A\" जैसे खंडों को कक्षा समूहों के रूप में बनाएं।",
+        "noComposedNames": "साधारण ग्रेड स्तर का उपयोग करें जैसे \"Grade 8\"; \"Grade 8A\" जैसे खंडों को कक्षा समूहों के रूप में बनाएं।",
       },
       "manageSubjects": {
         "eyebrow": "ग्रेड स्तर",

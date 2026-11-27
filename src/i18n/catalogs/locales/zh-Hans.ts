@@ -2239,6 +2239,8 @@ export const zhHansResources = {
         "nameLabel": "年级名称",
         "namePlaceholder": "例如：十年级",
         "adding": "添加中…",
+        "noSectionNames": "请使用简单的年级名称，例如“Grade 8”；将“Grade 8A”等班级创建为班级组。",
+        "noComposedNames": "请使用简单的年级名称，例如“Grade 8”；将“Grade 8A”等班级创建为班级组。",
       },
       "manageSubjects": {
         "eyebrow": "年级",

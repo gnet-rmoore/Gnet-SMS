@@ -2239,6 +2239,8 @@ export const arResources = {
         "nameLabel": "اسم المستوى الدراسي",
         "namePlaceholder": "مثال: الصف العاشر",
         "adding": "جارٍ الإضافة…",
+        "noSectionNames": "استخدم مستوى دراسيًا بسيطًا مثل \"Grade 8\"؛ وأنشئ الأقسام مثل \"Grade 8A\" كمجموعات صفية.",
+        "noComposedNames": "استخدم مستوى دراسيًا بسيطًا مثل \"Grade 8\"؛ وأنشئ الأقسام مثل \"Grade 8A\" كمجموعات صفية.",
       },
       "manageSubjects": {
         "eyebrow": "المستوى الدراسي",

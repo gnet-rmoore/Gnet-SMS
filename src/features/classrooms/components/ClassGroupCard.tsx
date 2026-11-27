@@ -17,6 +17,10 @@ import { Link } from "react-router-dom";
 import { AvatarGroup } from "../../../components/AvatarGroup";
 import { subjectRoomsForClassGroup } from "../../academics-shared/classGroupLinks";
 import { getTeachersForClassGroup, resolveOrganizationType } from "../utils";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type ClassGroupCardProps = {
   classGroup: any;
@@ -187,7 +191,7 @@ export function ClassGroupCard({
                         </div>
                         <div className="flex items-center gap-1.5 text-slate-600">
                           <GraduationCap className="w-4 h-4 text-slate-400" />
-                          <span className="text-xs font-bold text-slate-700">{classGroup.gradeLevel?.name || t("classrooms.classGroupCard.notAvailable")}</span>
+                          <span className="text-xs font-bold text-slate-700">{canonicalGradeName(classGroup.gradeLevel?.name) || t("classrooms.classGroupCard.notAvailable")}</span>
                         </div>
                       </div>
 
@@ -229,7 +233,9 @@ export function ClassGroupCard({
                                   >
                                     <div className="min-w-0 flex-1">
                                       <p className="font-bold text-xs text-slate-800 truncate">
-                                        {subClassroom.subject?.name || subClassroom.name.split(" - ").slice(1).join(" - ")}
+                                        {canonicalSubjectName(
+                                          subClassroom.subject?.name || subClassroom.name
+                                        )}
                                       </p>
                                       <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                                         <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">

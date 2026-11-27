@@ -3,6 +3,7 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, BookmarkPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import { buildGradeOptions, buildSubjectOptions } from "../academics-shared/gradeSubjectLabels";
 import { alertError } from "../../lib/swal";
 import { questionBankApi, type BankVisibility } from "./api";
 import { toApiQuestions } from "./mappers";
@@ -78,6 +79,9 @@ export function SaveToBankModal({
   }, [open, schoolId]);
 
   if (!open) return null;
+
+  const subjectOptions = buildSubjectOptions(subjects);
+  const gradeOptions = buildGradeOptions(grades);
 
   const toggle = (i: number) => {
     setSelected((prev) => {
@@ -156,9 +160,9 @@ export function SaveToBankModal({
                 className={`${fieldSelect} mt-1.5`}
               >
                 <option value="">{t("onlineExams.questionBank.noSubject")}</option>
-                {subjects.map((s) => (
+                {subjectOptions.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
+                    {s.label}
                   </option>
                 ))}
               </select>
@@ -171,9 +175,9 @@ export function SaveToBankModal({
                 className={`${fieldSelect} mt-1.5`}
               >
                 <option value="">{t("onlineExams.questionBank.noGrade")}</option>
-                {grades.map((g) => (
+                {gradeOptions.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name}
+                    {g.label}
                   </option>
                 ))}
               </select>

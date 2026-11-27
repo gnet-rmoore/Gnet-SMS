@@ -7,6 +7,7 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import { canonicalSubjectName } from "../../academics-shared/gradeSubjectLabels";
 
 export type AssignSubjectModalProps = {
   selectedClassGroup: any;
@@ -60,7 +61,7 @@ export function AssignSubjectModal({
             <option value="">Select subject</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {canonicalSubjectName(s.name)}
                 {s.code ? ` (${s.code})` : ""}
               </option>
             ))}

@@ -3,6 +3,12 @@ import { AnimatePresence } from "motion/react";
 import { Loader2, Library, Search, Lock, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FeatureModalShell, fieldInput, fieldSelect, fieldLabel } from "../academics-shared/FeatureModalShell";
+import {
+  buildGradeOptions,
+  buildSubjectOptions,
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../academics-shared/gradeSubjectLabels";
 import { alertError } from "../../lib/swal";
 import { questionBankApi, type BankItem, type BankVisibility } from "./api";
 import { bankItemToDraft } from "./mappers";
@@ -99,6 +105,9 @@ export function QuestionBankPickerModal({ schoolId, open, onClose, onInsert }: P
 
   if (!open) return null;
 
+  const subjectOptions = buildSubjectOptions(subjects);
+  const gradeOptions = buildGradeOptions(grades);
+
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -110,8 +119,10 @@ export function QuestionBankPickerModal({ schoolId, open, onClose, onInsert }: P
 
   const selectedItems = items.filter((i) => selected.has(i.id));
 
-  const subjectName = (id: string | null) => subjects.find((s) => s.id === id)?.name || "";
-  const gradeName = (id: string | null) => grades.find((g) => g.id === id)?.name || "";
+  const subjectName = (id: string | null) =>
+    canonicalSubjectName(subjects.find((s) => s.id === id)?.name);
+  const gradeName = (id: string | null) =>
+    canonicalGradeName(grades.find((g) => g.id === id)?.name);
 
   const handleInsert = () => {
     if (!selectedItems.length) return;
@@ -172,9 +183,9 @@ export function QuestionBankPickerModal({ schoolId, open, onClose, onInsert }: P
                 className={`${fieldSelect} mt-1.5`}
               >
                 <option value="">{t("onlineExams.questionBank.allSubjects")}</option>
-                {subjects.map((s) => (
+                {subjectOptions.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
+                    {s.label}
                   </option>
                 ))}
               </select>
@@ -187,9 +198,9 @@ export function QuestionBankPickerModal({ schoolId, open, onClose, onInsert }: P
                 className={`${fieldSelect} mt-1.5`}
               >
                 <option value="">{t("onlineExams.questionBank.allGrades")}</option>
-                {grades.map((g) => (
+                {gradeOptions.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name}
+                    {g.label}
                   </option>
                 ))}
               </select>

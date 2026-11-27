@@ -21,6 +21,10 @@ import {
   normalizeCalendarPeriods,
   type ActiveCalendar,
 } from "../../academics-shared/syllabusCalendar";
+import {
+  buildGradeOptions,
+  buildSubjectOptions,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type SyllabusBuilderModalProps = {
   aiCustomPrompt?: any;
@@ -93,7 +97,7 @@ export function SyllabusBuilderModal({
   const { t } = useTranslation(["pages", "common"]);
 
   const subjectOptions = useMemo(() => {
-    if (!isTeacherScoped || !teachingScope) return subjects;
+    if (!isTeacherScoped || !teachingScope) return buildSubjectOptions<any>(subjects);
     let list = teachingScope.subjects;
     if (syllabusForm.gradeLevelId) {
       const allowed = new Set(
@@ -101,7 +105,7 @@ export function SyllabusBuilderModal({
       );
       list = list.filter((s) => allowed.has(s.id));
     }
-    return list;
+    return buildSubjectOptions<any>(list);
   }, [
     isTeacherScoped,
     teachingScope,
@@ -110,7 +114,7 @@ export function SyllabusBuilderModal({
   ]);
 
   const gradeOptions = useMemo(() => {
-    if (!isTeacherScoped || !teachingScope) return gradeLevels;
+    if (!isTeacherScoped || !teachingScope) return buildGradeOptions(gradeLevels);
     let list = teachingScope.gradeLevels;
     if (syllabusForm.subjectId) {
       const allowed = new Set(
@@ -118,7 +122,7 @@ export function SyllabusBuilderModal({
       );
       list = list.filter((g) => allowed.has(g.id));
     }
-    return list;
+    return buildGradeOptions(list);
   }, [
     isTeacherScoped,
     teachingScope,
@@ -400,7 +404,7 @@ export function SyllabusBuilderModal({
                               </option>
                             ) : (
                               subjectOptions.map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                                <option key={s.id} value={s.id}>{s.label} ({s.code})</option>
                               ))
                             )}
                           </select>
@@ -423,7 +427,7 @@ export function SyllabusBuilderModal({
                               </option>
                             ) : (
                               gradeOptions.map(g => (
-                                <option key={g.id} value={g.id}>{g.name}</option>
+                                <option key={g.id} value={g.id}>{g.label}</option>
                               ))
                             )}
                           </select>

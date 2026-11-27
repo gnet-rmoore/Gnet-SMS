@@ -13,6 +13,7 @@ import { unwrapItems } from "../../lib/apiEnvelope";
 import type { ClassroomSummary } from "./types";
 import { ClassRoomCard, durationByClassroom, type ClassDurationInfo } from "./ClassRoomCard";
 import { useTranslation } from "react-i18next";
+import { canonicalGradeName } from "../academics-shared/gradeSubjectLabels";
 
 export function ClassroomWorkspaceList() {
   const { t } = useTranslation(["pages", "nav"]);
@@ -105,7 +106,7 @@ export function ClassroomWorkspaceList() {
       const group = groups.get(id) || {
         id,
         name:
-          room.gradeLevel?.name ||
+          canonicalGradeName(room.gradeLevel?.name) ||
           t("classroom.gradeLevelFallback", { defaultValue: "Grade level" }),
         rooms: [],
       };

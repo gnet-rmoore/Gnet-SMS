@@ -10,6 +10,10 @@ import {
   requiresSpecialistTeacher,
   resolveSubjectTeacherId,
 } from "../../academics-shared/subjectTeacherAssignment";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+} from "../../academics-shared/gradeSubjectLabels";
 
 export type ManageSubjectsModalProps = {
   classrooms?: any[];
@@ -59,7 +63,7 @@ export function ManageSubjectsModal({
   teachers = [],
 }: ManageSubjectsModalProps) {
   const { t } = useTranslation(["pages", "common"]);
-  const gradeLabel = selectedGradeLevel?.name || "this grade";
+  const gradeLabel = canonicalGradeName(selectedGradeLevel?.name) || "this grade";
   const gradeId = selectedGradeLevel?.id || "";
   const gradeClassGroups = useMemo(
     () => classrooms.filter((c: any) => c.gradeLevelId === gradeId && !c.subjectId),
@@ -165,7 +169,7 @@ export function ManageSubjectsModal({
         assignments.push({
           classGroupId: cg.id,
           subjectId: subject.id,
-          subjectName: subject.name,
+          subjectName: canonicalSubjectName(subject.name),
           subjectCode: subject.code || "",
           teacherId,
           gradeLevelId: selectedGradeLevel.id,
@@ -270,7 +274,7 @@ export function ManageSubjectsModal({
                       }
                     />
                     <span>
-                      <span className="block font-bold text-slate-900 text-sm">{subject.name}</span>
+                      <span className="block font-bold text-slate-900 text-sm">{canonicalSubjectName(subject.name)}</span>
                       <span className="block text-xs font-mono font-bold text-slate-500 uppercase tracking-wider">
                         {subject.code}
                       </span>
@@ -332,7 +336,7 @@ export function ManageSubjectsModal({
                             key={subject.id}
                             className="flex flex-wrap items-center justify-between gap-2 bg-white rounded-xl border border-slate-100 px-3 py-2"
                           >
-                            <span className="text-xs font-bold text-slate-700">{subject.name}</span>
+                            <span className="text-xs font-bold text-slate-700">{canonicalSubjectName(subject.name)}</span>
                             <select
                               value={teacherByKey[`${cg.id}:${subject.id}`] || ""}
                               onChange={(e) => setTeacher(cg.id, subject.id, e.target.value)}

@@ -97,7 +97,7 @@ export const ReportCardTemplate: React.FC<ReportCardProps> = ({
         name: studentName,
         sex: studentSex,
         classLabel: grades[0]?.classroom?.name || "",
-        gradeLevelLabel: grades[0]?.classroom?.name || "",
+        gradeLevelLabel: "",
       },
       academicYearLabel:
         academicYearLabel ||

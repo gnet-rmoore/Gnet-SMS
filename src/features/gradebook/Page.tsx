@@ -6,6 +6,7 @@ import { PageShell, PageHeader, Button, SelectField, Surface } from "../../compo
 import { useAuthStore } from "../../store/authStore";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
 import { confirmAction } from "../../lib/swal";
+import { subjectRoomLabel } from "../academics-shared/gradeSubjectLabels";
 import { gradebookApi } from "./api";
 import { api } from "../../services/api";
 import { GradebookSheet, type GradebookRow } from "./components/GradebookSheet";
@@ -39,12 +40,6 @@ import {
 } from "../../lib/gradeEditGrant";
 
 type HubMode = "exams" | "assessment";
-
-function classroomSubjectLabel(classroom: any) {
-  return classroom.subject?.name
-    ? `${classroom.name} - ${classroom.subject.name}`
-    : classroom.name;
-}
 
 function statusChip(status: string, t: (key: string, options?: any) => any) {
   const map: Record<string, string> = {
@@ -395,7 +390,7 @@ export const Gradebook = () => {
         classId,
         periodId: pId,
         assessmentId: componentId,
-        className: classroomSubjectLabel(room),
+        className: subjectRoomLabel(room.name, room.subject?.name),
         periodLabel: period.label,
         assessmentLabel: component.label,
         updatedAt: new Date().toISOString(),
@@ -824,11 +819,10 @@ export const Gradebook = () => {
       {showExamSheet && (
         <GradebookSheet
           title={examMeta?.title || t("gradebook.examGradesFallback")}
-          subtitle={`${classroomMeta?.name || t("gradebook.classFallback")}${
+          subtitle={subjectRoomLabel(
+            classroomMeta?.name || t("gradebook.classFallback"),
             classroomMeta?.subject?.name
-              ? ` · ${classroomMeta.subject.name}`
-              : ""
-          }`}
+          )}
           rows={rows}
           onChangeGrade={handleExamGradeChange}
           syncStatus={examAutosave.status}
@@ -977,7 +971,7 @@ function ExamHub({
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <h3 className="font-extrabold tracking-tight text-slate-900 truncate">
-                {classroomSubjectLabel(c)}
+              {subjectRoomLabel(c.name, c.subject?.name)}
               </h3>
               {statusChip(c.submissionStatus || "NOT_STARTED", t)}
             </div>
@@ -1204,7 +1198,7 @@ function AssessmentHub({
           <option value="">{t("gradebook.selectClass")}</option>
           {subjectClassrooms.map((c) => (
             <option key={c.id} value={c.id}>
-              {classroomSubjectLabel(c)}
+              {subjectRoomLabel(c.name, c.subject?.name)}
             </option>
           ))}
         </SelectField>
@@ -1248,7 +1242,7 @@ function AssessmentHub({
               {t("gradebook.readyToGrade", { defaultValue: "Ready to grade" })}
             </p>
             <p className="font-extrabold text-slate-900">
-              {classroomSubjectLabel(selectedClass)} · {selectedPeriod?.label} · {selectedAssessment.label}
+              {subjectRoomLabel(selectedClass.name, selectedClass.subject?.name)} · {selectedPeriod?.label} · {selectedAssessment.label}
             </p>
           </div>
         )}

@@ -37,6 +37,11 @@ import {
   examStatusClass,
   examStatusLabel,
 } from "../exams/utils";
+import {
+  canonicalGradeName,
+  canonicalSubjectName,
+  subjectRoomLabel,
+} from "../academics-shared/gradeSubjectLabels";
 
 interface GradeHistory {
   id: string;
@@ -406,7 +411,7 @@ export const ExamDetails = () => {
       startY: 95,
       head: [["Subject", "Score (%)", "Status"]],
       body: result.subjects.map(s => [
-        s.subjectName,
+        canonicalSubjectName(s.subjectName),
         s.score.toFixed(2),
         s.score >= 50 ? "PASS" : "FAIL"
       ]),
@@ -459,8 +464,8 @@ export const ExamDetails = () => {
                     {cls.submissionStatus === "SUBMITTED" ? t("examDetails.pendingReview") : t(`common:gradeStatus.${cls.submissionStatus}`, { defaultValue: cls.submissionStatus.replace("_", " ") })}
                   </span>
                 </div>
-                <h3 className="text-lg font-extrabold tracking-tight text-slate-900 mb-1">{cls.subject.name}</h3>
-                <p className="text-sm text-slate-500 font-medium mb-4">{cls.name} • {cls.gradeLevel.name}</p>
+                <h3 className="text-lg font-extrabold tracking-tight text-slate-900 mb-1">{canonicalSubjectName(cls.subject.name)}</h3>
+                <p className="text-sm text-slate-500 font-medium mb-4">{subjectRoomLabel(cls.name, cls.subject?.name)} • {canonicalGradeName(cls.gradeLevel?.name)}</p>
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Users className="w-4 h-4" />
@@ -511,7 +516,7 @@ export const ExamDetails = () => {
                 </div>
                 <h3 className="text-lg font-extrabold tracking-tight text-slate-900 mb-1">{sub.teacher.name}</h3>
                 <p className="text-sm text-slate-500 font-medium mb-4">
-                  {sub.classroom.subject.name} • {sub.classroom.name}
+                  {subjectRoomLabel(sub.classroom.name, sub.classroom.subject?.name)}
                 </p>
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                   <div className="flex gap-2">
@@ -575,8 +580,8 @@ export const ExamDetails = () => {
             <p className="text-slate-500 font-medium">
               {selectedClassroom 
                 ? (isTeacher 
-                    ? teacherClassrooms.find(c => c.id === selectedClassroom)?.subject.name 
-                    : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.subject.name)
+                    ? canonicalSubjectName(teacherClassrooms.find(c => c.id === selectedClassroom)?.subject.name)
+                    : canonicalSubjectName(submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.subject.name))
                 : `${format(new Date(exam.startDate), "MMM d, yyyy · p")} – ${format(new Date(exam.endDate), "MMM d, yyyy · p")}`}
             </p>
             {!selectedClassroom && (
@@ -689,17 +694,18 @@ export const ExamDetails = () => {
           examTitle={exam.title}
           examComponentId={exam.examComponentId}
           classId={selectedClassroom}
-          className={
-            teacherClassrooms.find((c) => c.id === selectedClassroom)?.name
-          }
+          className={subjectRoomLabel(
+            teacherClassrooms.find((c) => c.id === selectedClassroom)?.name,
+            teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject?.name
+          )}
           subjectId={
             teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject
               ?.id || ""
           }
-          subjectName={
+          subjectName={canonicalSubjectName(
             teacherClassrooms.find((c) => c.id === selectedClassroom)?.subject
               ?.name
-          }
+          )}
           onBack={() => setSelectedClassroom(null)}
           showToast={showToast}
         />
@@ -790,17 +796,24 @@ export const ExamDetails = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500 font-medium">{t("examDetails.classInfoPanel.classroom")}</span>
                   <span className="font-bold text-slate-900">
-                    {isTeacher 
-                      ? teacherClassrooms.find(c => c.id === selectedClassroom)?.name 
-                      : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.name}
+                    {subjectRoomLabel(
+                      isTeacher
+                        ? teacherClassrooms.find(c => c.id === selectedClassroom)?.name
+                        : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.name,
+                      isTeacher
+                        ? teacherClassrooms.find(c => c.id === selectedClassroom)?.subject?.name
+                        : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.subject?.name
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500 font-medium">{t("examDetails.classInfoPanel.subject")}</span>
                   <span className="font-bold text-indigo-600">
-                    {isTeacher 
-                      ? teacherClassrooms.find(c => c.id === selectedClassroom)?.subject.name 
-                      : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.subject.name}
+                    {canonicalSubjectName(
+                      isTeacher
+                        ? teacherClassrooms.find(c => c.id === selectedClassroom)?.subject?.name
+                        : submissionsSummary.find(s => s.classroom.id === selectedClassroom)?.classroom.subject?.name
+                    )}
                   </span>
                 </div>
                 <div className="pt-4 border-t border-slate-100">

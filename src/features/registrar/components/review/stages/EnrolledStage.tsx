@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { canonicalGradeName } from "../../../../academics-shared/gradeSubjectLabels";
 
 export function EnrolledStage({
   classrooms = [],
@@ -39,7 +40,7 @@ export function EnrolledStage({
             <option value="">{t("admissions.review.selectClassGroup")}</option>
             {available.map((c: any) => {
               const seats = c.seatsLeft ?? (c.capacity == null ? null : Math.max(0, Number(c.capacity) - Number(c.studentCount || 0)));
-              return <option key={c.id} value={c.id}>{c.name} ({c.gradeLevel?.name || t("admissions.review.unassignedGrade")}){seats != null ? ` · ${seats}` : ""}</option>;
+              return <option key={c.id} value={c.id}>{c.name} ({canonicalGradeName(c.gradeLevel?.name) || t("admissions.review.unassignedGrade")}){seats != null ? ` · ${seats}` : ""}</option>;
             })}
           </select>
         </label>

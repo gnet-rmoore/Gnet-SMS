@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Layers } from "lucide-react";
 import { curriculumApi } from "../api";
 import { cardShell, fieldSelect } from "../../academics-shared/FeatureModalShell";
+import { buildGradeOptions } from "../../academics-shared/gradeSubjectLabels";
 
 type Division = {
   id: string;
@@ -34,6 +35,7 @@ export function DivisionsPanel({
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
 
   const load = async () => {
     setLoading(true);
@@ -127,12 +129,12 @@ export function DivisionsPanel({
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
-            {gradeLevels.map((g) => (
+            {gradeOptions.map((g) => (
               <div
                 key={g.id}
                 className="flex items-center gap-2 justify-between bg-slate-50 border border-slate-100 rounded-2xl px-3 py-2"
               >
-                <span className="text-sm font-bold text-slate-800 truncate">{g.name}</span>
+                <span className="text-sm font-bold text-slate-800 truncate">{g.label}</span>
                 <select
                   className={`${fieldSelect} !py-1.5 !text-xs max-w-[10rem]`}
                   value={g.divisionId || ""}

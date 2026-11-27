@@ -208,8 +208,17 @@ const grades = [
   assert(empty.length === 1, "blank rows filtered");
 }
 
-assert(studentImportTemplateCsv().includes("gradeLevel"), "student template has gradeLevel");
-assert(studentImportTemplateCsv().includes("parentEmail"), "student template has parentEmail");
+assert(
+  studentImportTemplateCsv().split("\n")[0] ===
+    "name,email,studentIdNumber,gradeLevel,feeCohort,classroomCode",
+  "student template uses only essential headers"
+);
+assert(
+  !studentImportTemplateCsv().includes("parentEmail") &&
+    !studentImportTemplateCsv().includes("documents") &&
+    !studentImportTemplateCsv().includes("customFields"),
+  "student template omits complex manual-only fields"
+);
 assert(staffImportTemplateCsv().includes("role"), "staff template has role");
 assert(BULK_IMPORT_MAX_ROWS === 1500, "max rows constant");
 
@@ -490,10 +499,10 @@ assert(BULK_IMPORT_MAX_ROWS === 1500, "max rows constant");
   const studentHeader = studentImportTemplateCsv().split("\n")[0];
   const staffHeader = staffImportTemplateCsv().split("\n")[0];
   assert(
-    ["studentIdNumber", "parent2Email", "documents", "customFields"].every((field) =>
-      studentHeader.includes(field)
+    ["name", "email", "studentIdNumber", "gradeLevel", "feeCohort", "classroomCode"].every(
+      (field) => studentHeader.includes(field)
     ),
-    "student template includes schema-backed fields"
+    "student template includes only import-ready fields"
   );
   assert(
     ["employeeId", "department", "designation", "documents", "customFields"].every((field) =>

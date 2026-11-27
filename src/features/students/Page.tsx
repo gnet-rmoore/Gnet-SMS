@@ -34,6 +34,7 @@ import { translateApiError } from "../../i18n/apiErrors";
 import { hasCapabilityOrRole } from "../../lib/capabilities";
 import { ListFilterBar, ListPagination, DataTable, dataTableClass, Button } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
+import { gradeOptionLabel } from "../academics-shared/gradeSubjectLabels";
 
 const emptyStudent = {
   name: "",
@@ -105,7 +106,10 @@ export const Students = () => {
         f.key === "gradeLevelId"
           ? {
               ...f,
-              options: gradeLevels.map((g: any) => ({ value: g.id, label: g.name })),
+              options: gradeLevels.map((g: any) => ({
+                value: g.id,
+                label: gradeOptionLabel(g.name),
+              })),
             }
           : f
       ),
@@ -148,7 +152,7 @@ export const Students = () => {
   );
 
   const gradeName = (id?: string) =>
-    gradeLevels.find((g: any) => g.id === id)?.name || "—";
+    gradeOptionLabel(gradeLevels.find((g: any) => g.id === id)?.name) || "—";
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -562,7 +566,7 @@ export const Students = () => {
                       return (
                         <option key={c.id} value={c.id}>
                           {c.name}
-                          {c.gradeLevel?.name ? ` (${c.gradeLevel.name})` : ""}
+                          {c.gradeLevel?.name ? ` (${gradeOptionLabel(c.gradeLevel.name)})` : ""}
                           {seats != null ? ` · ${seats}` : ""}
                         </option>
                       );

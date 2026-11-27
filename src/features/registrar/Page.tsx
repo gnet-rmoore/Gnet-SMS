@@ -19,6 +19,7 @@ import { OnlineRegistrationCard } from "./components/OnlineRegistrationCard";
 import { PromotionStatementReport, type ReportPeriod } from "../promotion-statement/components/PromotionStatementReport";
 import { academicCalendarApi } from "../academics-shared/calendar/api";
 import { periodsOf } from "../academics-shared/calendar/selectors";
+import { buildGradeOptions } from "../academics-shared/gradeSubjectLabels";
 import type { PlacementLink, TabType } from "./types";
 import { RegistrarChrome } from "./components/RegistrarChrome";
 import { usePageActions } from "./hooks/usePageActions";
@@ -79,6 +80,14 @@ export const Registrar = () => {
   }, [activeTab, school?.id]);
 
   // Search & Filters
+  const gradeFilterOptions = useMemo(
+    () =>
+      buildGradeOptions(gradeLevels).map((gl) => ({
+        value: gl.id,
+        label: gl.label,
+      })),
+    [gradeLevels]
+  );
   const directoryFilterFields: FilterFieldDef[] = useMemo(
     () => [
       {
@@ -87,11 +96,11 @@ export const Registrar = () => {
         type: "enum",
         primary: true,
         allLabel: `${t("common:all")} ${t("common:gradeLevel")}`,
-        options: gradeLevels.map((gl: any) => ({ value: gl.id, label: gl.name })),
+        options: gradeFilterOptions,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, gradeLevels]
+    [t, gradeFilterOptions]
   );
   const directoryFilters = useListFilters({ fields: directoryFilterFields, syncUrl: true });
 
@@ -124,11 +133,11 @@ export const Registrar = () => {
         label: `${t("common:all")} ${t("common:gradeLevel")}`,
         type: "enum",
         allLabel: `${t("common:all")} ${t("common:gradeLevel")}`,
-        options: gradeLevels.map((gl: any) => ({ value: gl.id, label: gl.name })),
+        options: gradeFilterOptions,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, gradeLevels]
+    [t, gradeFilterOptions]
   );
   const admissionsFilters = useListFilters({ fields: admissionsFilterFields, syncUrl: true });
 

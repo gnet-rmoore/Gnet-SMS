@@ -16,6 +16,11 @@ import type {
   ReportCardPayload,
   ReportCardSubjectRow,
 } from "./types";
+import {
+  canonicalSubjectName,
+  parseGradeLabel,
+  reportGradeLabel,
+} from "../academics-shared/gradeSubjectLabels";
 
 const SEM1_KEYS = ["SEM1_P1", "SEM1_P2", "SEM1_P3", "SEM1_EX"] as const;
 const SEM2_KEYS = ["SEM2_P4", "SEM2_P5", "SEM2_P6", "SEM2_EX"] as const;
@@ -92,7 +97,7 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
 
   for (const g of input.grades) {
     const subjectId = g.subjectId || g.subject?.id || g.subject?.code || g.id;
-    const name = g.subject?.name || "Subject";
+    const name = canonicalSubjectName(g.subject?.name) || "Subject";
     const code = g.subject?.code || "";
     if (!bySubject.has(subjectId)) {
       bySubject.set(subjectId, {
@@ -200,6 +205,12 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
     input.student.classLabel ||
     input.grades.find((g) => g.classroom?.name)?.classroom?.name ||
     "—";
+  const gradeLabelCandidate = [input.student.gradeLevelLabel, classLabel].find((value) =>
+    parseGradeLabel(value).isGradeLike
+  );
+  const gradeLevelLabel = gradeLabelCandidate
+    ? reportGradeLabel(gradeLabelCandidate, classLabel)
+    : "";
 
   return {
     school: {
@@ -209,7 +220,7 @@ export function assembleReportCardPayload(input: AssembleReportCardInput): Repor
     student: {
       ...input.student,
       classLabel,
-      gradeLevelLabel: input.student.gradeLevelLabel || classLabel,
+      gradeLevelLabel,
     },
     academicYear: {
       id: "CURRENT",

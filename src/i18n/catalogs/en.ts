@@ -838,6 +838,14 @@ export const enPublic = {
       hint: "Pages you already opened may still show, but saves and new loads will fail until you’re back online.",
       hintRetry: "When your connection returns, this page closes automatically — or tap Try again.",
     },
+    connection: {
+      eyebrow: "Connection status",
+      onlineTitle: "You’re online",
+      onlineBody:
+        "Your device is connected, but the app could not reach the server. Try again, or contact your school admin if it keeps happening.",
+      onlineHint: "A temporary network or server problem may be blocking this page.",
+      onlineHintRetry: "Reload the page, or switch networks and try again.",
+    },
   },
   checkout: {
     title: "Fee checkout",
@@ -2760,6 +2768,10 @@ export const enPages = {
       nameLabel: "Grade level name",
       namePlaceholder: "e.g. Grade 10",
       adding: "Adding…",
+      noSectionNames:
+        'Use a plain grade level like "Grade 8"; create sections like "Grade 8A" as class groups.',
+      noComposedNames:
+        'Use a plain grade level like "Grade 8"; create sections like "Grade 8A" as class groups.',
     },
     manageSubjects: {
       eyebrow: "Grade level",

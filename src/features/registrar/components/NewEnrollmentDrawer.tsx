@@ -14,6 +14,7 @@ import { isAdmissionFormEmpty } from "../../admission-form";
 import { confirmAction } from "../../../lib/swal";
 import { cn } from "../../../lib/cn";
 import { useDrawerA11y } from "../../../hooks/useDrawerA11y";
+import { canonicalGradeName } from "../../academics-shared/gradeSubjectLabels";
 
 export type NewEnrollmentDrawerProps = {
   gradeLevels: any[];
@@ -353,7 +354,7 @@ export function NewEnrollmentDrawer({
                       </span>
                       <span className="block truncate text-xs text-slate-500">
                         {student.email || student.phone || t("admissions.manualAdmission.unnamed")}
-                        {student.gradeLevel?.name ? ` · ${student.gradeLevel.name}` : ""}
+                        {student.gradeLevel?.name ? ` · ${canonicalGradeName(student.gradeLevel.name)}` : ""}
                         {status ? ` · ${status}` : ""}
                       </span>
                     </span>

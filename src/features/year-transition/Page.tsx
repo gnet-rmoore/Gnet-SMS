@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/authStore";
 import { PageShell, PageHeader, Surface, Button, TextField, DataTable, dataTableClass } from "../../components/ui";
 import { confirmAction } from "../../lib/swal";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
+import { buildGradeOptions } from "../academics-shared/gradeSubjectLabels";
 import { yearTransitionApi, type PromotionDecision, type PromotionRun, type YearTransitionResult } from "./api";
 import { api } from "../../services/api";
 import { fetchAllItems } from "../../lib/apiEnvelope";
@@ -73,6 +74,7 @@ export function YearTransitionPage() {
   const [targetYearKey, setTargetYearKey] = React.useState(() => nextYearKey(defaultYearKey()));
   const [transitioning, setTransitioning] = React.useState(false);
   const [transitionResult, setTransitionResult] = React.useState<YearTransitionResult | null>(null);
+  const gradeOptions = React.useMemo(() => buildGradeOptions(gradeLevels), [gradeLevels]);
 
   React.useEffect(() => {
     setTargetYearKey(nextYearKey(yearKey));
@@ -480,9 +482,9 @@ export function YearTransitionPage() {
                         }
                       >
                         <option value="">—</option>
-                        {gradeLevels.map((g) => (
+                        {gradeOptions.map((g) => (
                           <option key={g.id} value={g.id}>
-                            {g.name}
+                            {g.label}
                           </option>
                         ))}
                       </select>

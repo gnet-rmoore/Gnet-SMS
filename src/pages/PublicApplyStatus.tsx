@@ -9,6 +9,7 @@ import type { AppLocale } from "../i18n/locales";
 import { buildStatusUrl, loadReference, saveReference } from "../lib/publicApplyStatus";
 import { Button } from "../components/ui";
 import { OnboardingStepper } from "../components/OnboardingStepper";
+import { canonicalGradeName } from "../features/academics-shared/gradeSubjectLabels";
 
 const inputClass =
   "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white";
@@ -268,7 +269,7 @@ export default function PublicApplyStatusPage() {
               {data.gradeLevelName ? (
                 <p>
                   <span className="font-medium text-slate-900">{t("public:applyStatus.grade")}:</span>{" "}
-                  {data.gradeLevelName}
+                  {canonicalGradeName(data.gradeLevelName)}
                 </p>
               ) : null}
               <p>

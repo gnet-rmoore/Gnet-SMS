@@ -203,6 +203,15 @@ assert.deepEqual(formatParentAccessCodeInput("12-34-56", 8), {
 assert.match(loginSource, /value=\{formatParentAccessCode\(parentAccessCode\)\}/);
 assert.match(loginSource, /formatParentAccessCodeInput\(/);
 assert.match(loginSource, /placeholder="000-000"/);
+assert.match(loginSource, /showToast\(t\("auth:expired"\), "info"\)/);
+assert.doesNotMatch(loginSource, /role="status"[\s\S]{0,240}auth:expired/);
+
+const loginErrorAlertSource = readFileSync(
+  new URL("../src/pages/LoginErrorAlert.tsx", import.meta.url),
+  "utf8"
+);
+assert.match(loginErrorAlertSource, /fixed inset-x-4 top-20 z-\[120\]/);
+assert.match(loginErrorAlertSource, /setDismissed\(true\), 8000/);
 
 const enCatalog = readFileSync(new URL("../src/i18n/catalogs/en.ts", import.meta.url), "utf8");
 assert.match(enCatalog, /subtitle: "Use the 6-digit code issued by the school"/);
