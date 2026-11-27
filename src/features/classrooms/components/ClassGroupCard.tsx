@@ -152,13 +152,15 @@ export function ClassGroupCard({
                           <h3 className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight">
                             {classGroup.name}
                           </h3>
-                          <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-600 font-extrabold text-[9px] uppercase tracking-wider rounded-md border border-indigo-100">
-                            {t("classrooms.classGroupCard.homeroom")}
-                          </span>
+                          {orgType !== "DEPARTMENTALIZED" && (
+                            <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-600 font-extrabold text-[9px] uppercase tracking-wider rounded-md border border-indigo-100">
+                              {t("classrooms.classGroupCard.homeroom")}
+                            </span>
+                          )}
                         </div>
                         
                         {/* Homeroom Teacher Row with Avatar Group */}
-                        {(() => {
+                        {orgType !== "DEPARTMENTALIZED" && (() => {
                           const teachers = getTeachersForClassGroup(classGroup);
                           return (
                             <div className="flex items-center justify-between mt-3 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">

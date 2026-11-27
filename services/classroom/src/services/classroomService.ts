@@ -11,8 +11,12 @@ import { createClassroomUploadUrl, storageEnabled } from "../lib/storage";
 import {
   CLASSROOM_STAFF_ROLES,
   normalizeOrganizationType,
-  type OrganizationType,
+  resolveOrganizationType,
 } from "../lib/organizationTypes";
+import {
+  autoProvisionTeacherId,
+  requiresDistinctSpecialist,
+} from "../lib/subjectRoomTeacher";
 import {
   buildSectionSubjectCode,
   buildSubjectRoomName,
@@ -57,6 +61,27 @@ function normalizeCapacity(value: unknown): number | null | undefined {
     });
   }
   return parsed;
+}
+
+async function subjectRoomOwnerIds(
+  schoolId: string,
+  classGroup: { id: string; name?: string | null; gradeLevelId?: string | null }
+) {
+  const rooms = await prisma.classroom.findMany({
+    where: {
+      schoolId,
+      subjectId: { not: null },
+      OR: [
+        { parentClassroomId: classGroup.id },
+        {
+          name: { startsWith: `${String(classGroup.name ?? "")} - ` },
+          gradeLevelId: classGroup.gradeLevelId ?? null,
+        },
+      ],
+    },
+    select: { ownerTeacherId: true },
+  });
+  return rooms.map((room) => room.ownerTeacherId);
 }
 
 function buildCapacityPatch(
@@ -130,22 +155,53 @@ export const classroomService = {
       capacity,
       allowOverfill,
     } = data;
-    const primaryTeacherId = ownerTeacherId;
     const isClassGroup = !subjectId;
 
     if (!name) throw new Error("Class name is required");
     if (!schoolId) throw new Error("School ID is required");
-    if (!primaryTeacherId) throw new Error("Owner teacher ID is required");
     const normalizedCapacity = normalizeCapacity(capacity);
 
     const organizationType = isClassGroup
       ? normalizeOrganizationType(rawOrganizationType, "SELF_CONTAINED")
       : null;
+    const isDepartmentalizedGroup = isClassGroup && organizationType === "DEPARTMENTALIZED";
+    const primaryTeacherId = isDepartmentalizedGroup ? null : ownerTeacherId;
+
+    if (!isDepartmentalizedGroup && !primaryTeacherId) {
+      throw new Error("Owner teacher ID is required");
+    }
 
     // Enforce that only users with role "TEACHER" can be assigned as a primary teacher of a classroom
-    const primaryTeacher = await getIdentityUser(primaryTeacherId);
-    if (!primaryTeacher || primaryTeacher.role !== "TEACHER") {
-      throw new Error("Only users with role TEACHER can be primary teachers of a classroom");
+    if (primaryTeacherId) {
+      const primaryTeacher = await getIdentityUser(primaryTeacherId);
+      if (!primaryTeacher || primaryTeacher.role !== "TEACHER") {
+        throw new Error("Only users with role TEACHER can be primary teachers of a classroom");
+      }
+    }
+
+    if (subjectId && (sourceClassroomId || parentClassroomId)) {
+      const sourceGroupId = sourceClassroomId || parentClassroomId;
+      const sourceGroup = await prisma.classroom.findFirst({
+        where: { id: sourceGroupId, schoolId, subjectId: null },
+        select: {
+          id: true,
+          name: true,
+          gradeLevelId: true,
+          ownerTeacherId: true,
+          organizationType: true,
+        },
+      });
+      if (
+        sourceGroup &&
+        requiresDistinctSpecialist(
+          sourceGroup.organizationType,
+          sourceGroup.ownerTeacherId,
+          await subjectRoomOwnerIds(schoolId, sourceGroup)
+        ) &&
+        primaryTeacherId === sourceGroup.ownerTeacherId
+      ) {
+        throw new Error("Departmentalized class groups require a specialist teacher per subject");
+      }
     }
 
     const classroom = await prisma.$transaction(async (tx) => {
@@ -158,10 +214,11 @@ export const classroomService = {
             gradeLevelId: gradeLevelId || null,
             parentClassroomId: parentClassroomId || (subjectId ? sourceClassroomId || null : null),
             schoolId,
-            ownerTeacherId: primaryTeacherId,
+            ownerTeacherId: primaryTeacherId || null,
             organizationType,
-            propagateSupportStaff:
-              propagateSupportStaff === undefined || propagateSupportStaff === null
+            propagateSupportStaff: isDepartmentalizedGroup
+              ? false
+              : propagateSupportStaff === undefined || propagateSupportStaff === null
                 ? true
                 : Boolean(propagateSupportStaff),
             classCode: Math.random().toString(36).substring(2, 9).toUpperCase(),
@@ -171,13 +228,15 @@ export const classroomService = {
           } as any,
         });
 
-        await tx.classroomMember.create({
-          data: {
-            classroomId: classroom.id,
-            userId: primaryTeacherId,
-            role: "TEACHER",
-          },
-        });
+        if (primaryTeacherId) {
+          await tx.classroomMember.create({
+            data: {
+              classroomId: classroom.id,
+              userId: primaryTeacherId,
+              role: "TEACHER",
+            },
+          });
+        }
 
         const addStaffMembers = async (ids: unknown, role: "CO_TEACHER" | "ASSISTANT") => {
           if (!Array.isArray(ids)) return;
@@ -203,8 +262,10 @@ export const classroomService = {
           );
         };
 
-        await addStaffMembers(teacherIds, "CO_TEACHER");
-        await addStaffMembers(assistantIds, "ASSISTANT");
+        if (!isDepartmentalizedGroup) {
+          await addStaffMembers(teacherIds, "CO_TEACHER");
+          await addStaffMembers(assistantIds, "ASSISTANT");
+        }
 
         if (sourceClassroomId) {
           const sourceMembers = await tx.classroomMember.findMany({
@@ -289,15 +350,41 @@ export const classroomService = {
       allowOverfill,
     } = data;
 
-    if (ownerTeacherId) {
-      const teacherUser = await getIdentityUser(ownerTeacherId);
+    const existing = await prisma.classroom.findUnique({ where: { id } });
+    if (!existing) throw new Error("Classroom not found");
+
+    const isClassGroup = !existing.subjectId;
+    const requestedOrganizationType =
+      rawOrganizationType === undefined
+        ? undefined
+        : rawOrganizationType === null || rawOrganizationType === ""
+          ? null
+          : normalizeOrganizationType(rawOrganizationType, null);
+    if (requestedOrganizationType && !isClassGroup) {
+      throw new Error("organizationType can only be set on class groups");
+    }
+    if (typeof rawOrganizationType === "string" && rawOrganizationType && !requestedOrganizationType) {
+      throw new Error("organizationType must be SELF_CONTAINED, DEPARTMENTALIZED, or MIXED");
+    }
+
+    const subjectOwnerIds = isClassGroup ? await subjectRoomOwnerIds(existing.schoolId, existing) : [];
+    const isDepartmentalizedGroup =
+      isClassGroup &&
+      resolveOrganizationType(
+        requestedOrganizationType === undefined
+          ? existing.organizationType
+          : requestedOrganizationType,
+        existing.ownerTeacherId,
+        subjectOwnerIds
+      ) === "DEPARTMENTALIZED";
+
+    const normalizedOwnerTeacherId = ownerTeacherId || null;
+    if (!isDepartmentalizedGroup && normalizedOwnerTeacherId) {
+      const teacherUser = await getIdentityUser(normalizedOwnerTeacherId);
       if (!teacherUser || teacherUser.role !== "TEACHER") {
         throw new Error("Only users with role TEACHER can be assigned as a teacher in a class");
       }
     }
-
-    const existing = await prisma.classroom.findUnique({ where: { id } });
-    if (!existing) throw new Error("Classroom not found");
 
     const occupied = await prisma.classroomMember.count({
       where: { classroomId: id, role: "STUDENT" },
@@ -313,7 +400,7 @@ export const classroomService = {
     if (subjectId !== undefined) patch.subjectId = subjectId;
     if (gradeLevelId !== undefined) patch.gradeLevelId = gradeLevelId;
     if (parentClassroomId !== undefined) patch.parentClassroomId = parentClassroomId;
-    if (ownerTeacherId !== undefined) patch.ownerTeacherId = ownerTeacherId;
+    if (ownerTeacherId !== undefined) patch.ownerTeacherId = normalizedOwnerTeacherId;
     if (status !== undefined) patch.status = status;
     if (propagateSupportStaff !== undefined) {
       patch.propagateSupportStaff = Boolean(propagateSupportStaff);
@@ -321,15 +408,18 @@ export const classroomService = {
     if (sectionSubjectCode !== undefined) {
       patch.sectionSubjectCode = sectionSubjectCode || null;
     }
-    if (rawOrganizationType !== undefined) {
-      if (existing.subjectId) {
-        throw new Error("organizationType can only be set on class groups");
+    if (requestedOrganizationType !== undefined) {
+      patch.organizationType = requestedOrganizationType;
+    }
+    if (requestedOrganizationType === "DEPARTMENTALIZED") {
+      if (subjectOwnerIds.some((owner) => owner && owner === normalizedOwnerTeacherId)) {
+        throw new Error("Departmentalized class groups require a specialist teacher per subject");
       }
-      const next = normalizeOrganizationType(rawOrganizationType, null);
-      if (rawOrganizationType !== null && rawOrganizationType !== "" && !next) {
-        throw new Error("organizationType must be SELF_CONTAINED, DEPARTMENTALIZED, or MIXED");
-      }
-      patch.organizationType = next;
+    }
+
+    if (isDepartmentalizedGroup) {
+      patch.ownerTeacherId = null;
+      patch.propagateSupportStaff = false;
     }
 
     const updatedClassroom = await prisma.classroom.update({
@@ -337,11 +427,15 @@ export const classroomService = {
       data: patch,
     });
 
-    if (ownerTeacherId) {
+    if (isDepartmentalizedGroup) {
+      await prisma.classroomMember.deleteMany({
+        where: { classroomId: id, role: { in: [...CLASSROOM_STAFF_ROLES] } },
+      });
+    } else if (normalizedOwnerTeacherId) {
       await prisma.classroomMember.upsert({
-        where: { classroomId_userId: { classroomId: id, userId: ownerTeacherId } },
+        where: { classroomId_userId: { classroomId: id, userId: normalizedOwnerTeacherId } },
         update: { role: "TEACHER" },
-        create: { classroomId: id, userId: ownerTeacherId, role: "TEACHER" },
+        create: { classroomId: id, userId: normalizedOwnerTeacherId, role: "TEACHER" },
       });
     }
 
@@ -452,25 +546,29 @@ export const classroomService = {
         continue;
       }
 
-      const orgType = (classGroup.organizationType || "MIXED") as OrganizationType | "MIXED";
+      const orgType = resolveOrganizationType(
+        classGroup.organizationType,
+        classGroup.ownerTeacherId,
+        await subjectRoomOwnerIds(schoolId, classGroup)
+      );
       if (!teacherId) {
         if (orgType === "SELF_CONTAINED") {
           teacherId = classGroup.ownerTeacherId;
-        } else if (orgType === "DEPARTMENTALIZED") {
-          skipped.push({
-            classGroupId,
-            subjectId,
-            reason: "Departmentalized class groups require a specialist teacher per subject",
-          });
-          continue;
         } else {
           skipped.push({
             classGroupId,
             subjectId,
-            reason: "teacherId is required",
+            reason: "A teacherId is required for departmentalized or mixed class groups",
           });
           continue;
         }
+      } else if (orgType === "DEPARTMENTALIZED" && teacherId === classGroup.ownerTeacherId) {
+        skipped.push({
+          classGroupId,
+          subjectId,
+          reason: "Departmentalized class groups require a specialist teacher per subject",
+        });
+        continue;
       }
 
       const gradeLevelId = row.gradeLevelId || classGroup.gradeLevelId || null;
@@ -544,18 +642,31 @@ export const classroomService = {
   ) {
     const classGroups = await prisma.classroom.findMany({
       where: { schoolId, gradeLevelId: data.gradeLevelId, subjectId: null },
-      select: { id: true, name: true, ownerTeacherId: true, organizationType: true },
+      select: {
+        id: true,
+        name: true,
+        gradeLevelId: true,
+        ownerTeacherId: true,
+        organizationType: true,
+      },
     });
     if (!classGroups.length) return { created: [], updated: [], skipped: [] };
 
-    const assignments = classGroups.map((cg) => ({
-      classGroupId: cg.id,
-      subjectId: data.subjectId,
-      subjectName: data.subjectName,
-      subjectCode: data.subjectCode,
-      teacherId: cg.ownerTeacherId,
-      gradeLevelId: data.gradeLevelId,
-    }));
+    const assignments = await Promise.all(
+      classGroups.map(async (cg) => ({
+        classGroupId: cg.id,
+        subjectId: data.subjectId,
+        subjectName: data.subjectName,
+        subjectCode: data.subjectCode,
+        teacherId:
+          autoProvisionTeacherId(
+            cg.organizationType,
+            cg.ownerTeacherId,
+            await subjectRoomOwnerIds(schoolId, cg)
+          ) || undefined,
+        gradeLevelId: data.gradeLevelId,
+      }))
+    );
     return this.syncSubjectRooms(schoolId, assignments);
   },
 
@@ -569,6 +680,12 @@ export const classroomService = {
     if (!classGroup?.gradeLevelId) return { created: [], updated: [], skipped: [] };
 
     const offerings = await fetchSubjectOfferings(schoolId, classGroup.gradeLevelId);
+    const teacherId =
+      autoProvisionTeacherId(
+        classGroup.organizationType,
+        classGroup.ownerTeacherId,
+        await subjectRoomOwnerIds(schoolId, classGroup)
+      ) || undefined;
     const assignments = offerings
       .filter((o) => o.subject?.name)
       .map((o) => ({
@@ -576,7 +693,7 @@ export const classroomService = {
         subjectId: o.subjectId,
         subjectName: o.subject!.name,
         subjectCode: o.subject!.code || "",
-        teacherId: classGroup.ownerTeacherId,
+        teacherId,
         gradeLevelId: classGroup.gradeLevelId!,
       }));
     if (!assignments.length) return { created: [], updated: [], skipped: [] };
@@ -637,8 +754,34 @@ export const classroomService = {
       throw new Error("User not found");
     }
 
-    if ([...CLASSROOM_STAFF_ROLES].includes(role as any) && targetUser.role !== "TEACHER") {
-      throw new Error(`Only users with role TEACHER can be assigned with role ${role} in a classroom.`);
+    if ([...CLASSROOM_STAFF_ROLES].includes(role as any)) {
+      if (targetUser.role !== "TEACHER") {
+        throw new Error(`Only users with role TEACHER can be assigned with role ${role} in a classroom.`);
+      }
+      const classroom = await prisma.classroom.findUnique({
+        where: { id: classroomId },
+        select: {
+          subjectId: true,
+          organizationType: true,
+          ownerTeacherId: true,
+          schoolId: true,
+          name: true,
+          gradeLevelId: true,
+        },
+      });
+      if (!classroom) throw new Error("Classroom not found");
+      if (
+        !classroom.subjectId &&
+        resolveOrganizationType(
+          classroom.organizationType,
+          classroom.ownerTeacherId,
+          await subjectRoomOwnerIds(classroom.schoolId, classroom)
+        ) === "DEPARTMENTALIZED"
+      ) {
+        throw new Error(
+          "Departmentalized class groups do not have homeroom, co-teacher, or assistant staff"
+        );
+      }
     }
 
     if (role === "STUDENT") {

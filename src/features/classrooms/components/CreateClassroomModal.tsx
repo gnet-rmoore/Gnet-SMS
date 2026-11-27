@@ -57,6 +57,7 @@ export function CreateClassroomModal({
   const selectedTeacher = teachers.find((s) => s.id === formData.ownerTeacherId);
   const supportOptions = teachers.filter((s) => s.id !== formData.ownerTeacherId);
   const isSelfContained = formData.organizationType === "SELF_CONTAINED";
+  const isDepartmentalized = formData.organizationType === "DEPARTMENTALIZED";
 
   const toggleList = (key: "teacherIds" | "assistantIds", id: string) => {
     const current = formData[key] || [];
@@ -216,7 +217,15 @@ export function CreateClassroomModal({
               </button>
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, organizationType: "DEPARTMENTALIZED" })}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    organizationType: "DEPARTMENTALIZED",
+                    ownerTeacherId: "",
+                    teacherIds: [],
+                    assistantIds: [],
+                  })
+                }
                 className={`text-left rounded-2xl border p-4 transition-colors ${
                   formData.organizationType === "DEPARTMENTALIZED"
                     ? "border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-500"
@@ -240,6 +249,7 @@ export function CreateClassroomModal({
             </div>
           </div>
 
+          {!isDepartmentalized && (
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
               {isSelfContained
@@ -259,7 +269,7 @@ export function CreateClassroomModal({
                   })
                 }
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
-                required
+                required={!isDepartmentalized}
               >
                 <option value="">{t("classroomModals.selectTeacher")}</option>
                 {teachers.map((s) => (
@@ -293,8 +303,9 @@ export function CreateClassroomModal({
               <p className="text-xs text-slate-500">{t("classroomModals.homeroomTeacherDeptHint")}</p>
             )}
           </div>
+          )}
 
-          {supportOptions.length > 0 && (
+          {!isDepartmentalized && supportOptions.length > 0 && (
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                 {t("classroomModals.coTeachers")}{" "}
@@ -326,7 +337,7 @@ export function CreateClassroomModal({
             </div>
           )}
 
-          {supportOptions.length > 0 && (
+          {!isDepartmentalized && supportOptions.length > 0 && (
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                 {t("classroomModals.assistants")}{" "}

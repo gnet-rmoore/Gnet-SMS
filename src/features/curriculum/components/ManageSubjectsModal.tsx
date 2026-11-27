@@ -6,6 +6,10 @@ import {
   fieldInput,
   fieldLabel,
 } from "../../academics-shared/FeatureModalShell";
+import {
+  requiresSpecialistTeacher,
+  resolveSubjectTeacherId,
+} from "../../academics-shared/subjectTeacherAssignment";
 
 export type ManageSubjectsModalProps = {
   classrooms?: any[];
@@ -28,6 +32,7 @@ export type ManageSubjectsModalProps = {
   setNewClassGroupName?: (v: string) => void;
   setNewClassGroupTeacherId?: (v: string) => void;
   setShowManageSubjectsModal?: (v: boolean) => void;
+  showToast?: (message: string, type?: "success" | "error" | "info") => void;
   subjects?: Array<{ id: string; name: string; code?: string }>;
   submitting?: boolean;
   teachers?: Array<{ id: string; name: string }>;
@@ -48,6 +53,7 @@ export function ManageSubjectsModal({
   setNewClassGroupName,
   setNewClassGroupTeacherId,
   setShowManageSubjectsModal,
+  showToast,
   subjects = [],
   submitting,
   teachers = [],
@@ -83,14 +89,17 @@ export function ManageSubjectsModal({
             (c.parentClassroomId === cg.id ||
               (c.gradeLevelId === gradeId && c.name?.startsWith(`${cg.name} - `)))
         );
-        const org = cg.organizationType as string | null | undefined;
-        if (existingRoom?.ownerTeacherId) {
-          next[key] = existingRoom.ownerTeacherId;
-        } else if (org === "DEPARTMENTALIZED") {
-          next[key] = "";
+        const existingTeacherId = existingRoom?.ownerTeacherId;
+        if (
+          existingTeacherId &&
+          !(
+            requiresSpecialistTeacher(cg, classrooms) &&
+            existingTeacherId === cg.ownerTeacherId
+          )
+        ) {
+          next[key] = existingTeacherId;
         } else {
-          // SELF_CONTAINED, MIXED, or unset → prefer class teacher
-          next[key] = cg.ownerTeacherId || teachers[0]?.id || "";
+          next[key] = resolveSubjectTeacherId(cg, classrooms, undefined);
         }
       }
     }
@@ -105,6 +114,8 @@ export function ManageSubjectsModal({
     if (!teacherId) return;
     setTeacherByKey((prev) => {
       const next = { ...prev };
+      const classGroup = classrooms.find((c: any) => c.id === classGroupId);
+      if (requiresSpecialistTeacher(classGroup, classrooms)) return prev;
       for (const subject of subjects) {
         if (!offeredSubjectIds.has(subject.id)) continue;
         next[`${classGroupId}:${subject.id}`] = teacherId;
@@ -126,6 +137,18 @@ export function ManageSubjectsModal({
 
   const syncRooms = async () => {
     if (!handleSyncOfferingsToRooms || !selectedGradeLevel) return;
+    const missingSpecialist = gradeClassGroups.some(
+      (cg: any) =>
+        offeredSubjectIds.size > 0 &&
+        requiresSpecialistTeacher(cg, classrooms) &&
+        Array.from(offeredSubjectIds).some(
+          (subjectId) => !teacherByKey[`${cg.id}:${subjectId}`]
+        )
+    );
+    if (missingSpecialist) {
+      showToast?.(t("curriculum.toast.selectTeachersForSync"), "error");
+      return;
+    }
     const assignments: Array<{
       classGroupId: string;
       subjectId: string;

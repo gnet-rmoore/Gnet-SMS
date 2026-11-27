@@ -26,6 +26,10 @@ import { useTranslation } from "react-i18next";
 import { ListFilterBar } from "../../components/ui";
 import { useListFilters, type FilterFieldDef } from "../list-filters";
 import { resolveOrganizationType, type OrganizationType } from "./utils";
+import {
+  requiresSpecialistTeacher,
+  resolveSubjectTeacherId,
+} from "../academics-shared/subjectTeacherAssignment";
 
 export const Classrooms = () => {
   const { t } = useTranslation(["pages", "common"]);
@@ -141,7 +145,11 @@ export const Classrooms = () => {
         const requests = wizardSelectedClassIds.map(async (classId) => {
           const classGroup = classrooms.find((c) => c.id === classId);
           if (!classGroup) return null;
-          const teacherId = wizardClassTeachers[classId] || classGroup.ownerTeacherId;
+          const teacherId = resolveSubjectTeacherId(
+            classGroup,
+            classrooms,
+            wizardClassTeachers[classId]
+          );
           if (!teacherId) {
             throw new Error(t("classrooms.toast.assignTeacherFor", { name: classGroup.name }));
           }
@@ -198,7 +206,11 @@ export const Classrooms = () => {
 
         const requests = wizardSelectedSubjectIds.map(async (subId) => {
           const subject = subjects.find((s) => s.id === subId);
-          const teacherId = wizardSubjectTeachers[subId] || classGroup.ownerTeacherId;
+          const teacherId = resolveSubjectTeacherId(
+            classGroup,
+            classrooms,
+            wizardSubjectTeachers[subId]
+          );
           if (!teacherId) {
             throw new Error(t("classrooms.toast.assignTeacherFor", { name: subject?.name || t("classrooms.toast.subjectLabel") }));
           }
@@ -314,7 +326,7 @@ export const Classrooms = () => {
     setSelectedClassGroup(classroom);
     setSubjectAssignment({
       subjectId: "",
-      teacherId: classroom.ownerTeacherId || "",
+      teacherId: resolveSubjectTeacherId(classroom, classrooms, undefined),
     });
     setShowSubjectModal(true);
     setActiveDropdown(null);
@@ -323,6 +335,16 @@ export const Classrooms = () => {
   const handleCreateSubjectClassroom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClassGroup || !subjectAssignment.subjectId) return;
+    if (
+      requiresSpecialistTeacher(selectedClassGroup, classrooms) &&
+      !subjectAssignment.teacherId
+    ) {
+      showToast(
+        t("classrooms.toast.assignTeacherFor", { name: selectedClassGroup.name }),
+        "error"
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const subject = subjects.find((s) => s.id === subjectAssignment.subjectId);
@@ -346,13 +368,14 @@ export const Classrooms = () => {
 
   const handleEditClassroom = (classroom: any) => {
     setEditingClassroom(classroom);
+    const organizationType = resolveOrganizationType(classroom, classrooms.filter((c) => c.subjectId));
     setFormData({
       name: classroom.name,
       gradeLevelId: classroom.gradeLevelId || "",
-      ownerTeacherId: classroom.ownerTeacherId || "",
+      ownerTeacherId: organizationType === "DEPARTMENTALIZED" ? "" : classroom.ownerTeacherId || "",
       teacherIds: [],
       assistantIds: [],
-      organizationType: resolveOrganizationType(classroom, classrooms.filter((c) => c.subjectId)),
+      organizationType,
       bannerColor: classroom.bannerColor || "bg-indigo-600",
       capacity: classroom.capacity ?? "",
       allowOverfill: Boolean(classroom.allowOverfill),
@@ -366,14 +389,25 @@ export const Classrooms = () => {
     if (!editingClassroom) return;
     setSubmitting(true);
     try {
-      const { capacity, allowOverfill, ...classroomFields } = formData;
+      const {
+        capacity,
+        allowOverfill,
+        ownerTeacherId,
+        teacherIds,
+        assistantIds,
+        ...classroomFields
+      } = formData;
+      const staffFields =
+        classroomFields.organizationType === "DEPARTMENTALIZED"
+          ? { ownerTeacherId: null }
+          : { ownerTeacherId, teacherIds, assistantIds };
       const response = await fetch(`/api/classrooms/${editingClassroom.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(classroomFields),
+        body: JSON.stringify({ ...classroomFields, ...staffFields }),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -458,6 +492,8 @@ export const Classrooms = () => {
     });
     if (!ok) return;
 
+    const organizationType = resolveOrganizationType(classroom, classrooms.filter((c) => c.subjectId));
+    const isDepartmentalizedGroup = !classroom.subjectId && organizationType === "DEPARTMENTALIZED";
     const response = await fetch(`/api/schools/${school?.id}/classrooms`, {
       method: "POST",
       headers: {
@@ -468,9 +504,9 @@ export const Classrooms = () => {
         name: `${classroom.name} (Copy)`,
         subjectId: classroom.subjectId,
         gradeLevelId: classroom.gradeLevelId,
-        ownerTeacherId: classroom.ownerTeacherId,
+        ...(isDepartmentalizedGroup ? {} : { ownerTeacherId: classroom.ownerTeacherId }),
         bannerColor: classroom.bannerColor,
-        organizationType: classroom.organizationType || undefined,
+        organizationType: organizationType || classroom.organizationType || undefined,
         sourceClassroomId: classroom.id,
       }),
     });
@@ -491,6 +527,16 @@ export const Classrooms = () => {
     }
     setSubmitting(true);
     try {
+      const {
+        ownerTeacherId,
+        teacherIds,
+        assistantIds,
+        ...classroomFields
+      } = formData;
+      const staffFields =
+        classroomFields.organizationType === "DEPARTMENTALIZED"
+          ? {}
+          : { ownerTeacherId, teacherIds, assistantIds };
       const response = await fetch(`/api/schools/${school.id}/classrooms`, {
         method: "POST",
         headers: {
@@ -498,7 +544,8 @@ export const Classrooms = () => {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          ...formData,
+          ...classroomFields,
+          ...staffFields,
           capacity:
             formData.capacity === "" || formData.capacity == null
               ? null

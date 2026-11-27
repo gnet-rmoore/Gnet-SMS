@@ -129,13 +129,12 @@ export const classroomController = {
     }
 
     try {
-      const primaryTeacherId = ownerTeacherId || req.user.id;
       const classroom = await classroomService.createClassroom({
         name,
         bannerColor,
         subjectId,
         gradeLevelId,
-        ownerTeacherId: primaryTeacherId,
+        ownerTeacherId,
         schoolId,
         teacherIds,
         assistantIds,

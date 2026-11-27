@@ -4,6 +4,10 @@ import { Link, useParams } from "react-router-dom";
 import { X, Sparkles, Info, BookOpen, Users } from "lucide-react";
 import { motion } from "motion/react";
 import { resolveOrganizationType, type OrganizationType } from "../utils";
+import {
+  requiresSpecialistTeacher,
+  resolveSubjectTeacherId,
+} from "../../academics-shared/subjectTeacherAssignment";
 
 export type ClassroomWizardModalProps = {
   classrooms: any[];
@@ -115,7 +119,12 @@ export function ClassroomWizardModal({
       setWizardSelectedClassIds([...wizardSelectedClassIds, classId]);
       const cg = allClassGroups.find((c) => c.id === classId);
       const org = cg ? resolveOrganizationType(cg, subjectRooms) : "MIXED";
-      if (cg?.ownerTeacherId && org !== "DEPARTMENTALIZED" && !wizardClassTeachers[classId]) {
+      if (
+        cg?.ownerTeacherId &&
+        org !== "DEPARTMENTALIZED" &&
+        !requiresSpecialistTeacher(cg, subjectRooms) &&
+        !wizardClassTeachers[classId]
+      ) {
         setWizardClassTeachers({ ...wizardClassTeachers, [classId]: cg.ownerTeacherId });
       }
     } else {
@@ -127,9 +136,9 @@ export function ClassroomWizardModal({
     if (checked) {
       setWizardSelectedSubjectIds([...wizardSelectedSubjectIds, subjectId]);
       const defaultTeacher =
-        selectedOrg === "DEPARTMENTALIZED"
-          ? ""
-          : selectedClassGroup?.ownerTeacherId || teachers[0]?.id || "";
+        selectedClassGroup && !requiresSpecialistTeacher(selectedClassGroup, subjectRooms)
+          ? selectedClassGroup.ownerTeacherId || ""
+          : "";
       if (defaultTeacher && !wizardSubjectTeachers[subjectId]) {
         setWizardSubjectTeachers({ ...wizardSubjectTeachers, [subjectId]: defaultTeacher });
       }
@@ -326,13 +335,13 @@ export function ClassroomWizardModal({
                           setWizardSelectedClassIds(ids);
                           const teachersMap: Record<string, string> = { ...wizardClassTeachers };
                           classGroups.forEach((cg) => {
-                            const org = resolveOrganizationType(cg, subjectRooms);
-                            if (
-                              org !== "DEPARTMENTALIZED" &&
-                              !teachersMap[cg.id] &&
-                              cg.ownerTeacherId
-                            ) {
-                              teachersMap[cg.id] = cg.ownerTeacherId;
+                            const defaultTeacher = resolveSubjectTeacherId(
+                              cg,
+                              subjectRooms,
+                              undefined
+                            );
+                            if (!teachersMap[cg.id] && defaultTeacher) {
+                              teachersMap[cg.id] = defaultTeacher;
                             }
                           });
                           setWizardClassTeachers(teachersMap);
@@ -456,10 +465,11 @@ export function ClassroomWizardModal({
                           const ids = assignableSubjects.map((s) => s.id);
                           setWizardSelectedSubjectIds(ids);
                           const map: Record<string, string> = { ...wizardSubjectTeachers };
-                          const defaultTeacher =
-                            selectedOrg === "DEPARTMENTALIZED"
-                              ? ""
-                              : selectedClassGroup?.ownerTeacherId || "";
+                          const defaultTeacher = resolveSubjectTeacherId(
+                            selectedClassGroup,
+                            subjectRooms,
+                            undefined
+                          );
                           if (defaultTeacher) {
                             ids.forEach((id) => {
                               if (!map[id]) map[id] = defaultTeacher;

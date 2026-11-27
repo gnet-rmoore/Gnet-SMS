@@ -9,6 +9,10 @@ import {
   isValidTeachingPair,
 } from "../teacherTeachingScope";
 import { hasActiveCalendar, type ActiveCalendar } from "../../academics-shared/syllabusCalendar";
+import {
+  requiresSpecialistTeacher,
+  resolveSubjectTeacherId,
+} from "../../academics-shared/subjectTeacherAssignment";
 
 export type PageActionsDeps = {
   school: any;
@@ -356,6 +360,17 @@ export function usePageActions(deps: PageActionsDeps) {
       showToast(t("curriculum.toast.schoolNotFound"), "error");
       return;
     }
+    const gradeGroups = subjectGradeLevelId
+      ? classrooms.filter((c: any) => c.gradeLevelId === subjectGradeLevelId && !c.subjectId)
+      : [];
+    const missingSpecialist = gradeGroups.some(
+      (group: any) =>
+        requiresSpecialistTeacher(group, classrooms) && !addSubjectClassTeachers[group.id]
+    );
+    if (missingSpecialist) {
+      showToast(t("curriculum.toast.selectTeachersForSync"), "error");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/schools/${school.id}/subjects`, {
@@ -375,19 +390,31 @@ export function usePageActions(deps: PageActionsDeps) {
           } catch {
             /* already offered or network — continue */
           }
-          const gradeGroups = classrooms.filter(
-            (c: any) => c.gradeLevelId === subjectGradeLevelId && !c.subjectId
-          );
           if (gradeGroups.length > 0) {
             const assignments = gradeGroups.map((group: any) => ({
               classGroupId: group.id,
               subjectId: data.id,
               subjectName: data.name,
               subjectCode: data.code,
-              teacherId: addSubjectClassTeachers[group.id] || group.ownerTeacherId,
+              teacherId: resolveSubjectTeacherId(
+                group,
+                classrooms,
+                addSubjectClassTeachers[group.id]
+              ),
               gradeLevelId: group.gradeLevelId || subjectGradeLevelId,
             }));
-            await curriculumApi.syncSubjectRooms(school.id, assignments);
+            const syncResult: any = await curriculumApi.syncSubjectRooms(school.id, assignments);
+            const skipped = syncResult?.skipped?.length || 0;
+            if (skipped) {
+              showToast(
+                t("curriculum.toast.roomsSyncedWithSkips", {
+                  created: syncResult?.created?.length || 0,
+                  updated: syncResult?.updated?.length || 0,
+                  skipped,
+                }),
+                "info"
+              );
+            }
             assignMsg = t("curriculum.toast.subjectCreatedSynced", { count: gradeGroups.length });
           } else {
             assignMsg = t("curriculum.toast.subjectCreatedOffered");
@@ -521,12 +548,18 @@ export function usePageActions(deps: PageActionsDeps) {
 
   const handleAddSubjectToClassGroup = async (subjectId: string, classGroupId: string) => {
     if (!school?.id) return;
+    const subject = subjects.find((s: any) => s.id === subjectId);
+    const classGroup = classrooms.find((c: any) => c.id === classGroupId);
+    if (!subject || !classGroup) return;
+    if (
+      requiresSpecialistTeacher(classGroup, classrooms) &&
+      !addSubjectClassTeachers[classGroupId]
+    ) {
+      showToast(t("curriculum.toast.selectTeachersForSync"), "error");
+      return;
+    }
     setSubmitting(true);
     try {
-      const subject = subjects.find((s: any) => s.id === subjectId);
-      const classGroup = classrooms.find((c: any) => c.id === classGroupId);
-      if (!subject || !classGroup) return;
-
       if (classGroup.gradeLevelId) {
         try {
           await curriculumApi.createSubjectOffering(school.id, {
@@ -538,18 +571,34 @@ export function usePageActions(deps: PageActionsDeps) {
         }
       }
 
-      await curriculumApi.syncSubjectRooms(school.id, [
+      const syncResult: any = await curriculumApi.syncSubjectRooms(school.id, [
         {
           classGroupId,
           subjectId,
           subjectName: subject.name,
           subjectCode: subject.code,
-          teacherId: classGroup.ownerTeacherId,
+          teacherId: resolveSubjectTeacherId(
+            classGroup,
+            classrooms,
+            addSubjectClassTeachers[classGroupId]
+          ),
           gradeLevelId: classGroup.gradeLevelId,
         },
       ]);
+      const skipped = syncResult?.skipped?.length || 0;
       fetchData();
-      showToast(t("curriculum.toast.subjectAssignedToGroup"));
+      if (skipped) {
+        showToast(
+          t("curriculum.toast.roomsSyncedWithSkips", {
+            created: syncResult?.created?.length || 0,
+            updated: syncResult?.updated?.length || 0,
+            skipped,
+          }),
+          "info"
+        );
+      } else {
+        showToast(t("curriculum.toast.subjectAssignedToGroup"));
+      }
     } catch (err: any) {
       console.error(err);
       showToast(err?.message || t("curriculum.toast.subjectAssignFailed"), "error");
@@ -606,7 +655,13 @@ export function usePageActions(deps: PageActionsDeps) {
       fetchData();
       const created = result?.created?.length || 0;
       const updated = result?.updated?.length || 0;
-      showToast(t("curriculum.toast.roomsSynced", { created, updated }));
+      const skipped = result?.skipped?.length || 0;
+      showToast(
+        skipped
+          ? t("curriculum.toast.roomsSyncedWithSkips", { created, updated, skipped })
+          : t("curriculum.toast.roomsSynced", { created, updated }),
+        skipped ? "info" : "success"
+      );
     } catch (err: any) {
       showToast(err?.message || t("curriculum.toast.roomsSyncFailed"), "error");
     } finally {

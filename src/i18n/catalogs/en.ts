@@ -2641,6 +2641,8 @@ export const enPages = {
       offeringUpdateFailed: "Failed to update offering",
       selectTeachersForSync: "Select teachers for at least one class group × subject",
       roomsSynced: "Synced subject rooms ({{created}} created, {{updated}} updated)",
+      roomsSyncedWithSkips:
+        "Synced subject rooms ({{created}} created, {{updated}} updated, {{skipped}} skipped)",
       roomsSyncFailed: "Failed to sync subject rooms",
       backfillDone: "Backfilled grade offerings and parent classroom links",
       backfillFailed: "Backfill failed",
@@ -2734,7 +2736,7 @@ export const enPages = {
       doNotAssign: "Do not assign yet",
       assignGradeHint: "Selecting a grade offers this subject for that grade and creates a subject room in every class group under it.",
       syncNow: "Teachers per class group",
-      syncNowHint: "Every class group under this grade inherits the subject. Assign a teacher for each section (defaults to the homeroom teacher).",
+      syncNowHint: "Every class group under this grade inherits the subject. Assign a teacher for each section.",
       noClassGroupsForGrade: "No class groups for this grade level yet — the subject will still be offered; create class groups later to auto-provision rooms.",
       assignedTeacher: "Assigned teacher",
       selectTeacher: "Select teacher",

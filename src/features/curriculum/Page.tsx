@@ -17,6 +17,7 @@ import { PageHeader } from "./components/PageHeader";
 import { usePageActions } from "./hooks/usePageActions";
 import { useAcademicCalendarQuery } from "../academic-calendar/hooks/useAcademicCalendarQuery";
 import { PageToast, usePageToast } from "../academics-shared/PageToast";
+import { resolveSubjectTeacherId } from "../academics-shared/subjectTeacherAssignment";
 import { confirmAction } from "../../lib/swal";
 import {
   attachClassroomCountsToGradeLevels,
@@ -158,7 +159,7 @@ export const Curriculum = () => {
       setAddSubjectSelectedClassIds(groups.map((g) => g.id));
       const teachersMap: Record<string, string> = {};
       groups.forEach((g) => {
-        teachersMap[g.id] = g.ownerTeacherId || "";
+        teachersMap[g.id] = resolveSubjectTeacherId(g, classrooms, undefined);
       });
       setAddSubjectClassTeachers(teachersMap);
     } else {
@@ -549,6 +550,7 @@ submitting={submitting}
             setNewClassGroupName={setNewClassGroupName}
             setNewClassGroupTeacherId={setNewClassGroupTeacherId}
             setShowManageSubjectsModal={setShowManageSubjectsModal}
+            showToast={showToast}
             subjects={visibleCurriculumSubjects}
             submitting={submitting}
             teachers={teachers}

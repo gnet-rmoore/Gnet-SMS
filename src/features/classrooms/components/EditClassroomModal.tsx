@@ -49,6 +49,7 @@ export function EditClassroomModal({
   const { t } = useTranslation(["pages", "common"]);
   const teachers = (staff || []).filter((s) => s.role === "TEACHER");
   const selectedTeacher = teachers.find((s) => s.id === formData.ownerTeacherId);
+  const isDepartmentalized = formData.organizationType === "DEPARTMENTALIZED";
 
   const toggleList = (key: "teacherIds" | "assistantIds", id: string) => {
     const current = formData[key] || [];
@@ -162,7 +163,15 @@ export function EditClassroomModal({
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setFormData({ ...formData, organizationType: opt.value })}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      organizationType: opt.value,
+                      ...(opt.value === "DEPARTMENTALIZED"
+                        ? { ownerTeacherId: "", teacherIds: [], assistantIds: [] }
+                        : {}),
+                    })
+                  }
                   className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${
                     selected
                       ? "border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-500"
@@ -180,6 +189,7 @@ export function EditClassroomModal({
           </div>
         </div>
 
+        {!isDepartmentalized && (
         <div className="space-y-1.5">
           <label className={fieldLabel}>
             {formData.organizationType === "SELF_CONTAINED"
@@ -199,7 +209,7 @@ export function EditClassroomModal({
                 })
               }
               className={`${fieldInput} flex-1`}
-              required
+              required={!isDepartmentalized}
             >
               <option value="">{t("classroomModals.selectTeacher")}</option>
               {teachers.map((s) => (
@@ -213,8 +223,9 @@ export function EditClassroomModal({
             </div>
           </div>
         </div>
+        )}
 
-        {supportOptions.length > 0 && (
+        {!isDepartmentalized && supportOptions.length > 0 && (
           <div className="space-y-2">
             <label className={fieldLabel}>
               {t("classroomModals.coTeachers")}{" "}
@@ -239,7 +250,7 @@ export function EditClassroomModal({
           </div>
         )}
 
-        {supportOptions.length > 0 && (
+        {!isDepartmentalized && supportOptions.length > 0 && (
           <div className="space-y-2">
             <label className={fieldLabel}>
               {t("classroomModals.assistants")}{" "}
